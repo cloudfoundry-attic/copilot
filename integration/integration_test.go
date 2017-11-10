@@ -42,7 +42,7 @@ var _ = Describe("Copilot", func() {
 				ClientCACertPath: "dummy-path",
 				ClientCertPath:   "dummy-path",
 				ClientKeyPath:    "dummy-path",
-				Address:          "127.0.0.1:8889",
+				Address:          "https://127.0.0.1:8889",
 			},
 		}
 

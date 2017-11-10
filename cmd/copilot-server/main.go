@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"code.cloudfoundry.org/bbs"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/handlers"
@@ -38,8 +39,21 @@ func mainWithError() error {
 		lager.INFO)
 	logger.RegisterSink(reconfigurableSink)
 
+	bbsClient, err := bbs.NewSecureClient(
+		cfg.BBS.Address,
+		cfg.BBS.ClientCACertPath,
+		cfg.BBS.ClientCertPath,
+		cfg.BBS.ClientKeyPath,
+		cfg.BBS.ClientSessionCacheSize,
+		cfg.BBS.MaxIdleConnsPerHost,
+	)
+	if err != nil {
+		return err
+	}
+
 	handler := &handlers.Copilot{
-		Logger: logger,
+		BBSClient: bbsClient,
+		Logger:    logger,
 	}
 	grpcServer := grpcrunner.New(logger, cfg.ListenAddress,
 		func(s *grpc.Server) { api.RegisterCopilotServer(s, handler) },

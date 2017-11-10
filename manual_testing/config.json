@@ -1,0 +1,12 @@
+{
+  "ListenAddress": ":9000",
+  "ClientCAPath": "/var/vcap/jobs/copilot/certs/CopilotAuth.crt",
+  "ServerCertPath": "/var/vcap/jobs/copilot/certs/CopilotServer.crt",
+  "ServerKeyPath": "/var/vcap/jobs/copilot/certs/CopilotServer.key",
+  "BBS": {
+    "ClientCACertPath": "/var/vcap/jobs/cfdot/config/certs/bbs/ca.crt",
+    "ClientCertPath": "/var/vcap/jobs/cfdot/config/certs/bbs/client.crt",
+    "ClientKeyPath": "/var/vcap/jobs/cfdot/config/certs/bbs/client.key",
+    "Address": "https://bbs.service.cf.internal:8889"
+  }
+}

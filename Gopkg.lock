@@ -4,14 +4,26 @@
 [[projects]]
   branch = "master"
   name = "code.cloudfoundry.org/bbs"
-  packages = ["encryption","format","models"]
+  packages = [".","encryption","events","format","models"]
   revision = "9b7c8f2e1df2f7d9cc80146d097647ace27aceaf"
+
+[[projects]]
+  branch = "master"
+  name = "code.cloudfoundry.org/cfhttp"
+  packages = [".","unix_transport"]
+  revision = "08baa6b247caf03100a743f6c3c426d28e55336a"
 
 [[projects]]
   branch = "master"
   name = "code.cloudfoundry.org/lager"
   packages = [".","lagerctx","lagertest"]
   revision = "0bfa98e49e7a976af91e918d47978f07c00b081f"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/bmizerany/pat"
+  packages = ["."]
+  revision = "6226ea591a40176dd3ff9cd8eff81ed6ca721a00"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -54,6 +66,18 @@
   name = "github.com/tedsuo/ifrit"
   packages = [".","grouper","sigmon"]
   revision = "d787ed1df88a79d9e9b1072738a40500b8ec22ee"
+
+[[projects]]
+  name = "github.com/tedsuo/rata"
+  packages = ["."]
+  revision = "0649c23705dfb45a9693b668c4fc1c0666f485d9"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/vito/go-sse"
+  packages = ["sse"]
+  revision = "fd69d275caac5d78d793e77ddbe9bd2001d9b88d"
 
 [[projects]]
   branch = "master"
@@ -100,6 +124,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c59647c47170c331b9a4a9d47355bc76b00e063e81c4ce96fb3c9fc5c996c73b"
+  inputs-digest = "61369139bc9fdd588bd4071851d2676dc9ca38090ba2ca082e24a2c312a9241a"
   solver-name = "gps-cdcl"
   solver-version = 1
