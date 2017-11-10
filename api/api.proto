@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package api;
+
+service Copilot {
+  rpc Health(HealthRequest) returns (HealthResponse) {}
+}
+
+message HealthRequest {
+}
+message HealthResponse {
+  bool healthy = 1;
+}
