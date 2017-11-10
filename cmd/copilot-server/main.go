@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -15,14 +14,9 @@ import (
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
+	"code.cloudfoundry.org/copilot/handlers"
 	"code.cloudfoundry.org/lager"
 )
-
-type CopilotServer struct{}
-
-func (c *CopilotServer) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
-	return &api.HealthResponse{Healthy: true}, nil
-}
 
 func mainWithError() error {
 	var configFilePath string
@@ -44,9 +38,11 @@ func mainWithError() error {
 		lager.INFO)
 	logger.RegisterSink(reconfigurableSink)
 
-	server := &CopilotServer{}
+	handler := &handlers.Copilot{
+		Logger: logger,
+	}
 	grpcServer := grpcrunner.New(logger, cfg.ListenAddress,
-		func(s *grpc.Server) { api.RegisterCopilotServer(s, server) },
+		func(s *grpc.Server) { api.RegisterCopilotServer(s, handler) },
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
 	)
 

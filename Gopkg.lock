@@ -3,9 +3,21 @@
 
 [[projects]]
   branch = "master"
+  name = "code.cloudfoundry.org/bbs"
+  packages = ["encryption","format","models"]
+  revision = "9b7c8f2e1df2f7d9cc80146d097647ace27aceaf"
+
+[[projects]]
+  branch = "master"
   name = "code.cloudfoundry.org/lager"
-  packages = ["."]
+  packages = [".","lagerctx","lagertest"]
   revision = "0bfa98e49e7a976af91e918d47978f07c00b081f"
+
+[[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = ["gogoproto","proto","protoc-gen-gogo/descriptor","sortkeys"]
+  revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
+  version = "v0.5"
 
 [[projects]]
   branch = "master"
@@ -88,6 +100,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9dcfd5bc8eec3fab3589510a7df74c6d5c570bf5213c0783296032c1bfb24be9"
+  inputs-digest = "c59647c47170c331b9a4a9d47355bc76b00e063e81c4ce96fb3c9fc5c996c73b"
   solver-name = "gps-cdcl"
   solver-version = 1

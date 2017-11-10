@@ -56,3 +56,7 @@
 [[constraint]]
   branch = "v2"
   name = "gopkg.in/validator.v2"
+
+[[constraint]]
+  branch = "master"
+  name = "code.cloudfoundry.org/bbs"

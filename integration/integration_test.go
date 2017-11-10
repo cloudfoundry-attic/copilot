@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -24,19 +25,28 @@ var _ = Describe("Copilot", func() {
 		client          copilot.Client
 		serverConfig    *config.Config
 		clientTLSConfig *tls.Config
+		configFilePath  string
 	)
 
 	BeforeEach(func() {
 		creds := testhelpers.GenerateMTLS()
 		listenAddr := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		tlsFiles := creds.CreateServerTLSFiles()
 
 		serverConfig = &config.Config{
-			ListenAddress: listenAddr,
-			ClientCA:      string(creds.Client.CA),
-			ServerCert:    string(creds.Server.Cert),
-			ServerKey:     string(creds.Server.Key),
+			ListenAddress:  listenAddr,
+			ClientCAPath:   tlsFiles.ClientCA,
+			ServerCertPath: tlsFiles.ServerCert,
+			ServerKeyPath:  tlsFiles.ServerKey,
+			BBS: config.BBSConfig{
+				ClientCACertPath: "dummy-path",
+				ClientCertPath:   "dummy-path",
+				ClientKeyPath:    "dummy-path",
+				Address:          "127.0.0.1:8889",
+			},
 		}
-		configFilePath := testhelpers.TempFileName()
+
+		configFilePath = testhelpers.TempFileName()
 		Expect(serverConfig.Save(configFilePath)).To(Succeed())
 
 		cmd := exec.Command(binaryPath, "-config", configFilePath)
@@ -54,6 +64,11 @@ var _ = Describe("Copilot", func() {
 	AfterEach(func() {
 		session.Interrupt()
 		Eventually(session, "2s").Should(gexec.Exit())
+
+		_ = os.Remove(configFilePath)
+		_ = os.Remove(serverConfig.ClientCAPath)
+		_ = os.Remove(serverConfig.ServerCertPath)
+		_ = os.Remove(serverConfig.ServerKeyPath)
 	})
 
 	It("gracefully terminates when sent an interrupt signal", func() {

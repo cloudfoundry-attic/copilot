@@ -11,11 +11,22 @@ import (
 	"gopkg.in/validator.v2"
 )
 
+type BBSConfig struct {
+	ClientCACertPath       string `validate:"nonzero"`
+	ClientCertPath         string `validate:"nonzero"`
+	ClientKeyPath          string `validate:"nonzero"`
+	Address                string `validate:"nonzero"`
+	ClientSessionCacheSize int
+	MaxIdleConnsPerHost    int
+}
+
 type Config struct {
-	ListenAddress string `validate:"nonzero"`
-	ClientCA      string `validate:"nonzero"`
-	ServerCert    string `validate:"nonzero"`
-	ServerKey     string `validate:"nonzero"`
+	ListenAddress  string `validate:"nonzero"`
+	ClientCAPath   string `validate:"nonzero"`
+	ServerCertPath string `validate:"nonzero"`
+	ServerKeyPath  string `validate:"nonzero"`
+
+	BBS BBSConfig
 }
 
 func (c *Config) Save(path string) error {
@@ -44,13 +55,17 @@ func Load(path string) (*Config, error) {
 }
 
 func (c *Config) ServerTLSConfig() (*tls.Config, error) {
-	serverCert, err := tls.X509KeyPair([]byte(c.ServerCert), []byte(c.ServerKey))
+	serverCert, err := tls.LoadX509KeyPair(c.ServerCertPath, c.ServerKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("parsing server cert/key: %s", err)
 	}
 
+	clientCABytes, err := ioutil.ReadFile(c.ClientCAPath)
+	if err != nil {
+		return nil, fmt.Errorf("loading client CAs: %s", err)
+	}
 	clientCAs := x509.NewCertPool()
-	if ok := clientCAs.AppendCertsFromPEM([]byte(c.ClientCA)); !ok {
+	if ok := clientCAs.AppendCertsFromPEM(clientCABytes); !ok {
 		return nil, errors.New("parsing client CAs: invalid pem block")
 	}
 

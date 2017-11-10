@@ -23,10 +23,16 @@ var _ = Describe("Config", func() {
 	BeforeEach(func() {
 		configFile = testhelpers.TempFileName()
 		cfg = &config.Config{
-			ListenAddress: "127.0.0.1:1234",
-			ClientCA:      "some-ca",
-			ServerCert:    "some-cert",
-			ServerKey:     "some-key",
+			ListenAddress:  "127.0.0.1:1234",
+			ClientCAPath:   "some-ca-path",
+			ServerCertPath: "some-cert-path",
+			ServerKeyPath:  "some-key-path",
+			BBS: config.BBSConfig{
+				ClientCACertPath: "some-ca-path",
+				ClientCertPath:   "some-cert-path",
+				ClientKeyPath:    "some-key-path",
+				Address:          "127.0.0.1:8889",
+			},
 		}
 	})
 
@@ -68,22 +74,47 @@ var _ = Describe("Config", func() {
 			Expect(err).To(MatchError(HavePrefix("invalid config: " + fieldName)))
 		},
 		Entry("ListenAddress", "ListenAddress"),
-		Entry("ClientCA", "ClientCA"),
-		Entry("ServerCert", "ServerCert"),
-		Entry("ServerKey", "ServerKey"),
+		Entry("ClientCAPath", "ClientCAPath"),
+		Entry("ServerCertPath", "ServerCertPath"),
+		Entry("ServerKeyPath", "ServerKeyPath"),
+	)
+
+	DescribeTable("required BBS fields",
+		func(fieldName string) {
+			// zero out the named field of the cfg struct
+			fieldValue := reflect.Indirect(reflect.ValueOf(&cfg.BBS)).FieldByName(fieldName)
+			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+
+			// save to the file
+			Expect(cfg.Save(configFile)).To(Succeed())
+			// attempt to load it
+			_, err := config.Load(configFile)
+			Expect(err).To(MatchError(HavePrefix("invalid config: BBS." + fieldName)))
+		},
+		Entry("ClientCACertPath", "ClientCACertPath"),
+		Entry("ClientCertPath", "ClientCertPath"),
+		Entry("ClientKeyPath", "ClientKeyPath"),
+		Entry("Address", "Address"),
 	)
 
 	Describe("building the server TLS config", func() {
 		var rawConfig config.Config
 
 		BeforeEach(func() {
-			clientCreds := testhelpers.GenerateCredentials("clientCA", "client")
-			serverCreds := testhelpers.GenerateCredentials("serverCA", "CopilotServer")
+			creds := testhelpers.GenerateMTLS()
+			tlsFiles := creds.CreateServerTLSFiles()
+
 			rawConfig = config.Config{
-				ClientCA:   string(clientCreds.CA),
-				ServerCert: string(serverCreds.Cert),
-				ServerKey:  string(serverCreds.Key),
+				ClientCAPath:   tlsFiles.ClientCA,
+				ServerCertPath: tlsFiles.ServerCert,
+				ServerKeyPath:  tlsFiles.ServerKey,
 			}
+		})
+
+		AfterEach(func() {
+			_ = os.Remove(rawConfig.ClientCAPath)
+			_ = os.Remove(rawConfig.ServerCertPath)
+			_ = os.Remove(rawConfig.ServerKeyPath)
 		})
 
 		It("returns a valid tls.Config", func() {
@@ -113,9 +144,18 @@ var _ = Describe("Config", func() {
 			Expect(tlsConfig.ClientCAs.Subjects()).To(ConsistOf(ContainSubstring("clientCA")))
 		})
 
+		Context("when the client CA file does not exist", func() {
+			BeforeEach(func() {
+				Expect(os.Remove(rawConfig.ClientCAPath)).To(Succeed())
+			})
+			It("returns a meaningful error", func() {
+				_, err := rawConfig.ServerTLSConfig()
+				Expect(err).To(MatchError(HavePrefix("loading client CAs: open")))
+			})
+		})
 		Context("when the client CA PEM data is invalid", func() {
 			BeforeEach(func() {
-				rawConfig.ClientCA = "invalid pem"
+				Expect(ioutil.WriteFile(rawConfig.ClientCAPath, []byte("invalid pem"), 0600)).To(Succeed())
 			})
 			It("returns a meaningful error", func() {
 				_, err := rawConfig.ServerTLSConfig()
@@ -125,7 +165,7 @@ var _ = Describe("Config", func() {
 
 		Context("when the server cert PEM data is invalid", func() {
 			BeforeEach(func() {
-				rawConfig.ServerCert = "invalid pem"
+				Expect(ioutil.WriteFile(rawConfig.ServerCertPath, []byte("invalid pem"), 0600)).To(Succeed())
 			})
 			It("returns a meaningful error", func() {
 				_, err := rawConfig.ServerTLSConfig()
@@ -135,7 +175,7 @@ var _ = Describe("Config", func() {
 
 		Context("when the server key PEM data is invalid", func() {
 			BeforeEach(func() {
-				rawConfig.ServerKey = "invalid pem"
+				Expect(ioutil.WriteFile(rawConfig.ServerKeyPath, []byte("invalid pem"), 0600)).To(Succeed())
 			})
 			It("returns a meaningful error", func() {
 				_, err := rawConfig.ServerTLSConfig()
