@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"fmt"
 	"math/rand"
 
 	. "github.com/onsi/ginkgo"
@@ -21,10 +20,8 @@ func TestIntegration(t *testing.T) {
 var binaryPath string
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	fmt.Fprintf(GinkgoWriter, "building binary...")
-	binPath, err := gexec.Build("code.cloudfoundry.org/copilot", "-race")
+	binPath, err := gexec.Build("code.cloudfoundry.org/copilot/cmd/copilot-server", "-race")
 	Expect(err).NotTo(HaveOccurred())
-	fmt.Fprintf(GinkgoWriter, "done\n")
 	return []byte(binPath)
 }, func(data []byte) {
 	binaryPath = string(data)

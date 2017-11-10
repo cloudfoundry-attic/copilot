@@ -7,12 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+
+	"gopkg.in/validator.v2"
 )
 
 type Config struct {
-	ClientCA   string
-	ServerCert string
-	ServerKey  string
+	ListenAddress string `validate:"nonzero"`
+	ClientCA      string `validate:"nonzero"`
+	ServerCert    string `validate:"nonzero"`
+	ServerKey     string `validate:"nonzero"`
 }
 
 func (c *Config) Save(path string) error {
@@ -32,6 +35,10 @@ func Load(path string) (*Config, error) {
 	err = json.Unmarshal(configBytes, c)
 	if err != nil {
 		return nil, fmt.Errorf("parsing config: %s", err)
+	}
+	err = validator.Validate(c)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config: %s", err)
 	}
 	return c, nil
 }

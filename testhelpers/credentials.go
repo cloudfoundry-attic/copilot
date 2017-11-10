@@ -1,6 +1,8 @@
 package testhelpers
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"time"
 
@@ -34,4 +36,30 @@ func GenerateCredentials(caCommonName string, commonName string) *Credentials {
 	Expect(err).NotTo(HaveOccurred())
 
 	return &Credentials{CA: caBytes, Key: keyBytes, Cert: certBytes}
+}
+
+type MTLSCredentials struct {
+	Server *Credentials
+	Client *Credentials
+}
+
+func (m MTLSCredentials) ClientTLSConfig() *tls.Config {
+	rootCAs := x509.NewCertPool()
+	ok := rootCAs.AppendCertsFromPEM(m.Server.CA)
+	Expect(ok).To(BeTrue())
+
+	clientCert, err := tls.X509KeyPair(m.Client.Cert, m.Client.Key)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tls.Config{
+		RootCAs:      rootCAs,
+		Certificates: []tls.Certificate{clientCert},
+	}
+}
+
+func GenerateMTLS() MTLSCredentials {
+	return MTLSCredentials{
+		Server: GenerateCredentials("serverCA", "CopilotServer"),
+		Client: GenerateCredentials("clientCA", "CopilotClient"),
+	}
 }

@@ -4,20 +4,30 @@ import (
 	"crypto/tls"
 	"io/ioutil"
 	"os"
+	"reflect"
 
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Config", func() {
-	var configFile string
+	var (
+		configFile string
+		cfg        *config.Config
+	)
+
 	BeforeEach(func() {
-		tempFile, err := ioutil.TempFile("", "cfg")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(tempFile.Close()).To(Succeed())
-		configFile = tempFile.Name()
+		configFile = testhelpers.TempFileName()
+		cfg = &config.Config{
+			ListenAddress: "127.0.0.1:1234",
+			ClientCA:      "some-ca",
+			ServerCert:    "some-cert",
+			ServerKey:     "some-key",
+		}
 	})
 
 	AfterEach(func() {
@@ -25,18 +35,13 @@ var _ = Describe("Config", func() {
 	})
 
 	It("saves and loads via JSON", func() {
-		originalCfg := &config.Config{
-			ClientCA:   "some-ca",
-			ServerCert: "some-cert",
-			ServerKey:  "some-key",
-		}
-		err := originalCfg.Save(configFile)
+		err := cfg.Save(configFile)
 		Expect(err).NotTo(HaveOccurred())
 
 		loadedCfg, err := config.Load(configFile)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(loadedCfg).To(Equal(originalCfg))
+		Expect(loadedCfg).To(Equal(cfg))
 	})
 
 	Context("when the file is not valid json", func() {
@@ -49,6 +54,24 @@ var _ = Describe("Config", func() {
 			Expect(err).To(MatchError(HavePrefix("parsing config: invalid")))
 		})
 	})
+
+	DescribeTable("required fields",
+		func(fieldName string) {
+			// zero out the named field of the cfg struct
+			fieldValue := reflect.Indirect(reflect.ValueOf(cfg)).FieldByName(fieldName)
+			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+
+			// save to the file
+			Expect(cfg.Save(configFile)).To(Succeed())
+			// attempt to load it
+			_, err := config.Load(configFile)
+			Expect(err).To(MatchError(HavePrefix("invalid config: " + fieldName)))
+		},
+		Entry("ListenAddress", "ListenAddress"),
+		Entry("ClientCA", "ClientCA"),
+		Entry("ServerCert", "ServerCert"),
+		Entry("ServerKey", "ServerKey"),
+	)
 
 	Describe("building the server TLS config", func() {
 		var rawConfig config.Config
@@ -119,6 +142,5 @@ var _ = Describe("Config", func() {
 				Expect(err).To(MatchError(HavePrefix("parsing server cert/key: tls: failed to find any PEM data")))
 			})
 		})
-
 	})
 })
