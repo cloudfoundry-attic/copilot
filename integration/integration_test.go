@@ -47,30 +47,37 @@ var _ = Describe("Copilot", func() {
 		bbsServer = ghttp.NewUnstartedServer()
 		bbsServer.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
 
-		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list",
-			func(w http.ResponseWriter, req *http.Request) {
-				actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
-					ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
-						&bbsmodels.ActualLRPGroup{
-							Instance: &bbsmodels.ActualLRP{
-								ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
-								State:        bbsmodels.ActualLRPStateRunning,
-								ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-									Address: "10.10.1.5",
-									Ports: []*bbsmodels.PortMapping{
-										&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61005},
-									},
+		bbsServer.RouteToHandler("POST", "/v1/cells/list.r1", func(w http.ResponseWriter, req *http.Request) {
+			cellsResponse := bbsmodels.CellsResponse{}
+			data, _ := proto.Marshal(&cellsResponse)
+			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+			w.Header().Set("Content-Type", "application/x-protobuf")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(data)
+		})
+		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list", func(w http.ResponseWriter, req *http.Request) {
+			actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
+				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
+					&bbsmodels.ActualLRPGroup{
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
+							State:        bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address: "10.10.1.5",
+								Ports: []*bbsmodels.PortMapping{
+									&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61005},
 								},
 							},
 						},
 					},
-				}
-				data, _ := proto.Marshal(&actualLRPResponse)
-				w.Header().Set("Content-Length", strconv.Itoa(len(data)))
-				w.Header().Set("Content-Type", "application/x-protobuf")
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write(data)
-			})
+				},
+			}
+			data, _ := proto.Marshal(&actualLRPResponse)
+			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+			w.Header().Set("Content-Type", "application/x-protobuf")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(data)
+		})
 		bbsServer.Start()
 
 		serverConfig = &config.Config{
@@ -123,6 +130,27 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		}))
+	})
+
+	Context("when the BBS is not available", func() {
+		BeforeEach(func() {
+			bbsServer.Close()
+
+			// stop copilot
+			session.Interrupt()
+			Eventually(session, "2s").Should(gexec.Exit())
+		})
+
+		It("crashes and prints a useful error log", func() {
+			// re-start copilot
+			cmd := exec.Command(binaryPath, "-config", configFilePath)
+			var err error
+			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, "2s").Should(gexec.Exit(1))
+			Expect(session.Out).To(gbytes.Say(`unable to reach BBS`))
+		})
 	})
 
 	It("gracefully terminates when sent an interrupt signal", func() {

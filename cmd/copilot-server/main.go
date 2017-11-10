@@ -50,7 +50,11 @@ func mainWithError() error {
 	if err != nil {
 		return err
 	}
-	// TODO: ping the BBS, check that it is up
+
+	_, err = bbsClient.Cells(logger)
+	if err != nil {
+		return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
+	}
 
 	handler := &handlers.Copilot{
 		BBSClient: bbsClient,
