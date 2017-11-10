@@ -41,7 +41,7 @@ func mainWithError() error {
 
 	bbsClient, err := bbs.NewSecureClient(
 		cfg.BBS.Address,
-		cfg.BBS.ClientCACertPath,
+		cfg.BBS.ServerCACertPath,
 		cfg.BBS.ClientCertPath,
 		cfg.BBS.ClientKeyPath,
 		cfg.BBS.ClientSessionCacheSize,
@@ -50,6 +50,7 @@ func mainWithError() error {
 	if err != nil {
 		return err
 	}
+	// TODO: ping the BBS, check that it is up
 
 	handler := &handlers.Copilot{
 		BBSClient: bbsClient,

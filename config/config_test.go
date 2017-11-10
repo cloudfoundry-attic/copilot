@@ -28,7 +28,7 @@ var _ = Describe("Config", func() {
 			ServerCertPath: "some-cert-path",
 			ServerKeyPath:  "some-key-path",
 			BBS: config.BBSConfig{
-				ClientCACertPath: "some-ca-path",
+				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",
 				ClientKeyPath:    "some-key-path",
 				Address:          "127.0.0.1:8889",
@@ -91,7 +91,7 @@ var _ = Describe("Config", func() {
 			_, err := config.Load(configFile)
 			Expect(err).To(MatchError(HavePrefix("invalid config: BBS." + fieldName)))
 		},
-		Entry("ClientCACertPath", "ClientCACertPath"),
+		Entry("ServerCACertPath", "ServerCACertPath"),
 		Entry("ClientCertPath", "ClientCertPath"),
 		Entry("ClientKeyPath", "ClientKeyPath"),
 		Entry("Address", "Address"),

@@ -4,19 +4,24 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
+	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
 
+	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Copilot", func() {
@@ -26,23 +31,58 @@ var _ = Describe("Copilot", func() {
 		serverConfig    *config.Config
 		clientTLSConfig *tls.Config
 		configFilePath  string
+
+		bbsServer *ghttp.Server
 	)
 
 	BeforeEach(func() {
-		creds := testhelpers.GenerateMTLS()
+		copilotCreds := testhelpers.GenerateMTLS()
 		listenAddr := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
-		tlsFiles := creds.CreateServerTLSFiles()
+		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
+
+		bbsCreds := testhelpers.GenerateMTLS()
+		bbsTLSFiles := bbsCreds.CreateClientTLSFiles()
+
+		// boot a fake BBS
+		bbsServer = ghttp.NewUnstartedServer()
+		bbsServer.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
+
+		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list",
+			func(w http.ResponseWriter, req *http.Request) {
+				actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
+					ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
+						&bbsmodels.ActualLRPGroup{
+							Instance: &bbsmodels.ActualLRP{
+								ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
+								State:        bbsmodels.ActualLRPStateRunning,
+								ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+									Address: "10.10.1.5",
+									Ports: []*bbsmodels.PortMapping{
+										&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61005},
+									},
+								},
+							},
+						},
+					},
+				}
+				data, _ := proto.Marshal(&actualLRPResponse)
+				w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+				w.Header().Set("Content-Type", "application/x-protobuf")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(data)
+			})
+		bbsServer.Start()
 
 		serverConfig = &config.Config{
 			ListenAddress:  listenAddr,
-			ClientCAPath:   tlsFiles.ClientCA,
-			ServerCertPath: tlsFiles.ServerCert,
-			ServerKeyPath:  tlsFiles.ServerKey,
+			ClientCAPath:   copilotTLSFiles.ClientCA,
+			ServerCertPath: copilotTLSFiles.ServerCert,
+			ServerKeyPath:  copilotTLSFiles.ServerKey,
 			BBS: config.BBSConfig{
-				ClientCACertPath: "dummy-path",
-				ClientCertPath:   "dummy-path",
-				ClientKeyPath:    "dummy-path",
-				Address:          "https://127.0.0.1:8889",
+				ServerCACertPath: bbsTLSFiles.ServerCA,
+				ClientCertPath:   bbsTLSFiles.ClientCert,
+				ClientKeyPath:    bbsTLSFiles.ClientKey,
+				Address:          bbsServer.URL(),
 			},
 		}
 
@@ -55,7 +95,7 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session.Out).Should(gbytes.Say(`started`))
 
-		clientTLSConfig = creds.ClientTLSConfig()
+		clientTLSConfig = copilotCreds.ClientTLSConfig()
 
 		client, err = copilot.NewClient(serverConfig.ListenAddress, clientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
@@ -65,10 +105,24 @@ var _ = Describe("Copilot", func() {
 		session.Interrupt()
 		Eventually(session, "2s").Should(gexec.Exit())
 
+		bbsServer.Close()
 		_ = os.Remove(configFilePath)
 		_ = os.Remove(serverConfig.ClientCAPath)
 		_ = os.Remove(serverConfig.ServerCertPath)
 		_ = os.Remove(serverConfig.ServerKeyPath)
+	})
+
+	It("serves routes, using data from the BBS", func() {
+		WaitForHealthy(client)
+		routes, err := client.Routes(context.Background(), new(api.RoutesRequest))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
+			"process-guid-a.internal.tld": &api.BackendSet{
+				Backends: []*api.Backend{
+					&api.Backend{Address: "10.10.1.5", Port: 61005},
+				},
+			},
+		}))
 	})
 
 	It("gracefully terminates when sent an interrupt signal", func() {

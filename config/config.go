@@ -12,7 +12,7 @@ import (
 )
 
 type BBSConfig struct {
-	ClientCACertPath       string `validate:"nonzero"`
+	ServerCACertPath       string `validate:"nonzero"`
 	ClientCertPath         string `validate:"nonzero"`
 	ClientKeyPath          string `validate:"nonzero"`
 	Address                string `validate:"nonzero"`
