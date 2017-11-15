@@ -9,10 +9,12 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+const CF_APP_PORT = 8080
+
 type ProcessGUID string
 
 func (p ProcessGUID) Hostname() string {
-	return string(p) + ".internal.tld"
+	return string(p) + ".cfapps.internal"
 }
 
 type BBSClient interface {
@@ -49,9 +51,15 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 		if _, ok := backends[hostname]; !ok {
 			backends[hostname] = &api.BackendSet{}
 		}
+		var appHostPort uint32
+		for _, port := range instance.ActualLRPNetInfo.Ports {
+			if port.ContainerPort == CF_APP_PORT {
+				appHostPort = port.HostPort
+			}
+		}
 		backends[hostname].Backends = append(backends[hostname].Backends, &api.Backend{
 			Address: instance.ActualLRPNetInfo.Address,
-			Port:    instance.ActualLRPNetInfo.Ports[0].HostPort,
+			Port:    appHostPort,
 		})
 	}
 	return &api.RoutesResponse{Backends: backends}, nil

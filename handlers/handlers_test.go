@@ -39,6 +39,7 @@ var _ = Describe("Handlers", func() {
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.10.1.5",
 						Ports: []*bbsmodels.PortMapping{
+							&bbsmodels.PortMapping{ContainerPort: 2222, HostPort: 61006},
 							&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61005},
 						},
 					},
@@ -121,7 +122,7 @@ var _ = Describe("Handlers", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"process-guid-a.internal.tld": &api.BackendSet{
+					"process-guid-a.cfapps.internal": &api.BackendSet{
 						Backends: []*api.Backend{
 							{
 								Address: "10.10.1.5",
@@ -133,7 +134,7 @@ var _ = Describe("Handlers", func() {
 							},
 						},
 					},
-					"process-guid-b.internal.tld": &api.BackendSet{
+					"process-guid-b.cfapps.internal": &api.BackendSet{
 						Backends: []*api.Backend{
 							{
 								Address: "10.0.50.4",

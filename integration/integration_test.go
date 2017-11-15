@@ -124,7 +124,7 @@ var _ = Describe("Copilot", func() {
 		routes, err := client.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.internal.tld": &api.BackendSet{
+			"process-guid-a.cfapps.internal": &api.BackendSet{
 				Backends: []*api.Backend{
 					&api.Backend{Address: "10.10.1.5", Port: 61005},
 				},
