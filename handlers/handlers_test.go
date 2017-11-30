@@ -101,8 +101,9 @@ var _ = Describe("Handlers", func() {
 		}
 		logger = lagertest.NewTestLogger("test")
 		handler = &handlers.Copilot{
-			BBSClient: bbsClient,
-			Logger:    logger,
+			BBSClient:  bbsClient,
+			Logger:     logger,
+			RoutesRepo: make(map[string]*handlers.Route),
 		}
 	})
 
@@ -143,6 +144,191 @@ var _ = Describe("Handlers", func() {
 							{
 								Address: "10.0.60.2",
 								Port:    61001,
+							},
+						},
+					},
+				},
+			}))
+		})
+	})
+
+	Describe("AddRoute", func() {
+		It("returns success true", func() {
+			ctx := context.Background()
+			resp, err := handler.AddRoute(ctx, new(api.AddRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.AddResponse{Success: true}))
+		})
+
+		It("adds the route", func() {
+			ctx := context.Background()
+			_, err := handler.AddRoute(ctx, &api.AddRequest{
+				ProcessGuid: "process-guid-a",
+				Hostname:    "app-a.example.com",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.RoutesResponse{
+				Backends: map[string]*api.BackendSet{
+					"process-guid-a.cfapps.internal": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.10.1.5",
+								Port:    61005,
+							},
+							{
+								Address: "10.0.40.2",
+								Port:    61008,
+							},
+						},
+					},
+					"process-guid-b.cfapps.internal": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.0.50.4",
+								Port:    61009,
+							},
+							{
+								Address: "10.0.60.2",
+								Port:    61001,
+							},
+						},
+					},
+					"app-a.example.com": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.10.1.5",
+								Port:    61005,
+							},
+							{
+								Address: "10.0.40.2",
+								Port:    61008,
+							},
+						},
+					},
+				},
+			}))
+		})
+
+		It("adds routes with overlapping hostnames", func() {
+			ctx := context.Background()
+			_, err := handler.AddRoute(ctx, &api.AddRequest{
+				ProcessGuid: "process-guid-a",
+				Hostname:    "app-a.example.com",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = handler.AddRoute(ctx, &api.AddRequest{
+				ProcessGuid: "process-guid-b",
+				Hostname:    "app-a.example.com",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.RoutesResponse{
+				Backends: map[string]*api.BackendSet{
+					"process-guid-a.cfapps.internal": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.10.1.5",
+								Port:    61005,
+							},
+							{
+								Address: "10.0.40.2",
+								Port:    61008,
+							},
+						},
+					},
+					"process-guid-b.cfapps.internal": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.0.50.4",
+								Port:    61009,
+							},
+							{
+								Address: "10.0.60.2",
+								Port:    61001,
+							},
+						},
+					},
+					"app-a.example.com": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.10.1.5",
+								Port:    61005,
+							},
+							{
+								Address: "10.0.40.2",
+								Port:    61008,
+							},
+							{
+								Address: "10.0.50.4",
+								Port:    61009,
+							},
+							{
+								Address: "10.0.60.2",
+								Port:    61001,
+							},
+						},
+					},
+				},
+			}))
+		})
+
+		It("adding the same route twice only returns once", func() {
+			ctx := context.Background()
+			_, err := handler.AddRoute(ctx, &api.AddRequest{
+				ProcessGuid: "process-guid-a",
+				Hostname:    "app-a.example.com",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = handler.AddRoute(ctx, &api.AddRequest{
+				ProcessGuid: "process-guid-a",
+				Hostname:    "app-a.example.com",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.RoutesResponse{
+				Backends: map[string]*api.BackendSet{
+					"process-guid-a.cfapps.internal": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.10.1.5",
+								Port:    61005,
+							},
+							{
+								Address: "10.0.40.2",
+								Port:    61008,
+							},
+						},
+					},
+					"process-guid-b.cfapps.internal": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.0.50.4",
+								Port:    61009,
+							},
+							{
+								Address: "10.0.60.2",
+								Port:    61001,
+							},
+						},
+					},
+					"app-a.example.com": &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.10.1.5",
+								Port:    61005,
+							},
+							{
+								Address: "10.0.40.2",
+								Port:    61008,
 							},
 						},
 					},

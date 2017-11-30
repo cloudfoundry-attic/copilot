@@ -23,7 +23,8 @@ type BBSClient interface {
 
 type Copilot struct {
 	BBSClient
-	Logger lager.Logger
+	Logger     lager.Logger
+	RoutesRepo map[string]*Route
 }
 
 func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
@@ -32,24 +33,25 @@ func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthRespon
 
 func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
 	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
+
 	if err != nil {
 		return nil, err
 	}
-	backends := make(map[string]*api.BackendSet)
+
+	guidBackends := make(map[string]*api.BackendSet)
 	for _, actualGroup := range actualLRPGroups {
 		instance := actualGroup.Instance
 		if instance == nil {
 			c.Logger.Debug("skipping-nil-instance")
 			continue
 		}
-		id := ProcessGUID(instance.ActualLRPKey.ProcessGuid)
-		hostname := id.Hostname()
+		processGuid := instance.ActualLRPKey.ProcessGuid
 		if instance.State != bbsmodels.ActualLRPStateRunning {
-			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": id})
+			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": processGuid})
 			continue
 		}
-		if _, ok := backends[hostname]; !ok {
-			backends[hostname] = &api.BackendSet{}
+		if _, ok := guidBackends[processGuid]; !ok {
+			guidBackends[processGuid] = &api.BackendSet{}
 		}
 		var appHostPort uint32
 		for _, port := range instance.ActualLRPNetInfo.Ports {
@@ -57,10 +59,42 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 				appHostPort = port.HostPort
 			}
 		}
-		backends[hostname].Backends = append(backends[hostname].Backends, &api.Backend{
+		guidBackends[processGuid].Backends = append(guidBackends[processGuid].Backends, &api.Backend{
 			Address: instance.ActualLRPNetInfo.Address,
 			Port:    appHostPort,
 		})
 	}
+
+	backends := make(map[string]*api.BackendSet)
+	for guid, guidbackend := range guidBackends {
+		id := ProcessGUID(guid)
+		hostname := id.Hostname()
+		backends[hostname] = guidbackend
+	}
+
+	for _, route := range c.RoutesRepo {
+		if val, ok := guidBackends[route.ProcessGuid]; ok {
+			if _, ok := backends[route.Hostname]; !ok {
+				backends[route.Hostname] = &api.BackendSet{Backends: []*api.Backend{}}
+			}
+			backends[route.Hostname].Backends = append(backends[route.Hostname].Backends, val.Backends...)
+		}
+	}
+
 	return &api.RoutesResponse{Backends: backends}, nil
+}
+
+type Route struct {
+	Hostname    string
+	ProcessGuid string
+}
+
+func (r *Route) Key() string {
+	return r.Hostname + "-" + r.ProcessGuid
+}
+
+func (c *Copilot) AddRoute(context context.Context, request *api.AddRequest) (*api.AddResponse, error) {
+	r := &Route{Hostname: request.Hostname, ProcessGuid: request.ProcessGuid}
+	c.RoutesRepo[r.Key()] = &Route{Hostname: request.Hostname, ProcessGuid: request.ProcessGuid}
+	return &api.AddResponse{Success: true}, nil
 }

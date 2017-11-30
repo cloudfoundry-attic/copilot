@@ -5,6 +5,7 @@ package api;
 service Copilot {
   rpc Health(HealthRequest) returns (HealthResponse) {}
   rpc Routes(RoutesRequest) returns (RoutesResponse) {}
+  rpc AddRoute(AddRequest) returns (AddResponse) {}
 }
 
 message HealthRequest {
@@ -21,6 +22,14 @@ message RoutesResponse {
 
   // key is hostname
   map<string, BackendSet> backends = 1;
+}
+
+message AddRequest {
+  string processGuid = 1;
+  string hostname = 2;
+}
+message AddResponse {
+  bool success = 1;
 }
 
 message BackendSet {
