@@ -27,7 +27,7 @@ import (
 var _ = Describe("Copilot", func() {
 	var (
 		session         *gexec.Session
-		client          copilot.Client
+		client          copilot.IstioClient
 		serverConfig    *config.Config
 		clientTLSConfig *tls.Config
 		configFilePath  string
@@ -104,7 +104,7 @@ var _ = Describe("Copilot", func() {
 
 		clientTLSConfig = copilotCreds.ClientTLSConfig()
 
-		client, err = copilot.NewClient(serverConfig.ListenAddress, clientTLSConfig)
+		client, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -169,7 +169,7 @@ var _ = Describe("Copilot", func() {
 		BeforeEach(func() {
 			clientTLSConfig.RootCAs = nil
 			var err error
-			client, err = copilot.NewClient(serverConfig.ListenAddress, clientTLSConfig)
+			client, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -180,7 +180,7 @@ var _ = Describe("Copilot", func() {
 	})
 })
 
-func WaitForHealthy(client copilot.Client) {
+func WaitForHealthy(client copilot.IstioClient) {
 	By("waiting for the server become healthy")
 	isHealthy := func() error {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), 100*time.Millisecond)

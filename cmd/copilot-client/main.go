@@ -54,7 +54,7 @@ func mainWithError() error {
 		Certificates: []tls.Certificate{tlsCert},
 	}
 
-	client, err := copilot.NewClient(address, tlsConfig)
+	client, err := copilot.NewIstioClient(address, tlsConfig)
 	if err != nil {
 		return fmt.Errorf("copilot client: %s", err)
 	}

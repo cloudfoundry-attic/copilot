@@ -10,17 +10,17 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-type Client interface {
-	api.CopilotClient
+type IstioClient interface {
+	api.IstioCopilotClient
 	io.Closer
 }
 
-type client struct {
-	api.CopilotClient
+type istioClient struct {
+	api.IstioCopilotClient
 	*grpc.ClientConn
 }
 
-func NewClient(serverAddress string, tlsConfig *tls.Config) (Client, error) {
+func NewIstioClient(serverAddress string, tlsConfig *tls.Config) (IstioClient, error) {
 	conn, err := grpc.Dial(serverAddress,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
 	)
@@ -28,8 +28,8 @@ func NewClient(serverAddress string, tlsConfig *tls.Config) (Client, error) {
 		return nil, fmt.Errorf("grpc dial: %s", err)
 	}
 
-	return &client{
-		CopilotClient: api.NewCopilotClient(conn),
-		ClientConn:    conn,
+	return &istioClient{
+		IstioCopilotClient: api.NewIstioCopilotClient(conn),
+		ClientConn:         conn,
 	}, nil
 }
