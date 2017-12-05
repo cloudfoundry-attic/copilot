@@ -13,23 +13,41 @@ const CF_APP_PORT = 8080
 
 type ProcessGUID string
 
-func (p ProcessGUID) Hostname() string {
-	return string(p) + ".cfapps.internal"
+type Hostname string
+
+func (p ProcessGUID) Hostname() Hostname {
+	return Hostname(string(p) + ".cfapps.internal")
 }
 
 type BBSClient interface {
 	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }
 
+type RouteMapping struct {
+	Hostname    Hostname
+	ProcessGUID ProcessGUID
+}
+
+func (r *RouteMapping) Key() string {
+	return string(r.Hostname) + "-" + string(r.ProcessGUID)
+}
+
+func (c *Copilot) AddRoute(context context.Context, request *api.AddRequest) (*api.AddResponse, error) {
+	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
+	c.RoutesRepo[r.Key()] = r
+	return &api.AddResponse{Success: true}, nil
+}
+
 type Copilot struct {
 	BBSClient
 	Logger     lager.Logger
-	RoutesRepo map[string]*Route
+	RoutesRepo map[string]*RouteMapping
 }
 
 func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
 	return &api.HealthResponse{Healthy: true}, nil
 }
+
 
 func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
 	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
@@ -38,20 +56,20 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 		return nil, err
 	}
 
-	guidBackends := make(map[string]*api.BackendSet)
+	runningBackends := make(map[ProcessGUID]*api.BackendSet)
 	for _, actualGroup := range actualLRPGroups {
 		instance := actualGroup.Instance
 		if instance == nil {
 			c.Logger.Debug("skipping-nil-instance")
 			continue
 		}
-		processGuid := instance.ActualLRPKey.ProcessGuid
+		processGUID := ProcessGUID(instance.ActualLRPKey.ProcessGuid)
 		if instance.State != bbsmodels.ActualLRPStateRunning {
-			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": processGuid})
+			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": processGUID})
 			continue
 		}
-		if _, ok := guidBackends[processGuid]; !ok {
-			guidBackends[processGuid] = &api.BackendSet{}
+		if _, ok := runningBackends[processGUID]; !ok {
+			runningBackends[processGUID] = &api.BackendSet{}
 		}
 		var appHostPort uint32
 		for _, port := range instance.ActualLRPNetInfo.Ports {
@@ -59,42 +77,29 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 				appHostPort = port.HostPort
 			}
 		}
-		guidBackends[processGuid].Backends = append(guidBackends[processGuid].Backends, &api.Backend{
+		runningBackends[processGUID].Backends = append(runningBackends[processGUID].Backends, &api.Backend{
 			Address: instance.ActualLRPNetInfo.Address,
 			Port:    appHostPort,
 		})
 	}
 
-	backends := make(map[string]*api.BackendSet)
-	for guid, guidbackend := range guidBackends {
-		id := ProcessGUID(guid)
-		hostname := id.Hostname()
-		backends[hostname] = guidbackend
+	allBackends := make(map[string]*api.BackendSet)
+	// append internal routes
+	for processGUID, backendSet := range runningBackends {
+		hostname := string(processGUID.Hostname())
+		allBackends[hostname] = backendSet
 	}
 
-	for _, route := range c.RoutesRepo {
-		if val, ok := guidBackends[route.ProcessGuid]; ok {
-			if _, ok := backends[route.Hostname]; !ok {
-				backends[route.Hostname] = &api.BackendSet{Backends: []*api.Backend{}}
+	// append external routes
+	for _, routeMapping := range c.RoutesRepo {
+		if val, ok := runningBackends[routeMapping.ProcessGUID]; ok {
+			if _, ok := allBackends[string(routeMapping.Hostname)]; !ok {
+				allBackends[string(routeMapping.Hostname)] = &api.BackendSet{Backends: []*api.Backend{}}
 			}
-			backends[route.Hostname].Backends = append(backends[route.Hostname].Backends, val.Backends...)
+			allBackends[string(routeMapping.Hostname)].Backends = append(allBackends[string(routeMapping.Hostname)].Backends, val.Backends...)
 		}
 	}
 
-	return &api.RoutesResponse{Backends: backends}, nil
+	return &api.RoutesResponse{Backends: allBackends}, nil
 }
 
-type Route struct {
-	Hostname    string
-	ProcessGuid string
-}
-
-func (r *Route) Key() string {
-	return r.Hostname + "-" + r.ProcessGuid
-}
-
-func (c *Copilot) AddRoute(context context.Context, request *api.AddRequest) (*api.AddResponse, error) {
-	r := &Route{Hostname: request.Hostname, ProcessGuid: request.ProcessGuid}
-	c.RoutesRepo[r.Key()] = &Route{Hostname: request.Hostname, ProcessGuid: request.ProcessGuid}
-	return &api.AddResponse{Success: true}, nil
-}

@@ -103,7 +103,7 @@ var _ = Describe("Handlers", func() {
 		handler = &handlers.Copilot{
 			BBSClient:  bbsClient,
 			Logger:     logger,
-			RoutesRepo: make(map[string]*handlers.Route),
+			RoutesRepo: make(map[string]*handlers.RouteMapping),
 		}
 	})
 

@@ -57,7 +57,7 @@ func mainWithError() error {
 	}
 
 	handler := &handlers.Copilot{
-		RoutesRepo: make(map[string]*handlers.Route),
+		RoutesRepo: make(map[string]*handlers.RouteMapping),
 		BBSClient: bbsClient,
 		Logger:    logger,
 	}
