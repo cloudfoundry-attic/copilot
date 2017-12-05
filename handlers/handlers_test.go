@@ -228,54 +228,48 @@ var _ = Describe("Handlers", func() {
 
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-						},
+			Expect(resp.Backends["process-guid-a.cfapps.internal"].Backends).To(ConsistOf(
+				[]*api.Backend{
+					{
+						Address: "10.10.1.5",
+						Port:    61005,
 					},
-					"process-guid-b.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.0.50.4",
-								Port:    61009,
-							},
-							{
-								Address: "10.0.60.2",
-								Port:    61001,
-							},
-						},
+					{
+						Address: "10.0.40.2",
+						Port:    61008,
 					},
-					"app-a.example.com": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-							{
-								Address: "10.0.50.4",
-								Port:    61009,
-							},
-							{
-								Address: "10.0.60.2",
-								Port:    61001,
-							},
-						},
+				}))
+			Expect(resp.Backends["process-guid-b.cfapps.internal"].Backends).To(ConsistOf(
+				[]*api.Backend{
+					{
+						Address: "10.0.50.4",
+						Port:    61009,
+					},
+					{
+						Address: "10.0.60.2",
+						Port:    61001,
 					},
 				},
-			}))
+			))
+			Expect(resp.Backends["app-a.example.com"].Backends).To(ConsistOf(
+				[]*api.Backend{
+					{
+						Address: "10.10.1.5",
+						Port:    61005,
+					},
+					{
+						Address: "10.0.40.2",
+						Port:    61008,
+					},
+					{
+						Address: "10.0.50.4",
+						Port:    61009,
+					},
+					{
+						Address: "10.0.60.2",
+						Port:    61001,
+					},
+				}))
 		})
 
 		It("adding the same route twice only returns once", func() {
