@@ -62,7 +62,10 @@ func mainWithError() error {
 		Logger:     logger,
 	}
 	grpcServer := grpcrunner.New(logger, cfg.ListenAddress,
-		func(s *grpc.Server) { api.RegisterIstioCopilotServer(s, handler) },
+		func(s *grpc.Server) {
+			api.RegisterIstioCopilotServer(s, handler)
+			api.RegisterCloudControllerCopilotServer(s, handler)
+		},
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
 	)
 

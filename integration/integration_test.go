@@ -27,7 +27,8 @@ import (
 var _ = Describe("Copilot", func() {
 	var (
 		session         *gexec.Session
-		client          copilot.IstioClient
+		istioClient     copilot.IstioClient
+		ccClient        copilot.CloudControllerClient
 		serverConfig    *config.Config
 		clientTLSConfig *tls.Config
 		configFilePath  string
@@ -104,7 +105,9 @@ var _ = Describe("Copilot", func() {
 
 		clientTLSConfig = copilotCreds.ClientTLSConfig()
 
-		client, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
+		istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
+		Expect(err).NotTo(HaveOccurred())
+		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddress, clientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -120,11 +123,35 @@ var _ = Describe("Copilot", func() {
 	})
 
 	It("serves routes, using data from the BBS", func() {
-		WaitForHealthy(client)
-		routes, err := client.Routes(context.Background(), new(api.RoutesRequest))
+		WaitForHealthy(istioClient)
+		routes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
 			"process-guid-a.cfapps.internal": &api.BackendSet{
+				Backends: []*api.Backend{
+					&api.Backend{Address: "10.10.1.5", Port: 61005},
+				},
+			},
+		}))
+	})
+
+	It("adds routes", func() {
+		WaitForHealthy(istioClient)
+		_, err := ccClient.AddRoute(context.Background(), &api.AddRequest{
+			ProcessGuid: "process-guid-a",
+			Hostname:    "example.route.com",
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		routes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
+			"process-guid-a.cfapps.internal": &api.BackendSet{
+				Backends: []*api.Backend{
+					&api.Backend{Address: "10.10.1.5", Port: 61005},
+				},
+			},
+			"example.route.com": &api.BackendSet{
 				Backends: []*api.Backend{
 					&api.Backend{Address: "10.10.1.5", Port: 61005},
 				},
@@ -154,12 +181,12 @@ var _ = Describe("Copilot", func() {
 	})
 
 	It("gracefully terminates when sent an interrupt signal", func() {
-		WaitForHealthy(client)
+		WaitForHealthy(istioClient)
 		Consistently(session, "1s").ShouldNot(gexec.Exit())
-		_, err := client.Health(context.Background(), new(api.HealthRequest))
+		_, err := istioClient.Health(context.Background(), new(api.HealthRequest))
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(client.Close()).To(Succeed())
+		Expect(istioClient.Close()).To(Succeed())
 		session.Interrupt()
 
 		Eventually(session, "2s").Should(gexec.Exit())
@@ -169,23 +196,23 @@ var _ = Describe("Copilot", func() {
 		BeforeEach(func() {
 			clientTLSConfig.RootCAs = nil
 			var err error
-			client, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
+			istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Specify("the client gets a meaningful error", func() {
-			_, err := client.Health(context.Background(), new(api.HealthRequest))
+		Specify("the istioClient gets a meaningful error", func() {
+			_, err := istioClient.Health(context.Background(), new(api.HealthRequest))
 			Expect(err).To(MatchError(ContainSubstring("authentication handshake failed")))
 		})
 	})
 })
 
-func WaitForHealthy(client copilot.IstioClient) {
+func WaitForHealthy(istioClient copilot.IstioClient) {
 	By("waiting for the server become healthy")
 	isHealthy := func() error {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancelFunc()
-		_, err := client.Health(ctx, new(api.HealthRequest))
+		_, err := istioClient.Health(ctx, new(api.HealthRequest))
 		return err
 	}
 	Eventually(isHealthy, 2*time.Second).Should(Succeed())
