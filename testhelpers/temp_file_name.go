@@ -3,15 +3,19 @@ package testhelpers
 import (
 	"io/ioutil"
 	"os"
-
-	. "github.com/onsi/gomega"
 )
 
 func TempFileName() string {
 	f, err := ioutil.TempFile("", "test-config")
-	Expect(err).NotTo(HaveOccurred())
-	Expect(f.Close()).To(Succeed())
+	assertNoError(err)
+	assertNoError(f.Close())
 	path := f.Name()
-	Expect(os.Remove(path)).To(Succeed())
+	assertNoError(os.Remove(path))
 	return path
+}
+
+func TempDir() string {
+	dir, err := ioutil.TempDir("", "test-dir")
+	assertNoError(err)
+	return dir
 }
