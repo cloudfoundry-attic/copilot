@@ -33,15 +33,20 @@ var _ = Describe("Copilot", func() {
 		clientTLSConfig *tls.Config
 		configFilePath  string
 
-		bbsServer *ghttp.Server
+		bbsServer    *ghttp.Server
+		cleanupFuncs []func()
 	)
 
 	BeforeEach(func() {
 		copilotCreds := testhelpers.GenerateMTLS()
+		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
+
 		listenAddr := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 
 		bbsCreds := testhelpers.GenerateMTLS()
+		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
+
 		bbsTLSFiles := bbsCreds.CreateClientTLSFiles()
 
 		// boot a fake BBS
@@ -80,6 +85,7 @@ var _ = Describe("Copilot", func() {
 			_, _ = w.Write(data)
 		})
 		bbsServer.Start()
+		cleanupFuncs = append(cleanupFuncs, bbsServer.Close)
 
 		serverConfig = &config.Config{
 			ListenAddress:  listenAddr,
@@ -95,6 +101,8 @@ var _ = Describe("Copilot", func() {
 		}
 
 		configFilePath = testhelpers.TempFileName()
+		cleanupFuncs = append(cleanupFuncs, func() { os.Remove(configFilePath) })
+
 		Expect(serverConfig.Save(configFilePath)).To(Succeed())
 
 		cmd := exec.Command(binaryPath, "-config", configFilePath)
@@ -115,11 +123,9 @@ var _ = Describe("Copilot", func() {
 		session.Interrupt()
 		Eventually(session, "2s").Should(gexec.Exit())
 
-		bbsServer.Close()
-		_ = os.Remove(configFilePath)
-		_ = os.Remove(serverConfig.ClientCAPath)
-		_ = os.Remove(serverConfig.ServerCertPath)
-		_ = os.Remove(serverConfig.ServerKeyPath)
+		for i := len(cleanupFuncs) - 1; i >= 0; i-- {
+			cleanupFuncs[i]()
+		}
 	})
 
 	It("serves routes, using data from the BBS", func() {
