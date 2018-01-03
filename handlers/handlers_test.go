@@ -153,11 +153,12 @@ var _ = Describe("Handlers", func() {
 	})
 
 	Describe("AddRoute", func() {
-		It("returns success true", func() {
+		It("validates the inputs", func() {
 			ctx := context.Background()
-			resp, err := handler.AddRoute(ctx, new(api.AddRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.AddResponse{Success: true}))
+			_, err := handler.AddRoute(ctx, &api.AddRequest{Hostname: "some-host"})
+			Expect(err.Error()).To(ContainSubstring("required"))
+			_, err = handler.AddRoute(ctx, &api.AddRequest{ProcessGuid: "some-guid"})
+			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
 		It("adds the route", func() {

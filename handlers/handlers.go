@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/lager"
+	"fmt"
 )
 
 const CF_APP_PORT = 8080
@@ -32,9 +34,21 @@ func (r *RouteMapping) Key() string {
 	return string(r.Hostname) + "-" + string(r.ProcessGUID)
 }
 
+func (r *RouteMapping) validate() error {
+	if r.Hostname == "" || r.ProcessGUID == "" {
+		return errors.New("Hostname and ProcessGUID are required")
+	}
+	return nil
+}
+
 func (c *Copilot) AddRoute(context context.Context, request *api.AddRequest) (*api.AddResponse, error) {
 	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
+	err := r.validate()
+	if err != nil {
+		return nil, fmt.Errorf("Route Mapping %#v is invalid:\n %v", r, err)
+	}
 	c.RoutesRepo[r.Key()] = r
+
 	return &api.AddResponse{Success: true}, nil
 }
 
@@ -47,7 +61,6 @@ type Copilot struct {
 func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
 	return &api.HealthResponse{Healthy: true}, nil
 }
-
 
 func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
 	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
@@ -102,4 +115,3 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 
 	return &api.RoutesResponse{Backends: allBackends}, nil
 }
-
