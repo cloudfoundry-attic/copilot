@@ -12,7 +12,6 @@ message AddRouteRequest {
   string hostname = 2;
 }
 message AddRouteResponse {
-  bool success = 1;
 }
 
 message DeleteRouteRequest {
