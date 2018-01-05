@@ -41,7 +41,7 @@ func (r *RouteMapping) validate() error {
 	return nil
 }
 
-func (c *Copilot) AddRoute(context context.Context, request *api.AddRequest) (*api.AddResponse, error) {
+func (c *Copilot) AddRoute(context context.Context, request *api.AddRouteRequest) (*api.AddRouteResponse, error) {
 	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
 	err := r.validate()
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *Copilot) AddRoute(context context.Context, request *api.AddRequest) (*a
 	}
 	c.RoutesRepo[r.Key()] = r
 
-	return &api.AddResponse{Success: true}, nil
+	return &api.AddRouteResponse{}, nil
 }
 
 type Copilot struct {
@@ -114,4 +114,16 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 	}
 
 	return &api.RoutesResponse{Backends: allBackends}, nil
+}
+
+func (c *Copilot) DeleteRoute(context context.Context, request *api.DeleteRouteRequest) (*api.DeleteRouteResponse, error){
+	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
+	err := r.validate()
+	if err != nil {
+		return nil, fmt.Errorf("Route Mapping %#v is invalid:\n %v", r, err)
+	}
+
+	delete(c.RoutesRepo, r.Key())
+
+	return &api.DeleteRouteResponse{}, nil
 }

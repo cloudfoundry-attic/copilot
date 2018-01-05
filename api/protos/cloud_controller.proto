@@ -3,13 +3,22 @@ syntax = "proto3";
 package api;
 
 service CloudControllerCopilot {
-  rpc AddRoute(AddRequest) returns (AddResponse) {}
+  rpc AddRoute (AddRouteRequest) returns (AddRouteResponse) {}
+  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
 }
 
-message AddRequest {
+message AddRouteRequest {
   string processGuid = 1;
   string hostname = 2;
 }
-message AddResponse {
+message AddRouteResponse {
   bool success = 1;
+}
+
+message DeleteRouteRequest {
+  string processGuid = 1;
+  string hostname = 2;
+}
+
+message DeleteRouteResponse {
 }

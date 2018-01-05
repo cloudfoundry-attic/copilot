@@ -143,7 +143,7 @@ var _ = Describe("Copilot", func() {
 
 	It("adds routes", func() {
 		WaitForHealthy(istioClient)
-		_, err := ccClient.AddRoute(context.Background(), &api.AddRequest{
+		_, err := ccClient.AddRoute(context.Background(), &api.AddRouteRequest{
 			ProcessGuid: "process-guid-a",
 			Hostname:    "example.route.com",
 		})
@@ -163,6 +163,12 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		}))
+	})
+
+	It("can delete routes", func() {
+		WaitForHealthy(istioClient)
+		_, err := ccClient.DeleteRoute(context.Background(), &api.DeleteRouteRequest{Hostname: "foo.example.com", ProcessGuid: "some-guid"})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("when the BBS is not available", func() {

@@ -9,8 +9,10 @@ It is generated from these files:
 	istio.proto
 
 It has these top-level messages:
-	AddRequest
-	AddResponse
+	AddRouteRequest
+	AddRouteResponse
+	DeleteRouteRequest
+	DeleteRouteResponse
 	HealthRequest
 	HealthResponse
 	RoutesRequest
@@ -40,49 +42,83 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type AddRequest struct {
+type AddRouteRequest struct {
 	ProcessGuid string `protobuf:"bytes,1,opt,name=processGuid" json:"processGuid,omitempty"`
 	Hostname    string `protobuf:"bytes,2,opt,name=hostname" json:"hostname,omitempty"`
 }
 
-func (m *AddRequest) Reset()                    { *m = AddRequest{} }
-func (m *AddRequest) String() string            { return proto.CompactTextString(m) }
-func (*AddRequest) ProtoMessage()               {}
-func (*AddRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *AddRouteRequest) Reset()                    { *m = AddRouteRequest{} }
+func (m *AddRouteRequest) String() string            { return proto.CompactTextString(m) }
+func (*AddRouteRequest) ProtoMessage()               {}
+func (*AddRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *AddRequest) GetProcessGuid() string {
+func (m *AddRouteRequest) GetProcessGuid() string {
 	if m != nil {
 		return m.ProcessGuid
 	}
 	return ""
 }
 
-func (m *AddRequest) GetHostname() string {
+func (m *AddRouteRequest) GetHostname() string {
 	if m != nil {
 		return m.Hostname
 	}
 	return ""
 }
 
-type AddResponse struct {
+type AddRouteResponse struct {
 	Success bool `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
 }
 
-func (m *AddResponse) Reset()                    { *m = AddResponse{} }
-func (m *AddResponse) String() string            { return proto.CompactTextString(m) }
-func (*AddResponse) ProtoMessage()               {}
-func (*AddResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *AddRouteResponse) Reset()                    { *m = AddRouteResponse{} }
+func (m *AddRouteResponse) String() string            { return proto.CompactTextString(m) }
+func (*AddRouteResponse) ProtoMessage()               {}
+func (*AddRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-func (m *AddResponse) GetSuccess() bool {
+func (m *AddRouteResponse) GetSuccess() bool {
 	if m != nil {
 		return m.Success
 	}
 	return false
 }
 
+type DeleteRouteRequest struct {
+	ProcessGuid string `protobuf:"bytes,1,opt,name=processGuid" json:"processGuid,omitempty"`
+	Hostname    string `protobuf:"bytes,2,opt,name=hostname" json:"hostname,omitempty"`
+}
+
+func (m *DeleteRouteRequest) Reset()                    { *m = DeleteRouteRequest{} }
+func (m *DeleteRouteRequest) String() string            { return proto.CompactTextString(m) }
+func (*DeleteRouteRequest) ProtoMessage()               {}
+func (*DeleteRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *DeleteRouteRequest) GetProcessGuid() string {
+	if m != nil {
+		return m.ProcessGuid
+	}
+	return ""
+}
+
+func (m *DeleteRouteRequest) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+type DeleteRouteResponse struct {
+}
+
+func (m *DeleteRouteResponse) Reset()                    { *m = DeleteRouteResponse{} }
+func (m *DeleteRouteResponse) String() string            { return proto.CompactTextString(m) }
+func (*DeleteRouteResponse) ProtoMessage()               {}
+func (*DeleteRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
 func init() {
-	proto.RegisterType((*AddRequest)(nil), "api.AddRequest")
-	proto.RegisterType((*AddResponse)(nil), "api.AddResponse")
+	proto.RegisterType((*AddRouteRequest)(nil), "api.AddRouteRequest")
+	proto.RegisterType((*AddRouteResponse)(nil), "api.AddRouteResponse")
+	proto.RegisterType((*DeleteRouteRequest)(nil), "api.DeleteRouteRequest")
+	proto.RegisterType((*DeleteRouteResponse)(nil), "api.DeleteRouteResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -96,7 +132,8 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for CloudControllerCopilot service
 
 type CloudControllerCopilotClient interface {
-	AddRoute(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*AddResponse, error)
+	AddRoute(ctx context.Context, in *AddRouteRequest, opts ...grpc.CallOption) (*AddRouteResponse, error)
+	DeleteRoute(ctx context.Context, in *DeleteRouteRequest, opts ...grpc.CallOption) (*DeleteRouteResponse, error)
 }
 
 type cloudControllerCopilotClient struct {
@@ -107,9 +144,18 @@ func NewCloudControllerCopilotClient(cc *grpc.ClientConn) CloudControllerCopilot
 	return &cloudControllerCopilotClient{cc}
 }
 
-func (c *cloudControllerCopilotClient) AddRoute(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*AddResponse, error) {
-	out := new(AddResponse)
+func (c *cloudControllerCopilotClient) AddRoute(ctx context.Context, in *AddRouteRequest, opts ...grpc.CallOption) (*AddRouteResponse, error) {
+	out := new(AddRouteResponse)
 	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/AddRoute", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cloudControllerCopilotClient) DeleteRoute(ctx context.Context, in *DeleteRouteRequest, opts ...grpc.CallOption) (*DeleteRouteResponse, error) {
+	out := new(DeleteRouteResponse)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteRoute", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +165,8 @@ func (c *cloudControllerCopilotClient) AddRoute(ctx context.Context, in *AddRequ
 // Server API for CloudControllerCopilot service
 
 type CloudControllerCopilotServer interface {
-	AddRoute(context.Context, *AddRequest) (*AddResponse, error)
+	AddRoute(context.Context, *AddRouteRequest) (*AddRouteResponse, error)
+	DeleteRoute(context.Context, *DeleteRouteRequest) (*DeleteRouteResponse, error)
 }
 
 func RegisterCloudControllerCopilotServer(s *grpc.Server, srv CloudControllerCopilotServer) {
@@ -127,7 +174,7 @@ func RegisterCloudControllerCopilotServer(s *grpc.Server, srv CloudControllerCop
 }
 
 func _CloudControllerCopilot_AddRoute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddRequest)
+	in := new(AddRouteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -139,7 +186,25 @@ func _CloudControllerCopilot_AddRoute_Handler(srv interface{}, ctx context.Conte
 		FullMethod: "/api.CloudControllerCopilot/AddRoute",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CloudControllerCopilotServer).AddRoute(ctx, req.(*AddRequest))
+		return srv.(CloudControllerCopilotServer).AddRoute(ctx, req.(*AddRouteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CloudControllerCopilot_DeleteRoute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRouteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudControllerCopilotServer).DeleteRoute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.CloudControllerCopilot/DeleteRoute",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudControllerCopilotServer).DeleteRoute(ctx, req.(*DeleteRouteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -152,6 +217,10 @@ var _CloudControllerCopilot_serviceDesc = grpc.ServiceDesc{
 			MethodName: "AddRoute",
 			Handler:    _CloudControllerCopilot_AddRoute_Handler,
 		},
+		{
+			MethodName: "DeleteRoute",
+			Handler:    _CloudControllerCopilot_DeleteRoute_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "cloud_controller.proto",
@@ -160,17 +229,20 @@ var _CloudControllerCopilot_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("cloud_controller.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 184 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x8f, 0xc1, 0x8a, 0xc2, 0x30,
-	0x10, 0x86, 0xb7, 0xbb, 0xb0, 0xd6, 0xe9, 0x41, 0xc9, 0xa1, 0x94, 0x9e, 0x4a, 0x2f, 0x7a, 0xaa,
-	0xa0, 0x4f, 0x20, 0x3d, 0x88, 0x1e, 0xfb, 0x02, 0x52, 0x93, 0x01, 0x03, 0xb1, 0x13, 0x33, 0xc9,
-	0xfb, 0x4b, 0x23, 0xb6, 0x1e, 0xff, 0x7f, 0x98, 0x6f, 0xbe, 0x81, 0x5c, 0x1a, 0x0a, 0xea, 0x2a,
-	0x69, 0xf0, 0x8e, 0x8c, 0x41, 0xd7, 0x58, 0x47, 0x9e, 0xc4, 0x5f, 0x6f, 0x75, 0x7d, 0x01, 0x38,
-	0x2a, 0xd5, 0xe1, 0x33, 0x20, 0x7b, 0x51, 0x41, 0x66, 0x1d, 0x49, 0x64, 0x3e, 0x05, 0xad, 0x8a,
-	0xa4, 0x4a, 0xb6, 0xcb, 0xee, 0xbb, 0x12, 0x25, 0xa4, 0x77, 0x62, 0x3f, 0xf4, 0x0f, 0x2c, 0x7e,
-	0xe3, 0x78, 0xca, 0xf5, 0x06, 0xb2, 0xc8, 0x62, 0x4b, 0x03, 0xa3, 0x28, 0x60, 0xc1, 0x41, 0x8e,
-	0x9b, 0x11, 0x94, 0x76, 0x9f, 0xb8, 0x3f, 0x43, 0xde, 0x8e, 0x4e, 0xed, 0xa4, 0xd4, 0x92, 0xd5,
-	0x86, 0xbc, 0xd8, 0x41, 0x3a, 0x22, 0x28, 0x78, 0x14, 0xab, 0xa6, 0xb7, 0xba, 0x99, 0xed, 0xca,
-	0xf5, 0x5c, 0xbc, 0x4f, 0xd4, 0x3f, 0xb7, 0xff, 0xf8, 0xcb, 0xe1, 0x15, 0x00, 0x00, 0xff, 0xff,
-	0x10, 0x3d, 0x37, 0x22, 0xe5, 0x00, 0x00, 0x00,
+	// 226 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x91, 0x3f, 0x4f, 0xc3, 0x30,
+	0x10, 0xc5, 0x09, 0x48, 0x10, 0xae, 0x03, 0xe8, 0xa0, 0xc5, 0xca, 0x54, 0x79, 0x62, 0x40, 0x19,
+	0x60, 0x62, 0x84, 0x20, 0x31, 0x22, 0xf9, 0x0b, 0xa0, 0x60, 0x9f, 0x84, 0x25, 0x93, 0x33, 0xfe,
+	0xf3, 0x59, 0xf8, 0xba, 0xa8, 0xae, 0x52, 0x4a, 0xb2, 0x76, 0xbc, 0xf7, 0xec, 0x9f, 0x9f, 0xdf,
+	0xc1, 0x4a, 0x3b, 0xce, 0xe6, 0x5d, 0xf3, 0x90, 0x02, 0x3b, 0x47, 0xa1, 0xf5, 0x81, 0x13, 0xe3,
+	0x49, 0xef, 0xad, 0x7c, 0x83, 0x8b, 0x27, 0x63, 0x14, 0xe7, 0x44, 0x8a, 0xbe, 0x33, 0xc5, 0x84,
+	0x6b, 0x58, 0xf8, 0xc0, 0x9a, 0x62, 0x7c, 0xcd, 0xd6, 0x88, 0x6a, 0x5d, 0xdd, 0x9e, 0xab, 0x7d,
+	0x09, 0x1b, 0xa8, 0x3f, 0x39, 0xa6, 0xa1, 0xff, 0x22, 0x71, 0x5c, 0xec, 0xdd, 0x2c, 0xef, 0xe0,
+	0xf2, 0x0f, 0x18, 0x3d, 0x0f, 0x91, 0x50, 0xc0, 0x59, 0xcc, 0x7a, 0x73, 0xbd, 0xd0, 0x6a, 0x35,
+	0x8e, 0x52, 0x01, 0xbe, 0x90, 0xa3, 0x44, 0x07, 0x4c, 0xb0, 0x84, 0xab, 0x7f, 0xcc, 0x6d, 0x88,
+	0xfb, 0x9f, 0x0a, 0x56, 0xdd, 0xa6, 0x89, 0x6e, 0x57, 0x44, 0xc7, 0xde, 0x3a, 0x4e, 0xf8, 0x08,
+	0xf5, 0x98, 0x19, 0xaf, 0xdb, 0xde, 0xdb, 0x76, 0xd2, 0x49, 0xb3, 0x9c, 0xa8, 0x5b, 0xa6, 0x3c,
+	0xc2, 0x67, 0x58, 0xec, 0x3d, 0x86, 0x37, 0xe5, 0xdc, 0xfc, 0x4b, 0x8d, 0x98, 0x1b, 0x23, 0xe3,
+	0xe3, 0xb4, 0xec, 0xe3, 0xe1, 0x37, 0x00, 0x00, 0xff, 0xff, 0xd8, 0x41, 0xfe, 0xf9, 0xa9, 0x01,
+	0x00, 0x00,
 }

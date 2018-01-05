@@ -155,15 +155,15 @@ var _ = Describe("Handlers", func() {
 	Describe("AddRoute", func() {
 		It("validates the inputs", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRequest{Hostname: "some-host"})
+			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{Hostname: "some-host"})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.AddRoute(ctx, &api.AddRequest{ProcessGuid: "some-guid"})
+			_, err = handler.AddRoute(ctx, &api.AddRouteRequest{ProcessGuid: "some-guid"})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
 		It("adds the route", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRequest{
+			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{
 				ProcessGuid: "process-guid-a",
 				Hostname:    "app-a.example.com",
 			})
@@ -215,13 +215,13 @@ var _ = Describe("Handlers", func() {
 
 		It("adds routes with overlapping hostnames", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRequest{
+			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{
 				ProcessGuid: "process-guid-a",
 				Hostname:    "app-a.example.com",
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = handler.AddRoute(ctx, &api.AddRequest{
+			_, err = handler.AddRoute(ctx, &api.AddRouteRequest{
 				ProcessGuid: "process-guid-b",
 				Hostname:    "app-a.example.com",
 			})
@@ -275,13 +275,13 @@ var _ = Describe("Handlers", func() {
 
 		It("adding the same route twice only returns once", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRequest{
+			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{
 				ProcessGuid: "process-guid-a",
 				Hostname:    "app-a.example.com",
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = handler.AddRoute(ctx, &api.AddRequest{
+			_, err = handler.AddRoute(ctx, &api.AddRouteRequest{
 				ProcessGuid: "process-guid-a",
 				Hostname:    "app-a.example.com",
 			})
@@ -329,6 +329,32 @@ var _ = Describe("Handlers", func() {
 					},
 				},
 			}))
+		})
+	})
+
+	Describe("DeleteRoute", func() {
+		It("validates the inputs", func() {
+			ctx := context.Background()
+			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Hostname: "some-host"})
+			Expect(err.Error()).To(ContainSubstring("required"))
+			_, err = handler.DeleteRoute(ctx, &api.DeleteRouteRequest{ProcessGuid: "some-guid"})
+			Expect(err.Error()).To(ContainSubstring("required"))
+		})
+
+		It("deletes the routes", func() {
+			ctx := context.Background()
+			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{Hostname: "to-be-deleted-host", ProcessGuid: "process-guid-a"})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Hostname: "to-be-deleted-host", ProcessGuid: "process-guid-a"})
+			Expect(err).NotTo(HaveOccurred())
+			resp, err := handler.Routes(ctx, nil)
+			Expect(resp.Backends["to-be-deleted-host"]).To(BeNil())
+		})
+
+		It("does not error when the route does not exist", func() {
+			ctx := context.Background()
+			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Hostname: "does-not-exist", ProcessGuid: "process-guid-does-not-exist"})
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })

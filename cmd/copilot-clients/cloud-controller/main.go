@@ -32,8 +32,8 @@ func mainWithError() error {
 	}
 
 	positionalArgs := flag.Args()
-	if len(positionalArgs) < 1 || (positionalArgs[0] != "health" && positionalArgs[0] != "add-route") {
-		return errors.New(`must provide one of the following subcommands: [health, add-route]`)
+	if len(positionalArgs) < 1 || (positionalArgs[0] != "add-route" && positionalArgs[0] != "delete-route") {
+		return errors.New(`must provide one of the following subcommands: [add-route, delete-route]`)
 	}
 
 	caCertBytes, err := ioutil.ReadFile(caCert)
@@ -63,12 +63,20 @@ func mainWithError() error {
 
 	switch positionalArgs[0] {
 	case "add-route":
-		_, err := client.AddRoute(context.Background(), &api.AddRequest{
+		_, err := client.AddRoute(context.Background(), &api.AddRouteRequest{
 			ProcessGuid: processGUID,
 			Hostname:    hostname,
 		})
 		if err != nil {
 			return fmt.Errorf("copilot add-route request: %s", err)
+		}
+	case "delete-route":
+		_, err := client.DeleteRoute(context.Background(), &api.DeleteRouteRequest{
+			ProcessGuid: processGUID,
+			Hostname: hostname,
+		})
+		if err != nil {
+			return fmt.Errorf("copilot delete-route request: %s", err)
 		}
 	}
 
