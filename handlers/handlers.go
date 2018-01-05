@@ -8,7 +8,8 @@ import (
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/lager"
-	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const CF_APP_PORT = 8080
@@ -45,8 +46,9 @@ func (c *Copilot) AddRoute(context context.Context, request *api.AddRouteRequest
 	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
 	err := r.validate()
 	if err != nil {
-		return nil, fmt.Errorf("Route Mapping %#v is invalid:\n %v", r, err)
+		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", r, err)
 	}
+
 	c.RoutesRepo[r.Key()] = r
 
 	return &api.AddRouteResponse{}, nil
@@ -120,7 +122,7 @@ func (c *Copilot) DeleteRoute(context context.Context, request *api.DeleteRouteR
 	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
 	err := r.validate()
 	if err != nil {
-		return nil, fmt.Errorf("Route Mapping %#v is invalid:\n %v", r, err)
+		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", r, err)
 	}
 
 	delete(c.RoutesRepo, r.Key())
