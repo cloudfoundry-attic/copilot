@@ -11,6 +11,7 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
 
 	"code.cloudfoundry.org/bbs"
 	"code.cloudfoundry.org/copilot/api"
@@ -65,6 +66,7 @@ func mainWithError() error {
 		func(s *grpc.Server) {
 			api.RegisterIstioCopilotServer(s, handler)
 			api.RegisterCloudControllerCopilotServer(s, handler)
+			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
 	)
