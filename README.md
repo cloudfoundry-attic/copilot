@@ -24,17 +24,81 @@ To compile the server:
 go build code.cloudfoundry.org/copilot/cmd/copilot-server
 ```
 
-## CLIs
+## Adding a Route
 
-The server uses gRPC to communicate, so a cli is required for a developer to communicate with the server.
-There are two clis, one for communicating with endpoints used by cloud controller, and another one for endpoints used by istio.
+We are using a generic grpc client to interact with cloud controller grpc service (installation instructions below)
 
-To compile the clis:
+### Setup Generic GRPC Client
+- bosh ssh to the istio vm and `sudo su`
+- install latest nodejs and npm:
 
 ```sh
-go build code.cloudfoundry.org/copilot/cmd/copilot-clients/cloud-controller
-go build code.cloudfoundry.org/copilot/cmd/copilot-clients/istio
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+apt install nodejs
+npm install -g grpcc
 ```
+
+### Grab Latest Proto
+
+```sh
+cd /var/vcap/jobs/pilot-discovery/config/certs
+curl -s -L -o cloud_controller.proto https://raw.githubusercontent.com/cloudfoundry/copilot/master/api/protos/cloud_controller.proto
+```
+
+### Push an App
+
+```sh
+cf push ...
+```
+
+### Find Diego Process GUID
+The process guid is under the `service-key` as the prefix *before* `.cfapps.internal`.
+
+```sh
+curl localhost:8080/v1/registration
+```
+
+### Add a Route
+Do not try to use absolute paths for the certs / key - they do not work
+
+```sh
+grpcc --root_cert ./ca.crt \
+--private_key ./client.key \
+--cert_chain ./client.crt \
+--proto ./cloud_controller.proto \
+--address 127.0.0.1:9000 --eval 'client.addRoute({hostname: "some.hostname.you.choose", processGuid: "the-process-guid"}, pr)'
+```
+
+### View pilot API results
+```sh
+curl localhost:8080/v1/routes/http_proxy/x/router~x~x~x
+```
+
+and
+
+```sh
+curl localhost:8080/v1/clusters/x/router~x~x~x
+```
+
+and
+
+```sh
+curl localhost:8080/v1/registration
+```
+
+or
+
+```sh
+curl localhost:8080/v1/registration/some.hostname.you.choose
+```
+
+you can scale your app up
+
+```sh
+cf scale -i 3 your-app
+```
+
+and then re-run the above `curl` commands.
 
 ## Debugging
 
@@ -51,4 +115,15 @@ Now you are ready to start your own pilot:
 - install dlv on your machine `go get -u github.com/derekparker/delve/cmd/dlv`
 - from istio: `dlv debug ./pilot/cmd/pilot-discovery/main.go -- discovery --configDir=/dev/null --registries=CloudFoundry --cfConfig=/users/pivotal/downloads/config/cf_config.yml --meshConfig=/dev/null`
 
+## CLIs
+
+The server uses gRPC to communicate, so a cli is required for a developer to communicate with the server.
+There are two clis, one for communicating with endpoints used by cloud controller, and another one for endpoints used by istio.
+
+To compile the clis:
+
+```sh
+go build code.cloudfoundry.org/copilot/cmd/copilot-clients/cloud-controller
+go build code.cloudfoundry.org/copilot/cmd/copilot-clients/istio
+```
 
