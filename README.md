@@ -42,7 +42,9 @@ npm install -g grpcc
 
 ```sh
 cd /var/vcap/jobs/pilot-discovery/config/certs
-curl -s -L -o cloud_controller.proto https://raw.githubusercontent.com/cloudfoundry/copilot/master/api/protos/cloud_controller.proto
+curl -s -L \
+  -o cloud_controller.proto \
+  https://raw.githubusercontent.com/cloudfoundry/copilot/master/api/protos/cloud_controller.proto
 ```
 
 ### Push an App
@@ -63,10 +65,22 @@ Do not try to use absolute paths for the certs / key - they do not work
 
 ```sh
 grpcc --root_cert ./ca.crt \
---private_key ./client.key \
---cert_chain ./client.crt \
---proto ./cloud_controller.proto \
---address 127.0.0.1:9000 --eval 'client.addRoute({hostname: "some.hostname.you.choose", processGuid: "the-process-guid"}, pr)'
+  --private_key ./client.key \
+  --cert_chain ./client.crt \
+  --proto ./cloud_controller.proto \
+  --address 127.0.0.1:9000 \
+  --eval 'client.addRoute({hostname: "some.hostname.you.choose", processGuid: "the-process-guid"}, pr)'
+```
+
+### Remove a Route
+
+```sh
+grpcc --root_cert ./ca.crt \
+  --private_key ./client.key \
+  --cert_chain ./client.crt \
+  --proto ./cloud_controller.proto \
+  --address 127.0.0.1:9000 \
+  --eval 'client.deleteRoute({hostname: "some.hostname.you.choose", processGuid: "the-process-guid"}, pr)'
 ```
 
 ### View pilot API results
