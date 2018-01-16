@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package api;
+
+message MapRouteRequest {
+  message Process {
+    string guid = 1;
+    string app_guid = 2;
+    string isolation_segment = 3;
+  }
+
+  Process process = 1;
+  string route_guid = 2;
+}
+
+message MapRouteResponse {}
+
+message UnmapRouteRequest {
+  string process_guid = 1;
+  string route_guid = 2;
+}
+
+message UnmapRouteResponse {}
+
+message CreateRouteRequest {
+  string guid = 1;
+  string host = 2;
+  string path = 3;
+  bool is_internal 4;
+}
+
+message CreateRouteResponse {}
+
+message DeleteRouteRequest {
+  string guid = 1;
+}
+
+message DeleteRouteResponse {}
+
+message UpdateRouteRequest {
+  string guid = 1;
+  string host = 2;
+  string path = 3;
+  bool is_internal = 4;
+  string route_service_url = 5;
+}
+
+message UpdateRouteResponse {}
+
+message BulkSyncRequest {
+  repeated UpdateRouteRequest routes = 1;
+  repeated MapRouteRequest route_mappings = 2;
+}
+
+message BulkSyncResponse {}
+
+service CloudControllerCopilotFuture {
+  rpc CreateRoute (CreateRouteRequest) returns (CreateRouteResponse) {}
+  rpc UpdateRoute (UpdateRouteRequest) returns (UpdateRouteResponse) {}
+  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
+
+  rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
+  rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
+
+  rpc BulkSync (BulkSyncRequest) returns (BulkSyncResponse) {}
+}
+
