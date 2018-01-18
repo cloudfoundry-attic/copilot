@@ -46,7 +46,7 @@ module Cloudfoundry
 
       def unmap_route(process_guid:, route_guid:)
         request = Protos::UnmapRouteRequest.new(process_guid: process_guid, route_guid: route_guid)
-        service.map_route(request)
+        service.unmap_route(request)
 
       rescue GRPC::BadStatus => e
         raise puts "error code: '#{e.code}' occurred due to '#{e.details}' with metadata '#{e.metadata}'"
