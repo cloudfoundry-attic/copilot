@@ -1,3 +1,13 @@
+### How to build and run a Docker image containing the necessary dependencies
+
+Starting from the repo root:
+```
+export COPILOT_ROOT=$(pwd)
+cd sdk/ruby
+docker build -t protobuf-ruby-dependencies .
+docker run -v $COPILOT_ROOT:/tmp/copilot -it protobuf-ruby-dependencies /bin/bash
+```
+
 ### How to generate services and messages from the `.proto` file
 
 Starting from the repo root:
