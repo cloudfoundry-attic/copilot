@@ -58,9 +58,12 @@ func mainWithError() error {
 	}
 
 	handler := &handlers.Copilot{
-		RoutesRepo: make(map[string]*handlers.RouteMapping),
-		BBSClient:  bbsClient,
-		Logger:     logger,
+		// RoutesRepo:        handlers.RoutesRepo(make(map[handlers.RouteGUID]*handlers.Route)),
+		RoutesRepo: handlers.RoutesRepo{},
+		// RouteMappingsRepo: handlers.RouteMappingsRepo(make(map[string]*handlers.RouteMapping)),
+		RouteMappingsRepo: handlers.RouteMappingsRepo{},
+		BBSClient:         bbsClient,
+		Logger:            logger,
 	}
 	grpcServer := grpcrunner.New(logger, cfg.ListenAddress,
 		func(s *grpc.Server) {

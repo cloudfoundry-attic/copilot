@@ -14,9 +14,14 @@ import (
 
 const CF_APP_PORT = 8080
 
+type Process struct {
+	GUID ProcessGUID
+}
 type ProcessGUID string
-
 type Hostname string
+type RouteGUID string
+type RoutesRepo map[RouteGUID]*Route
+type RouteMappingsRepo map[string]*RouteMapping
 
 func (p ProcessGUID) Hostname() Hostname {
 	return Hostname(string(p) + ".cfapps.internal")
@@ -26,38 +31,59 @@ type BBSClient interface {
 	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }
 
+type Route struct {
+	GUID     RouteGUID
+	Hostname Hostname
+}
+
 type RouteMapping struct {
-	Hostname    Hostname
-	ProcessGUID ProcessGUID
+	RouteGUID RouteGUID
+	Process   *Process
 }
 
 func (r *RouteMapping) Key() string {
-	return string(r.Hostname) + "-" + string(r.ProcessGUID)
+	return string(r.RouteGUID) + "-" + string(r.Process.GUID)
 }
 
-func (r *RouteMapping) validate() error {
-	if r.Hostname == "" || r.ProcessGUID == "" {
-		return errors.New("Hostname and ProcessGUID are required")
+func validateMapRouteRequest(r *api.MapRouteRequest) error {
+	if r.Process == nil {
+		return errors.New("Process is required")
+	}
+	if r.RouteGuid == "" || r.Process.Guid == "" {
+		return errors.New("RouteGUID and ProcessGUID are required")
 	}
 	return nil
 }
 
-func (c *Copilot) AddRoute(context context.Context, request *api.AddRouteRequest) (*api.AddRouteResponse, error) {
-	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
-	err := r.validate()
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", r, err)
+func validateUnmapRouteRequest(r *api.UnmapRouteRequest) error {
+	if r.RouteGuid == "" || r.ProcessGuid == "" {
+		return errors.New("RouteGuid and ProcessGuid are required")
 	}
-
-	c.RoutesRepo[r.Key()] = r
-
-	return &api.AddRouteResponse{}, nil
+	return nil
 }
 
 type Copilot struct {
 	BBSClient
-	Logger     lager.Logger
-	RoutesRepo map[string]*RouteMapping
+	Logger            lager.Logger
+	RoutesRepo        RoutesRepo
+	RouteMappingsRepo RouteMappingsRepo
+}
+
+func (c *Copilot) MapRoute(context context.Context, request *api.MapRouteRequest) (*api.MapRouteResponse, error) {
+	err := validateMapRouteRequest(request)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
+	}
+	r := &RouteMapping{
+		RouteGUID: RouteGUID(request.RouteGuid),
+		Process: &Process{
+			GUID: ProcessGUID(request.Process.Guid),
+		},
+	}
+
+	c.RouteMappingsRepo[r.Key()] = r
+
+	return &api.MapRouteResponse{}, nil
 }
 
 func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
@@ -106,26 +132,32 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 	}
 
 	// append external routes
-	for _, routeMapping := range c.RoutesRepo {
-		if val, ok := runningBackends[routeMapping.ProcessGUID]; ok {
-			if _, ok := allBackends[string(routeMapping.Hostname)]; !ok {
-				allBackends[string(routeMapping.Hostname)] = &api.BackendSet{Backends: []*api.Backend{}}
-			}
-			allBackends[string(routeMapping.Hostname)].Backends = append(allBackends[string(routeMapping.Hostname)].Backends, val.Backends...)
+	for _, routeMapping := range c.RouteMappingsRepo {
+		backends, ok := runningBackends[routeMapping.Process.GUID]
+		if !ok {
+			continue
 		}
+		route, ok := c.RoutesRepo[routeMapping.RouteGUID]
+		if !ok {
+			continue
+		}
+		if _, ok := allBackends[string(route.Hostname)]; !ok {
+			allBackends[string(route.Hostname)] = &api.BackendSet{Backends: []*api.Backend{}}
+		}
+		allBackends[string(route.Hostname)].Backends = append(allBackends[string(route.Hostname)].Backends, backends.Backends...)
 	}
 
 	return &api.RoutesResponse{Backends: allBackends}, nil
 }
 
-func (c *Copilot) DeleteRoute(context context.Context, request *api.DeleteRouteRequest) (*api.DeleteRouteResponse, error){
-	r := &RouteMapping{Hostname: Hostname(request.Hostname), ProcessGUID: ProcessGUID(request.ProcessGuid)}
-	err := r.validate()
+func (c *Copilot) UnmapRoute(context context.Context, request *api.UnmapRouteRequest) (*api.UnmapRouteResponse, error) {
+	err := validateUnmapRouteRequest(request)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", r, err)
+		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
+	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteGuid), Process: &Process{GUID: ProcessGUID(request.ProcessGuid)}}
 
-	delete(c.RoutesRepo, r.Key())
+	delete(c.RouteMappingsRepo, r.Key())
 
-	return &api.DeleteRouteResponse{}, nil
+	return &api.UnmapRouteResponse{}, nil
 }

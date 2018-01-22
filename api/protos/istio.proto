@@ -17,7 +17,6 @@ message RoutesRequest {
 }
 
 message RoutesResponse {
-
   // key is hostname
   map<string, BackendSet> backends = 1;
 }

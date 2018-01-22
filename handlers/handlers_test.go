@@ -28,6 +28,8 @@ var _ = Describe("Handlers", func() {
 		bbsClient         *mockBBSClient
 		logger            lager.Logger
 		bbsClientResponse []*bbsmodels.ActualLRPGroup
+		backendSetA       *api.BackendSet
+		backendSetB       *api.BackendSet
 	)
 
 	BeforeEach(func() {
@@ -96,14 +98,42 @@ var _ = Describe("Handlers", func() {
 			},
 		}
 
+		backendSetA = &api.BackendSet{
+			Backends: []*api.Backend{
+				{
+					Address: "10.10.1.5",
+					Port:    61005,
+				},
+				{
+					Address: "10.0.40.2",
+					Port:    61008,
+				},
+			},
+		}
+		backendSetB = &api.BackendSet{
+			Backends: []*api.Backend{
+				{
+					Address: "10.0.50.4",
+					Port:    61009,
+				},
+				{
+					Address: "10.0.60.2",
+					Port:    61001,
+				},
+			},
+		}
+
 		bbsClient = &mockBBSClient{
 			actualLRPGroupsData: bbsClientResponse,
 		}
+
 		logger = lagertest.NewTestLogger("test")
+
 		handler = &handlers.Copilot{
-			BBSClient:  bbsClient,
-			Logger:     logger,
-			RoutesRepo: make(map[string]*handlers.RouteMapping),
+			BBSClient:         bbsClient,
+			Logger:            logger,
+			RoutesRepo:        handlers.RoutesRepo(make(map[handlers.RouteGUID]*handlers.Route)),
+			RouteMappingsRepo: handlers.RouteMappingsRepo(make(map[string]*handlers.RouteMapping)),
 		}
 	})
 
@@ -117,55 +147,73 @@ var _ = Describe("Handlers", func() {
 	})
 
 	Describe("Routes", func() {
-		It("returns a route for each running backend instance", func() {
+		It("returns the routes for each running backend instance", func() {
+			handler.RoutesRepo[handlers.RouteGUID("route-guid-a")] = &handlers.Route{
+				GUID:     "route-guid-a",
+				Hostname: "route-a.cfapps.com",
+			}
+			routeMapping := &handlers.RouteMapping{
+				RouteGUID: "route-guid-a",
+				Process: &handlers.Process{
+					GUID: "process-guid-a",
+				},
+			}
+			handler.RouteMappingsRepo[routeMapping.Key()] = routeMapping
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-						},
-					},
-					"process-guid-b.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.0.50.4",
-								Port:    61009,
-							},
-							{
-								Address: "10.0.60.2",
-								Port:    61001,
-							},
-						},
-					},
+					"process-guid-a.cfapps.internal": backendSetA,
+					"process-guid-b.cfapps.internal": backendSetB,
+					"route-a.cfapps.com":             backendSetA,
+				},
+			}))
+		})
+
+		It("ignores route mappings for routes that do not exist", func() {
+			routeMapping := &handlers.RouteMapping{
+				RouteGUID: "route-guid-a",
+				Process: &handlers.Process{
+					GUID: "process-guid-a",
+				},
+			}
+			handler.RouteMappingsRepo[routeMapping.Key()] = routeMapping
+			ctx := context.Background()
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.RoutesResponse{
+				Backends: map[string]*api.BackendSet{
+					"process-guid-a.cfapps.internal": backendSetA,
+					"process-guid-b.cfapps.internal": backendSetB,
 				},
 			}))
 		})
 	})
 
-	Describe("AddRoute", func() {
+	Describe("MapRoute", func() {
+		BeforeEach(func() {
+			handler.RoutesRepo[handlers.RouteGUID("route-guid-a")] = &handlers.Route{
+				GUID:     "route-guid-a",
+				Hostname: "route-a.example.com",
+			}
+		})
+
 		It("validates the inputs", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{Hostname: "some-host"})
+			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{RouteGuid: "some-route-guid"})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.AddRoute(ctx, &api.AddRouteRequest{ProcessGuid: "some-guid"})
+			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{Process: &api.Process{Guid: "some-process-guid"}})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
-		It("adds the route", func() {
+		It("maps the route", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{
-				ProcessGuid: "process-guid-a",
-				Hostname:    "app-a.example.com",
+			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
+				RouteGuid: "route-guid-a",
+				Process: &api.Process{
+					Guid: "process-guid-a",
+				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -173,117 +221,55 @@ var _ = Describe("Handlers", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-						},
-					},
-					"process-guid-b.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.0.50.4",
-								Port:    61009,
-							},
-							{
-								Address: "10.0.60.2",
-								Port:    61001,
-							},
-						},
-					},
-					"app-a.example.com": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-						},
-					},
+					"process-guid-a.cfapps.internal": backendSetA,
+					"process-guid-b.cfapps.internal": backendSetB,
+					"route-a.example.com":            backendSetA,
 				},
 			}))
 		})
 
-		It("adds routes with overlapping hostnames", func() {
+		It("maps one route to multiple processes", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{
-				ProcessGuid: "process-guid-a",
-				Hostname:    "app-a.example.com",
+			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
+				RouteGuid: "route-guid-a",
+				Process: &api.Process{
+					Guid: "process-guid-a",
+				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = handler.AddRoute(ctx, &api.AddRouteRequest{
-				ProcessGuid: "process-guid-b",
-				Hostname:    "app-a.example.com",
+			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{
+				RouteGuid: "route-guid-a",
+				Process: &api.Process{
+					Guid: "process-guid-b",
+				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Backends["process-guid-a.cfapps.internal"].Backends).To(ConsistOf(
-				[]*api.Backend{
-					{
-						Address: "10.10.1.5",
-						Port:    61005,
-					},
-					{
-						Address: "10.0.40.2",
-						Port:    61008,
-					},
-				}))
-			Expect(resp.Backends["process-guid-b.cfapps.internal"].Backends).To(ConsistOf(
-				[]*api.Backend{
-					{
-						Address: "10.0.50.4",
-						Port:    61009,
-					},
-					{
-						Address: "10.0.60.2",
-						Port:    61001,
-					},
-				},
+			Expect(resp.Backends["process-guid-a.cfapps.internal"].Backends).To(ConsistOf(backendSetA.Backends))
+			Expect(resp.Backends["process-guid-b.cfapps.internal"].Backends).To(ConsistOf(backendSetB.Backends))
+			Expect(resp.Backends["route-a.example.com"].Backends).To(ConsistOf(
+				append(backendSetA.Backends, backendSetB.Backends...),
 			))
-			Expect(resp.Backends["app-a.example.com"].Backends).To(ConsistOf(
-				[]*api.Backend{
-					{
-						Address: "10.10.1.5",
-						Port:    61005,
-					},
-					{
-						Address: "10.0.40.2",
-						Port:    61008,
-					},
-					{
-						Address: "10.0.50.4",
-						Port:    61009,
-					},
-					{
-						Address: "10.0.60.2",
-						Port:    61001,
-					},
-				}))
 		})
 
-		It("adding the same route twice only returns once", func() {
+		It("only creates one route mapping when the same route and process are mapped twice", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{
-				ProcessGuid: "process-guid-a",
-				Hostname:    "app-a.example.com",
+			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
+				RouteGuid: "route-guid-a",
+				Process: &api.Process{
+					Guid: "process-guid-a",
+				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = handler.AddRoute(ctx, &api.AddRouteRequest{
-				ProcessGuid: "process-guid-a",
-				Hostname:    "app-a.example.com",
+			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{
+				RouteGuid: "route-guid-a",
+				Process: &api.Process{
+					Guid: "process-guid-a",
+				},
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -291,61 +277,28 @@ var _ = Describe("Handlers", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-						},
-					},
-					"process-guid-b.cfapps.internal": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.0.50.4",
-								Port:    61009,
-							},
-							{
-								Address: "10.0.60.2",
-								Port:    61001,
-							},
-						},
-					},
-					"app-a.example.com": &api.BackendSet{
-						Backends: []*api.Backend{
-							{
-								Address: "10.10.1.5",
-								Port:    61005,
-							},
-							{
-								Address: "10.0.40.2",
-								Port:    61008,
-							},
-						},
-					},
+					"process-guid-a.cfapps.internal": backendSetA,
+					"process-guid-b.cfapps.internal": backendSetB,
+					"route-a.example.com":            backendSetA,
 				},
 			}))
 		})
 	})
 
-	Describe("DeleteRoute", func() {
+	Describe("UnmapRoute", func() {
 		It("validates the inputs", func() {
 			ctx := context.Background()
-			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Hostname: "some-host"})
+			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "some-route-guid"})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.DeleteRoute(ctx, &api.DeleteRouteRequest{ProcessGuid: "some-guid"})
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{ProcessGuid: "some-process-guid"})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
-		It("deletes the routes", func() {
+		It("unmaps the routes", func() {
 			ctx := context.Background()
-			_, err := handler.AddRoute(ctx, &api.AddRouteRequest{Hostname: "to-be-deleted-host", ProcessGuid: "process-guid-a"})
+			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{RouteGuid: "to-be-deleted-route-guid", Process: &api.Process{Guid: "process-guid-a"}})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Hostname: "to-be-deleted-host", ProcessGuid: "process-guid-a"})
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", ProcessGuid: "process-guid-a"})
 			Expect(err).NotTo(HaveOccurred())
 			resp, err := handler.Routes(ctx, nil)
 			Expect(resp.Backends["to-be-deleted-host"]).To(BeNil())
@@ -353,7 +306,7 @@ var _ = Describe("Handlers", func() {
 
 		It("does not error when the route does not exist", func() {
 			ctx := context.Background()
-			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Hostname: "does-not-exist", ProcessGuid: "process-guid-does-not-exist"})
+			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "does-not-exist", ProcessGuid: "process-guid-does-not-exist"})
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

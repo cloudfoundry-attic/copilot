@@ -3,21 +3,25 @@ syntax = "proto3";
 package api;
 
 service CloudControllerCopilot {
-  rpc AddRoute (AddRouteRequest) returns (AddRouteResponse) {}
-  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
+  rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
+  rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
 }
 
-message AddRouteRequest {
-  string processGuid = 1;
-  string hostname = 2;
-}
-message AddRouteResponse {
+message Process {
+  string guid = 1;
 }
 
-message DeleteRouteRequest {
-  string processGuid = 1;
-  string hostname = 2;
+message MapRouteRequest {
+  Process process = 1;
+  string route_guid = 2;
 }
 
-message DeleteRouteResponse {
+message MapRouteResponse {}
+
+message UnmapRouteRequest {
+  string process_guid = 1;
+  string route_guid = 2;
+}
+
+message UnmapRouteResponse {
 }
