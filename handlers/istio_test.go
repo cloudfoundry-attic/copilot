@@ -22,7 +22,7 @@ func (b mockBBSClient) ActualLRPGroups(l lager.Logger, bbsModel bbsmodels.Actual
 	return b.actualLRPGroupsData, b.actualLRPErr
 }
 
-var _ = Describe("Handlers", func() {
+var _ = Describe("Istio Handlers", func() {
 	var (
 		handler           *handlers.Istio
 		bbsClient         *mockBBSClient

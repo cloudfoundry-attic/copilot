@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Handlers", func() {
+var _ = Describe("Capi Handlers", func() {
 	var (
 		handler               *handlers.CAPI
 		logger                lager.Logger
