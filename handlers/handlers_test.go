@@ -158,8 +158,8 @@ var _ = Describe("Handlers", func() {
 		})
 		It("returns the routes for each running backend instance", func() {
 			handler.RoutesRepo.Upsert(&handlers.Route{
-				GUID:     "route-guid-a",
-				Hostname: "route-a.cfapps.com",
+				GUID: "route-guid-a",
+				Host: "route-a.cfapps.com",
 			})
 			routeMapping := &handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
@@ -218,8 +218,8 @@ var _ = Describe("Handlers", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
 			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&handlers.Route{
-				GUID:     "route-guid-a",
-				Hostname: "route-a.example.com",
+				GUID: "route-guid-a",
+				Host: "route-a.example.com",
 			}))
 		})
 	})
@@ -245,8 +245,8 @@ var _ = Describe("Handlers", func() {
 	Describe("MapRoute", func() {
 		BeforeEach(func() {
 			handler.RoutesRepo.Upsert(&handlers.Route{
-				GUID:     "route-guid-a",
-				Hostname: "route-a.example.com",
+				GUID: "route-guid-a",
+				Host: "route-a.example.com",
 			})
 		})
 

@@ -62,8 +62,8 @@ type routeMappingsRepoInterface interface {
 	List() map[string]*RouteMapping
 }
 
-func (p ProcessGUID) Hostname() Hostname {
-	return Hostname(string(p) + ".cfapps.internal")
+func (p ProcessGUID) Hostname() string {
+	return string(p) + ".cfapps.internal"
 }
 
 type BBSClient interface {
@@ -71,8 +71,12 @@ type BBSClient interface {
 }
 
 type Route struct {
-	GUID     RouteGUID
-	Hostname Hostname
+	GUID RouteGUID
+	Host string
+}
+
+func (r *Route) Hostname() string {
+	return r.Host
 }
 
 type RouteMapping struct {
@@ -146,10 +150,10 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 		if !ok {
 			continue
 		}
-		if _, ok := allBackends[string(route.Hostname)]; !ok {
-			allBackends[string(route.Hostname)] = &api.BackendSet{Backends: []*api.Backend{}}
+		if _, ok := allBackends[route.Hostname()]; !ok {
+			allBackends[route.Hostname()] = &api.BackendSet{Backends: []*api.Backend{}}
 		}
-		allBackends[string(route.Hostname)].Backends = append(allBackends[string(route.Hostname)].Backends, backends.Backends...)
+		allBackends[route.Hostname()].Backends = append(allBackends[route.Hostname()].Backends, backends.Backends...)
 	}
 
 	return &api.RoutesResponse{Backends: allBackends}, nil
@@ -170,8 +174,8 @@ func (c *Copilot) UpsertRoute(context context.Context, request *api.UpsertRouteR
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
 	}
 	route := Route{
-		GUID:     RouteGUID(request.Guid),
-		Hostname: Hostname(request.Host),
+		GUID: RouteGUID(request.Guid),
+		Host: request.Host,
 	}
 	c.RoutesRepo.Upsert(&route)
 	return &api.UpsertRouteResponse{}, nil
