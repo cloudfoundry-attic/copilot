@@ -3,12 +3,12 @@ syntax = "proto3";
 package cloudfoundry.copilot.protos;
 
 message MapRouteRequest {
-  message Process {
+  message DiegoProcess {
     string guid = 1;
     string app_guid = 2;
   }
 
-  Process process = 1;
+  DiegoProcess diego_process = 1;
   string route_guid = 2;
 }
 

@@ -9,6 +9,8 @@ It is generated from these files:
 	istio.proto
 
 It has these top-level messages:
+	DeleteRouteRequest
+	DeleteRouteResponse
 	UpsertRouteRequest
 	UpsertRouteResponse
 	Process
@@ -45,6 +47,30 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type DeleteRouteRequest struct {
+	Guid string `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
+}
+
+func (m *DeleteRouteRequest) Reset()                    { *m = DeleteRouteRequest{} }
+func (m *DeleteRouteRequest) String() string            { return proto.CompactTextString(m) }
+func (*DeleteRouteRequest) ProtoMessage()               {}
+func (*DeleteRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *DeleteRouteRequest) GetGuid() string {
+	if m != nil {
+		return m.Guid
+	}
+	return ""
+}
+
+type DeleteRouteResponse struct {
+}
+
+func (m *DeleteRouteResponse) Reset()                    { *m = DeleteRouteResponse{} }
+func (m *DeleteRouteResponse) String() string            { return proto.CompactTextString(m) }
+func (*DeleteRouteResponse) ProtoMessage()               {}
+func (*DeleteRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
 type UpsertRouteRequest struct {
 	Guid string `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
 	Host string `protobuf:"bytes,2,opt,name=host" json:"host,omitempty"`
@@ -53,7 +79,7 @@ type UpsertRouteRequest struct {
 func (m *UpsertRouteRequest) Reset()                    { *m = UpsertRouteRequest{} }
 func (m *UpsertRouteRequest) String() string            { return proto.CompactTextString(m) }
 func (*UpsertRouteRequest) ProtoMessage()               {}
-func (*UpsertRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*UpsertRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *UpsertRouteRequest) GetGuid() string {
 	if m != nil {
@@ -75,7 +101,7 @@ type UpsertRouteResponse struct {
 func (m *UpsertRouteResponse) Reset()                    { *m = UpsertRouteResponse{} }
 func (m *UpsertRouteResponse) String() string            { return proto.CompactTextString(m) }
 func (*UpsertRouteResponse) ProtoMessage()               {}
-func (*UpsertRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*UpsertRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 type Process struct {
 	Guid string `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
@@ -84,7 +110,7 @@ type Process struct {
 func (m *Process) Reset()                    { *m = Process{} }
 func (m *Process) String() string            { return proto.CompactTextString(m) }
 func (*Process) ProtoMessage()               {}
-func (*Process) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*Process) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *Process) GetGuid() string {
 	if m != nil {
@@ -101,7 +127,7 @@ type MapRouteRequest struct {
 func (m *MapRouteRequest) Reset()                    { *m = MapRouteRequest{} }
 func (m *MapRouteRequest) String() string            { return proto.CompactTextString(m) }
 func (*MapRouteRequest) ProtoMessage()               {}
-func (*MapRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*MapRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *MapRouteRequest) GetProcess() *Process {
 	if m != nil {
@@ -123,7 +149,7 @@ type MapRouteResponse struct {
 func (m *MapRouteResponse) Reset()                    { *m = MapRouteResponse{} }
 func (m *MapRouteResponse) String() string            { return proto.CompactTextString(m) }
 func (*MapRouteResponse) ProtoMessage()               {}
-func (*MapRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*MapRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 type UnmapRouteRequest struct {
 	ProcessGuid string `protobuf:"bytes,1,opt,name=process_guid,json=processGuid" json:"process_guid,omitempty"`
@@ -133,7 +159,7 @@ type UnmapRouteRequest struct {
 func (m *UnmapRouteRequest) Reset()                    { *m = UnmapRouteRequest{} }
 func (m *UnmapRouteRequest) String() string            { return proto.CompactTextString(m) }
 func (*UnmapRouteRequest) ProtoMessage()               {}
-func (*UnmapRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*UnmapRouteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *UnmapRouteRequest) GetProcessGuid() string {
 	if m != nil {
@@ -155,9 +181,11 @@ type UnmapRouteResponse struct {
 func (m *UnmapRouteResponse) Reset()                    { *m = UnmapRouteResponse{} }
 func (m *UnmapRouteResponse) String() string            { return proto.CompactTextString(m) }
 func (*UnmapRouteResponse) ProtoMessage()               {}
-func (*UnmapRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*UnmapRouteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 func init() {
+	proto.RegisterType((*DeleteRouteRequest)(nil), "api.DeleteRouteRequest")
+	proto.RegisterType((*DeleteRouteResponse)(nil), "api.DeleteRouteResponse")
 	proto.RegisterType((*UpsertRouteRequest)(nil), "api.UpsertRouteRequest")
 	proto.RegisterType((*UpsertRouteResponse)(nil), "api.UpsertRouteResponse")
 	proto.RegisterType((*Process)(nil), "api.Process")
@@ -180,6 +208,8 @@ const _ = grpc.SupportPackageIsVersion4
 type CloudControllerCopilotClient interface {
 	MapRoute(ctx context.Context, in *MapRouteRequest, opts ...grpc.CallOption) (*MapRouteResponse, error)
 	UnmapRoute(ctx context.Context, in *UnmapRouteRequest, opts ...grpc.CallOption) (*UnmapRouteResponse, error)
+	UpsertRoute(ctx context.Context, in *UpsertRouteRequest, opts ...grpc.CallOption) (*UpsertRouteResponse, error)
+	DeleteRoute(ctx context.Context, in *DeleteRouteRequest, opts ...grpc.CallOption) (*DeleteRouteResponse, error)
 }
 
 type cloudControllerCopilotClient struct {
@@ -208,11 +238,31 @@ func (c *cloudControllerCopilotClient) UnmapRoute(ctx context.Context, in *Unmap
 	return out, nil
 }
 
+func (c *cloudControllerCopilotClient) UpsertRoute(ctx context.Context, in *UpsertRouteRequest, opts ...grpc.CallOption) (*UpsertRouteResponse, error) {
+	out := new(UpsertRouteResponse)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertRoute", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cloudControllerCopilotClient) DeleteRoute(ctx context.Context, in *DeleteRouteRequest, opts ...grpc.CallOption) (*DeleteRouteResponse, error) {
+	out := new(DeleteRouteResponse)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteRoute", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for CloudControllerCopilot service
 
 type CloudControllerCopilotServer interface {
 	MapRoute(context.Context, *MapRouteRequest) (*MapRouteResponse, error)
 	UnmapRoute(context.Context, *UnmapRouteRequest) (*UnmapRouteResponse, error)
+	UpsertRoute(context.Context, *UpsertRouteRequest) (*UpsertRouteResponse, error)
+	DeleteRoute(context.Context, *DeleteRouteRequest) (*DeleteRouteResponse, error)
 }
 
 func RegisterCloudControllerCopilotServer(s *grpc.Server, srv CloudControllerCopilotServer) {
@@ -255,6 +305,42 @@ func _CloudControllerCopilot_UnmapRoute_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CloudControllerCopilot_UpsertRoute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertRouteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudControllerCopilotServer).UpsertRoute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.CloudControllerCopilot/UpsertRoute",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudControllerCopilotServer).UpsertRoute(ctx, req.(*UpsertRouteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CloudControllerCopilot_DeleteRoute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRouteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudControllerCopilotServer).DeleteRoute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.CloudControllerCopilot/DeleteRoute",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudControllerCopilotServer).DeleteRoute(ctx, req.(*DeleteRouteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _CloudControllerCopilot_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "api.CloudControllerCopilot",
 	HandlerType: (*CloudControllerCopilotServer)(nil),
@@ -267,6 +353,14 @@ var _CloudControllerCopilot_serviceDesc = grpc.ServiceDesc{
 			MethodName: "UnmapRoute",
 			Handler:    _CloudControllerCopilot_UnmapRoute_Handler,
 		},
+		{
+			MethodName: "UpsertRoute",
+			Handler:    _CloudControllerCopilot_UpsertRoute_Handler,
+		},
+		{
+			MethodName: "DeleteRoute",
+			Handler:    _CloudControllerCopilot_DeleteRoute_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "cloud_controller.proto",
@@ -275,23 +369,25 @@ var _CloudControllerCopilot_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("cloud_controller.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 274 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0x41, 0x4b, 0xc3, 0x40,
-	0x10, 0x85, 0x8d, 0x8a, 0xb5, 0xaf, 0x05, 0x75, 0x6c, 0x63, 0x29, 0x14, 0x34, 0x07, 0xf1, 0x94,
-	0x43, 0x3d, 0x09, 0x82, 0x87, 0x1c, 0x3c, 0x09, 0x12, 0x08, 0x78, 0x0b, 0x31, 0x5d, 0x34, 0x10,
-	0x33, 0xeb, 0xee, 0xe6, 0x9f, 0xf8, 0x83, 0x65, 0x37, 0x89, 0x6d, 0x53, 0xa1, 0xb7, 0xe1, 0xed,
-	0xcc, 0xf7, 0xde, 0xcc, 0xc2, 0xcf, 0x4b, 0xae, 0x57, 0x69, 0xce, 0x95, 0x51, 0x5c, 0x96, 0x42,
-	0x85, 0x52, 0xb1, 0x61, 0x3a, 0xca, 0x64, 0x11, 0x3c, 0x82, 0x12, 0xa9, 0x85, 0x32, 0x31, 0xd7,
-	0x46, 0xc4, 0xe2, 0xbb, 0x16, 0xda, 0x10, 0xe1, 0xf8, 0xa3, 0x2e, 0x56, 0x33, 0xef, 0xda, 0xbb,
-	0x1b, 0xc6, 0xae, 0xb6, 0xda, 0x27, 0x6b, 0x33, 0x3b, 0x6c, 0x34, 0x5b, 0x07, 0x53, 0x5c, 0x6e,
-	0x4d, 0x6b, 0xc9, 0x95, 0x16, 0xc1, 0x02, 0x83, 0x57, 0xc5, 0xb9, 0xd0, 0xfa, 0x3f, 0x52, 0xf0,
-	0x86, 0xb3, 0x97, 0x4c, 0x6e, 0x19, 0xde, 0x62, 0x20, 0x9b, 0x09, 0xd7, 0x39, 0x5a, 0x8e, 0xc3,
-	0x4c, 0x16, 0x61, 0x4b, 0x89, 0xbb, 0x47, 0x5a, 0x00, 0xca, 0xce, 0xa5, 0x0e, 0xda, 0x44, 0x19,
-	0x3a, 0xe5, 0xd9, 0x92, 0x09, 0xe7, 0x6b, 0x72, 0x1b, 0x26, 0xc1, 0x45, 0x52, 0x7d, 0xf5, 0xfc,
-	0x6e, 0x30, 0x6e, 0x91, 0xe9, 0x46, 0xbc, 0x51, 0xab, 0x59, 0xd6, 0x3e, 0xab, 0x09, 0x68, 0x13,
-	0xdb, 0x98, 0x2d, 0x7f, 0x3c, 0xf8, 0x91, 0x3d, 0x77, 0xf4, 0x77, 0xed, 0x88, 0x65, 0x51, 0xb2,
-	0xa1, 0x07, 0x9c, 0x76, 0xd9, 0x68, 0xe2, 0xb6, 0xeb, 0x1d, 0x61, 0x3e, 0xed, 0xa9, 0xed, 0x02,
-	0x07, 0xf4, 0x04, 0xac, 0xbd, 0xc8, 0x77, 0x6d, 0x3b, 0x3b, 0xcd, 0xaf, 0x76, 0xf4, 0x0e, 0xf0,
-	0x7e, 0xe2, 0x7e, 0xfc, 0xfe, 0x37, 0x00, 0x00, 0xff, 0xff, 0xaf, 0x6f, 0x9c, 0xbc, 0x0b, 0x02,
-	0x00, 0x00,
+	// 316 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4f, 0x4b, 0xf3, 0x40,
+	0x10, 0xc6, 0xdb, 0xbe, 0x2f, 0xd6, 0x4e, 0x0b, 0xea, 0xd8, 0xc6, 0x10, 0x28, 0x68, 0x0e, 0xd2,
+	0x53, 0x0e, 0xf5, 0x24, 0x08, 0x82, 0x11, 0x3c, 0x09, 0x12, 0x08, 0x78, 0x0b, 0x31, 0x5d, 0x34,
+	0x10, 0x33, 0xeb, 0xee, 0xe6, 0xdb, 0xf8, 0x61, 0x65, 0x37, 0xdb, 0x36, 0x7f, 0x0a, 0xbd, 0x85,
+	0x67, 0x67, 0x7e, 0xcf, 0x33, 0x99, 0x01, 0x27, 0x2b, 0xa8, 0xda, 0x24, 0x19, 0x95, 0x4a, 0x50,
+	0x51, 0x30, 0x11, 0x70, 0x41, 0x8a, 0xf0, 0x5f, 0xca, 0x73, 0x7f, 0x05, 0xf8, 0xcc, 0x0a, 0xa6,
+	0x58, 0x44, 0x95, 0x62, 0x11, 0xfb, 0xa9, 0x98, 0x54, 0x88, 0xf0, 0xff, 0xb3, 0xca, 0x37, 0xee,
+	0xf0, 0x7a, 0xb8, 0x9a, 0x44, 0xe6, 0xdb, 0x5f, 0xc0, 0x65, 0xab, 0x52, 0x72, 0x2a, 0x25, 0xf3,
+	0x1f, 0x00, 0x63, 0x2e, 0x99, 0x50, 0xc7, 0x00, 0x5a, 0xfb, 0x22, 0xa9, 0xdc, 0x51, 0xad, 0xe9,
+	0x6f, 0x0d, 0x6d, 0x75, 0x5b, 0xe8, 0x12, 0xc6, 0x6f, 0x82, 0x32, 0x26, 0xe5, 0xc1, 0x28, 0xef,
+	0x70, 0xf6, 0x9a, 0xf2, 0x96, 0xe1, 0x2d, 0x8c, 0x79, 0xdd, 0x61, 0x2a, 0xa7, 0xeb, 0x59, 0x90,
+	0xf2, 0x3c, 0xb0, 0x94, 0x68, 0xfb, 0x88, 0x4b, 0x00, 0xa1, 0xfb, 0x12, 0x03, 0xad, 0xa3, 0x4c,
+	0x8c, 0xf2, 0xa2, 0xc9, 0x08, 0xe7, 0x7b, 0xb2, 0x0d, 0x13, 0xc3, 0x45, 0x5c, 0x7e, 0x77, 0xfc,
+	0x6e, 0x60, 0x66, 0x91, 0x49, 0x23, 0xde, 0xd4, 0x6a, 0x9a, 0x75, 0xcc, 0x6a, 0x0e, 0xd8, 0xc4,
+	0xd6, 0x66, 0xeb, 0xdf, 0x11, 0x38, 0xa1, 0xde, 0x57, 0xb8, 0x5b, 0x57, 0x48, 0x3c, 0x2f, 0x48,
+	0xe1, 0x3d, 0x9c, 0x6e, 0xb3, 0xe1, 0xdc, 0x4c, 0xd7, 0xf9, 0x09, 0xde, 0xa2, 0xa3, 0xda, 0x01,
+	0x06, 0xf8, 0x08, 0xb0, 0xf7, 0x42, 0xc7, 0x94, 0xf5, 0x66, 0xf2, 0xae, 0x7a, 0xfa, 0x0e, 0xf0,
+	0x04, 0xd3, 0xc6, 0x9e, 0xd0, 0x56, 0xf6, 0xf6, 0xee, 0xb9, 0xfd, 0x87, 0x26, 0xa3, 0x71, 0x40,
+	0x96, 0xd1, 0x3f, 0x3e, 0xcb, 0x38, 0x74, 0x6b, 0x83, 0x8f, 0x13, 0x73, 0xba, 0x77, 0x7f, 0x01,
+	0x00, 0x00, 0xff, 0xff, 0x7f, 0xc9, 0x85, 0xc9, 0xd4, 0x02, 0x00, 0x00,
 }

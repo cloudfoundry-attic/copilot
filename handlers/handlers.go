@@ -20,7 +20,27 @@ type Process struct {
 type ProcessGUID string
 type Hostname string
 type RouteGUID string
+
 type RoutesRepo map[RouteGUID]*Route
+
+func (r RoutesRepo) Upsert(route *Route) {
+	r[route.GUID] = route
+}
+func (r RoutesRepo) Delete(guid RouteGUID) {
+	delete(r, guid)
+}
+func (r RoutesRepo) Get(guid RouteGUID) (*Route, bool) {
+	route, ok := r[guid]
+	return route, ok
+}
+
+//go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
+type routesRepoInterface interface {
+	Upsert(route *Route)
+	Delete(guid RouteGUID)
+	Get(guid RouteGUID) (*Route, bool)
+}
+
 type RouteMappingsRepo map[string]*RouteMapping
 
 func (p ProcessGUID) Hostname() Hostname {
@@ -48,7 +68,7 @@ func (r *RouteMapping) Key() string {
 type Copilot struct {
 	BBSClient
 	Logger            lager.Logger
-	RoutesRepo        RoutesRepo
+	RoutesRepo        routesRepoInterface
 	RouteMappingsRepo RouteMappingsRepo
 }
 
@@ -103,7 +123,7 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 		if !ok {
 			continue
 		}
-		route, ok := c.RoutesRepo[routeMapping.RouteGUID]
+		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
 			continue
 		}
@@ -116,6 +136,15 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 	return &api.RoutesResponse{Backends: allBackends}, nil
 }
 
+func (c *Copilot) DeleteRoute(context context.Context, request *api.DeleteRouteRequest) (*api.DeleteRouteResponse, error) {
+	err := validateDeleteRouteRequest(request)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+	c.RoutesRepo.Delete(RouteGUID(request.Guid))
+	return &api.DeleteRouteResponse{}, nil
+}
+
 func (c *Copilot) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
 	err := validateUpsertRouteRequest(request)
 	if err != nil {
@@ -125,7 +154,7 @@ func (c *Copilot) UpsertRoute(context context.Context, request *api.UpsertRouteR
 		GUID:     RouteGUID(request.Guid),
 		Hostname: Hostname(request.Host),
 	}
-	c.RoutesRepo[route.GUID] = &route
+	c.RoutesRepo.Upsert(&route)
 	return &api.UpsertRouteResponse{}, nil
 }
 
@@ -161,6 +190,13 @@ func (c *Copilot) UnmapRoute(context context.Context, request *api.UnmapRouteReq
 func validateUpsertRouteRequest(r *api.UpsertRouteRequest) error {
 	if r.Guid == "" || r.Host == "" {
 		return errors.New("route Guid and Host are required")
+	}
+	return nil
+}
+
+func validateDeleteRouteRequest(r *api.DeleteRouteRequest) error {
+	if r.Guid == "" {
+		return errors.New("route Guid is required")
 	}
 	return nil
 }

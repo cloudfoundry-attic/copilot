@@ -5,7 +5,15 @@ package api;
 service CloudControllerCopilot {
   rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
   rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
+  rpc UpsertRoute (UpsertRouteRequest) returns (UpsertRouteResponse) {}
+  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
 }
+
+message DeleteRouteRequest {
+  string guid = 1;
+}
+
+message DeleteRouteResponse {}
 
 message UpsertRouteRequest {
   string guid = 1;

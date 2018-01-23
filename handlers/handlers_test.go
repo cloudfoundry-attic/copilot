@@ -6,6 +6,7 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/handlers/fakes"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
@@ -148,10 +149,10 @@ var _ = Describe("Handlers", func() {
 
 	Describe("Routes", func() {
 		It("returns the routes for each running backend instance", func() {
-			handler.RoutesRepo[handlers.RouteGUID("route-guid-a")] = &handlers.Route{
+			handler.RoutesRepo.Upsert(&handlers.Route{
 				GUID:     "route-guid-a",
 				Hostname: "route-a.cfapps.com",
-			}
+			})
 			routeMapping := &handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
 				Process: &handlers.Process{
@@ -227,15 +228,32 @@ var _ = Describe("Handlers", func() {
 				},
 			}))
 		})
+	})
 
+	Describe("DeleteRoute", func() {
+		It("calls Delete on the RoutesRepo using the provided guid", func() {
+			fakeRoutesRepo := &fakes.RoutesRepo{}
+			ctx := context.Background()
+			handler.RoutesRepo = fakeRoutesRepo
+			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Guid: "route-guid-a"})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeRoutesRepo.DeleteCallCount()).To(Equal(1))
+			Expect(fakeRoutesRepo.DeleteArgsForCall(0)).To(Equal(handlers.RouteGUID("route-guid-a")))
+		})
+
+		It("validates the inputs", func() {
+			ctx := context.Background()
+			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{})
+			Expect(err.Error()).To(ContainSubstring("required"))
+		})
 	})
 
 	Describe("MapRoute", func() {
 		BeforeEach(func() {
-			handler.RoutesRepo[handlers.RouteGUID("route-guid-a")] = &handlers.Route{
+			handler.RoutesRepo.Upsert(&handlers.Route{
 				GUID:     "route-guid-a",
 				Hostname: "route-a.example.com",
-			}
+			})
 		})
 
 		It("validates the inputs", func() {
