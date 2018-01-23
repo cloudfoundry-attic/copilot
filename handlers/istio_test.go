@@ -6,7 +6,6 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
-	"code.cloudfoundry.org/copilot/handlers/fakes"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
@@ -25,14 +24,12 @@ func (b mockBBSClient) ActualLRPGroups(l lager.Logger, bbsModel bbsmodels.Actual
 
 var _ = Describe("Handlers", func() {
 	var (
-		handler               *handlers.Copilot
-		bbsClient             *mockBBSClient
-		logger                lager.Logger
-		bbsClientResponse     []*bbsmodels.ActualLRPGroup
-		backendSetA           *api.BackendSet
-		backendSetB           *api.BackendSet
-		fakeRoutesRepo        *fakes.RoutesRepo
-		fakeRouteMappingsRepo *fakes.RouteMappingsRepo
+		handler           *handlers.Istio
+		bbsClient         *mockBBSClient
+		logger            lager.Logger
+		bbsClientResponse []*bbsmodels.ActualLRPGroup
+		backendSetA       *api.BackendSet
+		backendSetB       *api.BackendSet
 	)
 
 	BeforeEach(func() {
@@ -132,13 +129,11 @@ var _ = Describe("Handlers", func() {
 
 		logger = lagertest.NewTestLogger("test")
 
-		fakeRoutesRepo = &fakes.RoutesRepo{}
-		fakeRouteMappingsRepo = &fakes.RouteMappingsRepo{}
-		handler = &handlers.Copilot{
+		handler = &handlers.Istio{
 			BBSClient:         bbsClient,
 			Logger:            logger,
-			RoutesRepo:        fakeRoutesRepo,
-			RouteMappingsRepo: fakeRouteMappingsRepo,
+			RoutesRepo:        make(handlers.RoutesRepo),
+			RouteMappingsRepo: make(handlers.RouteMappingsRepo),
 		}
 	})
 
@@ -152,10 +147,6 @@ var _ = Describe("Handlers", func() {
 	})
 
 	Describe("listing Routes (using real repos, to cover more integration-y things)", func() {
-		BeforeEach(func() {
-			handler.RoutesRepo = make(handlers.RoutesRepo)
-			handler.RouteMappingsRepo = make(handlers.RouteMappingsRepo)
-		})
 		It("returns the routes for each running backend instance", func() {
 			handler.RoutesRepo.Upsert(&handlers.Route{
 				GUID: "route-guid-a",
@@ -195,106 +186,6 @@ var _ = Describe("Handlers", func() {
 				Backends: map[string]*api.BackendSet{
 					"process-guid-a.cfapps.internal": backendSetA,
 					"process-guid-b.cfapps.internal": backendSetB,
-				},
-			}))
-		})
-	})
-
-	Describe("UpsertRoute", func() {
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Guid: "some-route-guid"})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Host: "some-hostname"})
-			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-
-		It("adds the route if it is new", func() {
-			ctx := context.Background()
-			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
-				Guid: "route-guid-a",
-				Host: "route-a.example.com",
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
-			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&handlers.Route{
-				GUID: "route-guid-a",
-				Host: "route-a.example.com",
-			}))
-		})
-	})
-
-	Describe("DeleteRoute", func() {
-		It("calls Delete on the RoutesRepo using the provided guid", func() {
-			fakeRoutesRepo := &fakes.RoutesRepo{}
-			ctx := context.Background()
-			handler.RoutesRepo = fakeRoutesRepo
-			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Guid: "route-guid-a"})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeRoutesRepo.DeleteCallCount()).To(Equal(1))
-			Expect(fakeRoutesRepo.DeleteArgsForCall(0)).To(Equal(handlers.RouteGUID("route-guid-a")))
-		})
-
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{})
-			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-	})
-
-	Describe("MapRoute", func() {
-		BeforeEach(func() {
-			handler.RoutesRepo.Upsert(&handlers.Route{
-				GUID: "route-guid-a",
-				Host: "route-a.example.com",
-			})
-		})
-
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{RouteGuid: "some-route-guid"})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{Process: &api.Process{Guid: "some-process-guid"}})
-			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-
-		It("maps the route", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
-				RouteGuid: "route-guid-a",
-				Process: &api.Process{
-					Guid: "process-guid-a",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
-				RouteGUID: "route-guid-a",
-				Process: &handlers.Process{
-					GUID: "process-guid-a",
-				},
-			}))
-		})
-	})
-
-	Describe("UnmapRoute", func() {
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "some-route-guid"})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{ProcessGuid: "some-process-guid"})
-			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-
-		It("unmaps the routes", func() {
-			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", ProcessGuid: "process-guid-a"})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
-				RouteGUID: "to-be-deleted-route-guid",
-				Process: &handlers.Process{
-					GUID: "process-guid-a",
 				},
 			}))
 		})

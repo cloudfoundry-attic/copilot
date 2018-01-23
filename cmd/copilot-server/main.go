@@ -57,18 +57,24 @@ func mainWithError() error {
 		return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
 	}
 
-	handler := &handlers.Copilot{
-		// RoutesRepo:        handlers.RoutesRepo(make(map[handlers.RouteGUID]*handlers.Route)),
-		RoutesRepo: handlers.RoutesRepo{},
-		// RouteMappingsRepo: handlers.RouteMappingsRepo(make(map[string]*handlers.RouteMapping)),
-		RouteMappingsRepo: handlers.RouteMappingsRepo{},
+	routesRepo := handlers.RoutesRepo{}
+	routeMappingsRepo := handlers.RouteMappingsRepo{}
+
+	istioHandler := &handlers.Istio{
+		RoutesRepo:        routesRepo,
+		RouteMappingsRepo: routeMappingsRepo,
 		BBSClient:         bbsClient,
+		Logger:            logger,
+	}
+	capiHandler := &handlers.CAPI{
+		RoutesRepo:        routesRepo,
+		RouteMappingsRepo: routeMappingsRepo,
 		Logger:            logger,
 	}
 	grpcServer := grpcrunner.New(logger, cfg.ListenAddress,
 		func(s *grpc.Server) {
-			api.RegisterIstioCopilotServer(s, handler)
-			api.RegisterCloudControllerCopilotServer(s, handler)
+			api.RegisterIstioCopilotServer(s, istioHandler)
+			api.RegisterCloudControllerCopilotServer(s, capiHandler)
 			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
