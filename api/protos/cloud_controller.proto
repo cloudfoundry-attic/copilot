@@ -7,6 +7,13 @@ service CloudControllerCopilot {
   rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
 }
 
+message UpsertRouteRequest {
+  string guid = 1;
+  string host = 2;
+}
+
+message UpsertRouteResponse {}
+
 message Process {
   string guid = 1;
 }

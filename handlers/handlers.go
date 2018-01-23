@@ -45,45 +45,11 @@ func (r *RouteMapping) Key() string {
 	return string(r.RouteGUID) + "-" + string(r.Process.GUID)
 }
 
-func validateMapRouteRequest(r *api.MapRouteRequest) error {
-	if r.Process == nil {
-		return errors.New("Process is required")
-	}
-	if r.RouteGuid == "" || r.Process.Guid == "" {
-		return errors.New("RouteGUID and ProcessGUID are required")
-	}
-	return nil
-}
-
-func validateUnmapRouteRequest(r *api.UnmapRouteRequest) error {
-	if r.RouteGuid == "" || r.ProcessGuid == "" {
-		return errors.New("RouteGuid and ProcessGuid are required")
-	}
-	return nil
-}
-
 type Copilot struct {
 	BBSClient
 	Logger            lager.Logger
 	RoutesRepo        RoutesRepo
 	RouteMappingsRepo RouteMappingsRepo
-}
-
-func (c *Copilot) MapRoute(context context.Context, request *api.MapRouteRequest) (*api.MapRouteResponse, error) {
-	err := validateMapRouteRequest(request)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
-	}
-	r := &RouteMapping{
-		RouteGUID: RouteGUID(request.RouteGuid),
-		Process: &Process{
-			GUID: ProcessGUID(request.Process.Guid),
-		},
-	}
-
-	c.RouteMappingsRepo[r.Key()] = r
-
-	return &api.MapRouteResponse{}, nil
 }
 
 func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
@@ -150,6 +116,36 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 	return &api.RoutesResponse{Backends: allBackends}, nil
 }
 
+func (c *Copilot) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
+	err := validateUpsertRouteRequest(request)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
+	}
+	route := Route{
+		GUID:     RouteGUID(request.Guid),
+		Hostname: Hostname(request.Host),
+	}
+	c.RoutesRepo[route.GUID] = &route
+	return &api.UpsertRouteResponse{}, nil
+}
+
+func (c *Copilot) MapRoute(context context.Context, request *api.MapRouteRequest) (*api.MapRouteResponse, error) {
+	err := validateMapRouteRequest(request)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
+	}
+	r := &RouteMapping{
+		RouteGUID: RouteGUID(request.RouteGuid),
+		Process: &Process{
+			GUID: ProcessGUID(request.Process.Guid),
+		},
+	}
+
+	c.RouteMappingsRepo[r.Key()] = r
+
+	return &api.MapRouteResponse{}, nil
+}
+
 func (c *Copilot) UnmapRoute(context context.Context, request *api.UnmapRouteRequest) (*api.UnmapRouteResponse, error) {
 	err := validateUnmapRouteRequest(request)
 	if err != nil {
@@ -160,4 +156,28 @@ func (c *Copilot) UnmapRoute(context context.Context, request *api.UnmapRouteReq
 	delete(c.RouteMappingsRepo, r.Key())
 
 	return &api.UnmapRouteResponse{}, nil
+}
+
+func validateUpsertRouteRequest(r *api.UpsertRouteRequest) error {
+	if r.Guid == "" || r.Host == "" {
+		return errors.New("route Guid and Host are required")
+	}
+	return nil
+}
+
+func validateMapRouteRequest(r *api.MapRouteRequest) error {
+	if r.Process == nil {
+		return errors.New("Process is required")
+	}
+	if r.RouteGuid == "" || r.Process.Guid == "" {
+		return errors.New("RouteGUID and ProcessGUID are required")
+	}
+	return nil
+}
+
+func validateUnmapRouteRequest(r *api.UnmapRouteRequest) error {
+	if r.RouteGuid == "" || r.ProcessGuid == "" {
+		return errors.New("RouteGuid and ProcessGuid are required")
+	}
+	return nil
 }

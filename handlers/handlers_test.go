@@ -191,6 +191,45 @@ var _ = Describe("Handlers", func() {
 		})
 	})
 
+	Describe("UpsertRoute", func() {
+		BeforeEach(func() {
+			rm := &handlers.RouteMapping{
+				RouteGUID: "route-guid-a",
+				Process: &handlers.Process{
+					GUID: "process-guid-a",
+				},
+			}
+			handler.RouteMappingsRepo[rm.Key()] = rm
+		})
+
+		It("validates the inputs", func() {
+			ctx := context.Background()
+			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Guid: "some-route-guid"})
+			Expect(err.Error()).To(ContainSubstring("required"))
+			_, err = handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Host: "some-hostname"})
+			Expect(err.Error()).To(ContainSubstring("required"))
+		})
+
+		It("adds the route if it is new", func() {
+			ctx := context.Background()
+			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
+				Guid: "route-guid-a",
+				Host: "route-a.example.com",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.RoutesResponse{
+				Backends: map[string]*api.BackendSet{
+					"process-guid-a.cfapps.internal": backendSetA,
+					"process-guid-b.cfapps.internal": backendSetB,
+					"route-a.example.com":            backendSetA,
+				},
+			}))
+		})
+
+	})
+
 	Describe("MapRoute", func() {
 		BeforeEach(func() {
 			handler.RoutesRepo[handlers.RouteGUID("route-guid-a")] = &handlers.Route{
@@ -301,6 +340,7 @@ var _ = Describe("Handlers", func() {
 			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", ProcessGuid: "process-guid-a"})
 			Expect(err).NotTo(HaveOccurred())
 			resp, err := handler.Routes(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.Backends["to-be-deleted-host"]).To(BeNil())
 		})
 
