@@ -43,6 +43,25 @@ type routesRepoInterface interface {
 
 type RouteMappingsRepo map[string]*RouteMapping
 
+func (m RouteMappingsRepo) Map(routeMapping *RouteMapping) {
+	m[routeMapping.Key()] = routeMapping
+}
+
+func (m RouteMappingsRepo) Unmap(routeMapping *RouteMapping) {
+	delete(m, routeMapping.Key())
+}
+
+func (m RouteMappingsRepo) List() map[string]*RouteMapping {
+	return m
+}
+
+//go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
+type routeMappingsRepoInterface interface {
+	Map(routeMapping *RouteMapping)
+	Unmap(routeMapping *RouteMapping)
+	List() map[string]*RouteMapping
+}
+
 func (p ProcessGUID) Hostname() Hostname {
 	return Hostname(string(p) + ".cfapps.internal")
 }
@@ -69,7 +88,7 @@ type Copilot struct {
 	BBSClient
 	Logger            lager.Logger
 	RoutesRepo        routesRepoInterface
-	RouteMappingsRepo RouteMappingsRepo
+	RouteMappingsRepo routeMappingsRepoInterface
 }
 
 func (c *Copilot) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
@@ -118,7 +137,7 @@ func (c *Copilot) Routes(context.Context, *api.RoutesRequest) (*api.RoutesRespon
 	}
 
 	// append external routes
-	for _, routeMapping := range c.RouteMappingsRepo {
+	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		backends, ok := runningBackends[routeMapping.Process.GUID]
 		if !ok {
 			continue
@@ -170,7 +189,7 @@ func (c *Copilot) MapRoute(context context.Context, request *api.MapRouteRequest
 		},
 	}
 
-	c.RouteMappingsRepo[r.Key()] = r
+	c.RouteMappingsRepo.Map(r)
 
 	return &api.MapRouteResponse{}, nil
 }
@@ -182,7 +201,7 @@ func (c *Copilot) UnmapRoute(context context.Context, request *api.UnmapRouteReq
 	}
 	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteGuid), Process: &Process{GUID: ProcessGUID(request.ProcessGuid)}}
 
-	delete(c.RouteMappingsRepo, r.Key())
+	c.RouteMappingsRepo.Unmap(r)
 
 	return &api.UnmapRouteResponse{}, nil
 }

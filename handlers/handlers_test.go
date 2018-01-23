@@ -25,12 +25,14 @@ func (b mockBBSClient) ActualLRPGroups(l lager.Logger, bbsModel bbsmodels.Actual
 
 var _ = Describe("Handlers", func() {
 	var (
-		handler           *handlers.Copilot
-		bbsClient         *mockBBSClient
-		logger            lager.Logger
-		bbsClientResponse []*bbsmodels.ActualLRPGroup
-		backendSetA       *api.BackendSet
-		backendSetB       *api.BackendSet
+		handler               *handlers.Copilot
+		bbsClient             *mockBBSClient
+		logger                lager.Logger
+		bbsClientResponse     []*bbsmodels.ActualLRPGroup
+		backendSetA           *api.BackendSet
+		backendSetB           *api.BackendSet
+		fakeRoutesRepo        *fakes.RoutesRepo
+		fakeRouteMappingsRepo *fakes.RouteMappingsRepo
 	)
 
 	BeforeEach(func() {
@@ -130,11 +132,13 @@ var _ = Describe("Handlers", func() {
 
 		logger = lagertest.NewTestLogger("test")
 
+		fakeRoutesRepo = &fakes.RoutesRepo{}
+		fakeRouteMappingsRepo = &fakes.RouteMappingsRepo{}
 		handler = &handlers.Copilot{
 			BBSClient:         bbsClient,
 			Logger:            logger,
-			RoutesRepo:        handlers.RoutesRepo(make(map[handlers.RouteGUID]*handlers.Route)),
-			RouteMappingsRepo: handlers.RouteMappingsRepo(make(map[string]*handlers.RouteMapping)),
+			RoutesRepo:        fakeRoutesRepo,
+			RouteMappingsRepo: fakeRouteMappingsRepo,
 		}
 	})
 
@@ -147,7 +151,11 @@ var _ = Describe("Handlers", func() {
 		})
 	})
 
-	Describe("Routes", func() {
+	Describe("listing Routes (using real repos, to cover more integration-y things)", func() {
+		BeforeEach(func() {
+			handler.RoutesRepo = make(handlers.RoutesRepo)
+			handler.RouteMappingsRepo = make(handlers.RouteMappingsRepo)
+		})
 		It("returns the routes for each running backend instance", func() {
 			handler.RoutesRepo.Upsert(&handlers.Route{
 				GUID:     "route-guid-a",
@@ -159,7 +167,7 @@ var _ = Describe("Handlers", func() {
 					GUID: "process-guid-a",
 				},
 			}
-			handler.RouteMappingsRepo[routeMapping.Key()] = routeMapping
+			handler.RouteMappingsRepo.Map(routeMapping)
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
@@ -179,7 +187,7 @@ var _ = Describe("Handlers", func() {
 					GUID: "process-guid-a",
 				},
 			}
-			handler.RouteMappingsRepo[routeMapping.Key()] = routeMapping
+			handler.RouteMappingsRepo.Map(routeMapping)
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
@@ -193,16 +201,6 @@ var _ = Describe("Handlers", func() {
 	})
 
 	Describe("UpsertRoute", func() {
-		BeforeEach(func() {
-			rm := &handlers.RouteMapping{
-				RouteGUID: "route-guid-a",
-				Process: &handlers.Process{
-					GUID: "process-guid-a",
-				},
-			}
-			handler.RouteMappingsRepo[rm.Key()] = rm
-		})
-
 		It("validates the inputs", func() {
 			ctx := context.Background()
 			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Guid: "some-route-guid"})
@@ -218,14 +216,10 @@ var _ = Describe("Handlers", func() {
 				Host: "route-a.example.com",
 			})
 			Expect(err).NotTo(HaveOccurred())
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": backendSetA,
-					"process-guid-b.cfapps.internal": backendSetB,
-					"route-a.example.com":            backendSetA,
-				},
+			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
+			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&handlers.Route{
+				GUID:     "route-guid-a",
+				Hostname: "route-a.example.com",
 			}))
 		})
 	})
@@ -273,70 +267,11 @@ var _ = Describe("Handlers", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": backendSetA,
-					"process-guid-b.cfapps.internal": backendSetB,
-					"route-a.example.com":            backendSetA,
-				},
-			}))
-		})
-
-		It("maps one route to multiple processes", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
-				RouteGuid: "route-guid-a",
-				Process: &api.Process{
-					Guid: "process-guid-a",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{
-				RouteGuid: "route-guid-a",
-				Process: &api.Process{
-					Guid: "process-guid-b",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Backends["process-guid-a.cfapps.internal"].Backends).To(ConsistOf(backendSetA.Backends))
-			Expect(resp.Backends["process-guid-b.cfapps.internal"].Backends).To(ConsistOf(backendSetB.Backends))
-			Expect(resp.Backends["route-a.example.com"].Backends).To(ConsistOf(
-				append(backendSetA.Backends, backendSetB.Backends...),
-			))
-		})
-
-		It("only creates one route mapping when the same route and process are mapped twice", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
-				RouteGuid: "route-guid-a",
-				Process: &api.Process{
-					Guid: "process-guid-a",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{
-				RouteGuid: "route-guid-a",
-				Process: &api.Process{
-					Guid: "process-guid-a",
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": backendSetA,
-					"process-guid-b.cfapps.internal": backendSetB,
-					"route-a.example.com":            backendSetA,
+			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
+			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
+				RouteGUID: "route-guid-a",
+				Process: &handlers.Process{
+					GUID: "process-guid-a",
 				},
 			}))
 		})
@@ -353,19 +288,15 @@ var _ = Describe("Handlers", func() {
 
 		It("unmaps the routes", func() {
 			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{RouteGuid: "to-be-deleted-route-guid", Process: &api.Process{Guid: "process-guid-a"}})
+			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", ProcessGuid: "process-guid-a"})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", ProcessGuid: "process-guid-a"})
-			Expect(err).NotTo(HaveOccurred())
-			resp, err := handler.Routes(ctx, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Backends["to-be-deleted-host"]).To(BeNil())
-		})
-
-		It("does not error when the route does not exist", func() {
-			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "does-not-exist", ProcessGuid: "process-guid-does-not-exist"})
-			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
+			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
+				RouteGUID: "to-be-deleted-route-guid",
+				Process: &handlers.Process{
+					GUID: "process-guid-a",
+				},
+			}))
 		})
 	})
 })
