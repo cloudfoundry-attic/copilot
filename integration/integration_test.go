@@ -64,26 +64,26 @@ var _ = Describe("Copilot", func() {
 		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list", func(w http.ResponseWriter, req *http.Request) {
 			actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
 				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
-					&bbsmodels.ActualLRPGroup{
+					{
 						Instance: &bbsmodels.ActualLRP{
 							ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
 							State:        bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 								Address: "10.10.1.5",
 								Ports: []*bbsmodels.PortMapping{
-									&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61005},
+									{ContainerPort: 8080, HostPort: 61005},
 								},
 							},
 						},
 					},
-					&bbsmodels.ActualLRPGroup{
+					{
 						Instance: &bbsmodels.ActualLRP{
 							ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 1, "domain1"),
 							State:        bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 								Address: "10.10.1.6",
 								Ports: []*bbsmodels.PortMapping{
-									&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61006},
+									{ContainerPort: 8080, HostPort: 61006},
 								},
 							},
 						},
@@ -145,14 +145,14 @@ var _ = Describe("Copilot", func() {
 		routes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.cfapps.internal": &api.BackendSet{
+			"process-guid-a.cfapps.internal": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.5", Port: 61005},
+					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
-			"process-guid-b.cfapps.internal": &api.BackendSet{
+			"process-guid-b.cfapps.internal": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.6", Port: 61006},
+					{Address: "10.10.1.6", Port: 61006},
 				},
 			},
 		}))
@@ -163,15 +163,17 @@ var _ = Describe("Copilot", func() {
 
 		By("CC creates and maps a route")
 		_, err := ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
-			Guid: "route-guid-a",
-			Host: "some-url",
-		})
+			Route: &api.Route{
+				Guid: "route-guid-a",
+				Host: "some-url",
+			}})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
-			RouteGuid: "route-guid-a",
-			Process: &api.Process{
-				Guid: "process-guid-a",
-			},
+			RouteMapping: &api.RouteMapping{
+				RouteGuid: "route-guid-a",
+				CapiProcess: &api.CapiProcess{
+					Guid: "process-guid-a",
+				}},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -179,43 +181,47 @@ var _ = Describe("Copilot", func() {
 		istioVisibleRoutes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.cfapps.internal": &api.BackendSet{
+			"process-guid-a.cfapps.internal": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.5", Port: 61005},
+					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
-			"process-guid-b.cfapps.internal": &api.BackendSet{
+			"process-guid-b.cfapps.internal": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.6", Port: 61006},
+					{Address: "10.10.1.6", Port: 61006},
 				},
 			},
-			"some-url": &api.BackendSet{
+			"some-url": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.5", Port: 61005},
+					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
 		}))
 
 		By("cc maps another backend to the same route")
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
-			RouteGuid: "route-guid-a",
-			Process: &api.Process{
-				Guid: "process-guid-b",
+			RouteMapping: &api.RouteMapping{
+				RouteGuid: "route-guid-a",
+				CapiProcess: &api.CapiProcess{
+					Guid: "process-guid-b",
+				},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("cc adds a second route and maps it to the second backend")
 		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
+			Route: &api.Route{
 			Guid: "route-guid-b",
 			Host: "some-url-b",
-		})
+		}})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
+			RouteMapping: &api.RouteMapping{
 			RouteGuid: "route-guid-b",
-			Process: &api.Process{
+			CapiProcess: &api.CapiProcess{
 				Guid: "process-guid-b",
-			},
+			}},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -241,7 +247,7 @@ var _ = Describe("Copilot", func() {
 		By("cc unmaps the first backend from the first route")
 		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{
 			RouteGuid:   "route-guid-a",
-			ProcessGuid: "process-guid-a",
+			CapiProcessGuid: "process-guid-a",
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -255,19 +261,19 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By("istio client sees the updated stuff")
 		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.cfapps.internal": &api.BackendSet{
+			"process-guid-a.cfapps.internal": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.5", Port: 61005},
+					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
-			"process-guid-b.cfapps.internal": &api.BackendSet{
+			"process-guid-b.cfapps.internal": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.6", Port: 61006},
+					{Address: "10.10.1.6", Port: 61006},
 				},
 			},
-			"some-url": &api.BackendSet{
+			"some-url": {
 				Backends: []*api.Backend{
-					&api.Backend{Address: "10.10.1.6", Port: 61006},
+					{Address: "10.10.1.6", Port: 61006},
 				},
 			},
 		}))

@@ -2,12 +2,16 @@ syntax = "proto3";
 
 package api;
 
-service CloudControllerCopilot {
-  rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
-  rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
-  rpc UpsertRoute (UpsertRouteRequest) returns (UpsertRouteResponse) {}
-  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
+message Route {
+  string guid = 1;
+  string host = 2;
 }
+
+message UpsertRouteRequest {
+  Route route = 1;
+}
+
+message UpsertRouteResponse {}
 
 message DeleteRouteRequest {
   string guid = 1;
@@ -15,28 +19,33 @@ message DeleteRouteRequest {
 
 message DeleteRouteResponse {}
 
-message UpsertRouteRequest {
+message CapiProcess {
   string guid = 1;
-  string host = 2;
+  string diego_process_guid = 2;
 }
 
-message UpsertRouteResponse {}
-
-message Process {
-  string guid = 1;
+message RouteMapping {
+  CapiProcess capi_process = 1;
+  string route_guid = 2;
 }
 
 message MapRouteRequest {
-  Process process = 1;
-  string route_guid = 2;
+  RouteMapping route_mapping = 1;
 }
 
 message MapRouteResponse {}
 
 message UnmapRouteRequest {
-  string process_guid = 1;
+  string capi_process_guid = 1;
   string route_guid = 2;
 }
 
-message UnmapRouteResponse {
+message UnmapRouteResponse {}
+
+service CloudControllerCopilot {
+  rpc UpsertRoute(UpsertRouteRequest) returns (UpsertRouteResponse) {}
+  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
+
+  rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
+  rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
 }

@@ -36,18 +36,25 @@ var _ = Describe("Capi Handlers", func() {
 	Describe("UpsertRoute", func() {
 		It("validates the inputs", func() {
 			ctx := context.Background()
-			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Guid: "some-route-guid"})
+			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
+				Route: &api.Route{
+					Guid: "some-route-guid",
+				}})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UpsertRoute(ctx, &api.UpsertRouteRequest{Host: "some-hostname"})
+			_, err = handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
+				Route: &api.Route{
+					Host: "some-hostname",
+				}})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
 		It("adds the route if it is new", func() {
 			ctx := context.Background()
 			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
-				Guid: "route-guid-a",
-				Host: "route-a.example.com",
-			})
+				Route: &api.Route{
+					Guid: "route-guid-a",
+					Host: "route-a.example.com",
+				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
 			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&handlers.Route{
@@ -85,20 +92,25 @@ var _ = Describe("Capi Handlers", func() {
 
 		It("validates the inputs", func() {
 			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{RouteGuid: "some-route-guid"})
+			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{RouteMapping: &api.RouteMapping{
+				RouteGuid: "some-route-guid",
+			}})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{Process: &api.Process{Guid: "some-process-guid"}})
+			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{RouteMapping: &api.RouteMapping{
+				CapiProcess: &api.CapiProcess{Guid: "some-process-guid"},
+			}})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
 		It("maps the route", func() {
 			ctx := context.Background()
 			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
+				RouteMapping: &api.RouteMapping{
 				RouteGuid: "route-guid-a",
-				Process: &api.Process{
+				CapiProcess: &api.CapiProcess{
 					Guid: "process-guid-a",
 				},
-			})
+			}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
 			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
@@ -115,13 +127,13 @@ var _ = Describe("Capi Handlers", func() {
 			ctx := context.Background()
 			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "some-route-guid"})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{ProcessGuid: "some-process-guid"})
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{CapiProcessGuid: "some-process-guid"})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
 		It("unmaps the routes", func() {
 			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", ProcessGuid: "process-guid-a"})
+			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", CapiProcessGuid: "process-guid-a"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
 			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&handlers.RouteMapping{

@@ -31,8 +31,8 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
 	}
 	route := Route{
-		GUID: RouteGUID(request.Guid),
-		Host: request.Host,
+		GUID: RouteGUID(request.Route.Guid),
+		Host: request.Route.Host,
 	}
 	c.RoutesRepo.Upsert(&route)
 	return &api.UpsertRouteResponse{}, nil
@@ -44,9 +44,9 @@ func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
 	r := &RouteMapping{
-		RouteGUID: RouteGUID(request.RouteGuid),
+		RouteGUID: RouteGUID(request.RouteMapping.RouteGuid),
 		Process: &Process{
-			GUID: ProcessGUID(request.Process.Guid),
+			GUID: ProcessGUID(request.RouteMapping.CapiProcess.Guid),
 		},
 	}
 
@@ -60,7 +60,7 @@ func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteReques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteGuid), Process: &Process{GUID: ProcessGUID(request.ProcessGuid)}}
+	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteGuid), Process: &Process{GUID: ProcessGUID(request.CapiProcessGuid)}}
 
 	c.RouteMappingsRepo.Unmap(r)
 
@@ -68,7 +68,11 @@ func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteReques
 }
 
 func validateUpsertRouteRequest(r *api.UpsertRouteRequest) error {
-	if r.Guid == "" || r.Host == "" {
+	route := r.Route
+	if route == nil {
+		return errors.New("route is required")
+	}
+	if route.Guid == "" || route.Host == "" {
 		return errors.New("route Guid and Host are required")
 	}
 	return nil
@@ -82,18 +86,22 @@ func validateDeleteRouteRequest(r *api.DeleteRouteRequest) error {
 }
 
 func validateMapRouteRequest(r *api.MapRouteRequest) error {
-	if r.Process == nil {
-		return errors.New("Process is required")
+	rm := r.RouteMapping
+	if rm == nil {
+		return errors.New("RouteMapping is required")
 	}
-	if r.RouteGuid == "" || r.Process.Guid == "" {
-		return errors.New("RouteGUID and ProcessGUID are required")
+	if rm.CapiProcess == nil {
+		return errors.New("CapiProcess is required")
+	}
+	if rm.RouteGuid == "" || rm.CapiProcess.Guid == "" {
+		return errors.New("RouteGUID and CapiProcessGUID are required")
 	}
 	return nil
 }
 
 func validateUnmapRouteRequest(r *api.UnmapRouteRequest) error {
-	if r.RouteGuid == "" || r.ProcessGuid == "" {
-		return errors.New("RouteGuid and ProcessGuid are required")
+	if r.RouteGuid == "" || r.CapiProcessGuid == "" {
+		return errors.New("RouteGuid and CapiProcessGuid are required")
 	}
 	return nil
 }
