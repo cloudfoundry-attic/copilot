@@ -24,28 +24,22 @@ To compile the server:
 go build code.cloudfoundry.org/copilot/cmd/copilot-server
 ```
 
-## Adding a Route
+## Using the Server
 
 We are using a generic grpc client to interact with cloud controller grpc service (installation instructions below)
 
-### Setup Generic GRPC Client
+### Setup GRPC Client
+
+If you are developing locally, you can install `grpcurl`
+```sh
+go get -u github.com/fullstorydev/grpcurl
+```
+
+If you are using a cloudfoundry
 - bosh ssh to the istio vm and `sudo su`
-- install latest nodejs and npm:
+- grpcurl is at `/var/vcap/packages/grpcurl/bin/grpcurl`
+- the certs you need are in `/var/vcap/jobs/pilot-discovery/config/certs/`
 
-```sh
-curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-apt install nodejs
-npm install -g grpcc
-```
-
-### Grab Latest Proto
-
-```sh
-cd /var/vcap/jobs/pilot-discovery/config/certs
-curl -s -L \
-  -o cloud_controller.proto \
-  https://raw.githubusercontent.com/cloudfoundry/copilot/master/api/protos/cloud_controller.proto
-```
 
 ### Push an App
 
@@ -61,27 +55,64 @@ curl localhost:8080/v1/registration
 ```
 
 ### Add a Route
-Do not try to use absolute paths for the certs / key - they do not work
 
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcc --root_cert ./ca.crt \
-  --private_key ./client.key \
-  --cert_chain ./client.crt \
-  --proto ./cloud_controller.proto \
-  --address 127.0.0.1:9000 \
-  --eval 'client.addRoute({hostname: "some.hostname.you.choose", processGuid: "the-process-guid"}, pr)'
+grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"route": {"host": "example.com", "guid": "route-guid-a"}}'
+  127.0.0.1:9000 \
+  api.CloudControllerCopilot/UpsertRoute
 ```
 
-### Remove a Route
+### Map a Route
 
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcc --root_cert ./ca.crt \
-  --private_key ./client.key \
-  --cert_chain ./client.crt \
-  --proto ./cloud_controller.proto \
-  --address 127.0.0.1:9000 \
-  --eval 'client.deleteRoute({hostname: "some.hostname.you.choose", processGuid: "the-process-guid"}, pr)'
+grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"route_mapping": {"route_guid": "route-guid-a", "capi_process": {"diego_process_guid": "diego_guid_1", "guid": "capi_guid_1"}}}'
+  127.0.0.1:9000 \
+  api.CloudControllerCopilot/MapRoute
 ```
+
+### List Routes
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  127.0.0.1:9000 \
+  api.IstioCopilot/Routes
+```
+
+### Unmap a Route
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"capi_process_guid": "capi_guid_1", "route_guid": "route-guid-a"}'
+  127.0.0.1:9000 \
+  api.CloudControllerCopilot/UnmapRoute
+```
+
+### Delete a Route
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"guid": "route-guid-a"}'
+  127.0.0.1:9000 \
+  api.CloudControllerCopilot/DeleteRoute
+```
+
 
 ### View pilot API results
 ```sh
@@ -128,16 +159,4 @@ Now you are ready to start your own pilot:
 - check that the `/tmp/config/cf_config.yml` so the IP address matches your tunnel and the cert file paths point to /tmp/config
 - install dlv on your machine `go get -u github.com/derekparker/delve/cmd/dlv`
 - from istio: `dlv debug ./pilot/cmd/pilot-discovery/main.go -- discovery --configDir=/dev/null --registries=CloudFoundry --cfConfig=/users/pivotal/downloads/config/cf_config.yml --meshConfig=/dev/null`
-
-## CLIs
-
-The server uses gRPC to communicate, so a cli is required for a developer to communicate with the server.
-There are two clis, one for communicating with endpoints used by cloud controller, and another one for endpoints used by istio.
-
-To compile the clis:
-
-```sh
-go build code.cloudfoundry.org/copilot/cmd/copilot-clients/cloud-controller
-go build code.cloudfoundry.org/copilot/cmd/copilot-clients/istio
-```
 
