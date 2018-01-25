@@ -106,18 +106,18 @@ var _ = Describe("Capi Handlers", func() {
 			ctx := context.Background()
 			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
 				RouteMapping: &api.RouteMapping{
-				RouteGuid: "route-guid-a",
-				CapiProcess: &api.CapiProcess{
-					Guid: "some-capi-process-guid",
-					DiegoProcessGuid: "process-guid-a",
-				},
-			}})
+					RouteGuid: "route-guid-a",
+					CapiProcess: &api.CapiProcess{
+						Guid:             "some-capi-process-guid",
+						DiegoProcessGuid: "process-guid-a",
+					},
+				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
+			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
 				CAPIProcess: &handlers.CAPIProcess{
-					GUID: "some-capi-process-guid",
+					GUID:             "some-capi-process-guid",
 					DiegoProcessGUID: "process-guid-a",
 				},
 			}))
@@ -138,7 +138,7 @@ var _ = Describe("Capi Handlers", func() {
 			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteGuid: "to-be-deleted-route-guid", CapiProcessGuid: "some-capi-process-guid"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
+			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(handlers.RouteMapping{
 				RouteGUID: "to-be-deleted-route-guid",
 				CAPIProcess: &handlers.CAPIProcess{
 					GUID: "some-capi-process-guid",

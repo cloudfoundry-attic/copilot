@@ -130,10 +130,14 @@ var _ = Describe("Istio Handlers", func() {
 		logger = lagertest.NewTestLogger("test")
 
 		handler = &handlers.Istio{
-			BBSClient:         bbsClient,
-			Logger:            logger,
-			RoutesRepo:        make(handlers.RoutesRepo),
-			RouteMappingsRepo: make(handlers.RouteMappingsRepo),
+			BBSClient: bbsClient,
+			Logger:    logger,
+			RoutesRepo: &handlers.RoutesRepo{
+				Repo: make(map[handlers.RouteGUID]*handlers.Route),
+			},
+			RouteMappingsRepo: &handlers.RouteMappingsRepo{
+				Repo: make(map[string]handlers.RouteMapping),
+			},
 		}
 	})
 
@@ -152,7 +156,7 @@ var _ = Describe("Istio Handlers", func() {
 				GUID: "route-guid-a",
 				Host: "route-a.cfapps.com",
 			})
-			routeMapping := &handlers.RouteMapping{
+			routeMapping := handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
 				CAPIProcess: &handlers.CAPIProcess{
 					DiegoProcessGUID: "process-guid-a",
@@ -172,7 +176,7 @@ var _ = Describe("Istio Handlers", func() {
 		})
 
 		It("ignores route mappings for routes that do not exist", func() {
-			routeMapping := &handlers.RouteMapping{
+			routeMapping := handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
 				CAPIProcess: &handlers.CAPIProcess{
 					DiegoProcessGUID: "process-guid-a",

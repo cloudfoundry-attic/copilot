@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"sync"
+
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 
 	"code.cloudfoundry.org/lager"
@@ -17,16 +19,27 @@ type DiegoProcessGUID string
 type Hostname string
 type RouteGUID string
 
-type RoutesRepo map[RouteGUID]*Route
+type RoutesRepo struct {
+	Repo map[RouteGUID]*Route
+	sync.Mutex
+}
 
-func (r RoutesRepo) Upsert(route *Route) {
-	r[route.GUID] = route
+func (r *RoutesRepo) Upsert(route *Route) {
+	r.Lock()
+	r.Repo[route.GUID] = route
+	r.Unlock()
 }
-func (r RoutesRepo) Delete(guid RouteGUID) {
-	delete(r, guid)
+
+func (r *RoutesRepo) Delete(guid RouteGUID) {
+	r.Lock()
+	delete(r.Repo, guid)
+	r.Unlock()
 }
-func (r RoutesRepo) Get(guid RouteGUID) (*Route, bool) {
-	route, ok := r[guid]
+
+func (r *RoutesRepo) Get(guid RouteGUID) (*Route, bool) {
+	r.Lock()
+	route, ok := r.Repo[guid]
+	r.Unlock()
 	return route, ok
 }
 
@@ -37,25 +50,40 @@ type routesRepoInterface interface {
 	Get(guid RouteGUID) (*Route, bool)
 }
 
-type RouteMappingsRepo map[string]*RouteMapping
-
-func (m RouteMappingsRepo) Map(routeMapping *RouteMapping) {
-	m[routeMapping.Key()] = routeMapping
+type RouteMappingsRepo struct {
+	Repo map[string]RouteMapping
+	sync.Mutex
 }
 
-func (m RouteMappingsRepo) Unmap(routeMapping *RouteMapping) {
-	delete(m, routeMapping.Key())
+func (m *RouteMappingsRepo) Map(routeMapping RouteMapping) {
+	m.Lock()
+	m.Repo[routeMapping.Key()] = routeMapping
+	m.Unlock()
 }
 
-func (m RouteMappingsRepo) List() map[string]*RouteMapping {
-	return m
+func (m *RouteMappingsRepo) Unmap(routeMapping RouteMapping) {
+	m.Lock()
+	delete(m.Repo, routeMapping.Key())
+	m.Unlock()
+}
+
+func (m *RouteMappingsRepo) List() map[string]RouteMapping {
+	list := make(map[string]RouteMapping)
+
+	m.Lock()
+	for k, v := range m.Repo {
+		list[k] = v
+	}
+	m.Unlock()
+
+	return list
 }
 
 //go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
 type routeMappingsRepoInterface interface {
-	Map(routeMapping *RouteMapping)
-	Unmap(routeMapping *RouteMapping)
-	List() map[string]*RouteMapping
+	Map(routeMapping RouteMapping)
+	Unmap(routeMapping RouteMapping)
+	List() map[string]RouteMapping
 }
 
 func (p DiegoProcessGUID) Hostname() string {
@@ -76,8 +104,8 @@ func (r *Route) Hostname() string {
 }
 
 type RouteMapping struct {
-	RouteGUID RouteGUID
-	CAPIProcess   *CAPIProcess
+	RouteGUID   RouteGUID
+	CAPIProcess *CAPIProcess
 }
 
 func (r *RouteMapping) Key() string {

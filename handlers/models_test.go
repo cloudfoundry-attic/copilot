@@ -10,29 +10,39 @@ import (
 var _ = Describe("Handler Models", func() {
 	Describe("RoutesRepo", func() {
 		var routesRepo handlers.RoutesRepo
+
 		BeforeEach(func() {
-			routesRepo = handlers.RoutesRepo{}
+			routesRepo = handlers.RoutesRepo{
+				Repo: make(map[handlers.RouteGUID]*handlers.Route),
+			}
 		})
+
 		It("Can Upsert and Delete Routes", func() {
 			route := &handlers.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
 			}
-			routesRepo.Upsert(route)
 
-			r, _ := routesRepo.Get("some-route-guid")
-			Expect(r).To(Equal(route))
+			go routesRepo.Upsert(route)
+
+			Eventually(func() *handlers.Route {
+				r, _ := routesRepo.Get("some-route-guid")
+				return r
+			}).Should(Equal(route))
+
 			routesRepo.Delete(route.GUID)
+
 			r, ok := routesRepo.Get("some-route-guid")
 			Expect(ok).To(BeFalse())
 			Expect(r).To(BeNil())
 		})
 
 		It("Does not error when deleting a route that does not exist", func() {
-			route := &handlers.Route{
+			route := handlers.Route{
 				Host: "host.example.com",
 				GUID: "delete-me",
 			}
+
 			routesRepo.Delete(route.GUID)
 			routesRepo.Delete(route.GUID)
 
@@ -45,11 +55,12 @@ var _ = Describe("Handler Models", func() {
 				Host: "host.example.com",
 				GUID: "some-route-guid",
 			}
-			routesRepo.Upsert(route)
+
 			updatedRoute := &handlers.Route{
 				Host: "something.different.com",
 				GUID: route.GUID,
 			}
+
 			routesRepo.Upsert(updatedRoute)
 
 			r, _ := routesRepo.Get("some-route-guid")
@@ -60,36 +71,43 @@ var _ = Describe("Handler Models", func() {
 	Describe("RouteMappingsRepo", func() {
 		var routeMappingsRepo handlers.RouteMappingsRepo
 		BeforeEach(func() {
-			routeMappingsRepo = handlers.RouteMappingsRepo{}
+			routeMappingsRepo = handlers.RouteMappingsRepo{
+				Repo: make(map[string]handlers.RouteMapping),
+			}
 		})
 
 		It("Can Map and Unmap Routes", func() {
-			routeMapping := &handlers.RouteMapping{
+			routeMapping := handlers.RouteMapping{
 				RouteGUID: "some-route-guid",
 				CAPIProcess: &handlers.CAPIProcess{
-					GUID: "some-capi-guid",
+					GUID:             "some-capi-guid",
 					DiegoProcessGUID: handlers.DiegoProcessGUID("some-process-guid"),
 				},
 			}
-			routeMappingsRepo.Map(routeMapping)
-			Expect(routeMappingsRepo.List()).To(Equal(map[string]*handlers.RouteMapping{
+
+			go routeMappingsRepo.Map(routeMapping)
+
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]handlers.RouteMapping{
 				routeMapping.Key(): routeMapping,
 			}))
+
 			routeMappingsRepo.Unmap(routeMapping)
 			Expect(routeMappingsRepo.List()).To(HaveLen(0))
 		})
 
 		It("does not duplicate route mappings", func() {
-			routeMapping := &handlers.RouteMapping{
+			routeMapping := handlers.RouteMapping{
 				RouteGUID: "some-route-guid",
 				CAPIProcess: &handlers.CAPIProcess{
-					GUID: "some-capi-guid",
+					GUID:             "some-capi-guid",
 					DiegoProcessGUID: handlers.DiegoProcessGUID("some-process-guid"),
 				},
 			}
+
 			routeMappingsRepo.Map(routeMapping)
 			routeMappingsRepo.Map(routeMapping)
 			routeMappingsRepo.Map(routeMapping)
+
 			Expect(routeMappingsRepo.List()).To(HaveLen(1))
 		})
 	})
@@ -100,24 +118,27 @@ var _ = Describe("Handler Models", func() {
 				rmA := handlers.RouteMapping{
 					RouteGUID: "route-guid-1",
 					CAPIProcess: &handlers.CAPIProcess{
-						GUID: "some-capi-guid-1",
+						GUID:             "some-capi-guid-1",
 						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-1"),
 					},
 				}
+
 				rmB := handlers.RouteMapping{
 					RouteGUID: "route-guid-1",
 					CAPIProcess: &handlers.CAPIProcess{
-						GUID: "some-capi-guid-2",
+						GUID:             "some-capi-guid-2",
 						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-2"),
 					},
 				}
+
 				rmC := handlers.RouteMapping{
 					RouteGUID: "route-guid-2",
 					CAPIProcess: &handlers.CAPIProcess{
-						GUID: "some-capi-guid-1",
+						GUID:             "some-capi-guid-1",
 						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-1"),
 					},
 				}
+
 				Expect(rmA.Key()).NotTo(Equal(rmB.Key()))
 				Expect(rmA.Key()).NotTo(Equal(rmC.Key()))
 				Expect(rmB.Key()).NotTo(Equal(rmC.Key()))

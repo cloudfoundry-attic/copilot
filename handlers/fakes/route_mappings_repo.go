@@ -8,33 +8,33 @@ import (
 )
 
 type RouteMappingsRepo struct {
-	MapStub        func(routeMapping *handlers.RouteMapping)
+	MapStub        func(routeMapping handlers.RouteMapping)
 	mapMutex       sync.RWMutex
 	mapArgsForCall []struct {
-		routeMapping *handlers.RouteMapping
+		routeMapping handlers.RouteMapping
 	}
-	UnmapStub        func(routeMapping *handlers.RouteMapping)
+	UnmapStub        func(routeMapping handlers.RouteMapping)
 	unmapMutex       sync.RWMutex
 	unmapArgsForCall []struct {
-		routeMapping *handlers.RouteMapping
+		routeMapping handlers.RouteMapping
 	}
-	ListStub        func() map[string]*handlers.RouteMapping
+	ListStub        func() map[string]handlers.RouteMapping
 	listMutex       sync.RWMutex
 	listArgsForCall []struct{}
 	listReturns     struct {
-		result1 map[string]*handlers.RouteMapping
+		result1 map[string]handlers.RouteMapping
 	}
 	listReturnsOnCall map[int]struct {
-		result1 map[string]*handlers.RouteMapping
+		result1 map[string]handlers.RouteMapping
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RouteMappingsRepo) Map(routeMapping *handlers.RouteMapping) {
+func (fake *RouteMappingsRepo) Map(routeMapping handlers.RouteMapping) {
 	fake.mapMutex.Lock()
 	fake.mapArgsForCall = append(fake.mapArgsForCall, struct {
-		routeMapping *handlers.RouteMapping
+		routeMapping handlers.RouteMapping
 	}{routeMapping})
 	fake.recordInvocation("Map", []interface{}{routeMapping})
 	fake.mapMutex.Unlock()
@@ -49,16 +49,16 @@ func (fake *RouteMappingsRepo) MapCallCount() int {
 	return len(fake.mapArgsForCall)
 }
 
-func (fake *RouteMappingsRepo) MapArgsForCall(i int) *handlers.RouteMapping {
+func (fake *RouteMappingsRepo) MapArgsForCall(i int) handlers.RouteMapping {
 	fake.mapMutex.RLock()
 	defer fake.mapMutex.RUnlock()
 	return fake.mapArgsForCall[i].routeMapping
 }
 
-func (fake *RouteMappingsRepo) Unmap(routeMapping *handlers.RouteMapping) {
+func (fake *RouteMappingsRepo) Unmap(routeMapping handlers.RouteMapping) {
 	fake.unmapMutex.Lock()
 	fake.unmapArgsForCall = append(fake.unmapArgsForCall, struct {
-		routeMapping *handlers.RouteMapping
+		routeMapping handlers.RouteMapping
 	}{routeMapping})
 	fake.recordInvocation("Unmap", []interface{}{routeMapping})
 	fake.unmapMutex.Unlock()
@@ -73,13 +73,13 @@ func (fake *RouteMappingsRepo) UnmapCallCount() int {
 	return len(fake.unmapArgsForCall)
 }
 
-func (fake *RouteMappingsRepo) UnmapArgsForCall(i int) *handlers.RouteMapping {
+func (fake *RouteMappingsRepo) UnmapArgsForCall(i int) handlers.RouteMapping {
 	fake.unmapMutex.RLock()
 	defer fake.unmapMutex.RUnlock()
 	return fake.unmapArgsForCall[i].routeMapping
 }
 
-func (fake *RouteMappingsRepo) List() map[string]*handlers.RouteMapping {
+func (fake *RouteMappingsRepo) List() map[string]handlers.RouteMapping {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
@@ -100,22 +100,22 @@ func (fake *RouteMappingsRepo) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *RouteMappingsRepo) ListReturns(result1 map[string]*handlers.RouteMapping) {
+func (fake *RouteMappingsRepo) ListReturns(result1 map[string]handlers.RouteMapping) {
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 map[string]*handlers.RouteMapping
+		result1 map[string]handlers.RouteMapping
 	}{result1}
 }
 
-func (fake *RouteMappingsRepo) ListReturnsOnCall(i int, result1 map[string]*handlers.RouteMapping) {
+func (fake *RouteMappingsRepo) ListReturnsOnCall(i int, result1 map[string]handlers.RouteMapping) {
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 map[string]*handlers.RouteMapping
+			result1 map[string]handlers.RouteMapping
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 map[string]*handlers.RouteMapping
+		result1 map[string]handlers.RouteMapping
 	}{result1}
 }
 

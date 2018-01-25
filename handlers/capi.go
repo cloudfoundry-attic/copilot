@@ -30,11 +30,13 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
 	}
-	route := Route{
+
+	route := &Route{
 		GUID: RouteGUID(request.Route.Guid),
 		Host: request.Route.Host,
 	}
-	c.RoutesRepo.Upsert(&route)
+
+	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil
 }
 
@@ -43,10 +45,10 @@ func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := &RouteMapping{
+	r := RouteMapping{
 		RouteGUID: RouteGUID(request.RouteMapping.RouteGuid),
 		CAPIProcess: &CAPIProcess{
-			GUID: request.RouteMapping.CapiProcess.Guid,
+			GUID:             request.RouteMapping.CapiProcess.Guid,
 			DiegoProcessGUID: DiegoProcessGUID(request.RouteMapping.CapiProcess.DiegoProcessGuid),
 		},
 	}
@@ -62,7 +64,7 @@ func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteReques
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
 
-	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteGuid), CAPIProcess: &CAPIProcess{GUID: request.CapiProcessGuid}}
+	r := RouteMapping{RouteGUID: RouteGUID(request.RouteGuid), CAPIProcess: &CAPIProcess{GUID: request.CapiProcessGuid}}
 
 	c.RouteMappingsRepo.Unmap(r)
 
