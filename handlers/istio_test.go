@@ -34,64 +34,64 @@ var _ = Describe("Istio Handlers", func() {
 
 	BeforeEach(func() {
 		bbsClientResponse = []*bbsmodels.ActualLRPGroup{
-			&bbsmodels.ActualLRPGroup{
+			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.10.1.5",
 						Ports: []*bbsmodels.PortMapping{
-							&bbsmodels.PortMapping{ContainerPort: 2222, HostPort: 61006},
-							&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61005},
+							{ContainerPort: 2222, HostPort: 61006},
+							{ContainerPort: 8080, HostPort: 61005},
 						},
 					},
 				},
 			},
-			&bbsmodels.ActualLRPGroup{},
-			&bbsmodels.ActualLRPGroup{
+			{},
+			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 2, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.40.2",
 						Ports: []*bbsmodels.PortMapping{
-							&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61008},
+							{ContainerPort: 8080, HostPort: 61008},
 						},
 					},
 				},
 			},
-			&bbsmodels.ActualLRPGroup{
+			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateClaimed,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.40.4",
 						Ports: []*bbsmodels.PortMapping{
-							&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61007},
+							{ContainerPort: 8080, HostPort: 61007},
 						},
 					},
 				},
 			},
-			&bbsmodels.ActualLRPGroup{
+			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.50.4",
 						Ports: []*bbsmodels.PortMapping{
-							&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61009},
+							{ContainerPort: 8080, HostPort: 61009},
 						},
 					},
 				},
 			},
-			&bbsmodels.ActualLRPGroup{
+			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 2, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.60.2",
 						Ports: []*bbsmodels.PortMapping{
-							&bbsmodels.PortMapping{ContainerPort: 8080, HostPort: 61001},
+							{ContainerPort: 8080, HostPort: 61001},
 						},
 					},
 				},
@@ -154,8 +154,8 @@ var _ = Describe("Istio Handlers", func() {
 			})
 			routeMapping := &handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
-				Process: &handlers.Process{
-					GUID: "process-guid-a",
+				CAPIProcess: &handlers.CAPIProcess{
+					DiegoProcessGUID: "process-guid-a",
 				},
 			}
 			handler.RouteMappingsRepo.Map(routeMapping)
@@ -174,8 +174,8 @@ var _ = Describe("Istio Handlers", func() {
 		It("ignores route mappings for routes that do not exist", func() {
 			routeMapping := &handlers.RouteMapping{
 				RouteGUID: "route-guid-a",
-				Process: &handlers.Process{
-					GUID: "process-guid-a",
+				CAPIProcess: &handlers.CAPIProcess{
+					DiegoProcessGUID: "process-guid-a",
 				},
 			}
 			handler.RouteMappingsRepo.Map(routeMapping)

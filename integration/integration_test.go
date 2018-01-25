@@ -172,7 +172,8 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 				RouteGuid: "route-guid-a",
 				CapiProcess: &api.CapiProcess{
-					Guid: "process-guid-a",
+					DiegoProcessGuid: "process-guid-a",
+					Guid: "capi-process-guid-a",
 				}},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -203,7 +204,8 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 				RouteGuid: "route-guid-a",
 				CapiProcess: &api.CapiProcess{
-					Guid: "process-guid-b",
+					DiegoProcessGuid: "process-guid-b",
+					Guid: "capi-process-guid-b",
 				},
 			},
 		})
@@ -220,7 +222,8 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 			RouteGuid: "route-guid-b",
 			CapiProcess: &api.CapiProcess{
-				Guid: "process-guid-b",
+				DiegoProcessGuid: "process-guid-b",
+				Guid: "capi-process-guid-b",
 			}},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -247,7 +250,7 @@ var _ = Describe("Copilot", func() {
 		By("cc unmaps the first backend from the first route")
 		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{
 			RouteGuid:   "route-guid-a",
-			CapiProcessGuid: "process-guid-a",
+			CapiProcessGuid: "capi-process-guid-a",
 		})
 		Expect(err).NotTo(HaveOccurred())
 

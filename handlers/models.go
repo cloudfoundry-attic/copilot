@@ -8,10 +8,12 @@ import (
 
 const CF_APP_PORT = 8080
 
-type Process struct {
-	GUID ProcessGUID
+type CAPIProcess struct {
+	GUID             string
+	DiegoProcessGUID DiegoProcessGUID
 }
-type ProcessGUID string
+
+type DiegoProcessGUID string
 type Hostname string
 type RouteGUID string
 
@@ -56,7 +58,7 @@ type routeMappingsRepoInterface interface {
 	List() map[string]*RouteMapping
 }
 
-func (p ProcessGUID) Hostname() string {
+func (p DiegoProcessGUID) Hostname() string {
 	return string(p) + ".cfapps.internal"
 }
 
@@ -75,9 +77,9 @@ func (r *Route) Hostname() string {
 
 type RouteMapping struct {
 	RouteGUID RouteGUID
-	Process   *Process
+	CAPIProcess   *CAPIProcess
 }
 
 func (r *RouteMapping) Key() string {
-	return string(r.RouteGUID) + "-" + string(r.Process.GUID)
+	return string(r.RouteGUID) + "-" + string(r.CAPIProcess.GUID)
 }

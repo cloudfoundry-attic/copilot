@@ -66,8 +66,9 @@ var _ = Describe("Handler Models", func() {
 		It("Can Map and Unmap Routes", func() {
 			routeMapping := &handlers.RouteMapping{
 				RouteGUID: "some-route-guid",
-				Process: &handlers.Process{
-					GUID: handlers.ProcessGUID("some-process-guid"),
+				CAPIProcess: &handlers.CAPIProcess{
+					GUID: "some-capi-guid",
+					DiegoProcessGUID: handlers.DiegoProcessGUID("some-process-guid"),
 				},
 			}
 			routeMappingsRepo.Map(routeMapping)
@@ -81,8 +82,9 @@ var _ = Describe("Handler Models", func() {
 		It("does not duplicate route mappings", func() {
 			routeMapping := &handlers.RouteMapping{
 				RouteGUID: "some-route-guid",
-				Process: &handlers.Process{
-					GUID: handlers.ProcessGUID("some-process-guid"),
+				CAPIProcess: &handlers.CAPIProcess{
+					GUID: "some-capi-guid",
+					DiegoProcessGUID: handlers.DiegoProcessGUID("some-process-guid"),
 				},
 			}
 			routeMappingsRepo.Map(routeMapping)
@@ -97,20 +99,23 @@ var _ = Describe("Handler Models", func() {
 			It("Is unique for process guid and route guid", func() {
 				rmA := handlers.RouteMapping{
 					RouteGUID: "route-guid-1",
-					Process: &handlers.Process{
-						GUID: handlers.ProcessGUID("process-guid-1"),
+					CAPIProcess: &handlers.CAPIProcess{
+						GUID: "some-capi-guid-1",
+						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-1"),
 					},
 				}
 				rmB := handlers.RouteMapping{
 					RouteGUID: "route-guid-1",
-					Process: &handlers.Process{
-						GUID: handlers.ProcessGUID("process-guid-2"),
+					CAPIProcess: &handlers.CAPIProcess{
+						GUID: "some-capi-guid-2",
+						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-2"),
 					},
 				}
 				rmC := handlers.RouteMapping{
 					RouteGUID: "route-guid-2",
-					Process: &handlers.Process{
-						GUID: handlers.ProcessGUID("process-guid-1"),
+					CAPIProcess: &handlers.CAPIProcess{
+						GUID: "some-capi-guid-1",
+						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-1"),
 					},
 				}
 				Expect(rmA.Key()).NotTo(Equal(rmB.Key()))

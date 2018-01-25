@@ -26,14 +26,14 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 		return nil, err
 	}
 
-	runningBackends := make(map[ProcessGUID]*api.BackendSet)
+	runningBackends := make(map[DiegoProcessGUID]*api.BackendSet)
 	for _, actualGroup := range actualLRPGroups {
 		instance := actualGroup.Instance
 		if instance == nil {
 			c.Logger.Debug("skipping-nil-instance")
 			continue
 		}
-		processGUID := ProcessGUID(instance.ActualLRPKey.ProcessGuid)
+		processGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
 		if instance.State != bbsmodels.ActualLRPStateRunning {
 			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": processGUID})
 			continue
@@ -62,7 +62,7 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 
 	// append external routes
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
-		backends, ok := runningBackends[routeMapping.Process.GUID]
+		backends, ok := runningBackends[routeMapping.CAPIProcess.DiegoProcessGUID]
 		if !ok {
 			continue
 		}
