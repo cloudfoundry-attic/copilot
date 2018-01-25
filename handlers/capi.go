@@ -16,15 +16,6 @@ type CAPI struct {
 	RouteMappingsRepo routeMappingsRepoInterface
 }
 
-func (c *CAPI) DeleteRoute(context context.Context, request *api.DeleteRouteRequest) (*api.DeleteRouteResponse, error) {
-	err := validateDeleteRouteRequest(request)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-	c.RoutesRepo.Delete(RouteGUID(request.Guid))
-	return &api.DeleteRouteResponse{}, nil
-}
-
 func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
 	err := validateUpsertRouteRequest(request)
 	if err != nil {
@@ -38,6 +29,15 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 
 	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil
+}
+
+func (c *CAPI) DeleteRoute(context context.Context, request *api.DeleteRouteRequest) (*api.DeleteRouteResponse, error) {
+	err := validateDeleteRouteRequest(request)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+	c.RoutesRepo.Delete(RouteGUID(request.Guid))
+	return &api.DeleteRouteResponse{}, nil
 }
 
 func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (*api.MapRouteResponse, error) {
