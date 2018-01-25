@@ -57,8 +57,12 @@ func mainWithError() error {
 		return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
 	}
 
-	routesRepo := handlers.RoutesRepo{}
-	routeMappingsRepo := handlers.RouteMappingsRepo{}
+	routesRepo := &handlers.RoutesRepo{
+		Repo: make(map[handlers.RouteGUID]*handlers.Route),
+	}
+	routeMappingsRepo := &handlers.RouteMappingsRepo{
+		Repo: make(map[string]handlers.RouteMapping),
+	}
 
 	istioHandler := &handlers.Istio{
 		RoutesRepo:        routesRepo,
