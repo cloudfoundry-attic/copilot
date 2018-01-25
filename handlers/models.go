@@ -11,10 +11,11 @@ import (
 const CF_APP_PORT = 8080
 
 type CAPIProcess struct {
-	GUID             string
+	GUID             CAPIProcessGUID
 	DiegoProcessGUID DiegoProcessGUID
 }
 
+type CAPIProcessGUID string
 type DiegoProcessGUID string
 type Hostname string
 type RouteGUID string
