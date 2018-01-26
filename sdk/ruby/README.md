@@ -6,6 +6,7 @@ export COPILOT_ROOT=$(pwd)
 cd sdk/ruby
 docker build -t protobuf-ruby-dependencies .
 docker run -v $COPILOT_ROOT:/tmp/copilot -it protobuf-ruby-dependencies /bin/bash
+cd /tmp/copilot
 ```
 
 ### How to generate services and messages from the `.proto` file
