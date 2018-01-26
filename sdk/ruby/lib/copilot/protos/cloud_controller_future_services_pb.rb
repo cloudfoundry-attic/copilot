@@ -18,6 +18,8 @@ module Cloudfoundry
 
           rpc :UpsertRoute, UpsertRouteRequest, UpsertRouteResponse
           rpc :DeleteRoute, DeleteRouteRequest, DeleteRouteResponse
+          rpc :UpsertCapiProcess, UpsertCapiProcessRequest, UpsertCapiProcessResponse
+          rpc :DeleteCapiProcess, DeleteCapiProcessRequest, DeleteCapiProcessResponse
           rpc :MapRoute, MapRouteRequest, MapRouteResponse
           rpc :UnmapRoute, UnmapRouteRequest, UnmapRouteResponse
           rpc :BulkSync, BulkSyncRequest, BulkSyncResponse

@@ -4,37 +4,55 @@
 require 'google/protobuf'
 
 Google::Protobuf::DescriptorPool.generated_pool.build do
-  add_message "cloudfoundry.copilot.protos.MapRouteRequest" do
-    optional :process, :message, 1, "cloudfoundry.copilot.protos.MapRouteRequest.Process"
-    optional :route_guid, :string, 2
-  end
-  add_message "cloudfoundry.copilot.protos.MapRouteRequest.Process" do
+  add_message "cloudfoundry.copilot.protos.Route" do
     optional :guid, :string, 1
-    optional :app_guid, :string, 2
+    optional :host, :string, 2
+    optional :path, :string, 3
   end
-  add_message "cloudfoundry.copilot.protos.MapRouteResponse" do
+  add_message "cloudfoundry.copilot.protos.UpsertRouteRequest" do
+    optional :route, :message, 1, "cloudfoundry.copilot.protos.Route"
   end
-  add_message "cloudfoundry.copilot.protos.UnmapRouteRequest" do
-    optional :process_guid, :string, 1
-    optional :route_guid, :string, 2
-  end
-  add_message "cloudfoundry.copilot.protos.UnmapRouteResponse" do
+  add_message "cloudfoundry.copilot.protos.UpsertRouteResponse" do
   end
   add_message "cloudfoundry.copilot.protos.DeleteRouteRequest" do
     optional :guid, :string, 1
   end
   add_message "cloudfoundry.copilot.protos.DeleteRouteResponse" do
   end
-  add_message "cloudfoundry.copilot.protos.UpsertRouteRequest" do
+  add_message "cloudfoundry.copilot.protos.CapiProcess" do
     optional :guid, :string, 1
-    optional :host, :string, 2
-    optional :path, :string, 3
+    optional :diego_process_guid, :string, 2
+    optional :app_guid, :string, 3
   end
-  add_message "cloudfoundry.copilot.protos.UpsertRouteResponse" do
+  add_message "cloudfoundry.copilot.protos.UpsertCapiProcessRequest" do
+    optional :capi_process, :message, 1, "cloudfoundry.copilot.protos.CapiProcess"
+  end
+  add_message "cloudfoundry.copilot.protos.UpsertCapiProcessResponse" do
+  end
+  add_message "cloudfoundry.copilot.protos.DeleteCapiProcessRequest" do
+    optional :guid, :string, 1
+  end
+  add_message "cloudfoundry.copilot.protos.DeleteCapiProcessResponse" do
+  end
+  add_message "cloudfoundry.copilot.protos.RouteMapping" do
+    optional :capi_process_guid, :string, 1
+    optional :route_guid, :string, 2
+  end
+  add_message "cloudfoundry.copilot.protos.MapRouteRequest" do
+    optional :route_mapping, :message, 1, "cloudfoundry.copilot.protos.RouteMapping"
+  end
+  add_message "cloudfoundry.copilot.protos.MapRouteResponse" do
+  end
+  add_message "cloudfoundry.copilot.protos.UnmapRouteRequest" do
+    optional :capi_process_guid, :string, 1
+    optional :route_guid, :string, 2
+  end
+  add_message "cloudfoundry.copilot.protos.UnmapRouteResponse" do
   end
   add_message "cloudfoundry.copilot.protos.BulkSyncRequest" do
-    repeated :routes, :message, 1, "cloudfoundry.copilot.protos.UpsertRouteRequest"
-    repeated :route_mappings, :message, 2, "cloudfoundry.copilot.protos.MapRouteRequest"
+    repeated :routes, :message, 1, "cloudfoundry.copilot.protos.Route"
+    repeated :processes, :message, 2, "cloudfoundry.copilot.protos.CapiProcess"
+    repeated :route_mappings, :message, 3, "cloudfoundry.copilot.protos.RouteMapping"
   end
   add_message "cloudfoundry.copilot.protos.BulkSyncResponse" do
   end
@@ -43,15 +61,21 @@ end
 module Cloudfoundry
   module Copilot
     module Protos
+      Route = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.Route").msgclass
+      UpsertRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UpsertRouteRequest").msgclass
+      UpsertRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UpsertRouteResponse").msgclass
+      DeleteRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.DeleteRouteRequest").msgclass
+      DeleteRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.DeleteRouteResponse").msgclass
+      CapiProcess = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.CapiProcess").msgclass
+      UpsertCapiProcessRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UpsertCapiProcessRequest").msgclass
+      UpsertCapiProcessResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UpsertCapiProcessResponse").msgclass
+      DeleteCapiProcessRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.DeleteCapiProcessRequest").msgclass
+      DeleteCapiProcessResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.DeleteCapiProcessResponse").msgclass
+      RouteMapping = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.RouteMapping").msgclass
       MapRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.MapRouteRequest").msgclass
-      MapRouteRequest::Process = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.MapRouteRequest.Process").msgclass
       MapRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.MapRouteResponse").msgclass
       UnmapRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UnmapRouteRequest").msgclass
       UnmapRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UnmapRouteResponse").msgclass
-      DeleteRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.DeleteRouteRequest").msgclass
-      DeleteRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.DeleteRouteResponse").msgclass
-      UpsertRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UpsertRouteRequest").msgclass
-      UpsertRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.UpsertRouteResponse").msgclass
       BulkSyncRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.BulkSyncRequest").msgclass
       BulkSyncResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("cloudfoundry.copilot.protos.BulkSyncResponse").msgclass
     end
