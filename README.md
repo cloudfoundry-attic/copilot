@@ -58,7 +58,7 @@ curl localhost:8080/v1/registration
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcurl -cacert ./ca.crt \
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
   -d '{"route": {"host": "example.com", "guid": "route-guid-a"}}'
