@@ -70,7 +70,7 @@ grpcurl -cacert ./ca.crt \
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcurl -cacert ./ca.crt \
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
   -d '{"route_mapping": {"route_guid": "route-guid-a", "capi_process": {"diego_process_guid": "diego_guid_1", "guid": "capi_guid_1"}}}'
@@ -82,7 +82,7 @@ grpcurl -cacert ./ca.crt \
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcurl -cacert ./ca.crt \
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
   127.0.0.1:9000 \
@@ -93,7 +93,7 @@ grpcurl -cacert ./ca.crt \
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcurl -cacert ./ca.crt \
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
   -d '{"capi_process_guid": "capi_guid_1", "route_guid": "route-guid-a"}'
@@ -105,7 +105,7 @@ grpcurl -cacert ./ca.crt \
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
-grpcurl -cacert ./ca.crt \
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
   -d '{"guid": "route-guid-a"}'
