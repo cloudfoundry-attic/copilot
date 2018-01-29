@@ -26,12 +26,13 @@ import (
 
 var _ = Describe("Copilot", func() {
 	var (
-		session         *gexec.Session
-		istioClient     copilot.IstioClient
-		ccClient        copilot.CloudControllerClient
-		serverConfig    *config.Config
-		clientTLSConfig *tls.Config
-		configFilePath  string
+		session                        *gexec.Session
+		istioClient                    copilot.IstioClient
+		ccClient                       copilot.CloudControllerClient
+		serverConfig                   *config.Config
+		pilotClientTLSConfig           *tls.Config
+		cloudControllerClientTLSConfig *tls.Config
+		configFilePath                 string
 
 		bbsServer    *ghttp.Server
 		cleanupFuncs []func()
@@ -103,7 +104,8 @@ var _ = Describe("Copilot", func() {
 		serverConfig = &config.Config{
 			ListenAddressForPilot:           listenAddrForPilot,
 			ListenAddressForCloudController: listenAddrForCloudController,
-			ClientCAPath:                    copilotTLSFiles.ClientCA,
+			PilotClientCAPath:               copilotTLSFiles.ClientCA,
+			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
 			ServerCertPath:                  copilotTLSFiles.ServerCert,
 			ServerKeyPath:                   copilotTLSFiles.ServerKey,
 			BBS: config.BBSConfig{
@@ -125,11 +127,12 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session.Out).Should(gbytes.Say(`started`))
 
-		clientTLSConfig = copilotCreds.ClientTLSConfig()
+		pilotClientTLSConfig = copilotCreds.ClientTLSConfig()
+		cloudControllerClientTLSConfig = copilotCreds.OtherClientTLSConfig()
 
-		istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddressForPilot, clientTLSConfig)
+		istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddressForPilot, pilotClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
-		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, clientTLSConfig)
+		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, cloudControllerClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -317,11 +320,11 @@ var _ = Describe("Copilot", func() {
 		Eventually(session, "2s").Should(gexec.Exit())
 	})
 
-	Context("when the tls config is invalid", func() {
+	Context("when the pilot-facing server tls config is invalid", func() {
 		BeforeEach(func() {
-			clientTLSConfig.RootCAs = nil
+			pilotClientTLSConfig.RootCAs = nil
 			var err error
-			istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddressForPilot, clientTLSConfig)
+			istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddressForPilot, pilotClientTLSConfig)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

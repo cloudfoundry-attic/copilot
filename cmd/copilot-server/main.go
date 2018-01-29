@@ -30,7 +30,11 @@ func mainWithError() error {
 		return err
 	}
 
-	tlsConfig, err := cfg.ServerTLSConfig()
+	pilotFacingTLSConfig, err := cfg.ServerTLSConfigForPilot()
+	if err != nil {
+		return err
+	}
+	cloudControllerFacingTLSConfig, err := cfg.ServerTLSConfigForCloudController()
 	if err != nil {
 		return err
 	}
@@ -80,14 +84,14 @@ func mainWithError() error {
 			api.RegisterIstioCopilotServer(s, istioHandler)
 			reflection.Register(s)
 		},
-		grpc.Creds(credentials.NewTLS(tlsConfig)),
+		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
 	)
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
 			api.RegisterCloudControllerCopilotServer(s, capiHandler)
 			reflection.Register(s)
 		},
-		grpc.Creds(credentials.NewTLS(tlsConfig)),
+		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
 	)
 
 	members := grouper.Members{

@@ -25,7 +25,8 @@ var _ = Describe("Config", func() {
 		cfg = &config.Config{
 			ListenAddressForPilot:           "127.0.0.1:1234",
 			ListenAddressForCloudController: "127.0.0.1:1235",
-			ClientCAPath:                    "some-ca-path",
+			PilotClientCAPath:               "some-pilot-ca-path",
+			CloudControllerClientCAPath:     "some-cloud-controller-ca-path",
 			ServerCertPath:                  "some-cert-path",
 			ServerKeyPath:                   "some-key-path",
 			BBS: config.BBSConfig{
@@ -76,7 +77,8 @@ var _ = Describe("Config", func() {
 		},
 		Entry("ListenAddressForPilot", "ListenAddressForPilot"),
 		Entry("ListenAddressForCloudController", "ListenAddressForCloudController"),
-		Entry("ClientCAPath", "ClientCAPath"),
+		Entry("PilotClientCAPath", "PilotClientCAPath"),
+		Entry("CloudControllerClientCAPath", "CloudControllerClientCAPath"),
 		Entry("ServerCertPath", "ServerCertPath"),
 		Entry("ServerKeyPath", "ServerKeyPath"),
 	)
@@ -107,20 +109,22 @@ var _ = Describe("Config", func() {
 			tlsFiles := creds.CreateServerTLSFiles()
 
 			rawConfig = config.Config{
-				ClientCAPath:   tlsFiles.ClientCA,
-				ServerCertPath: tlsFiles.ServerCert,
-				ServerKeyPath:  tlsFiles.ServerKey,
+				PilotClientCAPath:           tlsFiles.ClientCA,
+				CloudControllerClientCAPath: tlsFiles.OtherClientCA,
+				ServerCertPath:              tlsFiles.ServerCert,
+				ServerKeyPath:               tlsFiles.ServerKey,
 			}
 		})
 
 		AfterEach(func() {
-			_ = os.Remove(rawConfig.ClientCAPath)
+			_ = os.Remove(rawConfig.PilotClientCAPath)
+			_ = os.Remove(rawConfig.CloudControllerClientCAPath)
 			_ = os.Remove(rawConfig.ServerCertPath)
 			_ = os.Remove(rawConfig.ServerKeyPath)
 		})
 
-		It("returns a valid tls.Config", func() {
-			tlsConfig, err := rawConfig.ServerTLSConfig()
+		It("returns a valid tls.Config for the Pilot-facing server", func() {
+			tlsConfig, err := rawConfig.ServerTLSConfigForPilot()
 			Expect(err).NotTo(HaveOccurred())
 
 			ln, err := tls.Listen("tcp", ":", tlsConfig)
@@ -128,8 +132,17 @@ var _ = Describe("Config", func() {
 			Expect(ln).NotTo(BeNil())
 		})
 
-		It("sets secure values for configuration parameters", func() {
-			tlsConfig, err := rawConfig.ServerTLSConfig()
+		It("returns a valid tls.Config for the Cloud Controller-facing server", func() {
+			tlsConfig, err := rawConfig.ServerTLSConfigForCloudController()
+			Expect(err).NotTo(HaveOccurred())
+
+			ln, err := tls.Listen("tcp", ":", tlsConfig)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ln).NotTo(BeNil())
+		})
+
+		It("sets secure values for configuration parameters for the Pilot-facing server", func() {
+			tlsConfig, err := rawConfig.ServerTLSConfigForPilot()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsConfig.MinVersion).To(Equal(uint16(tls.VersionTLS12)))
@@ -146,22 +159,61 @@ var _ = Describe("Config", func() {
 			Expect(tlsConfig.ClientCAs.Subjects()).To(ConsistOf(ContainSubstring("clientCA")))
 		})
 
-		Context("when the client CA file does not exist", func() {
+		It("sets secure values for configuration parameters for the Cloud Controller-facing server", func() {
+			tlsConfig, err := rawConfig.ServerTLSConfigForCloudController()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(tlsConfig.MinVersion).To(Equal(uint16(tls.VersionTLS12)))
+			Expect(tlsConfig.PreferServerCipherSuites).To(BeTrue())
+			Expect(tlsConfig.CipherSuites).To(ConsistOf([]uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			}))
+			Expect(tlsConfig.CurvePreferences).To(ConsistOf([]tls.CurveID{
+				tls.CurveP384,
+			}))
+			Expect(tlsConfig.ClientAuth).To(Equal(tls.RequireAndVerifyClientCert))
+			Expect(tlsConfig.ClientCAs).ToNot(BeNil())
+			Expect(tlsConfig.ClientCAs.Subjects()).To(ConsistOf(ContainSubstring("otherClientCA")))
+		})
+
+		Context("when the pilot client CA file does not exist", func() {
 			BeforeEach(func() {
-				Expect(os.Remove(rawConfig.ClientCAPath)).To(Succeed())
+				Expect(os.Remove(rawConfig.PilotClientCAPath)).To(Succeed())
 			})
 			It("returns a meaningful error", func() {
-				_, err := rawConfig.ServerTLSConfig()
-				Expect(err).To(MatchError(HavePrefix("loading client CAs: open")))
+				_, err := rawConfig.ServerTLSConfigForPilot()
+				Expect(err).To(MatchError(HavePrefix("loading client CAs for pilot-facing server: open")))
 			})
 		})
-		Context("when the client CA PEM data is invalid", func() {
+
+		Context("when the cloud controller client CA file does not exist", func() {
 			BeforeEach(func() {
-				Expect(ioutil.WriteFile(rawConfig.ClientCAPath, []byte("invalid pem"), 0600)).To(Succeed())
+				Expect(os.Remove(rawConfig.CloudControllerClientCAPath)).To(Succeed())
 			})
 			It("returns a meaningful error", func() {
-				_, err := rawConfig.ServerTLSConfig()
-				Expect(err).To(MatchError("parsing client CAs: invalid pem block"))
+				_, err := rawConfig.ServerTLSConfigForCloudController()
+				Expect(err).To(MatchError(HavePrefix("loading client CAs for cloud controller-facing server: open")))
+			})
+		})
+
+		Context("when the pilot client CA PEM data is invalid", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile(rawConfig.PilotClientCAPath, []byte("invalid pem"), 0600)).To(Succeed())
+			})
+			It("returns a meaningful error", func() {
+				_, err := rawConfig.ServerTLSConfigForPilot()
+				Expect(err).To(MatchError("parsing client CAs for pilot-facing server: invalid pem block"))
+			})
+		})
+
+		Context("when the cloud controller client CA PEM data is invalid", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile(rawConfig.CloudControllerClientCAPath, []byte("invalid pem"), 0600)).To(Succeed())
+			})
+			It("returns a meaningful error", func() {
+				_, err := rawConfig.ServerTLSConfigForCloudController()
+				Expect(err).To(MatchError("parsing client CAs for cloud controller-facing server: invalid pem block"))
 			})
 		})
 
@@ -169,9 +221,13 @@ var _ = Describe("Config", func() {
 			BeforeEach(func() {
 				Expect(ioutil.WriteFile(rawConfig.ServerCertPath, []byte("invalid pem"), 0600)).To(Succeed())
 			})
-			It("returns a meaningful error", func() {
-				_, err := rawConfig.ServerTLSConfig()
-				Expect(err).To(MatchError(HavePrefix("parsing server cert/key: tls: failed to find any PEM data")))
+			It("returns a meaningful error when loading the pilot-facing config", func() {
+				_, err := rawConfig.ServerTLSConfigForPilot()
+				Expect(err).To(MatchError(HavePrefix("parsing pilot-facing server cert/key: tls: failed to find any PEM data")))
+			})
+			It("returns a meaningful error when loading the cloud controller-facing config", func() {
+				_, err := rawConfig.ServerTLSConfigForCloudController()
+				Expect(err).To(MatchError(HavePrefix("parsing cloud controller-facing server cert/key: tls: failed to find any PEM data")))
 			})
 		})
 
@@ -179,9 +235,13 @@ var _ = Describe("Config", func() {
 			BeforeEach(func() {
 				Expect(ioutil.WriteFile(rawConfig.ServerKeyPath, []byte("invalid pem"), 0600)).To(Succeed())
 			})
-			It("returns a meaningful error", func() {
-				_, err := rawConfig.ServerTLSConfig()
-				Expect(err).To(MatchError(HavePrefix("parsing server cert/key: tls: failed to find any PEM data")))
+			It("returns a meaningful error when loading the pilot-facing config", func() {
+				_, err := rawConfig.ServerTLSConfigForPilot()
+				Expect(err).To(MatchError(HavePrefix("parsing pilot-facing server cert/key: tls: failed to find any PEM data")))
+			})
+			It("returns a meaningful error when loading the cloud controller-facing config", func() {
+				_, err := rawConfig.ServerTLSConfigForCloudController()
+				Expect(err).To(MatchError(HavePrefix("parsing cloud controller-facing server cert/key: tls: failed to find any PEM data")))
 			})
 		})
 	})

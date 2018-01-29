@@ -17,16 +17,18 @@ type Credentials struct {
 }
 
 type MTLSCredentials struct {
-	Server  *Credentials
-	Client  *Credentials
-	TempDir string
+	Server      *Credentials
+	Client      *Credentials
+	OtherClient *Credentials
+	TempDir     string
 }
 
 func GenerateMTLS() MTLSCredentials {
 	return MTLSCredentials{
-		Server:  generateCredentials("serverCA", "CopilotServer"),
-		Client:  generateCredentials("clientCA", "CopilotClient"),
-		TempDir: TempDir(),
+		Server:      generateCredentials("serverCA", "CopilotServer"),
+		Client:      generateCredentials("clientCA", "CopilotClient"),
+		OtherClient: generateCredentials("otherClientCA", "OtherCopilotClient"),
+		TempDir:     TempDir(),
 	}
 }
 
@@ -83,6 +85,30 @@ func (m MTLSCredentials) ServerTLSConfig() *tls.Config {
 	}
 }
 
+func (m MTLSCredentials) ServerTLSConfigForOtherClient() *tls.Config {
+	otherClientCAs := x509.NewCertPool()
+	ok := otherClientCAs.AppendCertsFromPEM(m.OtherClient.CA)
+	if !ok {
+		panic("failed appending certs")
+	}
+
+	serverCert, err := tls.X509KeyPair(m.Server.Cert, m.Server.Key)
+	assertNoError(err)
+
+	return &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+		CurvePreferences: []tls.CurveID{tls.CurveP384},
+		ClientAuth:       tls.RequireAndVerifyClientCert,
+		ClientCAs:        otherClientCAs,
+		Certificates:     []tls.Certificate{serverCert},
+	}
+}
+
 func (m MTLSCredentials) ClientTLSConfig() *tls.Config {
 	rootCAs := x509.NewCertPool()
 	ok := rootCAs.AppendCertsFromPEM(m.Server.CA)
@@ -106,8 +132,31 @@ func (m MTLSCredentials) ClientTLSConfig() *tls.Config {
 	}
 }
 
+func (m MTLSCredentials) OtherClientTLSConfig() *tls.Config {
+	rootCAs := x509.NewCertPool()
+	ok := rootCAs.AppendCertsFromPEM(m.Server.CA)
+	if !ok {
+		panic("failed appending certs")
+	}
+
+	otherClientCert, err := tls.X509KeyPair(m.OtherClient.Cert, m.OtherClient.Key)
+	assertNoError(err)
+
+	return &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+		CurvePreferences: []tls.CurveID{tls.CurveP384},
+		RootCAs:          rootCAs,
+		Certificates:     []tls.Certificate{otherClientCert},
+	}
+}
+
 type ServerTLSFilePaths struct {
-	ClientCA, ServerCert, ServerKey string
+	ClientCA, OtherClientCA, ServerCert, ServerKey string
 }
 
 func (m MTLSCredentials) saveTemp(shortName string, data []byte) string {
@@ -122,9 +171,10 @@ func (m MTLSCredentials) saveTemp(shortName string, data []byte) string {
 // Call m.CleanupTempFiles to remove these files
 func (m MTLSCredentials) CreateServerTLSFiles() ServerTLSFilePaths {
 	s := ServerTLSFilePaths{
-		ClientCA:   m.saveTemp("client.ca", m.Client.CA),
-		ServerCert: m.saveTemp("server.crt", m.Server.Cert),
-		ServerKey:  m.saveTemp("server.key", m.Server.Key),
+		ClientCA:      m.saveTemp("client.ca", m.Client.CA),
+		OtherClientCA: m.saveTemp("other-client.ca", m.OtherClient.CA),
+		ServerCert:    m.saveTemp("server.crt", m.Server.Cert),
+		ServerKey:     m.saveTemp("server.key", m.Server.Key),
 	}
 	return s
 }
