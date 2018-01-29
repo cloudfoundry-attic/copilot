@@ -23,10 +23,11 @@ var _ = Describe("Config", func() {
 	BeforeEach(func() {
 		configFile = testhelpers.TempFileName()
 		cfg = &config.Config{
-			ListenAddress:  "127.0.0.1:1234",
-			ClientCAPath:   "some-ca-path",
-			ServerCertPath: "some-cert-path",
-			ServerKeyPath:  "some-key-path",
+			ListenAddressForPilot:           "127.0.0.1:1234",
+			ListenAddressForCloudController: "127.0.0.1:1235",
+			ClientCAPath:                    "some-ca-path",
+			ServerCertPath:                  "some-cert-path",
+			ServerKeyPath:                   "some-key-path",
 			BBS: config.BBSConfig{
 				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",
@@ -73,7 +74,8 @@ var _ = Describe("Config", func() {
 			_, err := config.Load(configFile)
 			Expect(err).To(MatchError(HavePrefix("invalid config: " + fieldName)))
 		},
-		Entry("ListenAddress", "ListenAddress"),
+		Entry("ListenAddressForPilot", "ListenAddressForPilot"),
+		Entry("ListenAddressForCloudController", "ListenAddressForCloudController"),
 		Entry("ClientCAPath", "ClientCAPath"),
 		Entry("ServerCertPath", "ServerCertPath"),
 		Entry("ServerKeyPath", "ServerKeyPath"),

@@ -21,10 +21,11 @@ type BBSConfig struct {
 }
 
 type Config struct {
-	ListenAddress  string `validate:"nonzero"`
-	ClientCAPath   string `validate:"nonzero"`
-	ServerCertPath string `validate:"nonzero"`
-	ServerKeyPath  string `validate:"nonzero"`
+	ListenAddressForPilot           string `validate:"nonzero"`
+	ListenAddressForCloudController string `validate:"nonzero"`
+	ClientCAPath                    string `validate:"nonzero"`
+	ServerCertPath                  string `validate:"nonzero"`
+	ServerKeyPath                   string `validate:"nonzero"`
 
 	BBS BBSConfig
 }

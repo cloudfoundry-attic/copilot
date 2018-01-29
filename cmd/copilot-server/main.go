@@ -75,9 +75,15 @@ func mainWithError() error {
 		RouteMappingsRepo: routeMappingsRepo,
 		Logger:            logger,
 	}
-	grpcServer := grpcrunner.New(logger, cfg.ListenAddress,
+	grpcServerForPilot := grpcrunner.New(logger, cfg.ListenAddressForPilot,
 		func(s *grpc.Server) {
 			api.RegisterIstioCopilotServer(s, istioHandler)
+			reflection.Register(s)
+		},
+		grpc.Creds(credentials.NewTLS(tlsConfig)),
+	)
+	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
+		func(s *grpc.Server) {
 			api.RegisterCloudControllerCopilotServer(s, capiHandler)
 			reflection.Register(s)
 		},
@@ -85,7 +91,8 @@ func mainWithError() error {
 	)
 
 	members := grouper.Members{
-		grouper.Member{Name: "gprc-server", Runner: grpcServer},
+		grouper.Member{Name: "gprc-server-for-pilot", Runner: grpcServerForPilot},
+		grouper.Member{Name: "gprc-server-for-cloud-controller", Runner: grpcServerForCloudController},
 	}
 	group := grouper.NewOrdered(os.Interrupt, members)
 	monitor := ifrit.Invoke(sigmon.New(group))

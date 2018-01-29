@@ -41,7 +41,8 @@ var _ = Describe("Copilot", func() {
 		copilotCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
 
-		listenAddr := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForPilot := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 
 		bbsCreds := testhelpers.GenerateMTLS()
@@ -100,10 +101,11 @@ var _ = Describe("Copilot", func() {
 		cleanupFuncs = append(cleanupFuncs, bbsServer.Close)
 
 		serverConfig = &config.Config{
-			ListenAddress:  listenAddr,
-			ClientCAPath:   copilotTLSFiles.ClientCA,
-			ServerCertPath: copilotTLSFiles.ServerCert,
-			ServerKeyPath:  copilotTLSFiles.ServerKey,
+			ListenAddressForPilot:           listenAddrForPilot,
+			ListenAddressForCloudController: listenAddrForCloudController,
+			ClientCAPath:                    copilotTLSFiles.ClientCA,
+			ServerCertPath:                  copilotTLSFiles.ServerCert,
+			ServerKeyPath:                   copilotTLSFiles.ServerKey,
 			BBS: config.BBSConfig{
 				ServerCACertPath: bbsTLSFiles.ServerCA,
 				ClientCertPath:   bbsTLSFiles.ClientCert,
@@ -125,9 +127,9 @@ var _ = Describe("Copilot", func() {
 
 		clientTLSConfig = copilotCreds.ClientTLSConfig()
 
-		istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
+		istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddressForPilot, clientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
-		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddress, clientTLSConfig)
+		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, clientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -173,7 +175,7 @@ var _ = Describe("Copilot", func() {
 				RouteGuid: "route-guid-a",
 				CapiProcess: &api.CapiProcess{
 					DiegoProcessGuid: "process-guid-a",
-					Guid: "capi-process-guid-a",
+					Guid:             "capi-process-guid-a",
 				}},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -205,7 +207,7 @@ var _ = Describe("Copilot", func() {
 				RouteGuid: "route-guid-a",
 				CapiProcess: &api.CapiProcess{
 					DiegoProcessGuid: "process-guid-b",
-					Guid: "capi-process-guid-b",
+					Guid:             "capi-process-guid-b",
 				},
 			},
 		})
@@ -214,17 +216,17 @@ var _ = Describe("Copilot", func() {
 		By("cc adds a second route and maps it to the second backend")
 		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
 			Route: &api.Route{
-			Guid: "route-guid-b",
-			Host: "some-url-b",
-		}})
+				Guid: "route-guid-b",
+				Host: "some-url-b",
+			}})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
-			RouteGuid: "route-guid-b",
-			CapiProcess: &api.CapiProcess{
-				DiegoProcessGuid: "process-guid-b",
-				Guid: "capi-process-guid-b",
-			}},
+				RouteGuid: "route-guid-b",
+				CapiProcess: &api.CapiProcess{
+					DiegoProcessGuid: "process-guid-b",
+					Guid:             "capi-process-guid-b",
+				}},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -249,7 +251,7 @@ var _ = Describe("Copilot", func() {
 
 		By("cc unmaps the first backend from the first route")
 		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{
-			RouteGuid:   "route-guid-a",
+			RouteGuid:       "route-guid-a",
 			CapiProcessGuid: "capi-process-guid-a",
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -319,7 +321,7 @@ var _ = Describe("Copilot", func() {
 		BeforeEach(func() {
 			clientTLSConfig.RootCAs = nil
 			var err error
-			istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddress, clientTLSConfig)
+			istioClient, err = copilot.NewIstioClient(serverConfig.ListenAddressForPilot, clientTLSConfig)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
