@@ -20,7 +20,8 @@ module Cloudfoundry
       end
 
       def upsert_route(guid:, host:, path:)
-        request = Protos::UpsertRouteRequest.new(guid: guid, host: host, path: path)
+        route = Protos::Route.new(guid: guid, host: host, path: path)
+        request = Protos::UpsertRouteRequest.new(route: route)
         service.upsert_route(request)
 
       rescue GRPC::BadStatus => e
@@ -35,17 +36,17 @@ module Cloudfoundry
         raise puts "error code: '#{e.code}' occurred due to '#{e.details}' with metadata '#{e.metadata}'"
       end
 
-      def map_route(guid:, app_guid:, route_guid:)
-        process = Protos::MapRouteRequest::Process.new(guid: guid, app_guid: app_guid)
-        request = Protos::MapRouteRequest.new(process: process, route_guid: route_guid)
+      def map_route(capi_process_guid:, route_guid:)
+        route_mapping = Protos::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
+        request = Protos::MapRouteRequest.new(route_mapping: route_mapping)
         service.map_route(request)
 
       rescue GRPC::BadStatus => e
         raise puts "error code: '#{e.code}' occurred due to '#{e.details}' with metadata '#{e.metadata}'"
       end
 
-      def unmap_route(process_guid:, route_guid:)
-        request = Protos::UnmapRouteRequest.new(process_guid: process_guid, route_guid: route_guid)
+      def unmap_route(capi_process_guid:, route_guid:)
+        request = Protos::UnmapRouteRequest.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
         service.unmap_route(request)
 
       rescue GRPC::BadStatus => e
