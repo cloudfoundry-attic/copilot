@@ -17,7 +17,7 @@ cd api/protos
 protoc --ruby_out=../../sdk/ruby/lib/copilot/protos \
   --grpc_out=../../sdk/ruby/lib/copilot/protos \
   --plugin="protoc-gen-grpc=$(which grpc_tools_ruby_protoc_plugin)" \
-  ./cloud_controller_future.proto
+  ./cloud_controller.proto
 ```
 
 ### How to build and install the `cf-copilot` ruby gem
