@@ -62,7 +62,7 @@ curl localhost:8080/v1/registration
   -key ./client.key \
   -cert ./client.crt \
   -d '{"route": {"host": "example.com", "guid": "route-guid-a"}}' \
-  127.0.0.1:9000 \
+  127.0.0.1:9001 \
   api.CloudControllerCopilot/UpsertRoute
 ```
 
@@ -74,7 +74,7 @@ curl localhost:8080/v1/registration
   -key ./client.key \
   -cert ./client.crt \
   -d '{"route_mapping": {"route_guid": "route-guid-a", "capi_process": {"diego_process_guid": "diego_guid_1", "guid": "capi_guid_1"}}}' \
-  127.0.0.1:9000 \
+  127.0.0.1:9001 \
   api.CloudControllerCopilot/MapRoute
 ```
 
@@ -97,7 +97,7 @@ curl localhost:8080/v1/registration
   -key ./client.key \
   -cert ./client.crt \
   -d '{"capi_process_guid": "capi_guid_1", "route_guid": "route-guid-a"}' \
-  127.0.0.1:9000 \
+  127.0.0.1:9001 \
   api.CloudControllerCopilot/UnmapRoute
 ```
 
@@ -109,7 +109,7 @@ curl localhost:8080/v1/registration
   -key ./client.key \
   -cert ./client.crt \
   -d '{"guid": "route-guid-a"}' \
-  127.0.0.1:9000 \
+  127.0.0.1:9001 \
   api.CloudControllerCopilot/DeleteRoute
 ```
 
