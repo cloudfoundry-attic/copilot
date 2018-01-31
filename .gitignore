@@ -3,3 +3,4 @@ manual_testing
 .idea
 
 sdk/ruby/*.gem
+.DS_Store
