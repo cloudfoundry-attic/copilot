@@ -93,9 +93,8 @@ func (c *Config) serverTLSConfigForClient(clientName string, clientCAPath string
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
-		CurvePreferences: []tls.CurveID{tls.CurveP384},
-		ClientAuth:       tls.RequireAndVerifyClientCert,
-		Certificates:     []tls.Certificate{serverCert},
-		ClientCAs:        clientCAs,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		Certificates: []tls.Certificate{serverCert},
+		ClientCAs:    clientCAs,
 	}, nil
 }

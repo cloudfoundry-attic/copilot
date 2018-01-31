@@ -179,9 +179,7 @@ var _ = Describe("Config", func() {
 				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 			}))
-			Expect(tlsConfig.CurvePreferences).To(ConsistOf([]tls.CurveID{
-				tls.CurveP384,
-			}))
+			Expect(tlsConfig.CurvePreferences).To(BeEmpty())
 			Expect(tlsConfig.ClientAuth).To(Equal(tls.RequireAndVerifyClientCert))
 			Expect(tlsConfig.ClientCAs).ToNot(BeNil())
 			Expect(tlsConfig.ClientCAs.Subjects()).To(ConsistOf(ContainSubstring("clientCA")))
@@ -197,9 +195,7 @@ var _ = Describe("Config", func() {
 				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 			}))
-			Expect(tlsConfig.CurvePreferences).To(ConsistOf([]tls.CurveID{
-				tls.CurveP384,
-			}))
+			Expect(tlsConfig.CurvePreferences).To(BeEmpty())
 			Expect(tlsConfig.ClientAuth).To(Equal(tls.RequireAndVerifyClientCert))
 			Expect(tlsConfig.ClientCAs).ToNot(BeNil())
 			Expect(tlsConfig.ClientCAs.Subjects()).To(ConsistOf(ContainSubstring("otherClientCA")))
