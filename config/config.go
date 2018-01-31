@@ -86,6 +86,12 @@ func (c *Config) serverTLSConfigForClient(clientName string, clientCAPath string
 		return nil, fmt.Errorf("parsing client CAs for %s-facing server: invalid pem block", clientName)
 	}
 
+	// these magic values are copied from
+	//   https://github.com/pivotal-cf/paraphernalia/blob/4272315231ce0d2636eeb44ed0479e56ca165581/secure/tlsconfig/config.go#L71-L94
+	// with a tweak: we relax the curve preferences constraint in order to interoperate
+	// with the Ruby gRPC client library:
+	//  https://github.com/grpc/grpc/blob/633add81614f9d3877a2b3980ba99d0c9e8c687d/src/core/tsi/ssl_transport_security.cc#L641
+	// TODO: follow-up with Security team to determine if we care
 	return &tls.Config{
 		MinVersion:               tls.VersionTLS12,
 		PreferServerCipherSuites: true,
