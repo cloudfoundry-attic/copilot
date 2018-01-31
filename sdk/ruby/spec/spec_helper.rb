@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "cf/copilot"
+require "cf-copilot"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

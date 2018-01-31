@@ -5,7 +5,7 @@ require "copilot/version"
 
 Gem::Specification.new do |spec|
   spec.name          = 'cf-copilot'
-  spec.version       = Cf::Copilot::VERSION
+  spec.version       = Cloudfoundry::Copilot::VERSION
   spec.authors       = ['Cloud Foundry Routing Team']
   spec.email         = ['cf-routing@pivotal.io']
 

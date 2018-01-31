@@ -1,4 +1,4 @@
 source "https://rubygems.org"
 
 gemspec name: 'cf-copilot'
-gemspec name: 'cf-copilot-test-helpers'
+# gemspec name: 'cf-copilot-test-helpers'
