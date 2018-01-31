@@ -108,7 +108,7 @@ var _ = Describe("Copilot", func() {
 			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
 			ServerCertPath:                  copilotTLSFiles.ServerCert,
 			ServerKeyPath:                   copilotTLSFiles.ServerKey,
-			BBS: config.BBSConfig{
+			BBS: &config.BBSConfig{
 				ServerCACertPath: bbsTLSFiles.ServerCA,
 				ClientCertPath:   bbsTLSFiles.ClientCert,
 				ClientKeyPath:    bbsTLSFiles.ClientKey,
@@ -305,6 +305,31 @@ var _ = Describe("Copilot", func() {
 
 			Eventually(session, "2s").Should(gexec.Exit(1))
 			Expect(session.Out).To(gbytes.Say(`unable to reach BBS`))
+		})
+
+		Context("but if the user sets config BBS.Disable", func() {
+			BeforeEach(func() {
+				serverConfig.BBS.Disable = true
+				Expect(serverConfig.Save(configFilePath)).To(Succeed())
+			})
+
+			It("boots successfully and serves requests on the Cloud Controller-facing server", func() {
+				cmd := exec.Command(binaryPath, "-config", configFilePath)
+				var err error
+				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				WaitForHealthy(istioClient, ccClient)
+				_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
+					Route: &api.Route{
+						Guid: "route-guid-a",
+						Host: "some-url",
+					}})
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
+				Expect(err).To(MatchError(ContainSubstring("communication with bbs is disabled")))
+			})
 		})
 	})
 

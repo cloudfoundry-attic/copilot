@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
@@ -20,8 +21,11 @@ func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse
 }
 
 func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
-	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
+	if c.BBSClient == nil {
+		return nil, errors.New("communication with bbs is disabled")
+	}
 
+	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
 	if err != nil {
 		return nil, err
 	}

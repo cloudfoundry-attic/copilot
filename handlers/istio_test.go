@@ -193,5 +193,17 @@ var _ = Describe("Istio Handlers", func() {
 				},
 			}))
 		})
+
+		Context("when the BBSClient is nil (BBS has been disabled)", func() {
+			BeforeEach(func() {
+				handler.BBSClient = nil
+			})
+
+			It("returns a helpful error", func() {
+				ctx := context.Background()
+				_, err := handler.Routes(ctx, new(api.RoutesRequest))
+				Expect(err).To(MatchError("communication with bbs is disabled"))
+			})
+		})
 	})
 })

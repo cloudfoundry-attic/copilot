@@ -29,7 +29,7 @@ var _ = Describe("Config", func() {
 			CloudControllerClientCAPath:     "some-cloud-controller-ca-path",
 			ServerCertPath:                  "some-cert-path",
 			ServerKeyPath:                   "some-key-path",
-			BBS: config.BBSConfig{
+			BBS: &config.BBSConfig{
 				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",
 				ClientKeyPath:    "some-key-path",
@@ -86,7 +86,7 @@ var _ = Describe("Config", func() {
 	DescribeTable("required BBS fields",
 		func(fieldName string) {
 			// zero out the named field of the cfg struct
-			fieldValue := reflect.Indirect(reflect.ValueOf(&cfg.BBS)).FieldByName(fieldName)
+			fieldValue := reflect.Indirect(reflect.ValueOf(cfg.BBS)).FieldByName(fieldName)
 			fieldValue.Set(reflect.Zero(fieldValue.Type()))
 
 			// save to the file
@@ -100,6 +100,34 @@ var _ = Describe("Config", func() {
 		Entry("ClientKeyPath", "ClientKeyPath"),
 		Entry("Address", "Address"),
 	)
+
+	Context("when BBS.Disable is true but other BBS fields are empty", func() {
+		BeforeEach(func() {
+			cfg.BBS = &config.BBSConfig{
+				Disable: true,
+			}
+			err := cfg.Save(configFile)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("validates ok", func() {
+			loadedCfg, err := config.Load(configFile)
+			Expect(err).NotTo(HaveOccurred())
+			cfg.BBS = nil
+			Expect(loadedCfg).To(Equal(cfg))
+		})
+	})
+
+	Context("when BBS is missing", func() {
+		BeforeEach(func() {
+			cfg.BBS = nil
+			err := cfg.Save(configFile)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("fails with a useful error message", func() {
+			_, err := config.Load(configFile)
+			Expect(err).To(MatchError("invalid config: missing required 'BBS' field"))
+		})
+	})
 
 	Describe("building the server TLS config", func() {
 		var rawConfig config.Config

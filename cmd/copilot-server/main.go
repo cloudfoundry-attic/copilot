@@ -44,21 +44,25 @@ func mainWithError() error {
 		lager.INFO)
 	logger.RegisterSink(reconfigurableSink)
 
-	bbsClient, err := bbs.NewSecureClient(
-		cfg.BBS.Address,
-		cfg.BBS.ServerCACertPath,
-		cfg.BBS.ClientCertPath,
-		cfg.BBS.ClientKeyPath,
-		cfg.BBS.ClientSessionCacheSize,
-		cfg.BBS.MaxIdleConnsPerHost,
-	)
-	if err != nil {
-		return err
-	}
-
-	_, err = bbsClient.Cells(logger)
-	if err != nil {
-		return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
+	var bbsClient bbs.InternalClient
+	if cfg.BBS == nil {
+		bbsClient = nil // BBS is disabled
+	} else {
+		bbsClient, err = bbs.NewSecureClient(
+			cfg.BBS.Address,
+			cfg.BBS.ServerCACertPath,
+			cfg.BBS.ClientCertPath,
+			cfg.BBS.ClientKeyPath,
+			cfg.BBS.ClientSessionCacheSize,
+			cfg.BBS.MaxIdleConnsPerHost,
+		)
+		if err != nil {
+			return err
+		}
+		_, err = bbsClient.Cells(logger)
+		if err != nil {
+			return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
+		}
 	}
 
 	routesRepo := &handlers.RoutesRepo{

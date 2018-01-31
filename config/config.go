@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 
@@ -17,6 +18,7 @@ type BBSConfig struct {
 	Address                string `validate:"nonzero"`
 	ClientSessionCacheSize int
 	MaxIdleConnsPerHost    int
+	Disable                bool
 }
 
 type Config struct {
@@ -27,7 +29,7 @@ type Config struct {
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
 
-	BBS BBSConfig
+	BBS *BBSConfig
 }
 
 func (c *Config) Save(path string) error {
@@ -47,6 +49,12 @@ func Load(path string) (*Config, error) {
 	err = json.Unmarshal(configBytes, c)
 	if err != nil {
 		return nil, fmt.Errorf("parsing config: %s", err)
+	}
+	if c.BBS == nil {
+		return nil, errors.New("invalid config: missing required 'BBS' field")
+	}
+	if c.BBS.Disable {
+		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
 	}
 	err = validator.Validate(c)
 	if err != nil {
