@@ -78,10 +78,9 @@ func (m MTLSCredentials) ServerTLSConfig() *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
-		CurvePreferences: []tls.CurveID{tls.CurveP384},
-		ClientAuth:       tls.RequireAndVerifyClientCert,
-		ClientCAs:        clientCAs,
-		Certificates:     []tls.Certificate{serverCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    clientCAs,
+		Certificates: []tls.Certificate{serverCert},
 	}
 }
 
@@ -102,10 +101,9 @@ func (m MTLSCredentials) ServerTLSConfigForOtherClient() *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
-		CurvePreferences: []tls.CurveID{tls.CurveP384},
-		ClientAuth:       tls.RequireAndVerifyClientCert,
-		ClientCAs:        otherClientCAs,
-		Certificates:     []tls.Certificate{serverCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    otherClientCAs,
+		Certificates: []tls.Certificate{serverCert},
 	}
 }
 
@@ -126,9 +124,8 @@ func (m MTLSCredentials) ClientTLSConfig() *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
-		CurvePreferences: []tls.CurveID{tls.CurveP384},
-		RootCAs:          rootCAs,
-		Certificates:     []tls.Certificate{clientCert},
+		RootCAs:      rootCAs,
+		Certificates: []tls.Certificate{clientCert},
 	}
 }
 
@@ -149,9 +146,8 @@ func (m MTLSCredentials) OtherClientTLSConfig() *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
-		CurvePreferences: []tls.CurveID{tls.CurveP384},
-		RootCAs:          rootCAs,
-		Certificates:     []tls.Certificate{otherClientCert},
+		RootCAs:      rootCAs,
+		Certificates: []tls.Certificate{otherClientCert},
 	}
 }
 
