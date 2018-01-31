@@ -1,12 +1,21 @@
+/*
+This file is a sketch of what the future might look like
+Don't generate any code from here, it isn't actually implemented
+on the server
+*/
+
 syntax = "proto3";
 
-package cloudfoundry.copilot.protos;
+import "common.proto";
+
+package api;
 
 message Route {
   string guid = 1;
   string host = 2;
   string path = 3;
 }
+
 message UpsertRouteRequest {
   Route route = 1;
 }
@@ -74,5 +83,7 @@ service CloudControllerCopilotFuture {
   rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
 
   rpc BulkSync (BulkSyncRequest) returns (BulkSyncResponse) {}
+
+  rpc Health(HealthRequest) returns (HealthResponse) {}
 }
 
