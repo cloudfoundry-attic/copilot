@@ -33,6 +33,15 @@ var _ = Describe("Capi Handlers", func() {
 		}
 	})
 
+	Describe("Health", func() {
+		It("always returns healthy", func() {
+			ctx := context.Background()
+			resp, err := handler.Health(ctx, new(api.HealthRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.HealthResponse{Healthy: true}))
+		})
+	})
+
 	Describe("UpsertRoute", func() {
 		It("validates the inputs", func() {
 			ctx := context.Background()

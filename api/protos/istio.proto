@@ -1,16 +1,12 @@
 syntax = "proto3";
 
+import "common.proto";
+
 package api;
 
 service IstioCopilot {
   rpc Health(HealthRequest) returns (HealthResponse) {}
   rpc Routes(RoutesRequest) returns (RoutesResponse) {}
-}
-
-message HealthRequest {
-}
-message HealthResponse {
-  bool healthy = 1;
 }
 
 message RoutesRequest {

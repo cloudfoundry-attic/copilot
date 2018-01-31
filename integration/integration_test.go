@@ -146,7 +146,7 @@ var _ = Describe("Copilot", func() {
 	})
 
 	It("serves internal routes using data from the BBS, even when there are no CAPI-provided routes", func() {
-		WaitForHealthy(istioClient)
+		WaitForHealthy(istioClient, ccClient)
 		routes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
@@ -164,7 +164,7 @@ var _ = Describe("Copilot", func() {
 	})
 
 	Specify("a journey", func() {
-		WaitForHealthy(istioClient)
+		WaitForHealthy(istioClient, ccClient)
 
 		By("CC creates and maps a route")
 		_, err := ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
@@ -309,7 +309,7 @@ var _ = Describe("Copilot", func() {
 	})
 
 	It("gracefully terminates when sent an interrupt signal", func() {
-		WaitForHealthy(istioClient)
+		WaitForHealthy(istioClient, ccClient)
 		Consistently(session, "1s").ShouldNot(gexec.Exit())
 		_, err := istioClient.Health(context.Background(), new(api.HealthRequest))
 		Expect(err).NotTo(HaveOccurred())
@@ -335,13 +335,21 @@ var _ = Describe("Copilot", func() {
 	})
 })
 
-func WaitForHealthy(istioClient copilot.IstioClient) {
-	By("waiting for the server become healthy")
-	isHealthy := func() error {
+func WaitForHealthy(istioClient copilot.IstioClient, ccClient copilot.CloudControllerClient) {
+	By("waiting for the servers to become healthy")
+	serverForPilotIsHealthy := func() error {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancelFunc()
 		_, err := istioClient.Health(ctx, new(api.HealthRequest))
 		return err
 	}
-	Eventually(isHealthy, 2*time.Second).Should(Succeed())
+	Eventually(serverForPilotIsHealthy, 2*time.Second).Should(Succeed())
+
+	serverForCloudControllerIsHealthy := func() error {
+		ctx, cancelFunc := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancelFunc()
+		_, err := ccClient.Health(ctx, new(api.HealthRequest))
+		return err
+	}
+	Eventually(serverForCloudControllerIsHealthy, 2*time.Second).Should(Succeed())
 }

@@ -16,6 +16,10 @@ type CAPI struct {
 	RouteMappingsRepo routeMappingsRepoInterface
 }
 
+func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
+	return &api.HealthResponse{Healthy: true}, nil
+}
+
 func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
 	err := validateUpsertRouteRequest(request)
 	if err != nil {

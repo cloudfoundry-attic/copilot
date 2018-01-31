@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "common.proto";
+
 package api;
 
 message Route {
@@ -48,4 +50,6 @@ service CloudControllerCopilot {
 
   rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
   rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
+
+  rpc Health(HealthRequest) returns (HealthResponse) {}
 }
