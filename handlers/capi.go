@@ -17,15 +17,18 @@ type CAPI struct {
 }
 
 func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
+	c.Logger.Info("capi health check...")
 	return &api.HealthResponse{Healthy: true}, nil
 }
 
 // TODO: probably remove or clean this up, currently using for debugging
 func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.ListCfRoutesResponse, error) {
+	c.Logger.Info("listing cf routes...")
 	return &api.ListCfRoutesResponse{Routes: c.RoutesRepo.List()}, nil
 }
 
 func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
+	c.Logger.Info("upserting route...")
 	err := validateUpsertRouteRequest(request)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
@@ -41,6 +44,7 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 }
 
 func (c *CAPI) DeleteRoute(context context.Context, request *api.DeleteRouteRequest) (*api.DeleteRouteResponse, error) {
+	c.Logger.Info("deleting route...")
 	err := validateDeleteRouteRequest(request)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
@@ -50,6 +54,7 @@ func (c *CAPI) DeleteRoute(context context.Context, request *api.DeleteRouteRequ
 }
 
 func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (*api.MapRouteResponse, error) {
+	c.Logger.Info("mapping route...")
 	err := validateMapRouteRequest(request)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
@@ -68,6 +73,7 @@ func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (
 }
 
 func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteRequest) (*api.UnmapRouteResponse, error) {
+	c.Logger.Info("unmapping route...")
 	err := validateUnmapRouteRequest(request)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)

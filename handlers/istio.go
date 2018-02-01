@@ -17,10 +17,12 @@ type Istio struct {
 }
 
 func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
+	c.Logger.Info("istio health check...")
 	return &api.HealthResponse{Healthy: true}, nil
 }
 
 func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
+	c.Logger.Info("listing istio routes...")
 	if c.BBSClient == nil {
 		return nil, errors.New("communication with bbs is disabled")
 	}
