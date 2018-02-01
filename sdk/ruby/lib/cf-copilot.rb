@@ -9,7 +9,7 @@ module Cloudfoundry
 
       attr_reader :host, :port
 
-      def initialize(host:, port:, client_ca:, client_key:, client_chain:, timeout: 1)
+      def initialize(host:, port:, client_ca:, client_key:, client_chain:, timeout: 5)
         @host = host
         @port = port
         @url = "#{host}:#{port}"
@@ -20,12 +20,8 @@ module Cloudfoundry
       end
 
       def health
-        puts "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
         request = Api::HealthRequest.new
-        val = service.health(request)
-        puts "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-        val
-        rescue GRPC::Unavailable
+        service.health(request)
       end
 
       def upsert_route(guid:, host:)
@@ -51,6 +47,7 @@ module Cloudfoundry
         service.unmap_route(request)
       end
 
+      # untested - this will change a lot and no one is using it yet
       def bulk_sync(routes:, route_mappings:)
         routes.map! { |route| Api::UpsertRouteRequest.new(route: route) }
         route_mappings.map! { |mapping| Api::MapRouteRequest.new(route_mapping: mapping) }
