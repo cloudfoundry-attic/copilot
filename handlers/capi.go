@@ -20,6 +20,11 @@ func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse,
 	return &api.HealthResponse{Healthy: true}, nil
 }
 
+// TODO: probably remove or clean this up, currently using for debugging
+func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.ListCfRoutesResponse, error) {
+	return &api.ListCfRoutesResponse{Routes: c.RoutesRepo.List()}, nil
+}
+
 func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
 	err := validateUpsertRouteRequest(request)
 	if err != nil {

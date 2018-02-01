@@ -44,8 +44,22 @@ func (r *RoutesRepo) Get(guid RouteGUID) (*Route, bool) {
 	return route, ok
 }
 
+// TODO: probably remove or clean this up, currently using for debugging
+func (r *RoutesRepo) List() map[string]string {
+	list := make(map[string]string)
+
+	r.Lock()
+	for k, v := range r.Repo {
+		list[string(k)] = v.Host
+	}
+	r.Unlock()
+
+	return list
+}
+
 //go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
 type routesRepoInterface interface {
+	List() map[string]string
 	Upsert(route *Route)
 	Delete(guid RouteGUID)
 	Get(guid RouteGUID) (*Route, bool)

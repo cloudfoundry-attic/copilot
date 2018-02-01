@@ -4,6 +4,14 @@ import "common.proto";
 
 package api;
 
+message ListCfRoutesRequest {}
+
+message ListCfRoutesResponse {
+  // key is route guid
+  // value is host
+  map<string, string> routes = 1;
+}
+
 message Route {
   string guid = 1;
   string host = 2;
@@ -45,6 +53,7 @@ message UnmapRouteRequest {
 message UnmapRouteResponse {}
 
 service CloudControllerCopilot {
+  rpc ListCfRoutes(ListCfRoutesRequest) returns (ListCfRoutesResponse) {}
   rpc UpsertRoute(UpsertRouteRequest) returns (UpsertRouteResponse) {}
   rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
 
