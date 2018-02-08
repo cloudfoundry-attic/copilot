@@ -6,11 +6,11 @@ RSpec.describe Cloudfoundry::Copilot do
 
     Process.detach(@copilotServer)
     @client = Cloudfoundry::Copilot::Client.new(
-        host: "127.0.0.1",
-        port: 5002,
-        client_ca: File.open('spec/cf/fixtures/fakeCA.crt').read,
-        client_key: File.open('spec/cf/fixtures/cloud-controller-client.key').read,
-        client_chain: File.open('spec/cf/fixtures/cloud-controller-client.crt').read
+      host: "127.0.0.1",
+      port: 5002,
+      client_ca_file: 'spec/cf/fixtures/fakeCA.crt',
+      client_key_file: 'spec/cf/fixtures/cloud-controller-client.key',
+      client_chain_file: 'spec/cf/fixtures/cloud-controller-client.crt'
     )
     healthy = false
     num_tries = 0
@@ -33,29 +33,29 @@ RSpec.describe Cloudfoundry::Copilot do
 
   it "can upsert a route" do
     @client.upsert_route(
-                     guid: "some-route-guid",
-                     host: "some-route-url"
+       guid: "some-route-guid",
+       host: "some-route-url"
     )
   end
 
   it "can delete a route" do
     @client.delete_route(
-        guid: "some-route-guid"
+      guid: "some-route-guid"
     )
   end
 
   it "can map a route" do
     @client.map_route(
-        capi_process_guid: "some-capi-process-guid",
-        diego_process_guid: "some-diego-process-guid",
-        route_guid: "some-route-guid"
+      capi_process_guid: "some-capi-process-guid",
+      diego_process_guid: "some-diego-process-guid",
+      route_guid: "some-route-guid"
     )
   end
 
   it "can unmap a route" do
     @client.unmap_route(
-        capi_process_guid: "some-capi-process-guid",
-        route_guid: "some-route-guid"
+      capi_process_guid: "some-capi-process-guid",
+      route_guid: "some-route-guid"
     )
   end
 end

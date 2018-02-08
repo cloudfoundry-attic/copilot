@@ -9,14 +9,14 @@ module Cloudfoundry
 
       attr_reader :host, :port
 
-      def initialize(host:, port:, client_ca:, client_key:, client_chain:, timeout: 5)
+      def initialize(host:, port:, client_ca_file:, client_key_file:, client_chain_file:, timeout: 5)
         @host = host
         @port = port
         @url = "#{host}:#{port}"
         @timeout = timeout
-        @client_ca = client_ca
-        @client_key = client_key
-        @client_chain = client_chain
+        @client_ca = File.open(client_ca_file).read
+        @client_key = File.open(client_key_file).read
+        @client_chain = File.open(client_chain_file).read
       end
 
       def health
