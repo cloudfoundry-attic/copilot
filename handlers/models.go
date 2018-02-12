@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"sync"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
@@ -102,7 +103,13 @@ type routeMappingsRepoInterface interface {
 }
 
 func (p DiegoProcessGUID) Hostname() string {
-	return string(p) + ".cfapps.internal"
+	label := string(p)
+
+	if len(label) >= 63 {
+		label = label[0:62]
+	}
+
+	return fmt.Sprintf("%s.cfapps.internal", label)
 }
 
 type BBSClient interface {
