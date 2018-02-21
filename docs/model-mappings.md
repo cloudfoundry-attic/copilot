@@ -67,7 +67,9 @@ Istio has a notion of a Gateway, which defines ingress configuration for the mes
 
 For Cloud Foundry ingress routing, we will configure a Gateway that exposes port 80 and/or 443.
 Each exposed port (a `server` in Gateway-speak) is configured with a list of `hosts`.  In Cloud Foundry,
-each [CF Domain](https://docs.cloudfoundry.org/devguide/deploy-apps/routes-domains.html) will appear as a host in that list.
+each external [CF Domain](https://docs.cloudfoundry.org/devguide/deploy-apps/routes-domains.html) will appear as a host in that list.
+
+In particular, the internal domain (`*.apps.internal`) will not be in the `hosts` list.
 
 
 ```yaml
