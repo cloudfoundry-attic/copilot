@@ -105,6 +105,8 @@ spec:
       privateKey: /vcap/jobs/ingress-envoy/certs/key.pem
 ```
 
+## Open questions:
+- Do we write an Istio Route Rule for each service also?  Or do we add a boolean flag to the Gateway to indicate that it can forward for any services that match the named hosts without requiring an Istio Route Rule?  [Discussion here](https://github.com/istio/istio/issues/2812#issuecomment-367112516).
 
 ## References
 - Cloud Controller
