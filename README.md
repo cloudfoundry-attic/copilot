@@ -54,6 +54,13 @@ The process guid is under the `service-key` as the prefix *before* `.cfapps.inte
 curl localhost:8080/v1/registration
 ```
 
+However, this guid is trimmed. If you want to map/delete a route, you'll need the entire `<process-guid>-<version>` concatenation:
+
+```sh
+cf app <my-app> --guid # to obtain the application guid
+cf curl /v2/apps/<app-guid> | grep version # to obtain the version
+```
+
 ### Add a Route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
