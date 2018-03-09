@@ -27,6 +27,23 @@ func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.Lis
 	return &api.ListCfRoutesResponse{Routes: c.RoutesRepo.List()}, nil
 }
 
+// TODO: probably remove or clean this up, currently using for debugging
+func (c *CAPI) ListCfRouteMappings(context.Context, *api.ListCfRouteMappingsRequest) (*api.ListCfRouteMappingsResponse, error) {
+	c.Logger.Info("listing cf route mappings...")
+	routeMappings := c.RouteMappingsRepo.List()
+	apiRoutMappings := make(map[string]*api.RouteMapping)
+	for k, v := range routeMappings {
+		apiRoutMappings[k] = &api.RouteMapping{
+			CapiProcess: &api.CapiProcess{
+				Guid:             string(v.CAPIProcess.GUID),
+				DiegoProcessGuid: string(v.CAPIProcess.DiegoProcessGUID),
+			},
+			RouteGuid: string(v.RouteGUID),
+		}
+	}
+	return &api.ListCfRouteMappingsResponse{RouteMappings: apiRoutMappings}, nil
+}
+
 func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
 	c.Logger.Info("upserting route...")
 	err := validateUpsertRouteRequest(request)
