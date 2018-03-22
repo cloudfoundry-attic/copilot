@@ -53,7 +53,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   add_message "api.UpsertCapiDiegoProcessAssociationResponse" do
   end
   add_message "api.DeleteCapiDiegoProcessAssociationRequest" do
-    optional :capi_diego_process_association, :message, 1, "api.CapiDiegoProcessAssociation"
+    optional :capi_process_guid, :string, 1
   end
   add_message "api.DeleteCapiDiegoProcessAssociationResponse" do
   end

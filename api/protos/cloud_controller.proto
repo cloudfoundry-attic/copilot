@@ -66,7 +66,7 @@ message UpsertCapiDiegoProcessAssociationRequest {
 message UpsertCapiDiegoProcessAssociationResponse {}
 
 message DeleteCapiDiegoProcessAssociationRequest {
-  CapiDiegoProcessAssociation capi_diego_process_association = 1;
+  string capi_process_guid = 1;
 }
 
 message DeleteCapiDiegoProcessAssociationResponse {}
