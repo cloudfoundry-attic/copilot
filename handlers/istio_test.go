@@ -36,7 +36,7 @@ var _ = Describe("Istio Handlers", func() {
 		bbsClientResponse = []*bbsmodels.ActualLRPGroup{
 			{
 				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.10.1.5",
@@ -50,7 +50,7 @@ var _ = Describe("Istio Handlers", func() {
 			{},
 			{
 				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 2, "domain1"),
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 2, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.40.2",
@@ -62,7 +62,7 @@ var _ = Describe("Istio Handlers", func() {
 			},
 			{
 				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 1, "domain1"),
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateClaimed,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.40.4",
@@ -74,7 +74,7 @@ var _ = Describe("Istio Handlers", func() {
 			},
 			{
 				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 1, "domain1"),
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.50.4",
@@ -86,7 +86,7 @@ var _ = Describe("Istio Handlers", func() {
 			},
 			{
 				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 2, "domain1"),
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 2, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.60.2",
@@ -138,6 +138,9 @@ var _ = Describe("Istio Handlers", func() {
 			RouteMappingsRepo: &handlers.RouteMappingsRepo{
 				Repo: make(map[string]handlers.RouteMapping),
 			},
+			CAPIDiegoProcessAssociationsRepo: &handlers.CAPIDiegoProcessAssociationsRepo{
+				Repo: make(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs),
+			},
 		}
 	})
 
@@ -157,39 +160,49 @@ var _ = Describe("Istio Handlers", func() {
 				Host: "route-a.cfapps.com",
 			})
 			routeMapping := handlers.RouteMapping{
-				RouteGUID: "route-guid-a",
-				CAPIProcess: &handlers.CAPIProcess{
-					DiegoProcessGUID: "process-guid-a",
-				},
+				RouteGUID:       "route-guid-a",
+				CAPIProcessGUID: "capi-process-guid-a",
 			}
 			handler.RouteMappingsRepo.Map(routeMapping)
+			association := handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "capi-process-guid-a",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"diego-process-guid-a",
+				},
+			}
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(association)
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": backendSetA,
-					"process-guid-b.cfapps.internal": backendSetB,
-					"route-a.cfapps.com":             backendSetA,
+					"diego-process-guid-a.cfapps.internal": backendSetA,
+					"diego-process-guid-b.cfapps.internal": backendSetB,
+					"route-a.cfapps.com":                   backendSetA,
 				},
 			}))
 		})
 
 		It("ignores route mappings for routes that do not exist", func() {
 			routeMapping := handlers.RouteMapping{
-				RouteGUID: "route-guid-a",
-				CAPIProcess: &handlers.CAPIProcess{
-					DiegoProcessGUID: "process-guid-a",
-				},
+				RouteGUID:       "route-guid-a",
+				CAPIProcessGUID: "capi-process-guid-a",
 			}
 			handler.RouteMappingsRepo.Map(routeMapping)
+			association := handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "capi-process-guid-a",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"diego-process-guid-a",
+				},
+			}
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(association)
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"process-guid-a.cfapps.internal": backendSetA,
-					"process-guid-b.cfapps.internal": backendSetB,
+					"diego-process-guid-a.cfapps.internal": backendSetA,
+					"diego-process-guid-b.cfapps.internal": backendSetB,
 				},
 			}))
 		})

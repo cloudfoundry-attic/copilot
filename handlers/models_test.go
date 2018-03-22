@@ -19,7 +19,7 @@ var _ = Describe("Handler Models", func() {
 			}
 		})
 
-		It("Can Upsert and Delete Routes", func() {
+		It("can Upsert and Delete routes", func() {
 			route := &handlers.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
@@ -39,7 +39,7 @@ var _ = Describe("Handler Models", func() {
 			Expect(r).To(BeNil())
 		})
 
-		It("Does not error when deleting a route that does not exist", func() {
+		It("does not error when deleting a route that does not exist", func() {
 			route := handlers.Route{
 				Host: "host.example.com",
 				GUID: "delete-me",
@@ -52,7 +52,7 @@ var _ = Describe("Handler Models", func() {
 			Expect(ok).To(BeFalse())
 		})
 
-		It("Can Upsert the same route twice", func() {
+		It("can Upsert the same route twice", func() {
 			route := &handlers.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
@@ -78,13 +78,10 @@ var _ = Describe("Handler Models", func() {
 			}
 		})
 
-		It("Can Map and Unmap Routes", func() {
+		It("can Map and Unmap Routes", func() {
 			routeMapping := handlers.RouteMapping{
-				RouteGUID: "some-route-guid",
-				CAPIProcess: &handlers.CAPIProcess{
-					GUID:             "some-capi-guid",
-					DiegoProcessGUID: handlers.DiegoProcessGUID("some-process-guid"),
-				},
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
 			}
 
 			go routeMappingsRepo.Map(routeMapping)
@@ -99,11 +96,8 @@ var _ = Describe("Handler Models", func() {
 
 		It("does not duplicate route mappings", func() {
 			routeMapping := handlers.RouteMapping{
-				RouteGUID: "some-route-guid",
-				CAPIProcess: &handlers.CAPIProcess{
-					GUID:             "some-capi-guid",
-					DiegoProcessGUID: handlers.DiegoProcessGUID("some-process-guid"),
-				},
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
 			}
 
 			routeMappingsRepo.Map(routeMapping)
@@ -114,31 +108,50 @@ var _ = Describe("Handler Models", func() {
 		})
 	})
 
+	Describe("CAPIDiegoProcessAssociationsRepo", func() {
+		var capiDiegoProcessAssociationsRepo handlers.CAPIDiegoProcessAssociationsRepo
+		BeforeEach(func() {
+			capiDiegoProcessAssociationsRepo = handlers.CAPIDiegoProcessAssociationsRepo{
+				Repo: make(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs),
+			}
+		})
+
+		It("can upsert and delete CAPIDiegoProcessAssociations", func() {
+			capiDiegoProcessAssociation := handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "some-capi-process-guid",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"some-diego-process-guid-1",
+					"some-diego-process-guid-2",
+				},
+			}
+
+			go capiDiegoProcessAssociationsRepo.Upsert(capiDiegoProcessAssociation)
+
+			Eventually(capiDiegoProcessAssociationsRepo.List).Should(Equal(map[string][]string{
+				string(capiDiegoProcessAssociation.CAPIProcessGUID): capiDiegoProcessAssociation.DiegoProcessGUIDs.ToStringSlice(),
+			}))
+
+			capiDiegoProcessAssociationsRepo.Delete(capiDiegoProcessAssociation.CAPIProcessGUID)
+			Expect(capiDiegoProcessAssociationsRepo.List()).To(HaveLen(0))
+		})
+	})
+
 	Describe("RouteMapping", func() {
 		Describe("Key", func() {
-			It("Is unique for process guid and route guid", func() {
+			It("is unique for process guid and route guid", func() {
 				rmA := handlers.RouteMapping{
-					RouteGUID: "route-guid-1",
-					CAPIProcess: &handlers.CAPIProcess{
-						GUID:             "some-capi-guid-1",
-						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-1"),
-					},
+					RouteGUID:       "route-guid-1",
+					CAPIProcessGUID: "some-capi-guid-1",
 				}
 
 				rmB := handlers.RouteMapping{
-					RouteGUID: "route-guid-1",
-					CAPIProcess: &handlers.CAPIProcess{
-						GUID:             "some-capi-guid-2",
-						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-2"),
-					},
+					RouteGUID:       "route-guid-1",
+					CAPIProcessGUID: "some-capi-guid-2",
 				}
 
 				rmC := handlers.RouteMapping{
-					RouteGUID: "route-guid-2",
-					CAPIProcess: &handlers.CAPIProcess{
-						GUID:             "some-capi-guid-1",
-						DiegoProcessGUID: handlers.DiegoProcessGUID("process-guid-1"),
-					},
+					RouteGUID:       "route-guid-2",
+					CAPIProcessGUID: "some-capi-guid-1",
 				}
 
 				Expect(rmA.Key()).NotTo(Equal(rmB.Key()))
@@ -148,23 +161,53 @@ var _ = Describe("Handler Models", func() {
 		})
 	})
 
-	Describe("generating hostnames for diego process guids", func() {
-		It("trims long process guids to be valid DNS labels <= 63 characters", func() {
-			// ref: https://tools.ietf.org/html/rfc1123
+	Describe("DiegoProcessGUID", func() {
+		Describe("Hostname", func() {
+			It("trims long process guids to be valid DNS labels <= 63 characters", func() {
+				// ref: https://tools.ietf.org/html/rfc1123
 
-			exProcessGUID := handlers.DiegoProcessGUID("8b7aa301-a341-4ac9-9009-84a3ce98871d-ae15c691-0af1-4c1e-94b9-5199fb24668e")
-			hostname := exProcessGUID.Hostname()
+				exProcessGUID := handlers.DiegoProcessGUID("8b7aa301-a341-4ac9-9009-84a3ce98871d-ae15c691-0af1-4c1e-94b9-5199fb24668e")
+				hostname := exProcessGUID.Hostname()
 
-			labels := strings.Split(hostname, ".")
-			Expect(len(labels[0])).To(BeNumerically("<=", 63))
+				labels := strings.Split(hostname, ".")
+				Expect(len(labels[0])).To(BeNumerically("<=", 63))
+			})
+
+			It("preserves other labels", func() {
+				magicalShortGUID := handlers.DiegoProcessGUID("foo-bar")
+				hostname := magicalShortGUID.Hostname()
+
+				labels := strings.Split(hostname, ".")
+				Expect(labels[0]).To(Equal("foo-bar"))
+			})
 		})
+	})
 
-		It("preserves other labels", func() {
-			magicalShortGUID := handlers.DiegoProcessGUID("foo-bar")
-			hostname := magicalShortGUID.Hostname()
+	Describe("DiegoProcessGUIDs", func() {
+		Describe("ToStringSlice", func() {
+			It("returns the guids as a slice of strings", func() {
+				diegoProcessGUIDs := handlers.DiegoProcessGUIDs{
+					"some-diego-process-guid-1",
+					"some-diego-process-guid-2",
+				}
+				Expect(diegoProcessGUIDs.ToStringSlice()).To(Equal([]string{
+					"some-diego-process-guid-1",
+					"some-diego-process-guid-2",
+				}))
+			})
+		})
+	})
 
-			labels := strings.Split(hostname, ".")
-			Expect(labels[0]).To(Equal("foo-bar"))
+	Describe("DiegoProcessGUIDsFromStringSlice", func() {
+		It("returns the guids as DiegoProcessGUIDs", func() {
+			diegoProcessGUIDs := []string{
+				"some-diego-process-guid-1",
+				"some-diego-process-guid-2",
+			}
+			Expect(handlers.DiegoProcessGUIDsFromStringSlice(diegoProcessGUIDs)).To(Equal(handlers.DiegoProcessGUIDs{
+				"some-diego-process-guid-1",
+				"some-diego-process-guid-2",
+			}))
 		})
 	})
 })

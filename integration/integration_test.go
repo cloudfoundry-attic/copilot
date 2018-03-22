@@ -68,7 +68,7 @@ var _ = Describe("Copilot", func() {
 				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
 					{
 						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-a", 1, "domain1"),
+							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
 							State:        bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 								Address: "10.10.1.5",
@@ -80,7 +80,7 @@ var _ = Describe("Copilot", func() {
 					},
 					{
 						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("process-guid-b", 1, "domain1"),
+							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
 							State:        bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 								Address: "10.10.1.6",
@@ -150,12 +150,12 @@ var _ = Describe("Copilot", func() {
 		routes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.cfapps.internal": {
+			"diego-process-guid-a.cfapps.internal": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
-			"process-guid-b.cfapps.internal": {
+			"diego-process-guid-b.cfapps.internal": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.6", Port: 61006},
 				},
@@ -175,11 +175,18 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
-				RouteGuid: "route-guid-a",
-				CapiProcess: &api.CapiProcess{
-					DiegoProcessGuid: "process-guid-a",
-					Guid:             "capi-process-guid-a",
-				}},
+				RouteGuid:       "route-guid-a",
+				CapiProcessGuid: "capi-process-guid-a",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
+			&api.CapiDiegoProcessAssociation{
+				CapiProcessGuid: "capi-process-guid-a",
+				DiegoProcessGuids: []string{
+					"diego-process-guid-a",
+				},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -187,12 +194,12 @@ var _ = Describe("Copilot", func() {
 		istioVisibleRoutes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.cfapps.internal": {
+			"diego-process-guid-a.cfapps.internal": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
-			"process-guid-b.cfapps.internal": {
+			"diego-process-guid-b.cfapps.internal": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.6", Port: 61006},
 				},
@@ -207,10 +214,16 @@ var _ = Describe("Copilot", func() {
 		By("cc maps another backend to the same route")
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
-				RouteGuid: "route-guid-a",
-				CapiProcess: &api.CapiProcess{
-					DiegoProcessGuid: "process-guid-b",
-					Guid:             "capi-process-guid-b",
+				RouteGuid:       "route-guid-a",
+				CapiProcessGuid: "capi-process-guid-b",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
+			&api.CapiDiegoProcessAssociation{
+				CapiProcessGuid: "capi-process-guid-b",
+				DiegoProcessGuids: []string{
+					"diego-process-guid-b",
 				},
 			},
 		})
@@ -225,11 +238,9 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
-				RouteGuid: "route-guid-b",
-				CapiProcess: &api.CapiProcess{
-					DiegoProcessGuid: "process-guid-b",
-					Guid:             "capi-process-guid-b",
-				}},
+				RouteGuid:       "route-guid-b",
+				CapiProcessGuid: "capi-process-guid-b",
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -237,10 +248,10 @@ var _ = Describe("Copilot", func() {
 		istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(istioVisibleRoutes.Backends).To(HaveLen(4))
-		Expect(istioVisibleRoutes.Backends["process-guid-a.cfapps.internal"].Backends).To(ConsistOf(
+		Expect(istioVisibleRoutes.Backends["diego-process-guid-a.cfapps.internal"].Backends).To(ConsistOf(
 			&api.Backend{Address: "10.10.1.5", Port: 61005},
 		))
-		Expect(istioVisibleRoutes.Backends["process-guid-b.cfapps.internal"].Backends).To(ConsistOf(
+		Expect(istioVisibleRoutes.Backends["diego-process-guid-b.cfapps.internal"].Backends).To(ConsistOf(
 			&api.Backend{Address: "10.10.1.6", Port: 61006},
 		))
 		//The list of backends does not have a guaranteed order, this test is flakey if you assert on the whole set of Routes at once
@@ -253,10 +264,10 @@ var _ = Describe("Copilot", func() {
 		))
 
 		By("cc unmaps the first backend from the first route")
-		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{
+		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{&api.RouteMapping{
 			RouteGuid:       "route-guid-a",
 			CapiProcessGuid: "capi-process-guid-a",
-		})
+		}})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("cc delete the second route")
@@ -269,12 +280,12 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By("istio client sees the updated stuff")
 		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"process-guid-a.cfapps.internal": {
+			"diego-process-guid-a.cfapps.internal": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.5", Port: 61005},
 				},
 			},
-			"process-guid-b.cfapps.internal": {
+			"diego-process-guid-b.cfapps.internal": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.6", Port: 61006},
 				},

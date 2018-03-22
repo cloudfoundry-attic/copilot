@@ -71,17 +71,22 @@ func mainWithError() error {
 	routeMappingsRepo := &handlers.RouteMappingsRepo{
 		Repo: make(map[string]handlers.RouteMapping),
 	}
+	capiDiegoProcessAssociationsRepo := &handlers.CAPIDiegoProcessAssociationsRepo{
+		Repo: make(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs),
+	}
 
 	istioHandler := &handlers.Istio{
-		RoutesRepo:        routesRepo,
-		RouteMappingsRepo: routeMappingsRepo,
-		BBSClient:         bbsClient,
-		Logger:            logger,
+		RoutesRepo:                       routesRepo,
+		RouteMappingsRepo:                routeMappingsRepo,
+		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
+		BBSClient:                        bbsClient,
+		Logger:                           logger,
 	}
 	capiHandler := &handlers.CAPI{
-		RoutesRepo:        routesRepo,
-		RouteMappingsRepo: routeMappingsRepo,
-		Logger:            logger,
+		RoutesRepo:                       routesRepo,
+		RouteMappingsRepo:                routeMappingsRepo,
+		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
+		Logger: logger,
 	}
 	grpcServerForPilot := grpcrunner.New(logger, cfg.ListenAddressForPilot,
 		func(s *grpc.Server) {

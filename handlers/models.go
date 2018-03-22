@@ -11,13 +11,9 @@ import (
 
 const CF_APP_PORT = 8080
 
-type CAPIProcess struct {
-	GUID             CAPIProcessGUID
-	DiegoProcessGUID DiegoProcessGUID
-}
-
 type CAPIProcessGUID string
 type DiegoProcessGUID string
+type DiegoProcessGUIDs []DiegoProcessGUID
 type Hostname string
 type RouteGUID string
 
@@ -102,6 +98,41 @@ type routeMappingsRepoInterface interface {
 	List() map[string]RouteMapping
 }
 
+type CAPIDiegoProcessAssociationsRepo struct {
+	Repo map[CAPIProcessGUID]DiegoProcessGUIDs
+	sync.Mutex
+}
+
+func (c *CAPIDiegoProcessAssociationsRepo) Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation) {
+	c.Lock()
+	c.Repo[capiDiegoProcessAssociation.CAPIProcessGUID] = capiDiegoProcessAssociation.DiegoProcessGUIDs
+	c.Unlock()
+}
+
+func (c *CAPIDiegoProcessAssociationsRepo) Delete(capiProcessGUID CAPIProcessGUID) {
+	c.Lock()
+	delete(c.Repo, capiProcessGUID)
+	c.Unlock()
+}
+
+func (c *CAPIDiegoProcessAssociationsRepo) List() map[string][]string {
+	c.Lock()
+	list := make(map[string][]string)
+	for k, v := range c.Repo {
+		list[string(k)] = v.ToStringSlice()
+	}
+	c.Unlock()
+
+	return list
+}
+
+//go:generate counterfeiter -o fakes/capi_diego_process_associations_repo.go --fake-name CAPIDiegoProcessAssociationsRepo . capiDiegoProcessAssociationsRepoInterface
+type capiDiegoProcessAssociationsRepoInterface interface {
+	Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation)
+	Delete(capiProcessGUID CAPIProcessGUID)
+	List() map[string][]string
+}
+
 func (p DiegoProcessGUID) Hostname() string {
 	label := string(p)
 
@@ -110,6 +141,22 @@ func (p DiegoProcessGUID) Hostname() string {
 	}
 
 	return fmt.Sprintf("%s.cfapps.internal", label)
+}
+
+func DiegoProcessGUIDsFromStringSlice(diegoProcessGUIDs []string) DiegoProcessGUIDs {
+	diegoGUIDs := DiegoProcessGUIDs{}
+	for _, diegoGUID := range diegoProcessGUIDs {
+		diegoGUIDs = append(diegoGUIDs, DiegoProcessGUID(diegoGUID))
+	}
+	return diegoGUIDs
+}
+
+func (p DiegoProcessGUIDs) ToStringSlice() []string {
+	diegoGUIDs := []string{}
+	for _, diegoGUID := range p {
+		diegoGUIDs = append(diegoGUIDs, string(diegoGUID))
+	}
+	return diegoGUIDs
 }
 
 type BBSClient interface {
@@ -126,10 +173,15 @@ func (r *Route) Hostname() string {
 }
 
 type RouteMapping struct {
-	RouteGUID   RouteGUID
-	CAPIProcess *CAPIProcess
+	RouteGUID       RouteGUID
+	CAPIProcessGUID CAPIProcessGUID
 }
 
 func (r *RouteMapping) Key() string {
-	return string(r.RouteGUID) + "-" + string(r.CAPIProcess.GUID)
+	return string(r.RouteGUID) + "-" + string(r.CAPIProcessGUID)
+}
+
+type CAPIDiegoProcessAssociation struct {
+	CAPIProcessGUID   CAPIProcessGUID
+	DiegoProcessGUIDs DiegoProcessGUIDs
 }

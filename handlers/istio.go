@@ -11,9 +11,10 @@ import (
 
 type Istio struct {
 	BBSClient
-	Logger            lager.Logger
-	RoutesRepo        routesRepoInterface
-	RouteMappingsRepo routeMappingsRepoInterface
+	Logger                           lager.Logger
+	RoutesRepo                       routesRepoInterface
+	RouteMappingsRepo                routeMappingsRepoInterface
+	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
 }
 
 func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
@@ -39,13 +40,13 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 			c.Logger.Debug("skipping-nil-instance")
 			continue
 		}
-		processGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
+		diegoProcessGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
 		if instance.State != bbsmodels.ActualLRPStateRunning {
-			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": processGUID})
+			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": diegoProcessGUID})
 			continue
 		}
-		if _, ok := runningBackends[processGUID]; !ok {
-			runningBackends[processGUID] = &api.BackendSet{}
+		if _, ok := runningBackends[diegoProcessGUID]; !ok {
+			runningBackends[diegoProcessGUID] = &api.BackendSet{}
 		}
 		var appHostPort uint32
 		for _, port := range instance.ActualLRPNetInfo.Ports {
@@ -53,7 +54,7 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 				appHostPort = port.HostPort
 			}
 		}
-		runningBackends[processGUID].Backends = append(runningBackends[processGUID].Backends, &api.Backend{
+		runningBackends[diegoProcessGUID].Backends = append(runningBackends[diegoProcessGUID].Backends, &api.Backend{
 			Address: instance.ActualLRPNetInfo.Address,
 			Port:    appHostPort,
 		})
@@ -61,25 +62,28 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 
 	allBackends := make(map[string]*api.BackendSet)
 	// append internal routes
-	for processGUID, backendSet := range runningBackends {
-		hostname := string(processGUID.Hostname())
+	for diegoProcessGUID, backendSet := range runningBackends {
+		hostname := string(diegoProcessGUID.Hostname())
 		allBackends[hostname] = backendSet
 	}
 
 	// append external routes
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
-		backends, ok := runningBackends[routeMapping.CAPIProcess.DiegoProcessGUID]
-		if !ok {
-			continue
-		}
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
 			continue
 		}
-		if _, ok := allBackends[route.Hostname()]; !ok {
-			allBackends[route.Hostname()] = &api.BackendSet{Backends: []*api.Backend{}}
+
+		for _, diegoProcessGUID := range c.CAPIDiegoProcessAssociationsRepo.List()[string(routeMapping.CAPIProcessGUID)] {
+			backends, ok := runningBackends[DiegoProcessGUID(diegoProcessGUID)]
+			if !ok {
+				continue
+			}
+			if _, ok := allBackends[route.Hostname()]; !ok {
+				allBackends[route.Hostname()] = &api.BackendSet{Backends: []*api.Backend{}}
+			}
+			allBackends[route.Hostname()].Backends = append(allBackends[route.Hostname()].Backends, backends.Backends...)
 		}
-		allBackends[route.Hostname()].Backends = append(allBackends[route.Hostname()].Backends, backends.Backends...)
 	}
 
 	return &api.RoutesResponse{Backends: allBackends}, nil
