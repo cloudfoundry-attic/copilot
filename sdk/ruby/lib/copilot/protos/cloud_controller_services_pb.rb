@@ -14,10 +14,14 @@ module Api
       self.unmarshal_class_method = :decode
       self.service_name = 'api.CloudControllerCopilot'
 
+      rpc :ListCfRoutes, ListCfRoutesRequest, ListCfRoutesResponse
+      rpc :ListCfRouteMappings, ListCfRouteMappingsRequest, ListCfRouteMappingsResponse
       rpc :UpsertRoute, UpsertRouteRequest, UpsertRouteResponse
       rpc :DeleteRoute, DeleteRouteRequest, DeleteRouteResponse
       rpc :MapRoute, MapRouteRequest, MapRouteResponse
       rpc :UnmapRoute, UnmapRouteRequest, UnmapRouteResponse
+      rpc :UpsertCapiDiegoProcessAssociation, UpsertCapiDiegoProcessAssociationRequest, UpsertCapiDiegoProcessAssociationResponse
+      rpc :DeleteCapiDiegoProcessAssociation, DeleteCapiDiegoProcessAssociationRequest, DeleteCapiDiegoProcessAssociationResponse
       rpc :Health, HealthRequest, HealthResponse
     end
 

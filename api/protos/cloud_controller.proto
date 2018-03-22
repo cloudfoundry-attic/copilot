@@ -37,13 +37,8 @@ message DeleteRouteRequest {
 
 message DeleteRouteResponse {}
 
-message CapiProcess {
-  string guid = 1;
-  string diego_process_guid = 2;
-}
-
 message RouteMapping {
-  CapiProcess capi_process = 1;
+  string capi_process_guid = 1;
   string route_guid = 2;
 }
 
@@ -54,11 +49,27 @@ message MapRouteRequest {
 message MapRouteResponse {}
 
 message UnmapRouteRequest {
-  string capi_process_guid = 1;
-  string route_guid = 2;
+  RouteMapping route_mapping = 1;
 }
 
 message UnmapRouteResponse {}
+
+message CapiDiegoProcessAssociation {
+  string capi_process_guid = 1;
+  repeated string diego_process_guid = 2;
+}
+
+message UpsertCapiDiegoProcessAssociationRequest {
+  CapiDiegoProcessAssociation capi_diego_process_association = 1;
+}
+
+message UpsertCapiDiegoProcessAssociationResponse {}
+
+message DeleteCapiDiegoProcessAssociationRequest {
+  CapiDiegoProcessAssociation capi_diego_process_association = 1;
+}
+
+message DeleteCapiDiegoProcessAssociationResponse {}
 
 service CloudControllerCopilot {
   rpc ListCfRoutes(ListCfRoutesRequest) returns (ListCfRoutesResponse) {}
@@ -68,6 +79,9 @@ service CloudControllerCopilot {
 
   rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
   rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
+
+  rpc UpsertCapiDiegoProcessAssociation(UpsertCapiDiegoProcessAssociationRequest) returns (UpsertCapiDiegoProcessAssociationResponse) {}
+  rpc DeleteCapiDiegoProcessAssociation(DeleteCapiDiegoProcessAssociationRequest) returns (DeleteCapiDiegoProcessAssociationResponse) {}
 
   rpc Health(HealthRequest) returns (HealthResponse) {}
 }
