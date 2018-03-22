@@ -56,7 +56,7 @@ message UnmapRouteResponse {}
 
 message CapiDiegoProcessAssociation {
   string capi_process_guid = 1;
-  repeated string diego_process_guid = 2;
+  repeated string diego_process_guids = 2;
 }
 
 message UpsertCapiDiegoProcessAssociationRequest {

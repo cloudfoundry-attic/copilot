@@ -45,7 +45,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   end
   add_message "api.CapiDiegoProcessAssociation" do
     optional :capi_process_guid, :string, 1
-    repeated :diego_process_guid, :string, 2
+    repeated :diego_process_guids, :string, 2
   end
   add_message "api.UpsertCapiDiegoProcessAssociationRequest" do
     optional :capi_diego_process_association, :message, 1, "api.CapiDiegoProcessAssociation"
