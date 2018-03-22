@@ -133,7 +133,7 @@ type capiDiegoProcessAssociationsRepoInterface interface {
 	List() map[string][]string
 }
 
-func (p DiegoProcessGUID) Hostname() string {
+func (p DiegoProcessGUID) InternalHostname() string {
 	label := string(p)
 
 	if len(label) >= 63 {

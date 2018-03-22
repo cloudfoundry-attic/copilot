@@ -63,7 +63,7 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 	allBackends := make(map[string]*api.BackendSet)
 	// append internal routes
 	for diegoProcessGUID, backendSet := range runningBackends {
-		hostname := string(diegoProcessGUID.Hostname())
+		hostname := string(diegoProcessGUID.InternalHostname())
 		allBackends[hostname] = backendSet
 	}
 
