@@ -14,30 +14,44 @@ RSpec.describe Cloudfoundry::Copilot do
     @server.stop
   end
 
-  it "can upsert a route" do
+  it 'can upsert a route' do
     @client.upsert_route(
-       guid: "some-route-guid",
-       host: "some-route-url"
+       guid: 'some-route-guid',
+       host: 'some-route-url'
     )
   end
 
-  it "can delete a route" do
+  it 'can delete a route' do
     @client.delete_route(
-      guid: "some-route-guid"
+      guid: 'some-route-guid'
     )
   end
 
-  it "can map a route" do
+  it 'can map a route' do
     @client.map_route(
-      capi_process_guid: "some-capi-process-guid",
-      route_guid: "some-route-guid"
+      capi_process_guid: 'some-capi-process-guid',
+      route_guid: 'some-route-guid'
     )
   end
 
-  it "can unmap a route" do
+  it 'can unmap a route' do
     @client.unmap_route(
-      capi_process_guid: "some-capi-process-guid",
-      route_guid: "some-route-guid"
+      capi_process_guid: 'some-capi-process-guid',
+      route_guid: 'some-route-guid'
     )
   end
+
+  it 'can upsert a capi-diego-process-association' do
+    @client.upsert_capi_diego_process_association(
+      capi_process_guid: 'some-capi-process-guid',
+      diego_process_guids: ['some-diego-guid']
+    )
+  end
+
+  it 'can delete a capi-diego-process-association' do
+    @client.delete_capi_diego_process_association(
+      capi_process_guid: 'some-capi-process-guid'
+    )
+  end
+
 end
