@@ -3,15 +3,15 @@ require_relative './support/real_copilot_server'
 
 RSpec.describe Cloudfoundry::Copilot do
   before(:all) do
-    @real_copilot_server = RealCopilotServer.new
+    @server = RealCopilotServer.new
     @client = TestClient.new(
-       @real_copilot_server.host,
-       @real_copilot_server.port
+        @server.host,
+        @server.port
     )
   end
 
   after(:all) do
-    @real_copilot_server.stop
+    @server.stop
   end
 
   it "can upsert a route" do

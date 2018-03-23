@@ -1,33 +1,19 @@
 require_relative './support/test_client'
 require_relative './support/fake_copilot_server'
 
-class FakeCopilotHandlers < Api::CloudControllerCopilot::Service
-  attr_reader :upsert_route_got_request
-
-  def health(_healthRequest, _call)
-    ::Api::HealthResponse.new(healthy: true)
-  end
-
-  def upsert_route(upsertRouteRequest, _call)
-    @upsert_route_got_request = upsertRouteRequest
-    ::Api::UpsertRouteResponse.new
-  end
-end
-
-
 RSpec.describe Cloudfoundry::Copilot do
   before(:all) do
     @handlers = FakeCopilotHandlers.new
-    @fake_copilot_server = FakeCopilotServer.new(@handlers)
+    @server = FakeCopilotServer.new(@handlers)
 
     @client = TestClient.new(
-      @fake_copilot_server.host,
-      @fake_copilot_server.port,
+        @server.host,
+        @server.port,
     )
   end
 
   after(:all) do
-    @fake_copilot_server.stop
+    @server.stop
   end
 
   it 'can upsert a route' do
@@ -41,5 +27,18 @@ RSpec.describe Cloudfoundry::Copilot do
         route: Api::Route.new(guid: 'some-route-guid', host: 'some-route-url')
       )
     )
+  end
+end
+
+class FakeCopilotHandlers < Api::CloudControllerCopilot::Service
+  attr_reader :upsert_route_got_request
+
+  def health(_healthRequest, _call)
+    ::Api::HealthResponse.new(healthy: true)
+  end
+
+  def upsert_route(upsertRouteRequest, _call)
+    @upsert_route_got_request = upsertRouteRequest
+    ::Api::UpsertRouteResponse.new
   end
 end
