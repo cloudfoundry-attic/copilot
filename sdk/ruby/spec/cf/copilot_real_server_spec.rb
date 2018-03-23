@@ -1,34 +1,17 @@
+require_relative './support/test_client'
+require_relative './support/real_copilot_server'
+
 RSpec.describe Cloudfoundry::Copilot do
   before(:all) do
-    @copilotServer = fork do
-      exec "cd spec/cf/fixtures && exec copilot-server -config copilot-config.json"
-    end
-
-    Process.detach(@copilotServer)
-    @client = Cloudfoundry::Copilot::Client.new(
-      host: "127.0.0.1",
-      port: 51002,
-      client_ca_file: 'spec/cf/fixtures/fakeCA.crt',
-      client_key_file: 'spec/cf/fixtures/cloud-controller-client.key',
-      client_chain_file: 'spec/cf/fixtures/cloud-controller-client.crt'
+    @real_copilot_server = RealCopilotServer.new
+    @client = TestClient.new(
+       @real_copilot_server.host,
+       @real_copilot_server.port
     )
-    healthy = false
-    num_tries = 0
-    until healthy
-      begin
-        healthy = @client.health
-      rescue
-        sleep 1
-        num_tries += 1
-        if num_tries > 5
-          fail "copilot didn't become healthy"
-        end
-      end
-    end
   end
 
   after(:all) do
-    Process.kill("TERM", @copilotServer)
+    @real_copilot_server.stop
   end
 
   it "can upsert a route" do
