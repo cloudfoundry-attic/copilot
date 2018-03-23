@@ -159,50 +159,72 @@ var _ = Describe("Istio Handlers", func() {
 				GUID: "route-guid-a",
 				Host: "route-a.cfapps.com",
 			})
-			routeMapping := handlers.RouteMapping{
+			handler.RoutesRepo.Upsert(&handlers.Route{
+				GUID: "route-guid-b",
+				Host: "route-b.cfapps.com",
+			})
+			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "capi-process-guid-a",
-			}
-			handler.RouteMappingsRepo.Map(routeMapping)
-			association := handlers.CAPIDiegoProcessAssociation{
+			})
+			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
+				RouteGUID:       "route-guid-b",
+				CAPIProcessGUID: "capi-process-guid-b",
+			})
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"diego-process-guid-a",
 				},
-			}
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(association)
+			})
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "capi-process-guid-b",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"diego-process-guid-b",
+				},
+			})
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"diego-process-guid-a.cfapps.internal": backendSetA,
-					"diego-process-guid-b.cfapps.internal": backendSetB,
-					"route-a.cfapps.com":                   backendSetA,
+					"route-a.cfapps.com": backendSetA,
+					"route-b.cfapps.com": backendSetB,
 				},
 			}))
 		})
 
 		It("ignores route mappings for routes that do not exist", func() {
-			routeMapping := handlers.RouteMapping{
+			handler.RoutesRepo.Upsert(&handlers.Route{
+				GUID: "route-guid-b",
+				Host: "route-b.cfapps.com",
+			})
+			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "capi-process-guid-a",
-			}
-			handler.RouteMappingsRepo.Map(routeMapping)
-			association := handlers.CAPIDiegoProcessAssociation{
+			})
+			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
+				RouteGUID:       "route-guid-b",
+				CAPIProcessGUID: "capi-process-guid-b",
+			})
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"diego-process-guid-a",
 				},
-			}
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(association)
+			})
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "capi-process-guid-b",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"diego-process-guid-b",
+				},
+			})
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"diego-process-guid-a.cfapps.internal": backendSetA,
-					"diego-process-guid-b.cfapps.internal": backendSetB,
+					"route-b.cfapps.com": backendSetB,
 				},
 			}))
 		})

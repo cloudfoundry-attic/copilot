@@ -73,13 +73,6 @@ func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*ap
 
 func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSetArg map[DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
 	hostnameToBackendSet := make(map[string]*api.BackendSet)
-	// append internal routes
-	for diegoProcessGUID, backendSet := range diegoProcessGUIDToBackendSetArg {
-		hostname := string(diegoProcessGUID.InternalHostname())
-		hostnameToBackendSet[hostname] = backendSet
-	}
-
-	// append external routes
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {

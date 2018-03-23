@@ -145,24 +145,6 @@ var _ = Describe("Copilot", func() {
 		}
 	})
 
-	It("serves internal routes using data from the BBS, even when there are no CAPI-provided routes", func() {
-		WaitForHealthy(istioClient, ccClient)
-		routes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(routes.Backends).To(Equal(map[string]*api.BackendSet{
-			"diego-process-guid-a.cfapps.internal": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.5", Port: 61005},
-				},
-			},
-			"diego-process-guid-b.cfapps.internal": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.6", Port: 61006},
-				},
-			},
-		}))
-	})
-
 	Specify("a journey", func() {
 		WaitForHealthy(istioClient, ccClient)
 
@@ -194,16 +176,6 @@ var _ = Describe("Copilot", func() {
 		istioVisibleRoutes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"diego-process-guid-a.cfapps.internal": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.5", Port: 61005},
-				},
-			},
-			"diego-process-guid-b.cfapps.internal": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.6", Port: 61006},
-				},
-			},
 			"some-url": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.5", Port: 61005},
@@ -247,13 +219,7 @@ var _ = Describe("Copilot", func() {
 		By("istio client sees that new stuff")
 		istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(istioVisibleRoutes.Backends).To(HaveLen(4))
-		Expect(istioVisibleRoutes.Backends["diego-process-guid-a.cfapps.internal"].Backends).To(ConsistOf(
-			&api.Backend{Address: "10.10.1.5", Port: 61005},
-		))
-		Expect(istioVisibleRoutes.Backends["diego-process-guid-b.cfapps.internal"].Backends).To(ConsistOf(
-			&api.Backend{Address: "10.10.1.6", Port: 61006},
-		))
+		Expect(istioVisibleRoutes.Backends).To(HaveLen(2))
 		//The list of backends does not have a guaranteed order, this test is flakey if you assert on the whole set of Routes at once
 		Expect(istioVisibleRoutes.Backends["some-url"].Backends).To(ConsistOf(
 			&api.Backend{Address: "10.10.1.5", Port: 61005},
@@ -280,16 +246,6 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By("istio client sees the updated stuff")
 		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"diego-process-guid-a.cfapps.internal": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.5", Port: 61005},
-				},
-			},
-			"diego-process-guid-b.cfapps.internal": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.6", Port: 61006},
-				},
-			},
 			"some-url": {
 				Backends: []*api.Backend{
 					{Address: "10.10.1.6", Port: 61006},
