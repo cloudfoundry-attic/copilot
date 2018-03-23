@@ -7,7 +7,7 @@ RSpec.describe Cloudfoundry::Copilot do
     Process.detach(@copilotServer)
     @client = Cloudfoundry::Copilot::Client.new(
       host: "127.0.0.1",
-      port: 5002,
+      port: 51002,
       client_ca_file: 'spec/cf/fixtures/fakeCA.crt',
       client_key_file: 'spec/cf/fixtures/cloud-controller-client.key',
       client_chain_file: 'spec/cf/fixtures/cloud-controller-client.crt'
@@ -47,7 +47,6 @@ RSpec.describe Cloudfoundry::Copilot do
   it "can map a route" do
     @client.map_route(
       capi_process_guid: "some-capi-process-guid",
-      diego_process_guid: "some-diego-process-guid",
       route_guid: "some-route-guid"
     )
   end

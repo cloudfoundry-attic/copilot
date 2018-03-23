@@ -35,15 +35,15 @@ module Cloudfoundry
         service.delete_route(request)
       end
 
-      def map_route(capi_process_guid:, diego_process_guid:, route_guid:)
-        capi_process = Api::CapiProcess.new(guid: capi_process_guid, diego_process_guid: diego_process_guid)
-        route_mapping = Api::RouteMapping.new(capi_process: capi_process, route_guid: route_guid)
+      def map_route(capi_process_guid:,  route_guid:)
+        route_mapping = Api::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
         request = Api::MapRouteRequest.new(route_mapping: route_mapping)
         service.map_route(request)
       end
 
       def unmap_route(capi_process_guid:, route_guid:)
-        request = Api::UnmapRouteRequest.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
+        route_mapping = Api::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
+        request = Api::UnmapRouteRequest.new(route_mapping: route_mapping)
         service.unmap_route(request)
       end
 
