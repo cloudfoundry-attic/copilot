@@ -18,14 +18,25 @@ type CAPIDiegoProcessAssociationsRepo struct {
 	deleteArgsForCall []struct {
 		capiProcessGUID handlers.CAPIProcessGUID
 	}
-	ListStub        func() map[string][]string
+	ListStub        func() map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
 	listMutex       sync.RWMutex
 	listArgsForCall []struct{}
 	listReturns     struct {
-		result1 map[string][]string
+		result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
 	}
 	listReturnsOnCall map[int]struct {
-		result1 map[string][]string
+		result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
+	}
+	GetStub        func(capiProcessGUID handlers.CAPIProcessGUID) handlers.DiegoProcessGUIDs
+	getMutex       sync.RWMutex
+	getArgsForCall []struct {
+		capiProcessGUID handlers.CAPIProcessGUID
+	}
+	getReturns struct {
+		result1 handlers.DiegoProcessGUIDs
+	}
+	getReturnsOnCall map[int]struct {
+		result1 handlers.DiegoProcessGUIDs
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -79,7 +90,7 @@ func (fake *CAPIDiegoProcessAssociationsRepo) DeleteArgsForCall(i int) handlers.
 	return fake.deleteArgsForCall[i].capiProcessGUID
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) List() map[string][]string {
+func (fake *CAPIDiegoProcessAssociationsRepo) List() map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
@@ -100,22 +111,70 @@ func (fake *CAPIDiegoProcessAssociationsRepo) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) ListReturns(result1 map[string][]string) {
+func (fake *CAPIDiegoProcessAssociationsRepo) ListReturns(result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs) {
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 map[string][]string
+		result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
 	}{result1}
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) ListReturnsOnCall(i int, result1 map[string][]string) {
+func (fake *CAPIDiegoProcessAssociationsRepo) ListReturnsOnCall(i int, result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs) {
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 map[string][]string
+			result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 map[string][]string
+		result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
+	}{result1}
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID handlers.CAPIProcessGUID) handlers.DiegoProcessGUIDs {
+	fake.getMutex.Lock()
+	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
+	fake.getArgsForCall = append(fake.getArgsForCall, struct {
+		capiProcessGUID handlers.CAPIProcessGUID
+	}{capiProcessGUID})
+	fake.recordInvocation("Get", []interface{}{capiProcessGUID})
+	fake.getMutex.Unlock()
+	if fake.GetStub != nil {
+		return fake.GetStub(capiProcessGUID)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.getReturns.result1
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) GetCallCount() int {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return len(fake.getArgsForCall)
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) GetArgsForCall(i int) handlers.CAPIProcessGUID {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return fake.getArgsForCall[i].capiProcessGUID
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) GetReturns(result1 handlers.DiegoProcessGUIDs) {
+	fake.GetStub = nil
+	fake.getReturns = struct {
+		result1 handlers.DiegoProcessGUIDs
+	}{result1}
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) GetReturnsOnCall(i int, result1 handlers.DiegoProcessGUIDs) {
+	fake.GetStub = nil
+	if fake.getReturnsOnCall == nil {
+		fake.getReturnsOnCall = make(map[int]struct {
+			result1 handlers.DiegoProcessGUIDs
+		})
+	}
+	fake.getReturnsOnCall[i] = struct {
+		result1 handlers.DiegoProcessGUIDs
 	}{result1}
 }
 
@@ -128,6 +187,8 @@ func (fake *CAPIDiegoProcessAssociationsRepo) Invocations() map[string][][]inter
 	defer fake.deleteMutex.RUnlock()
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

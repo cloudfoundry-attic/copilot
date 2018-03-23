@@ -15,6 +15,14 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   add_message "api.ListCfRouteMappingsResponse" do
     map :route_mappings, :string, :message, 1, "api.RouteMapping"
   end
+  add_message "api.ListCapiDiegoProcessAssociationsRequest" do
+  end
+  add_message "api.DiegoProcessGuids" do
+    repeated :diego_process_guids, :string, 1
+  end
+  add_message "api.ListCapiDiegoProcessAssociationsResponse" do
+    map :capi_diego_process_associations, :string, :message, 1, "api.DiegoProcessGuids"
+  end
   add_message "api.Route" do
     optional :guid, :string, 1
     optional :host, :string, 2
@@ -64,6 +72,9 @@ module Api
   ListCfRoutesResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRoutesResponse").msgclass
   ListCfRouteMappingsRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRouteMappingsRequest").msgclass
   ListCfRouteMappingsResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRouteMappingsResponse").msgclass
+  ListCapiDiegoProcessAssociationsRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCapiDiegoProcessAssociationsRequest").msgclass
+  DiegoProcessGuids = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DiegoProcessGuids").msgclass
+  ListCapiDiegoProcessAssociationsResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCapiDiegoProcessAssociationsResponse").msgclass
   Route = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.Route").msgclass
   UpsertRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UpsertRouteRequest").msgclass
   UpsertRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UpsertRouteResponse").msgclass

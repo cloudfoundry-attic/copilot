@@ -42,6 +42,17 @@ func (c *CAPI) ListCfRouteMappings(context.Context, *api.ListCfRouteMappingsRequ
 	return &api.ListCfRouteMappingsResponse{RouteMappings: apiRoutMappings}, nil
 }
 
+// TODO: probably remove or clean this up, currently using for debugging
+func (c *CAPI) ListCapiDiegoProcessAssociations(context.Context, *api.ListCapiDiegoProcessAssociationsRequest) (*api.ListCapiDiegoProcessAssociationsResponse, error) {
+	c.Logger.Info("listing capi/diego process associations...")
+
+	response := &api.ListCapiDiegoProcessAssociationsResponse{}
+	for capiProcessGUID, diegoProcessGUIDs := range c.CAPIDiegoProcessAssociationsRepo.List() {
+		response.CapiDiegoProcessAssociations[string(capiProcessGUID)] = &api.DiegoProcessGuids{diegoProcessGUIDs.ToStringSlice()}
+	}
+	return response, nil
+}
+
 func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequest) (*api.UpsertRouteResponse, error) {
 	c.Logger.Info("upserting route...")
 	err := validateUpsertRouteRequest(request)

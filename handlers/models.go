@@ -159,7 +159,8 @@ type CAPIDiegoProcessAssociation struct {
 type capiDiegoProcessAssociationsRepoInterface interface {
 	Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation)
 	Delete(capiProcessGUID CAPIProcessGUID)
-	List() map[string][]string
+	List() map[CAPIProcessGUID]DiegoProcessGUIDs
+	Get(capiProcessGUID CAPIProcessGUID) DiegoProcessGUIDs
 }
 
 func (c *CAPIDiegoProcessAssociationsRepo) Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation) {
@@ -174,15 +175,23 @@ func (c *CAPIDiegoProcessAssociationsRepo) Delete(capiProcessGUID CAPIProcessGUI
 	c.Unlock()
 }
 
-func (c *CAPIDiegoProcessAssociationsRepo) List() map[string][]string {
+func (c *CAPIDiegoProcessAssociationsRepo) List() map[CAPIProcessGUID]DiegoProcessGUIDs {
+	list := make(map[CAPIProcessGUID]DiegoProcessGUIDs)
+
 	c.Lock()
-	list := make(map[string][]string)
 	for k, v := range c.Repo {
-		list[string(k)] = v.ToStringSlice()
+		list[k] = v
 	}
 	c.Unlock()
 
 	return list
+}
+
+func (c *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID CAPIProcessGUID) DiegoProcessGUIDs {
+	c.Lock()
+	diegoProcessGUIDs, _ := c.Repo[capiProcessGUID]
+	c.Unlock()
+	return diegoProcessGUIDs
 }
 
 type BBSClient interface {

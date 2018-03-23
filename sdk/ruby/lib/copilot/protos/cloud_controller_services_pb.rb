@@ -16,6 +16,7 @@ module Api
 
       rpc :ListCfRoutes, ListCfRoutesRequest, ListCfRoutesResponse
       rpc :ListCfRouteMappings, ListCfRouteMappingsRequest, ListCfRouteMappingsResponse
+      rpc :ListCapiDiegoProcessAssociations, ListCapiDiegoProcessAssociationsRequest, ListCapiDiegoProcessAssociationsResponse
       rpc :UpsertRoute, UpsertRouteRequest, UpsertRouteResponse
       rpc :DeleteRoute, DeleteRouteRequest, DeleteRouteResponse
       rpc :MapRoute, MapRouteRequest, MapRouteResponse

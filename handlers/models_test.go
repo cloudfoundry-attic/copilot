@@ -127,12 +127,12 @@ var _ = Describe("Handler Models", func() {
 
 			go capiDiegoProcessAssociationsRepo.Upsert(capiDiegoProcessAssociation)
 
-			Eventually(capiDiegoProcessAssociationsRepo.List).Should(Equal(map[string][]string{
-				string(capiDiegoProcessAssociation.CAPIProcessGUID): capiDiegoProcessAssociation.DiegoProcessGUIDs.ToStringSlice(),
-			}))
+			Eventually(func() handlers.DiegoProcessGUIDs {
+				return capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid")
+			}).Should(Equal(capiDiegoProcessAssociation.DiegoProcessGUIDs))
 
 			capiDiegoProcessAssociationsRepo.Delete(capiDiegoProcessAssociation.CAPIProcessGUID)
-			Expect(capiDiegoProcessAssociationsRepo.List()).To(HaveLen(0))
+			Expect(capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid")).To(BeEmpty())
 		})
 	})
 

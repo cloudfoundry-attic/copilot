@@ -20,6 +20,20 @@ message ListCfRouteMappingsResponse {
   map<string, RouteMapping> route_mappings = 1;
 }
 
+message ListCapiDiegoProcessAssociationsRequest {}
+
+// this is only for ListCapiDiegoProcessAssociationsResponse,
+// since protobuf does not support list values in maps.
+// it's gross. try not to use it.
+message DiegoProcessGuids {
+  repeated string diego_process_guids = 1;
+}
+message ListCapiDiegoProcessAssociationsResponse {
+  // key is capi process guid
+  // value is a list of diego process guids
+  map<string, DiegoProcessGuids> capi_diego_process_associations = 1;
+}
+
 message Route {
   string guid = 1;
   string host = 2;
@@ -74,6 +88,8 @@ message DeleteCapiDiegoProcessAssociationResponse {}
 service CloudControllerCopilot {
   rpc ListCfRoutes(ListCfRoutesRequest) returns (ListCfRoutesResponse) {}
   rpc ListCfRouteMappings(ListCfRouteMappingsRequest) returns (ListCfRouteMappingsResponse) {}
+  rpc ListCapiDiegoProcessAssociations(ListCapiDiegoProcessAssociationsRequest) returns (ListCapiDiegoProcessAssociationsResponse) {}
+
   rpc UpsertRoute(UpsertRouteRequest) returns (UpsertRouteResponse) {}
   rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
 
