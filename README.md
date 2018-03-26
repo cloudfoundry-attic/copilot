@@ -120,6 +120,34 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
   api.CloudControllerCopilot/DeleteRoute
 ```
 
+**The following endpoints are only used for debugging. They expose Copilot's internal state**
+
+### List the CF Routes that Copilot knows about
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/ListCfRoutes
+```
+
+## List the CF Route Mappings that Copilot knows about
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/ListCfRouteMappings
+```
+
+### List the associations between CAPI Process GUIDs and Diego Process GUIDs that Copilot knows about
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/ListCapiDiegoProcessAssociations
+```
 
 ### View pilot API results
 ```sh
