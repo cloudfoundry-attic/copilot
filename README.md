@@ -131,7 +131,7 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
   api.CloudControllerCopilot/ListCfRoutes
 ```
 
-## List the CF Route Mappings that Copilot knows about
+### List the CF Route Mappings that Copilot knows about
 ```sh
 /var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
