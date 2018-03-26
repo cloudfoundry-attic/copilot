@@ -15,7 +15,7 @@ dep ensure
 To run the tests:
 
 ```sh
-ginkgo -r -p
+ginkgo -r -p -race
 ```
 
 To compile the server:
@@ -48,18 +48,22 @@ cf push ...
 ```
 
 ### Find Diego Process GUID
-The process guid is under the `service-key` as the prefix *before* `.cfapps.internal`.
+##### Get the CAPI Process GUID:
+The following example assumes the "web" process type, but you can replace that with another type if you know what you're doing.
 
 ```sh
-curl localhost:8080/v1/registration
+cf curl "/v3/apps/$(cf curl "/v3/apps" | jq -r '.resources[] | select(.name == "<app-name>") | .guid')/processes" | jq -r '.resources[] | select(.type == "web") | .guid'
 ```
 
-However, this guid is trimmed. If you want to map/delete a route, you'll need the entire `<process-guid>-<version>` concatenation:
+##### Get the CAPI Process Version:
+The CAPI Process GUID is not sufficient for routing. If you want to map/delete a route, you'll need the entire `<capi-process-guid>-<version>` concatenation (the "Diego Process GUID"):
 
 ```sh
 cf app <my-app> --guid # to obtain the application guid
 cf curl /v2/apps/<app-guid> | grep version # to obtain the version
 ```
+
+Diego Process GUID = `"<capi-process-guid>-<version>"`
 
 ### Add a Route
 
@@ -80,7 +84,7 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
 /var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
-  -d '{"route_mapping": {"route_guid": "route-guid-a", "capi_process": {"diego_process_guid": "diego_guid_1", "guid": "capi_guid_1"}}}' \
+  -d '{"route_mapping": {"route_guid": "route-guid-a", "capi_process_guid": "capi_guid_1"}}' \
   copilot.service.cf.internal:9001 \
   api.CloudControllerCopilot/MapRoute
 ```
@@ -103,7 +107,7 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
 /var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
   -cert ./client.crt \
-  -d '{"capi_process_guid": "capi_guid_1", "route_guid": "route-guid-a"}' \
+  -d '{"route_mapping": {"capi_process_guid": "capi_guid_1", "route_guid": "route-guid-a"}}' \
   copilot.service.cf.internal:9001 \
   api.CloudControllerCopilot/UnmapRoute
 ```
@@ -120,9 +124,23 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
   api.CloudControllerCopilot/DeleteRoute
 ```
 
+### Associate a CAPI Process with a Diego Process
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"capi_diego_process_association": {"capi_process_guid": "capi_guid_1", "diego_process_guids": ["diego_guid_1"]}}' \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation
+```
+
 ## The following endpoints are only used for debugging. They expose Copilot's internal state
 
 ### List the CF Routes that Copilot knows about
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
 /var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
@@ -132,6 +150,8 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
 ```
 
 ### List the CF Route Mappings that Copilot knows about
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
 /var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
@@ -141,6 +161,8 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
 ```
 
 ### List the associations between CAPI Process GUIDs and Diego Process GUIDs that Copilot knows about
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
 /var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
   -key ./client.key \
