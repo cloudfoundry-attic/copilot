@@ -120,7 +120,7 @@ cf curl /v2/apps/<app-guid> | grep version # to obtain the version
   api.CloudControllerCopilot/DeleteRoute
 ```
 
-**The following endpoints are only used for debugging. They expose Copilot's internal state**
+## The following endpoints are only used for debugging. They expose Copilot's internal state
 
 ### List the CF Routes that Copilot knows about
 ```sh
