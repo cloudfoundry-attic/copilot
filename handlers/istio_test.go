@@ -139,7 +139,7 @@ var _ = Describe("Istio Handlers", func() {
 				Repo: make(map[string]handlers.RouteMapping),
 			},
 			CAPIDiegoProcessAssociationsRepo: &handlers.CAPIDiegoProcessAssociationsRepo{
-				Repo: make(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs),
+				Repo: make(map[handlers.CAPIProcessGUID]handlers.CAPIDiegoProcessAssociation),
 			},
 		}
 	})

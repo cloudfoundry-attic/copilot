@@ -1,8 +1,6 @@
 package handlers_test
 
 import (
-	"strings"
-
 	"code.cloudfoundry.org/copilot/handlers"
 
 	. "github.com/onsi/ginkgo"
@@ -112,7 +110,7 @@ var _ = Describe("Handler Models", func() {
 		var capiDiegoProcessAssociationsRepo handlers.CAPIDiegoProcessAssociationsRepo
 		BeforeEach(func() {
 			capiDiegoProcessAssociationsRepo = handlers.CAPIDiegoProcessAssociationsRepo{
-				Repo: make(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs),
+				Repo: make(map[handlers.CAPIProcessGUID]handlers.CAPIDiegoProcessAssociation),
 			}
 		})
 
@@ -127,12 +125,12 @@ var _ = Describe("Handler Models", func() {
 
 			go capiDiegoProcessAssociationsRepo.Upsert(capiDiegoProcessAssociation)
 
-			Eventually(func() handlers.DiegoProcessGUIDs {
+			Eventually(func() handlers.CAPIDiegoProcessAssociation {
 				return capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid")
-			}).Should(Equal(capiDiegoProcessAssociation.DiegoProcessGUIDs))
+			}).Should(Equal(capiDiegoProcessAssociation))
 
 			capiDiegoProcessAssociationsRepo.Delete(capiDiegoProcessAssociation.CAPIProcessGUID)
-			Expect(capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid")).To(BeEmpty())
+			Expect(capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid").DiegoProcessGUIDs).To(BeEmpty())
 		})
 	})
 
@@ -157,28 +155,6 @@ var _ = Describe("Handler Models", func() {
 				Expect(rmA.Key()).NotTo(Equal(rmB.Key()))
 				Expect(rmA.Key()).NotTo(Equal(rmC.Key()))
 				Expect(rmB.Key()).NotTo(Equal(rmC.Key()))
-			})
-		})
-	})
-
-	Describe("DiegoProcessGUID", func() {
-		Describe("InternalHostname", func() {
-			It("trims long process guids to be valid DNS labels <= 63 characters", func() {
-				// ref: https://tools.ietf.org/html/rfc1123
-
-				exProcessGUID := handlers.DiegoProcessGUID("8b7aa301-a341-4ac9-9009-84a3ce98871d-ae15c691-0af1-4c1e-94b9-5199fb24668e")
-				hostname := exProcessGUID.InternalHostname()
-
-				labels := strings.Split(hostname, ".")
-				Expect(len(labels[0])).To(BeNumerically("<=", 63))
-			})
-
-			It("preserves other labels", func() {
-				magicalShortGUID := handlers.DiegoProcessGUID("foo-bar")
-				hostname := magicalShortGUID.InternalHostname()
-
-				labels := strings.Split(hostname, ".")
-				Expect(labels[0]).To(Equal("foo-bar"))
 			})
 		})
 	})

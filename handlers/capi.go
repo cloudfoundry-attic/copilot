@@ -22,13 +22,13 @@ func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse,
 	return &api.HealthResponse{Healthy: true}, nil
 }
 
-// TODO: probably remove or clean this up, currently using for debugging
+// TODO: probably remove or test these eventually, currently using for debugging
 func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.ListCfRoutesResponse, error) {
 	c.Logger.Info("listing cf routes...")
 	return &api.ListCfRoutesResponse{Routes: c.RoutesRepo.List()}, nil
 }
 
-// TODO: probably remove or clean this up, currently using for debugging
+// TODO: probably remove or test these eventually, currently using for debugging
 func (c *CAPI) ListCfRouteMappings(context.Context, *api.ListCfRouteMappingsRequest) (*api.ListCfRouteMappingsResponse, error) {
 	c.Logger.Info("listing cf route mappings...")
 	routeMappings := c.RouteMappingsRepo.List()
@@ -42,11 +42,13 @@ func (c *CAPI) ListCfRouteMappings(context.Context, *api.ListCfRouteMappingsRequ
 	return &api.ListCfRouteMappingsResponse{RouteMappings: apiRoutMappings}, nil
 }
 
-// TODO: probably remove or clean this up, currently using for debugging
+// TODO: probably remove or test these eventually, currently using for debugging
 func (c *CAPI) ListCapiDiegoProcessAssociations(context.Context, *api.ListCapiDiegoProcessAssociationsRequest) (*api.ListCapiDiegoProcessAssociationsResponse, error) {
 	c.Logger.Info("listing capi/diego process associations...")
 
-	response := &api.ListCapiDiegoProcessAssociationsResponse{}
+	response := &api.ListCapiDiegoProcessAssociationsResponse{
+		CapiDiegoProcessAssociations: make(map[string]*api.DiegoProcessGuids),
+	}
 	for capiProcessGUID, diegoProcessGUIDs := range c.CAPIDiegoProcessAssociationsRepo.List() {
 		response.CapiDiegoProcessAssociations[string(capiProcessGUID)] = &api.DiegoProcessGuids{diegoProcessGUIDs.ToStringSlice()}
 	}

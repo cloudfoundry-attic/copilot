@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"sync"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
@@ -117,16 +116,6 @@ func (m *RouteMappingsRepo) List() map[string]RouteMapping {
 
 type DiegoProcessGUID string
 
-func (p DiegoProcessGUID) InternalHostname() string {
-	label := string(p)
-
-	if len(label) >= 63 {
-		label = label[0:62]
-	}
-
-	return fmt.Sprintf("%s.cfapps.internal", label)
-}
-
 type DiegoProcessGUIDs []DiegoProcessGUID
 
 func DiegoProcessGUIDsFromStringSlice(diegoProcessGUIDs []string) DiegoProcessGUIDs {
@@ -146,7 +135,7 @@ func (p DiegoProcessGUIDs) ToStringSlice() []string {
 }
 
 type CAPIDiegoProcessAssociationsRepo struct {
-	Repo map[CAPIProcessGUID]DiegoProcessGUIDs
+	Repo map[CAPIProcessGUID]CAPIDiegoProcessAssociation
 	sync.Mutex
 }
 
@@ -160,12 +149,12 @@ type capiDiegoProcessAssociationsRepoInterface interface {
 	Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation)
 	Delete(capiProcessGUID CAPIProcessGUID)
 	List() map[CAPIProcessGUID]DiegoProcessGUIDs
-	Get(capiProcessGUID CAPIProcessGUID) DiegoProcessGUIDs
+	Get(capiProcessGUID CAPIProcessGUID) CAPIDiegoProcessAssociation
 }
 
 func (c *CAPIDiegoProcessAssociationsRepo) Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation) {
 	c.Lock()
-	c.Repo[capiDiegoProcessAssociation.CAPIProcessGUID] = capiDiegoProcessAssociation.DiegoProcessGUIDs
+	c.Repo[capiDiegoProcessAssociation.CAPIProcessGUID] = capiDiegoProcessAssociation
 	c.Unlock()
 }
 
@@ -180,18 +169,18 @@ func (c *CAPIDiegoProcessAssociationsRepo) List() map[CAPIProcessGUID]DiegoProce
 
 	c.Lock()
 	for k, v := range c.Repo {
-		list[k] = v
+		list[k] = v.DiegoProcessGUIDs
 	}
 	c.Unlock()
 
 	return list
 }
 
-func (c *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID CAPIProcessGUID) DiegoProcessGUIDs {
+func (c *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID CAPIProcessGUID) CAPIDiegoProcessAssociation {
 	c.Lock()
-	diegoProcessGUIDs, _ := c.Repo[capiProcessGUID]
+	capiDiegoProcessAssociation, _ := c.Repo[capiProcessGUID]
 	c.Unlock()
-	return diegoProcessGUIDs
+	return capiDiegoProcessAssociation
 }
 
 type BBSClient interface {

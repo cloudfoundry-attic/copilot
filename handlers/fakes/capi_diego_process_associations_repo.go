@@ -27,16 +27,16 @@ type CAPIDiegoProcessAssociationsRepo struct {
 	listReturnsOnCall map[int]struct {
 		result1 map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
 	}
-	GetStub        func(capiProcessGUID handlers.CAPIProcessGUID) handlers.DiegoProcessGUIDs
+	GetStub        func(capiProcessGUID handlers.CAPIProcessGUID) handlers.CAPIDiegoProcessAssociation
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
 		capiProcessGUID handlers.CAPIProcessGUID
 	}
 	getReturns struct {
-		result1 handlers.DiegoProcessGUIDs
+		result1 handlers.CAPIDiegoProcessAssociation
 	}
 	getReturnsOnCall map[int]struct {
-		result1 handlers.DiegoProcessGUIDs
+		result1 handlers.CAPIDiegoProcessAssociation
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -130,7 +130,7 @@ func (fake *CAPIDiegoProcessAssociationsRepo) ListReturnsOnCall(i int, result1 m
 	}{result1}
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID handlers.CAPIProcessGUID) handlers.DiegoProcessGUIDs {
+func (fake *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID handlers.CAPIProcessGUID) handlers.CAPIDiegoProcessAssociation {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
@@ -159,22 +159,22 @@ func (fake *CAPIDiegoProcessAssociationsRepo) GetArgsForCall(i int) handlers.CAP
 	return fake.getArgsForCall[i].capiProcessGUID
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) GetReturns(result1 handlers.DiegoProcessGUIDs) {
+func (fake *CAPIDiegoProcessAssociationsRepo) GetReturns(result1 handlers.CAPIDiegoProcessAssociation) {
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 handlers.DiegoProcessGUIDs
+		result1 handlers.CAPIDiegoProcessAssociation
 	}{result1}
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) GetReturnsOnCall(i int, result1 handlers.DiegoProcessGUIDs) {
+func (fake *CAPIDiegoProcessAssociationsRepo) GetReturnsOnCall(i int, result1 handlers.CAPIDiegoProcessAssociation) {
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 handlers.DiegoProcessGUIDs
+			result1 handlers.CAPIDiegoProcessAssociation
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 handlers.DiegoProcessGUIDs
+		result1 handlers.CAPIDiegoProcessAssociation
 	}{result1}
 }
 

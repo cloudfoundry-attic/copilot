@@ -71,7 +71,7 @@ func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*ap
 	return diegoProcessGUIDToBackendSet, nil
 }
 
-func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSetArg map[DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
+func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
 	hostnameToBackendSet := make(map[string]*api.BackendSet)
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
@@ -79,8 +79,9 @@ func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSetArg map[DiegoPr
 			continue
 		}
 
-		for _, diegoProcessGUID := range c.CAPIDiegoProcessAssociationsRepo.Get(routeMapping.CAPIProcessGUID) {
-			backends, ok := diegoProcessGUIDToBackendSetArg[DiegoProcessGUID(diegoProcessGUID)]
+		capiDiegoProcessAssociation := c.CAPIDiegoProcessAssociationsRepo.Get(routeMapping.CAPIProcessGUID)
+		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
+			backends, ok := diegoProcessGUIDToBackendSet[DiegoProcessGUID(diegoProcessGUID)]
 			if !ok {
 				continue
 			}
