@@ -68,6 +68,13 @@ export CAPI_PROCESS_VERSION=$(cf curl /v2/apps/$APP_GUID | jq -r .entity.version
 export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
 ```
 
+##### Get the Route Guid used by Cloud Controller
+Given an existing route in cloud controller...
+
+```sh
+export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.entity.host == "<hostname-of-existing-route>").metadata.guid')
+```
+
 ### As Cloud Controller, Add a Route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
