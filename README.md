@@ -52,18 +52,21 @@ cf push ...
 The following example assumes the "web" process type, but you can replace that with another type if you know what you're doing.
 
 ```sh
-cf curl "/v3/apps/$(cf curl "/v3/apps" | jq -r '.resources[] | select(.name == "<app-name>") | .guid')/processes" | jq -r '.resources[] | select(.type == "web") | .guid'
+export CAPI_PROCESS_GUID=$(cf curl "/v3/apps/$(cf curl "/v3/apps" | jq -r '.resources[] | select(.name == "<app-name>") | .guid')/processes" | jq -r '.resources[] | select(.type == "web") | .guid')
 ```
 
 ##### Get the CAPI Process Version:
 The CAPI Process GUID is not sufficient for routing. If you want to map/delete a route, you'll need the entire `<capi-process-guid>-<version>` concatenation (the "Diego Process GUID"):
 
 ```sh
-cf app <my-app> --guid # to obtain the application guid
-cf curl /v2/apps/<app-guid> | grep version # to obtain the version
+export APP_GUID=$(cf app <my-app> --guid) # to obtain the application guid
+export CAPI_PROCESS_VERSION=$(cf curl /v2/apps/$APP_GUID | jq -r .entity.version) # to obtain the version
 ```
 
-Diego Process GUID = `"<capi-process-guid>-<version>"`
+##### Construct the Diego Process GUID
+```sh
+export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
+```
 
 ### Add a Route
 
