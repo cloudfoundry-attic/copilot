@@ -111,7 +111,6 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation
 ```
 
-
 ### As Istio Pilot, List Routes
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
@@ -121,6 +120,18 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   -cert ./client.crt \
   copilot.service.cf.internal:9000 \
   api.IstioCopilot/Routes
+```
+
+### As Cloud Controller, Delete an Association between a CAPI Process and a Diego Process
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"capi_process_guid": "capi_guid_1"}' \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/DeleteCapiDiegoProcessAssociation
 ```
 
 ### As Cloud Controller, Unmap a Route
