@@ -196,7 +196,7 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
 
 ### View pilot API results
 ```sh
-curl localhost:8080/v1/routes/http_proxy/x/router~x~x~x
+curl localhost:8080/v1/routes/[LISTENER PORT NUMBER: 80/443]/x/router~x~x~x
 ```
 
 and
