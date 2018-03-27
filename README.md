@@ -68,7 +68,7 @@ export CAPI_PROCESS_VERSION=$(cf curl /v2/apps/$APP_GUID | jq -r .entity.version
 export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
 ```
 
-### Add a Route
+### As Cloud Controller, Add a Route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
@@ -80,7 +80,7 @@ export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
   api.CloudControllerCopilot/UpsertRoute
 ```
 
-### Map a Route
+### As Cloud Controller, Map a Route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
@@ -92,7 +92,20 @@ export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
   api.CloudControllerCopilot/MapRoute
 ```
 
-### List Routes
+### As Cloud Controller, Associate a CAPI Process with a Diego Process
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"capi_diego_process_association": {"capi_process_guid": "capi_guid_1", "diego_process_guids": ["diego_guid_1"]}}' \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation
+```
+
+
+### As Istio Pilot, List Routes
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
@@ -103,7 +116,7 @@ export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
   api.IstioCopilot/Routes
 ```
 
-### Unmap a Route
+### As Cloud Controller, Unmap a Route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
@@ -115,7 +128,7 @@ export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
   api.CloudControllerCopilot/UnmapRoute
 ```
 
-### Delete a Route
+### As Cloud Controller, Delete a Route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
@@ -127,17 +140,6 @@ export DIEGO_PROCESS_GUID="$CAPI_PROCESS_GUID-$CAPI_PROCESS_VERSION"
   api.CloudControllerCopilot/DeleteRoute
 ```
 
-### Associate a CAPI Process with a Diego Process
-
-(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
-```sh
-/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
-  -key ./client.key \
-  -cert ./client.crt \
-  -d '{"capi_diego_process_association": {"capi_process_guid": "capi_guid_1", "diego_process_guids": ["diego_guid_1"]}}' \
-  copilot.service.cf.internal:9001 \
-  api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation
-```
 
 ## The following endpoints are only used for debugging. They expose Copilot's internal state
 
