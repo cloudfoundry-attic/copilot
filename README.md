@@ -36,7 +36,7 @@ go get -u github.com/fullstorydev/grpcurl
 ```
 
 If you are using a cloudfoundry
-- bosh ssh to the istio vm and `sudo su`
+- bosh ssh to the istio-control vm and `sudo su`
 - grpcurl is at `/var/vcap/packages/grpcurl/bin/grpcurl`
 - the certs you need are in `/var/vcap/jobs/pilot-discovery/config/certs/`
 
