@@ -65,6 +65,13 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   end
   add_message "api.DeleteCapiDiegoProcessAssociationResponse" do
   end
+  add_message "api.BulkSyncRequest" do
+    repeated :route_mappings, :message, 1, "api.RouteMapping"
+    repeated :routes, :message, 2, "api.Route"
+    repeated :capi_diego_process_associations, :message, 3, "api.CapiDiegoProcessAssociation"
+  end
+  add_message "api.BulkSyncResponse" do
+  end
 end
 
 module Api
@@ -90,4 +97,6 @@ module Api
   UpsertCapiDiegoProcessAssociationResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UpsertCapiDiegoProcessAssociationResponse").msgclass
   DeleteCapiDiegoProcessAssociationRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DeleteCapiDiegoProcessAssociationRequest").msgclass
   DeleteCapiDiegoProcessAssociationResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DeleteCapiDiegoProcessAssociationResponse").msgclass
+  BulkSyncRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.BulkSyncRequest").msgclass
+  BulkSyncResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.BulkSyncResponse").msgclass
 end

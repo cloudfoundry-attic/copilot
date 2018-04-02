@@ -54,4 +54,12 @@ RSpec.describe Cloudfoundry::Copilot do
     )
   end
 
+  it 'can bulk sync' do
+    @client.bulk_sync(
+      routes: [{guid: 'some-route-guid', host: 'example.host.com'}],
+      route_mappings: [{route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid'}],
+      capi_diego_process_associations: [{capi_process_guid: 'some-capi-process-guid', diego_process_guids: ['some-diego-process-guid']}]
+    )
+  end
+
 end

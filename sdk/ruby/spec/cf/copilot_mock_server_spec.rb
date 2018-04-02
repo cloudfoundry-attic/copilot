@@ -92,10 +92,28 @@ RSpec.describe Cloudfoundry::Copilot do
         capi_process_guid: 'some-capi-process-guid'
     ))
   end
+
+  it 'can sync' do
+    expect(@client.bulk_sync(
+          routes: [{guid: 'some-route-guid', host: 'example.host.com'}],
+          route_mappings: [{route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid'}],
+          capi_diego_process_associations: [{capi_process_guid: 'some-capi-process-guid', diego_process_guids: ['some-diego-process-guid']}]
+    )).to be_a(::Api::BulkSyncResponse)
+
+    expect(@handlers.bulk_sync_got_request).to eq(Api::BulkSyncRequest.new(
+      routes: [{guid: 'some-route-guid', host: 'example.host.com'}],
+      route_mappings: [{route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid'}],
+      capi_diego_process_associations: [{capi_process_guid: 'some-capi-process-guid', diego_process_guids: ['some-diego-process-guid']}]
+    ))
+  end
+
+
 end
 
 class FakeCopilotHandlers < Api::CloudControllerCopilot::Service
-  attr_reader :upsert_route_got_request, :delete_route_got_request, :map_route_got_request, :unmap_route_got_request, :upsert_capi_diego_process_association_got_request,  :delete_capi_diego_process_association_got_request
+  attr_reader :upsert_route_got_request, :delete_route_got_request, :map_route_got_request,
+    :unmap_route_got_request, :upsert_capi_diego_process_association_got_request,
+    :delete_capi_diego_process_association_got_request, :bulk_sync_got_request
 
   def health(_healthRequest, _call)
     ::Api::HealthResponse.new(healthy: true)
@@ -129,5 +147,10 @@ class FakeCopilotHandlers < Api::CloudControllerCopilot::Service
   def delete_capi_diego_process_association(request, _call)
     @delete_capi_diego_process_association_got_request = request
     ::Api::DeleteCapiDiegoProcessAssociationResponse.new
+  end
+
+  def bulk_sync(request, _call)
+    @bulk_sync_got_request = request
+    ::Api::BulkSyncResponse.new
   end
 end

@@ -64,12 +64,12 @@ module Cloudfoundry
         service.delete_capi_diego_process_association(request)
       end
 
-      # untested - this will change a lot and no one is using it yet
-      def bulk_sync(routes:, route_mappings:)
-        routes.map! {|route| Api::UpsertRouteRequest.new(route: route)}
-        route_mappings.map! {|mapping| Api::MapRouteRequest.new(route_mapping: mapping)}
-
-        request = Api::BulkSyncRequest.new(routes: routes, route_mappings: route_mappings)
+      def bulk_sync(routes:, route_mappings:, capi_diego_process_associations:)
+        request = Api::BulkSyncRequest.new(
+          routes: routes,
+          route_mappings: route_mappings,
+          capi_diego_process_associations: capi_diego_process_associations
+        )
         service.bulk_sync(request)
       end
 
