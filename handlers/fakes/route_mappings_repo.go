@@ -18,6 +18,11 @@ type RouteMappingsRepo struct {
 	unmapArgsForCall []struct {
 		routeMapping handlers.RouteMapping
 	}
+	SyncStub        func(routeMappings []*handlers.RouteMapping)
+	syncMutex       sync.RWMutex
+	syncArgsForCall []struct {
+		routeMappings []*handlers.RouteMapping
+	}
 	ListStub        func() map[string]handlers.RouteMapping
 	listMutex       sync.RWMutex
 	listArgsForCall []struct{}
@@ -79,6 +84,35 @@ func (fake *RouteMappingsRepo) UnmapArgsForCall(i int) handlers.RouteMapping {
 	return fake.unmapArgsForCall[i].routeMapping
 }
 
+func (fake *RouteMappingsRepo) Sync(routeMappings []*handlers.RouteMapping) {
+	var routeMappingsCopy []*handlers.RouteMapping
+	if routeMappings != nil {
+		routeMappingsCopy = make([]*handlers.RouteMapping, len(routeMappings))
+		copy(routeMappingsCopy, routeMappings)
+	}
+	fake.syncMutex.Lock()
+	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
+		routeMappings []*handlers.RouteMapping
+	}{routeMappingsCopy})
+	fake.recordInvocation("Sync", []interface{}{routeMappingsCopy})
+	fake.syncMutex.Unlock()
+	if fake.SyncStub != nil {
+		fake.SyncStub(routeMappings)
+	}
+}
+
+func (fake *RouteMappingsRepo) SyncCallCount() int {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return len(fake.syncArgsForCall)
+}
+
+func (fake *RouteMappingsRepo) SyncArgsForCall(i int) []*handlers.RouteMapping {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return fake.syncArgsForCall[i].routeMappings
+}
+
 func (fake *RouteMappingsRepo) List() map[string]handlers.RouteMapping {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
@@ -126,6 +160,8 @@ func (fake *RouteMappingsRepo) Invocations() map[string][][]interface{} {
 	defer fake.mapMutex.RUnlock()
 	fake.unmapMutex.RLock()
 	defer fake.unmapMutex.RUnlock()
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

@@ -18,6 +18,11 @@ type RoutesRepo struct {
 	deleteArgsForCall []struct {
 		guid handlers.RouteGUID
 	}
+	SyncStub        func(routes []*handlers.Route)
+	syncMutex       sync.RWMutex
+	syncArgsForCall []struct {
+		routes []*handlers.Route
+	}
 	GetStub        func(guid handlers.RouteGUID) (*handlers.Route, bool)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
@@ -90,6 +95,35 @@ func (fake *RoutesRepo) DeleteArgsForCall(i int) handlers.RouteGUID {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return fake.deleteArgsForCall[i].guid
+}
+
+func (fake *RoutesRepo) Sync(routes []*handlers.Route) {
+	var routesCopy []*handlers.Route
+	if routes != nil {
+		routesCopy = make([]*handlers.Route, len(routes))
+		copy(routesCopy, routes)
+	}
+	fake.syncMutex.Lock()
+	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
+		routes []*handlers.Route
+	}{routesCopy})
+	fake.recordInvocation("Sync", []interface{}{routesCopy})
+	fake.syncMutex.Unlock()
+	if fake.SyncStub != nil {
+		fake.SyncStub(routes)
+	}
+}
+
+func (fake *RoutesRepo) SyncCallCount() int {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return len(fake.syncArgsForCall)
+}
+
+func (fake *RoutesRepo) SyncArgsForCall(i int) []*handlers.Route {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return fake.syncArgsForCall[i].routes
 }
 
 func (fake *RoutesRepo) Get(guid handlers.RouteGUID) (*handlers.Route, bool) {
@@ -190,6 +224,8 @@ func (fake *RoutesRepo) Invocations() map[string][][]interface{} {
 	defer fake.upsertMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	fake.listMutex.RLock()

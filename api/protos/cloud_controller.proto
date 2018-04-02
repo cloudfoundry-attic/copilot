@@ -85,6 +85,14 @@ message DeleteCapiDiegoProcessAssociationRequest {
 
 message DeleteCapiDiegoProcessAssociationResponse {}
 
+message BulkSyncRequest {
+  repeated RouteMapping route_mappings = 1;
+  repeated Route routes = 2;
+  repeated CapiDiegoProcessAssociation capi_diego_process_associations = 3;
+}
+
+message BulkSyncResponse {}
+
 service CloudControllerCopilot {
   rpc ListCfRoutes(ListCfRoutesRequest) returns (ListCfRoutesResponse) {}
   rpc ListCfRouteMappings(ListCfRouteMappingsRequest) returns (ListCfRouteMappingsResponse) {}
@@ -98,6 +106,7 @@ service CloudControllerCopilot {
 
   rpc UpsertCapiDiegoProcessAssociation(UpsertCapiDiegoProcessAssociationRequest) returns (UpsertCapiDiegoProcessAssociationResponse) {}
   rpc DeleteCapiDiegoProcessAssociation(DeleteCapiDiegoProcessAssociationRequest) returns (DeleteCapiDiegoProcessAssociationResponse) {}
+  rpc BulkSync (BulkSyncRequest) returns (BulkSyncResponse) {}
 
   rpc Health(HealthRequest) returns (HealthResponse) {}
 }

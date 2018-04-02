@@ -130,6 +130,50 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 	return &api.DeleteCapiDiegoProcessAssociationResponse{}, nil
 }
 
+func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (*api.BulkSyncResponse, error) {
+	c.Logger.Info("bulk sync...")
+	err := validateBulkSyncRequest(request)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+
+	routeMappings := make([]*RouteMapping, len(request.RouteMappings))
+	for i, routeMapping := range request.RouteMappings {
+		routeMappings[i] = &RouteMapping{
+			RouteGUID: RouteGUID(routeMapping.RouteGuid),
+			CAPIProcessGUID: CAPIProcessGUID(routeMapping.CapiProcessGuid),
+		}
+	}
+	
+	routes := make([]*Route, len(request.Routes))
+
+	for i, route := range request.Routes {
+		routes[i] = &Route{
+			GUID: RouteGUID(route.Guid),
+			Host: route.Host,
+		}
+	}
+
+	cdpas := make([]*CAPIDiegoProcessAssociation, len(request.CapiDiegoProcessAssociations))
+
+	for i, cdpa := range request.CapiDiegoProcessAssociations {
+		diegoProcessGuids := make([]DiegoProcessGUID, len(cdpa.DiegoProcessGuids))
+		for j, diegoProcessGuid := range cdpa.DiegoProcessGuids {
+			diegoProcessGuids[j] = DiegoProcessGUID(diegoProcessGuid)
+		}
+		cdpas[i] = &CAPIDiegoProcessAssociation{
+			CAPIProcessGUID: CAPIProcessGUID(cdpa.CapiProcessGuid),
+			DiegoProcessGUIDs: diegoProcessGuids,
+		}
+	}
+
+	c.RouteMappingsRepo.Sync(routeMappings)
+	c.RoutesRepo.Sync(routes)
+	c.CAPIDiegoProcessAssociationsRepo.Sync(cdpas)
+
+	return &api.BulkSyncResponse{}, nil
+}
+
 func validateUpsertRouteRequest(r *api.UpsertRouteRequest) error {
 	route := r.Route
 	if route == nil {
@@ -184,6 +228,13 @@ func validateUpsertCAPIDiegoProcessAssociationRequest(r *api.UpsertCapiDiegoProc
 func validateDeleteCAPIDiegoProcessAssociationRequest(r *api.DeleteCapiDiegoProcessAssociationRequest) error {
 	if r.CapiProcessGuid == "" {
 		return errors.New("CapiProcessGuid is required")
+	}
+	return nil
+}
+
+func validateBulkSyncRequest(r *api.BulkSyncRequest) error {
+	if (r.Routes == nil) || (r.RouteMappings == nil) || (r.CapiDiegoProcessAssociations == nil) {
+		return errors.New("Routes and RouteMappings and CapiDiegoProcessAssociations are required")
 	}
 	return nil
 }

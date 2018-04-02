@@ -11,7 +11,6 @@ import (
 const CF_APP_PORT = 8080
 
 type RouteGUID string
-type Hostname string
 
 type Route struct {
 	GUID RouteGUID
@@ -31,6 +30,7 @@ type RoutesRepo struct {
 type routesRepoInterface interface {
 	Upsert(route *Route)
 	Delete(guid RouteGUID)
+	Sync(routes []*Route)
 	Get(guid RouteGUID) (*Route, bool)
 	List() map[string]string
 }
@@ -44,6 +44,16 @@ func (r *RoutesRepo) Upsert(route *Route) {
 func (r *RoutesRepo) Delete(guid RouteGUID) {
 	r.Lock()
 	delete(r.Repo, guid)
+	r.Unlock()
+}
+
+func (r *RoutesRepo) Sync(routes []*Route) {
+	repo := make(map[RouteGUID]*Route)
+	for _, route := range routes {
+		repo[route.GUID] = route
+	}
+	r.Lock()
+	r.Repo = repo
 	r.Unlock()
 }
 
@@ -87,6 +97,7 @@ type RouteMappingsRepo struct {
 type routeMappingsRepoInterface interface {
 	Map(routeMapping RouteMapping)
 	Unmap(routeMapping RouteMapping)
+	Sync(routeMappings []*RouteMapping)
 	List() map[string]RouteMapping
 }
 
@@ -99,6 +110,16 @@ func (m *RouteMappingsRepo) Map(routeMapping RouteMapping) {
 func (m *RouteMappingsRepo) Unmap(routeMapping RouteMapping) {
 	m.Lock()
 	delete(m.Repo, routeMapping.Key())
+	m.Unlock()
+}
+
+func (m *RouteMappingsRepo) Sync(routeMappings []*RouteMapping) {
+	repo := make(map[string]RouteMapping)
+	for _, routeMapping := range routeMappings {
+		repo[routeMapping.Key()] = *routeMapping
+	}
+	m.Lock()
+	m.Repo = repo
 	m.Unlock()
 }
 
@@ -148,6 +169,7 @@ type CAPIDiegoProcessAssociation struct {
 type capiDiegoProcessAssociationsRepoInterface interface {
 	Upsert(capiDiegoProcessAssociation CAPIDiegoProcessAssociation)
 	Delete(capiProcessGUID CAPIProcessGUID)
+	Sync(capiDiegoProcessAssociations []*CAPIDiegoProcessAssociation)
 	List() map[CAPIProcessGUID]DiegoProcessGUIDs
 	Get(capiProcessGUID CAPIProcessGUID) CAPIDiegoProcessAssociation
 }
@@ -161,6 +183,16 @@ func (c *CAPIDiegoProcessAssociationsRepo) Upsert(capiDiegoProcessAssociation CA
 func (c *CAPIDiegoProcessAssociationsRepo) Delete(capiProcessGUID CAPIProcessGUID) {
 	c.Lock()
 	delete(c.Repo, capiProcessGUID)
+	c.Unlock()
+}
+
+func (c *CAPIDiegoProcessAssociationsRepo) Sync(capiDiegoProcessAssociations []*CAPIDiegoProcessAssociation) {
+	repo := make(map[CAPIProcessGUID]CAPIDiegoProcessAssociation)
+	for _, capiDiegoProcessAssociation := range capiDiegoProcessAssociations {
+		repo[capiDiegoProcessAssociation.CAPIProcessGUID] = *capiDiegoProcessAssociation
+	}
+	c.Lock()
+	c.Repo = repo
 	c.Unlock()
 }
 

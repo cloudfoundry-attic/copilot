@@ -18,6 +18,11 @@ type CAPIDiegoProcessAssociationsRepo struct {
 	deleteArgsForCall []struct {
 		capiProcessGUID handlers.CAPIProcessGUID
 	}
+	SyncStub        func(capiDiegoProcessAssociations []*handlers.CAPIDiegoProcessAssociation)
+	syncMutex       sync.RWMutex
+	syncArgsForCall []struct {
+		capiDiegoProcessAssociations []*handlers.CAPIDiegoProcessAssociation
+	}
 	ListStub        func() map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs
 	listMutex       sync.RWMutex
 	listArgsForCall []struct{}
@@ -88,6 +93,35 @@ func (fake *CAPIDiegoProcessAssociationsRepo) DeleteArgsForCall(i int) handlers.
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return fake.deleteArgsForCall[i].capiProcessGUID
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) Sync(capiDiegoProcessAssociations []*handlers.CAPIDiegoProcessAssociation) {
+	var capiDiegoProcessAssociationsCopy []*handlers.CAPIDiegoProcessAssociation
+	if capiDiegoProcessAssociations != nil {
+		capiDiegoProcessAssociationsCopy = make([]*handlers.CAPIDiegoProcessAssociation, len(capiDiegoProcessAssociations))
+		copy(capiDiegoProcessAssociationsCopy, capiDiegoProcessAssociations)
+	}
+	fake.syncMutex.Lock()
+	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
+		capiDiegoProcessAssociations []*handlers.CAPIDiegoProcessAssociation
+	}{capiDiegoProcessAssociationsCopy})
+	fake.recordInvocation("Sync", []interface{}{capiDiegoProcessAssociationsCopy})
+	fake.syncMutex.Unlock()
+	if fake.SyncStub != nil {
+		fake.SyncStub(capiDiegoProcessAssociations)
+	}
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) SyncCallCount() int {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return len(fake.syncArgsForCall)
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) SyncArgsForCall(i int) []*handlers.CAPIDiegoProcessAssociation {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return fake.syncArgsForCall[i].capiDiegoProcessAssociations
 }
 
 func (fake *CAPIDiegoProcessAssociationsRepo) List() map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs {
@@ -185,6 +219,8 @@ func (fake *CAPIDiegoProcessAssociationsRepo) Invocations() map[string][][]inter
 	defer fake.upsertMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	fake.getMutex.RLock()

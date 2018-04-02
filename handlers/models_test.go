@@ -66,6 +66,30 @@ var _ = Describe("Handler Models", func() {
 			r, _ := routesRepo.Get("some-route-guid")
 			Expect(r).To(Equal(updatedRoute))
 		})
+
+		It("can Sync routes", func() {
+			route := &handlers.Route{
+				Host: "host.example.com",
+				GUID: "some-route-guid",
+			}
+
+			go routesRepo.Upsert(route)
+
+			Eventually(func() *handlers.Route {
+				r, _ := routesRepo.Get("some-route-guid")
+				return r
+			}).Should(Equal(route))
+
+			newRoute := &handlers.Route{
+				Host: "host.example.com",
+				GUID: "some-other-route-guid",
+			}
+
+			routesRepo.Sync([]*handlers.Route{newRoute})
+			Expect(routesRepo.List()).To(Equal(map[string]string{
+				string(newRoute.GUID): newRoute.Host,
+			}))
+		})
 	})
 
 	Describe("RouteMappingsRepo", func() {
@@ -104,6 +128,27 @@ var _ = Describe("Handler Models", func() {
 
 			Expect(routeMappingsRepo.List()).To(HaveLen(1))
 		})
+
+		It("can Sync RouteMappings", func() {
+			routeMapping := handlers.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+			}
+
+			routeMappingsRepo.Map(routeMapping)
+
+			newRouteMapping := &handlers.RouteMapping{
+				RouteGUID:       "some-other-route-guid",
+				CAPIProcessGUID: "some-other-capi-guid",
+			}
+			updatedRouteMappings := []*handlers.RouteMapping{newRouteMapping}
+
+			routeMappingsRepo.Sync(updatedRouteMappings)
+
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]handlers.RouteMapping{
+				newRouteMapping.Key(): *newRouteMapping,
+			}))
+		})
 	})
 
 	Describe("CAPIDiegoProcessAssociationsRepo", func() {
@@ -131,6 +176,32 @@ var _ = Describe("Handler Models", func() {
 
 			capiDiegoProcessAssociationsRepo.Delete(capiDiegoProcessAssociation.CAPIProcessGUID)
 			Expect(capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid").DiegoProcessGUIDs).To(BeEmpty())
+		})
+
+		It("can sync CAPIDiegoProcessAssociations", func() {
+			capiDiegoProcessAssociation := handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "some-capi-process-guid",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"some-diego-process-guid-1",
+					"some-diego-process-guid-2",
+				},
+			}
+
+			capiDiegoProcessAssociationsRepo.Upsert(capiDiegoProcessAssociation)
+
+			newCapiDiegoProcessAssociation := &handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "some-other-capi-process-guid",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"some-diego-process-guid-1",
+					"some-diego-process-guid-2",
+				},
+			}
+
+			capiDiegoProcessAssociationsRepo.Sync([]*handlers.CAPIDiegoProcessAssociation{newCapiDiegoProcessAssociation})
+
+			Expect(capiDiegoProcessAssociationsRepo.List()).To(Equal(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs{
+				"some-other-capi-process-guid": newCapiDiegoProcessAssociation.DiegoProcessGUIDs,
+			}))
 		})
 	})
 
