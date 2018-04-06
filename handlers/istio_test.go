@@ -136,7 +136,7 @@ var _ = Describe("Istio Handlers", func() {
 				Repo: make(map[handlers.RouteGUID]*handlers.Route),
 			},
 			RouteMappingsRepo: &handlers.RouteMappingsRepo{
-				Repo: make(map[string]handlers.RouteMapping),
+				Repo: make(map[string]*handlers.RouteMapping),
 			},
 			CAPIDiegoProcessAssociationsRepo: &handlers.CAPIDiegoProcessAssociationsRepo{
 				Repo: make(map[handlers.CAPIProcessGUID]handlers.CAPIDiegoProcessAssociation),
@@ -163,11 +163,11 @@ var _ = Describe("Istio Handlers", func() {
 				GUID: "route-guid-b",
 				Host: "route-b.cfapps.com",
 			})
-			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "capi-process-guid-a",
 			})
-			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
 				RouteGUID:       "route-guid-b",
 				CAPIProcessGUID: "capi-process-guid-b",
 			})
@@ -199,11 +199,11 @@ var _ = Describe("Istio Handlers", func() {
 				GUID: "route-guid-b",
 				Host: "route-b.cfapps.com",
 			})
-			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "capi-process-guid-a",
 			})
-			handler.RouteMappingsRepo.Map(handlers.RouteMapping{
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
 				RouteGUID:       "route-guid-b",
 				CAPIProcessGUID: "capi-process-guid-b",
 			})

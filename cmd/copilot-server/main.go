@@ -69,7 +69,7 @@ func mainWithError() error {
 		Repo: make(map[handlers.RouteGUID]*handlers.Route),
 	}
 	routeMappingsRepo := &handlers.RouteMappingsRepo{
-		Repo: make(map[string]handlers.RouteMapping),
+		Repo: make(map[string]*handlers.RouteMapping),
 	}
 	capiDiegoProcessAssociationsRepo := &handlers.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[handlers.CAPIProcessGUID]handlers.CAPIDiegoProcessAssociation),

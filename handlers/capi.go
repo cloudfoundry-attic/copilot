@@ -85,7 +85,7 @@ func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := RouteMapping{
+	r := &RouteMapping{
 		RouteGUID:       RouteGUID(request.RouteMapping.RouteGuid),
 		CAPIProcessGUID: CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
 	}
@@ -99,7 +99,7 @@ func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteReques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := RouteMapping{RouteGUID: RouteGUID(request.RouteMapping.RouteGuid), CAPIProcessGUID: CAPIProcessGUID(request.RouteMapping.CapiProcessGuid)}
+	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteMapping.RouteGuid), CAPIProcessGUID: CAPIProcessGUID(request.RouteMapping.CapiProcessGuid)}
 	c.RouteMappingsRepo.Unmap(r)
 	return &api.UnmapRouteResponse{}, nil
 }

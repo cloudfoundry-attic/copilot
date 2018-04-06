@@ -93,10 +93,10 @@ var _ = Describe("Handler Models", func() {
 	})
 
 	Describe("RouteMappingsRepo", func() {
-		var routeMappingsRepo handlers.RouteMappingsRepo
+		var routeMappingsRepo *handlers.RouteMappingsRepo
 		BeforeEach(func() {
-			routeMappingsRepo = handlers.RouteMappingsRepo{
-				Repo: make(map[string]handlers.RouteMapping),
+			routeMappingsRepo = &handlers.RouteMappingsRepo{
+				Repo: make(map[string]*handlers.RouteMapping),
 			}
 		})
 
@@ -106,13 +106,13 @@ var _ = Describe("Handler Models", func() {
 				CAPIProcessGUID: "some-capi-guid",
 			}
 
-			go routeMappingsRepo.Map(routeMapping)
+			go routeMappingsRepo.Map(&routeMapping)
 
-			Eventually(routeMappingsRepo.List).Should(Equal(map[string]handlers.RouteMapping{
-				routeMapping.Key(): routeMapping,
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*handlers.RouteMapping{
+				routeMapping.Key(): &routeMapping,
 			}))
 
-			routeMappingsRepo.Unmap(routeMapping)
+			routeMappingsRepo.Unmap(&routeMapping)
 			Expect(routeMappingsRepo.List()).To(HaveLen(0))
 		})
 
@@ -122,9 +122,9 @@ var _ = Describe("Handler Models", func() {
 				CAPIProcessGUID: "some-capi-guid",
 			}
 
-			routeMappingsRepo.Map(routeMapping)
-			routeMappingsRepo.Map(routeMapping)
-			routeMappingsRepo.Map(routeMapping)
+			routeMappingsRepo.Map(&routeMapping)
+			routeMappingsRepo.Map(&routeMapping)
+			routeMappingsRepo.Map(&routeMapping)
 
 			Expect(routeMappingsRepo.List()).To(HaveLen(1))
 		})
@@ -135,18 +135,18 @@ var _ = Describe("Handler Models", func() {
 				CAPIProcessGUID: "some-capi-guid",
 			}
 
-			routeMappingsRepo.Map(routeMapping)
+			routeMappingsRepo.Map(&routeMapping)
 
-			newRouteMapping := &handlers.RouteMapping{
+			newRouteMapping := handlers.RouteMapping{
 				RouteGUID:       "some-other-route-guid",
 				CAPIProcessGUID: "some-other-capi-guid",
 			}
-			updatedRouteMappings := []*handlers.RouteMapping{newRouteMapping}
+			updatedRouteMappings := []*handlers.RouteMapping{&newRouteMapping}
 
 			routeMappingsRepo.Sync(updatedRouteMappings)
 
-			Eventually(routeMappingsRepo.List).Should(Equal(map[string]handlers.RouteMapping{
-				newRouteMapping.Key(): *newRouteMapping,
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*handlers.RouteMapping{
+				newRouteMapping.Key(): &newRouteMapping,
 			}))
 		})
 	})

@@ -89,42 +89,42 @@ func (r *RouteMapping) Key() string {
 }
 
 type RouteMappingsRepo struct {
-	Repo map[string]RouteMapping
+	Repo map[string]*RouteMapping
 	sync.Mutex
 }
 
 //go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
 type routeMappingsRepoInterface interface {
-	Map(routeMapping RouteMapping)
-	Unmap(routeMapping RouteMapping)
+	Map(routeMapping *RouteMapping)
+	Unmap(routeMapping *RouteMapping)
 	Sync(routeMappings []*RouteMapping)
-	List() map[string]RouteMapping
+	List() map[string]*RouteMapping
 }
 
-func (m *RouteMappingsRepo) Map(routeMapping RouteMapping) {
+func (m *RouteMappingsRepo) Map(routeMapping *RouteMapping) {
 	m.Lock()
 	m.Repo[routeMapping.Key()] = routeMapping
 	m.Unlock()
 }
 
-func (m *RouteMappingsRepo) Unmap(routeMapping RouteMapping) {
+func (m *RouteMappingsRepo) Unmap(routeMapping *RouteMapping) {
 	m.Lock()
 	delete(m.Repo, routeMapping.Key())
 	m.Unlock()
 }
 
 func (m *RouteMappingsRepo) Sync(routeMappings []*RouteMapping) {
-	repo := make(map[string]RouteMapping)
+	repo := make(map[string]*RouteMapping)
 	for _, routeMapping := range routeMappings {
-		repo[routeMapping.Key()] = *routeMapping
+		repo[routeMapping.Key()] = routeMapping
 	}
 	m.Lock()
 	m.Repo = repo
 	m.Unlock()
 }
 
-func (m *RouteMappingsRepo) List() map[string]RouteMapping {
-	list := make(map[string]RouteMapping)
+func (m *RouteMappingsRepo) List() map[string]*RouteMapping {
+	list := make(map[string]*RouteMapping)
 
 	m.Lock()
 	for k, v := range m.Repo {
