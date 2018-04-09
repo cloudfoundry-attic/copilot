@@ -155,7 +155,7 @@ var _ = Describe("Handler Models", func() {
 		var capiDiegoProcessAssociationsRepo handlers.CAPIDiegoProcessAssociationsRepo
 		BeforeEach(func() {
 			capiDiegoProcessAssociationsRepo = handlers.CAPIDiegoProcessAssociationsRepo{
-				Repo: make(map[handlers.CAPIProcessGUID]handlers.CAPIDiegoProcessAssociation),
+				Repo: make(map[handlers.CAPIProcessGUID]*handlers.CAPIDiegoProcessAssociation),
 			}
 		})
 
@@ -168,18 +168,20 @@ var _ = Describe("Handler Models", func() {
 				},
 			}
 
-			go capiDiegoProcessAssociationsRepo.Upsert(capiDiegoProcessAssociation)
+			go capiDiegoProcessAssociationsRepo.Upsert(&capiDiegoProcessAssociation)
 
-			Eventually(func() handlers.CAPIDiegoProcessAssociation {
-				return capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid")
-			}).Should(Equal(capiDiegoProcessAssociation))
+			capiProcessGUID := handlers.CAPIProcessGUID("some-capi-process-guid")
 
-			capiDiegoProcessAssociationsRepo.Delete(capiDiegoProcessAssociation.CAPIProcessGUID)
-			Expect(capiDiegoProcessAssociationsRepo.Get("some-capi-process-guid").DiegoProcessGUIDs).To(BeEmpty())
+			Eventually(func() *handlers.CAPIDiegoProcessAssociation {
+				return capiDiegoProcessAssociationsRepo.Get(&capiProcessGUID)
+			}).Should(Equal(&capiDiegoProcessAssociation))
+
+			capiDiegoProcessAssociationsRepo.Delete(&capiDiegoProcessAssociation.CAPIProcessGUID)
+			Expect(capiDiegoProcessAssociationsRepo.Get(&capiProcessGUID)).To(BeNil())
 		})
 
 		It("can sync CAPIDiegoProcessAssociations", func() {
-			capiDiegoProcessAssociation := handlers.CAPIDiegoProcessAssociation{
+			capiDiegoProcessAssociation := &handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "some-capi-process-guid",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
@@ -199,8 +201,8 @@ var _ = Describe("Handler Models", func() {
 
 			capiDiegoProcessAssociationsRepo.Sync([]*handlers.CAPIDiegoProcessAssociation{newCapiDiegoProcessAssociation})
 
-			Expect(capiDiegoProcessAssociationsRepo.List()).To(Equal(map[handlers.CAPIProcessGUID]handlers.DiegoProcessGUIDs{
-				"some-other-capi-process-guid": newCapiDiegoProcessAssociation.DiegoProcessGUIDs,
+			Expect(capiDiegoProcessAssociationsRepo.List()).To(Equal(map[handlers.CAPIProcessGUID]*handlers.DiegoProcessGUIDs{
+				"some-other-capi-process-guid": &newCapiDiegoProcessAssociation.DiegoProcessGUIDs,
 			}))
 		})
 	})

@@ -79,7 +79,10 @@ func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[DiegoProce
 			continue
 		}
 
-		capiDiegoProcessAssociation := c.CAPIDiegoProcessAssociationsRepo.Get(routeMapping.CAPIProcessGUID)
+		capiDiegoProcessAssociation := c.CAPIDiegoProcessAssociationsRepo.Get(&routeMapping.CAPIProcessGUID)
+		if capiDiegoProcessAssociation == nil {
+			continue
+		}
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			backends, ok := diegoProcessGUIDToBackendSet[DiegoProcessGUID(diegoProcessGUID)]
 			if !ok {

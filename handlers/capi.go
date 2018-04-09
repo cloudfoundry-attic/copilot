@@ -110,7 +110,7 @@ func (c *CAPI) UpsertCapiDiegoProcessAssociation(context context.Context, reques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Capi/Diego Process Association %#v is invalid:\n %v", request, err)
 	}
-	association := CAPIDiegoProcessAssociation{
+	association := &CAPIDiegoProcessAssociation{
 		CAPIProcessGUID:   CAPIProcessGUID(request.CapiDiegoProcessAssociation.CapiProcessGuid),
 		DiegoProcessGUIDs: DiegoProcessGUIDsFromStringSlice(request.CapiDiegoProcessAssociation.DiegoProcessGuids),
 	}
@@ -125,7 +125,8 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	c.CAPIDiegoProcessAssociationsRepo.Delete(CAPIProcessGUID(request.CapiProcessGuid))
+	cpg := CAPIProcessGUID(request.CapiProcessGuid)
+	c.CAPIDiegoProcessAssociationsRepo.Delete(&cpg)
 
 	return &api.DeleteCapiDiegoProcessAssociationResponse{}, nil
 }

@@ -139,7 +139,7 @@ var _ = Describe("Istio Handlers", func() {
 				Repo: make(map[string]*handlers.RouteMapping),
 			},
 			CAPIDiegoProcessAssociationsRepo: &handlers.CAPIDiegoProcessAssociationsRepo{
-				Repo: make(map[handlers.CAPIProcessGUID]handlers.CAPIDiegoProcessAssociation),
+				Repo: make(map[handlers.CAPIProcessGUID]*handlers.CAPIDiegoProcessAssociation),
 			},
 		}
 	})
@@ -171,13 +171,13 @@ var _ = Describe("Istio Handlers", func() {
 				RouteGUID:       "route-guid-b",
 				CAPIProcessGUID: "capi-process-guid-b",
 			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"diego-process-guid-a",
 				},
 			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-b",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"diego-process-guid-b",
@@ -207,13 +207,13 @@ var _ = Describe("Istio Handlers", func() {
 				RouteGUID:       "route-guid-b",
 				CAPIProcessGUID: "capi-process-guid-b",
 			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"diego-process-guid-a",
 				},
 			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(handlers.CAPIDiegoProcessAssociation{
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-b",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"diego-process-guid-b",

@@ -189,7 +189,7 @@ var _ = Describe("Capi Handlers", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.UpsertCallCount()).To(Equal(1))
-			Expect(fakeCAPIDiegoProcessAssociationsRepo.UpsertArgsForCall(0)).To(Equal(handlers.CAPIDiegoProcessAssociation{
+			Expect(fakeCAPIDiegoProcessAssociationsRepo.UpsertArgsForCall(0)).To(Equal(&handlers.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "some-capi-process-guid",
 				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
@@ -213,7 +213,8 @@ var _ = Describe("Capi Handlers", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.DeleteCallCount()).To(Equal(1))
-			Expect(fakeCAPIDiegoProcessAssociationsRepo.DeleteArgsForCall(0)).To(Equal(handlers.CAPIProcessGUID("some-capi-process-guid")))
+			cpg := handlers.CAPIProcessGUID("some-capi-process-guid")
+			Expect(fakeCAPIDiegoProcessAssociationsRepo.DeleteArgsForCall(0)).To(Equal(&cpg))
 		})
 	})
 
