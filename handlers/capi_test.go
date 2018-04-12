@@ -219,10 +219,16 @@ var _ = Describe("Capi Handlers", func() {
 	})
 
 	Describe("BulkSync", func() {
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.BulkSync(ctx, &api.BulkSyncRequest{})
-			Expect(err.Error()).To(ContainSubstring("required"))
+		Context("when inputs are empty", func() {
+			It("does not throw an error", func() {
+				ctx := context.Background()
+				_, err := handler.BulkSync(ctx, &api.BulkSyncRequest{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
+				Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
+				Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncCallCount()).To(Equal(1))
+			})
 		})
 
 		It("syncs", func() {
@@ -254,7 +260,7 @@ var _ = Describe("Capi Handlers", func() {
 
 			Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
 			Expect(fakeRoutesRepo.SyncArgsForCall(0)).To(Equal([]*handlers.Route{{
-				GUID:       "route-guid-a",
+				GUID: "route-guid-a",
 				Host: "example.host.com",
 			}}))
 
@@ -267,6 +273,5 @@ var _ = Describe("Capi Handlers", func() {
 				},
 			}}))
 		})
-
 	})
 })

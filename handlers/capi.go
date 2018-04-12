@@ -133,19 +133,15 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 
 func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (*api.BulkSyncResponse, error) {
 	c.Logger.Info("bulk sync...")
-	err := validateBulkSyncRequest(request)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
 
 	routeMappings := make([]*RouteMapping, len(request.RouteMappings))
 	for i, routeMapping := range request.RouteMappings {
 		routeMappings[i] = &RouteMapping{
-			RouteGUID: RouteGUID(routeMapping.RouteGuid),
+			RouteGUID:       RouteGUID(routeMapping.RouteGuid),
 			CAPIProcessGUID: CAPIProcessGUID(routeMapping.CapiProcessGuid),
 		}
 	}
-	
+
 	routes := make([]*Route, len(request.Routes))
 
 	for i, route := range request.Routes {
@@ -163,7 +159,7 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 			diegoProcessGuids[j] = DiegoProcessGUID(diegoProcessGuid)
 		}
 		cdpas[i] = &CAPIDiegoProcessAssociation{
-			CAPIProcessGUID: CAPIProcessGUID(cdpa.CapiProcessGuid),
+			CAPIProcessGUID:   CAPIProcessGUID(cdpa.CapiProcessGuid),
 			DiegoProcessGUIDs: diegoProcessGuids,
 		}
 	}
@@ -229,13 +225,6 @@ func validateUpsertCAPIDiegoProcessAssociationRequest(r *api.UpsertCapiDiegoProc
 func validateDeleteCAPIDiegoProcessAssociationRequest(r *api.DeleteCapiDiegoProcessAssociationRequest) error {
 	if r.CapiProcessGuid == "" {
 		return errors.New("CapiProcessGuid is required")
-	}
-	return nil
-}
-
-func validateBulkSyncRequest(r *api.BulkSyncRequest) error {
-	if (r.Routes == nil) || (r.RouteMappings == nil) || (r.CapiDiegoProcessAssociations == nil) {
-		return errors.New("Routes and RouteMappings and CapiDiegoProcessAssociations are required")
 	}
 	return nil
 }
