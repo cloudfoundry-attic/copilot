@@ -158,6 +158,19 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   api.CloudControllerCopilot/DeleteRoute
 ```
 
+### As Cloud Controller, Bulk Sync Routes Between Cloud Controller and Istio
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"route_mappings": [{"route_guid": "route-guid-1", "capi_process_guid": "capi-guid-1"}, \
+  "routes": [{"host": "example.org", "guid": "route-guid-1"}], \
+  "capi_diego_process_associations": [{"capi_process_guid": "capi-guid-1", "diego_process_guids": ["diego-guid-1", "diego-guid-2"]}]}' \
+  copilot.service.cf.internal:9001 \
+  api.CloudControllerCopilot/BulkSync
+```
 
 ## The following endpoints are only used for debugging. They expose Copilot's internal state
 
