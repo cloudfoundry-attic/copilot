@@ -55,7 +55,7 @@ var _ = Describe("Istio Handlers", func() {
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 						Address: "10.0.40.2",
 						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 8080, HostPort: 61008},
+							{ContainerPort: 9080, HostPort: 61008},
 						},
 					},
 				},

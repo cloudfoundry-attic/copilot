@@ -8,7 +8,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-const CF_APP_PORT = 8080
+const CF_APP_SSH_PORT = 2222
 
 type RouteGUID string
 

@@ -59,7 +59,7 @@ func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*ap
 		}
 		var appHostPort uint32
 		for _, port := range instance.ActualLRPNetInfo.Ports {
-			if port.ContainerPort == CF_APP_PORT {
+			if port.ContainerPort != CF_APP_SSH_PORT {
 				appHostPort = port.HostPort
 			}
 		}
