@@ -1,7 +1,7 @@
-package handlers_test
+package models_test
 
 import (
-	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -9,23 +9,23 @@ import (
 
 var _ = Describe("Handler Models", func() {
 	Describe("RoutesRepo", func() {
-		var routesRepo handlers.RoutesRepo
+		var routesRepo models.RoutesRepo
 
 		BeforeEach(func() {
-			routesRepo = handlers.RoutesRepo{
-				Repo: make(map[handlers.RouteGUID]*handlers.Route),
+			routesRepo = models.RoutesRepo{
+				Repo: make(map[models.RouteGUID]*models.Route),
 			}
 		})
 
 		It("can Upsert and Delete routes", func() {
-			route := &handlers.Route{
+			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
 			}
 
 			go routesRepo.Upsert(route)
 
-			Eventually(func() *handlers.Route {
+			Eventually(func() *models.Route {
 				r, _ := routesRepo.Get("some-route-guid")
 				return r
 			}).Should(Equal(route))
@@ -38,7 +38,7 @@ var _ = Describe("Handler Models", func() {
 		})
 
 		It("does not error when deleting a route that does not exist", func() {
-			route := handlers.Route{
+			route := models.Route{
 				Host: "host.example.com",
 				GUID: "delete-me",
 			}
@@ -51,12 +51,12 @@ var _ = Describe("Handler Models", func() {
 		})
 
 		It("can Upsert the same route twice", func() {
-			route := &handlers.Route{
+			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
 			}
 
-			updatedRoute := &handlers.Route{
+			updatedRoute := &models.Route{
 				Host: "something.different.com",
 				GUID: route.GUID,
 			}
@@ -68,24 +68,24 @@ var _ = Describe("Handler Models", func() {
 		})
 
 		It("can Sync routes", func() {
-			route := &handlers.Route{
+			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
 			}
 
 			go routesRepo.Upsert(route)
 
-			Eventually(func() *handlers.Route {
+			Eventually(func() *models.Route {
 				r, _ := routesRepo.Get("some-route-guid")
 				return r
 			}).Should(Equal(route))
 
-			newRoute := &handlers.Route{
+			newRoute := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-other-route-guid",
 			}
 
-			routesRepo.Sync([]*handlers.Route{newRoute})
+			routesRepo.Sync([]*models.Route{newRoute})
 			Expect(routesRepo.List()).To(Equal(map[string]string{
 				string(newRoute.GUID): newRoute.Host,
 			}))
@@ -93,22 +93,22 @@ var _ = Describe("Handler Models", func() {
 	})
 
 	Describe("RouteMappingsRepo", func() {
-		var routeMappingsRepo *handlers.RouteMappingsRepo
+		var routeMappingsRepo *models.RouteMappingsRepo
 		BeforeEach(func() {
-			routeMappingsRepo = &handlers.RouteMappingsRepo{
-				Repo: make(map[string]*handlers.RouteMapping),
+			routeMappingsRepo = &models.RouteMappingsRepo{
+				Repo: make(map[string]*models.RouteMapping),
 			}
 		})
 
 		It("can Map and Unmap Routes", func() {
-			routeMapping := handlers.RouteMapping{
+			routeMapping := models.RouteMapping{
 				RouteGUID:       "some-route-guid",
 				CAPIProcessGUID: "some-capi-guid",
 			}
 
 			go routeMappingsRepo.Map(&routeMapping)
 
-			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*handlers.RouteMapping{
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*models.RouteMapping{
 				routeMapping.Key(): &routeMapping,
 			}))
 
@@ -117,7 +117,7 @@ var _ = Describe("Handler Models", func() {
 		})
 
 		It("does not duplicate route mappings", func() {
-			routeMapping := handlers.RouteMapping{
+			routeMapping := models.RouteMapping{
 				RouteGUID:       "some-route-guid",
 				CAPIProcessGUID: "some-capi-guid",
 			}
@@ -130,39 +130,39 @@ var _ = Describe("Handler Models", func() {
 		})
 
 		It("can Sync RouteMappings", func() {
-			routeMapping := handlers.RouteMapping{
+			routeMapping := models.RouteMapping{
 				RouteGUID:       "some-route-guid",
 				CAPIProcessGUID: "some-capi-guid",
 			}
 
 			routeMappingsRepo.Map(&routeMapping)
 
-			newRouteMapping := handlers.RouteMapping{
+			newRouteMapping := models.RouteMapping{
 				RouteGUID:       "some-other-route-guid",
 				CAPIProcessGUID: "some-other-capi-guid",
 			}
-			updatedRouteMappings := []*handlers.RouteMapping{&newRouteMapping}
+			updatedRouteMappings := []*models.RouteMapping{&newRouteMapping}
 
 			routeMappingsRepo.Sync(updatedRouteMappings)
 
-			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*handlers.RouteMapping{
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*models.RouteMapping{
 				newRouteMapping.Key(): &newRouteMapping,
 			}))
 		})
 	})
 
 	Describe("CAPIDiegoProcessAssociationsRepo", func() {
-		var capiDiegoProcessAssociationsRepo handlers.CAPIDiegoProcessAssociationsRepo
+		var capiDiegoProcessAssociationsRepo models.CAPIDiegoProcessAssociationsRepo
 		BeforeEach(func() {
-			capiDiegoProcessAssociationsRepo = handlers.CAPIDiegoProcessAssociationsRepo{
-				Repo: make(map[handlers.CAPIProcessGUID]*handlers.CAPIDiegoProcessAssociation),
+			capiDiegoProcessAssociationsRepo = models.CAPIDiegoProcessAssociationsRepo{
+				Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 			}
 		})
 
 		It("can upsert and delete CAPIDiegoProcessAssociations", func() {
-			capiDiegoProcessAssociation := handlers.CAPIDiegoProcessAssociation{
+			capiDiegoProcessAssociation := models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "some-capi-process-guid",
-				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
 					"some-diego-process-guid-2",
 				},
@@ -170,9 +170,9 @@ var _ = Describe("Handler Models", func() {
 
 			go capiDiegoProcessAssociationsRepo.Upsert(&capiDiegoProcessAssociation)
 
-			capiProcessGUID := handlers.CAPIProcessGUID("some-capi-process-guid")
+			capiProcessGUID := models.CAPIProcessGUID("some-capi-process-guid")
 
-			Eventually(func() *handlers.CAPIDiegoProcessAssociation {
+			Eventually(func() *models.CAPIDiegoProcessAssociation {
 				return capiDiegoProcessAssociationsRepo.Get(&capiProcessGUID)
 			}).Should(Equal(&capiDiegoProcessAssociation))
 
@@ -181,9 +181,9 @@ var _ = Describe("Handler Models", func() {
 		})
 
 		It("can sync CAPIDiegoProcessAssociations", func() {
-			capiDiegoProcessAssociation := &handlers.CAPIDiegoProcessAssociation{
+			capiDiegoProcessAssociation := &models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "some-capi-process-guid",
-				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
 					"some-diego-process-guid-2",
 				},
@@ -191,17 +191,17 @@ var _ = Describe("Handler Models", func() {
 
 			capiDiegoProcessAssociationsRepo.Upsert(capiDiegoProcessAssociation)
 
-			newCapiDiegoProcessAssociation := &handlers.CAPIDiegoProcessAssociation{
+			newCapiDiegoProcessAssociation := &models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "some-other-capi-process-guid",
-				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
 					"some-diego-process-guid-2",
 				},
 			}
 
-			capiDiegoProcessAssociationsRepo.Sync([]*handlers.CAPIDiegoProcessAssociation{newCapiDiegoProcessAssociation})
+			capiDiegoProcessAssociationsRepo.Sync([]*models.CAPIDiegoProcessAssociation{newCapiDiegoProcessAssociation})
 
-			Expect(capiDiegoProcessAssociationsRepo.List()).To(Equal(map[handlers.CAPIProcessGUID]*handlers.DiegoProcessGUIDs{
+			Expect(capiDiegoProcessAssociationsRepo.List()).To(Equal(map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs{
 				"some-other-capi-process-guid": &newCapiDiegoProcessAssociation.DiegoProcessGUIDs,
 			}))
 		})
@@ -210,17 +210,17 @@ var _ = Describe("Handler Models", func() {
 	Describe("RouteMapping", func() {
 		Describe("Key", func() {
 			It("is unique for process guid and route guid", func() {
-				rmA := handlers.RouteMapping{
+				rmA := models.RouteMapping{
 					RouteGUID:       "route-guid-1",
 					CAPIProcessGUID: "some-capi-guid-1",
 				}
 
-				rmB := handlers.RouteMapping{
+				rmB := models.RouteMapping{
 					RouteGUID:       "route-guid-1",
 					CAPIProcessGUID: "some-capi-guid-2",
 				}
 
-				rmC := handlers.RouteMapping{
+				rmC := models.RouteMapping{
 					RouteGUID:       "route-guid-2",
 					CAPIProcessGUID: "some-capi-guid-1",
 				}
@@ -235,7 +235,7 @@ var _ = Describe("Handler Models", func() {
 	Describe("DiegoProcessGUIDs", func() {
 		Describe("ToStringSlice", func() {
 			It("returns the guids as a slice of strings", func() {
-				diegoProcessGUIDs := handlers.DiegoProcessGUIDs{
+				diegoProcessGUIDs := models.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
 					"some-diego-process-guid-2",
 				}
@@ -253,7 +253,7 @@ var _ = Describe("Handler Models", func() {
 				"some-diego-process-guid-1",
 				"some-diego-process-guid-2",
 			}
-			Expect(handlers.DiegoProcessGUIDsFromStringSlice(diegoProcessGUIDs)).To(Equal(handlers.DiegoProcessGUIDs{
+			Expect(models.DiegoProcessGUIDsFromStringSlice(diegoProcessGUIDs)).To(Equal(models.DiegoProcessGUIDs{
 				"some-diego-process-guid-1",
 				"some-diego-process-guid-2",
 			}))

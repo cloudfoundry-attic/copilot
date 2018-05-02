@@ -4,36 +4,36 @@ package fakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/models"
 )
 
 type RoutesRepo struct {
-	UpsertStub        func(route *handlers.Route)
+	UpsertStub        func(route *models.Route)
 	upsertMutex       sync.RWMutex
 	upsertArgsForCall []struct {
-		route *handlers.Route
+		route *models.Route
 	}
-	DeleteStub        func(guid handlers.RouteGUID)
+	DeleteStub        func(guid models.RouteGUID)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		guid handlers.RouteGUID
+		guid models.RouteGUID
 	}
-	SyncStub        func(routes []*handlers.Route)
+	SyncStub        func(routes []*models.Route)
 	syncMutex       sync.RWMutex
 	syncArgsForCall []struct {
-		routes []*handlers.Route
+		routes []*models.Route
 	}
-	GetStub        func(guid handlers.RouteGUID) (*handlers.Route, bool)
+	GetStub        func(guid models.RouteGUID) (*models.Route, bool)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		guid handlers.RouteGUID
+		guid models.RouteGUID
 	}
 	getReturns struct {
-		result1 *handlers.Route
+		result1 *models.Route
 		result2 bool
 	}
 	getReturnsOnCall map[int]struct {
-		result1 *handlers.Route
+		result1 *models.Route
 		result2 bool
 	}
 	ListStub        func() map[string]string
@@ -49,10 +49,10 @@ type RoutesRepo struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RoutesRepo) Upsert(route *handlers.Route) {
+func (fake *RoutesRepo) Upsert(route *models.Route) {
 	fake.upsertMutex.Lock()
 	fake.upsertArgsForCall = append(fake.upsertArgsForCall, struct {
-		route *handlers.Route
+		route *models.Route
 	}{route})
 	fake.recordInvocation("Upsert", []interface{}{route})
 	fake.upsertMutex.Unlock()
@@ -67,16 +67,16 @@ func (fake *RoutesRepo) UpsertCallCount() int {
 	return len(fake.upsertArgsForCall)
 }
 
-func (fake *RoutesRepo) UpsertArgsForCall(i int) *handlers.Route {
+func (fake *RoutesRepo) UpsertArgsForCall(i int) *models.Route {
 	fake.upsertMutex.RLock()
 	defer fake.upsertMutex.RUnlock()
 	return fake.upsertArgsForCall[i].route
 }
 
-func (fake *RoutesRepo) Delete(guid handlers.RouteGUID) {
+func (fake *RoutesRepo) Delete(guid models.RouteGUID) {
 	fake.deleteMutex.Lock()
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		guid handlers.RouteGUID
+		guid models.RouteGUID
 	}{guid})
 	fake.recordInvocation("Delete", []interface{}{guid})
 	fake.deleteMutex.Unlock()
@@ -91,21 +91,21 @@ func (fake *RoutesRepo) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *RoutesRepo) DeleteArgsForCall(i int) handlers.RouteGUID {
+func (fake *RoutesRepo) DeleteArgsForCall(i int) models.RouteGUID {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return fake.deleteArgsForCall[i].guid
 }
 
-func (fake *RoutesRepo) Sync(routes []*handlers.Route) {
-	var routesCopy []*handlers.Route
+func (fake *RoutesRepo) Sync(routes []*models.Route) {
+	var routesCopy []*models.Route
 	if routes != nil {
-		routesCopy = make([]*handlers.Route, len(routes))
+		routesCopy = make([]*models.Route, len(routes))
 		copy(routesCopy, routes)
 	}
 	fake.syncMutex.Lock()
 	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
-		routes []*handlers.Route
+		routes []*models.Route
 	}{routesCopy})
 	fake.recordInvocation("Sync", []interface{}{routesCopy})
 	fake.syncMutex.Unlock()
@@ -120,17 +120,17 @@ func (fake *RoutesRepo) SyncCallCount() int {
 	return len(fake.syncArgsForCall)
 }
 
-func (fake *RoutesRepo) SyncArgsForCall(i int) []*handlers.Route {
+func (fake *RoutesRepo) SyncArgsForCall(i int) []*models.Route {
 	fake.syncMutex.RLock()
 	defer fake.syncMutex.RUnlock()
 	return fake.syncArgsForCall[i].routes
 }
 
-func (fake *RoutesRepo) Get(guid handlers.RouteGUID) (*handlers.Route, bool) {
+func (fake *RoutesRepo) Get(guid models.RouteGUID) (*models.Route, bool) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		guid handlers.RouteGUID
+		guid models.RouteGUID
 	}{guid})
 	fake.recordInvocation("Get", []interface{}{guid})
 	fake.getMutex.Unlock()
@@ -149,30 +149,30 @@ func (fake *RoutesRepo) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *RoutesRepo) GetArgsForCall(i int) handlers.RouteGUID {
+func (fake *RoutesRepo) GetArgsForCall(i int) models.RouteGUID {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	return fake.getArgsForCall[i].guid
 }
 
-func (fake *RoutesRepo) GetReturns(result1 *handlers.Route, result2 bool) {
+func (fake *RoutesRepo) GetReturns(result1 *models.Route, result2 bool) {
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 *handlers.Route
+		result1 *models.Route
 		result2 bool
 	}{result1, result2}
 }
 
-func (fake *RoutesRepo) GetReturnsOnCall(i int, result1 *handlers.Route, result2 bool) {
+func (fake *RoutesRepo) GetReturnsOnCall(i int, result1 *models.Route, result2 bool) {
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *handlers.Route
+			result1 *models.Route
 			result2 bool
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 *handlers.Route
+		result1 *models.Route
 		result2 bool
 	}{result1, result2}
 }

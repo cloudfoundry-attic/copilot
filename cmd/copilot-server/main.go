@@ -17,6 +17,8 @@ import (
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/internal_routes"
+	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
 )
@@ -66,14 +68,23 @@ func mainWithError() error {
 		}
 	}
 
-	routesRepo := &handlers.RoutesRepo{
-		Repo: make(map[handlers.RouteGUID]*handlers.Route),
+	routesRepo := &models.RoutesRepo{
+		Repo: make(map[models.RouteGUID]*models.Route),
 	}
-	routeMappingsRepo := &handlers.RouteMappingsRepo{
-		Repo: make(map[string]*handlers.RouteMapping),
+	routeMappingsRepo := &models.RouteMappingsRepo{
+		Repo: make(map[string]*models.RouteMapping),
 	}
-	capiDiegoProcessAssociationsRepo := &handlers.CAPIDiegoProcessAssociationsRepo{
-		Repo: make(map[handlers.CAPIProcessGUID]*handlers.CAPIDiegoProcessAssociation),
+	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
+		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
+	}
+
+	internalRoutesRepo := &internal_routes.Repo{
+		RoutesRepo:                       routesRepo,
+		RouteMappingsRepo:                routeMappingsRepo,
+		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
+		BBSClient:                        bbsClient,
+		Logger:                           logger,
+		VIPProvider:                      &vip.Provider{},
 	}
 
 	istioHandler := &handlers.Istio{
@@ -82,7 +93,7 @@ func mainWithError() error {
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		BBSClient:                        bbsClient,
 		Logger:                           logger,
-		VIPProvider:                      &vip.Provider{},
+		InternalRoutesRepo:               internalRoutesRepo,
 	}
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,

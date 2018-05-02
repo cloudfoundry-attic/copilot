@@ -1,11 +1,7 @@
-package handlers
+package models
 
 import (
 	"sync"
-
-	bbsmodels "code.cloudfoundry.org/bbs/models"
-
-	"code.cloudfoundry.org/lager"
 )
 
 const CF_APP_SSH_PORT = 2222
@@ -24,15 +20,6 @@ func (r *Route) Hostname() string {
 type RoutesRepo struct {
 	Repo map[RouteGUID]*Route
 	sync.Mutex
-}
-
-//go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
-type routesRepoInterface interface {
-	Upsert(route *Route)
-	Delete(guid RouteGUID)
-	Sync(routes []*Route)
-	Get(guid RouteGUID) (*Route, bool)
-	List() map[string]string
 }
 
 func (r *RoutesRepo) Upsert(route *Route) {
@@ -91,14 +78,6 @@ func (r *RouteMapping) Key() string {
 type RouteMappingsRepo struct {
 	Repo map[string]*RouteMapping
 	sync.Mutex
-}
-
-//go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
-type routeMappingsRepoInterface interface {
-	Map(routeMapping *RouteMapping)
-	Unmap(routeMapping *RouteMapping)
-	Sync(routeMappings []*RouteMapping)
-	List() map[string]*RouteMapping
 }
 
 func (m *RouteMappingsRepo) Map(routeMapping *RouteMapping) {
@@ -165,15 +144,6 @@ type CAPIDiegoProcessAssociation struct {
 	DiegoProcessGUIDs DiegoProcessGUIDs
 }
 
-//go:generate counterfeiter -o fakes/capi_diego_process_associations_repo.go --fake-name CAPIDiegoProcessAssociationsRepo . capiDiegoProcessAssociationsRepoInterface
-type capiDiegoProcessAssociationsRepoInterface interface {
-	Upsert(capiDiegoProcessAssociation *CAPIDiegoProcessAssociation)
-	Delete(capiProcessGUID *CAPIProcessGUID)
-	Sync(capiDiegoProcessAssociations []*CAPIDiegoProcessAssociation)
-	List() map[CAPIProcessGUID]*DiegoProcessGUIDs
-	Get(capiProcessGUID *CAPIProcessGUID) *CAPIDiegoProcessAssociation
-}
-
 func (c *CAPIDiegoProcessAssociationsRepo) Upsert(capiDiegoProcessAssociation *CAPIDiegoProcessAssociation) {
 	c.Lock()
 	c.Repo[capiDiegoProcessAssociation.CAPIProcessGUID] = capiDiegoProcessAssociation
@@ -213,8 +183,4 @@ func (c *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID *CAPIProcessGUID)
 	capiDiegoProcessAssociation, _ := c.Repo[*capiProcessGUID]
 	c.Unlock()
 	return capiDiegoProcessAssociation
-}
-
-type BBSClient interface {
-	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }

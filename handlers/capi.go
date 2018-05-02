@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"code.cloudfoundry.org/copilot/models"
 )
 
 type CAPI struct {
@@ -61,8 +62,8 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
 	}
-	route := &Route{
-		GUID: RouteGUID(request.Route.Guid),
+	route := &models.Route{
+		GUID: models.RouteGUID(request.Route.Guid),
 		Host: request.Route.Host,
 	}
 	c.RoutesRepo.Upsert(route)
@@ -75,7 +76,7 @@ func (c *CAPI) DeleteRoute(context context.Context, request *api.DeleteRouteRequ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
-	c.RoutesRepo.Delete(RouteGUID(request.Guid))
+	c.RoutesRepo.Delete(models.RouteGUID(request.Guid))
 	return &api.DeleteRouteResponse{}, nil
 }
 
@@ -85,9 +86,9 @@ func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := &RouteMapping{
-		RouteGUID:       RouteGUID(request.RouteMapping.RouteGuid),
-		CAPIProcessGUID: CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
+	r := &models.RouteMapping{
+		RouteGUID:       models.RouteGUID(request.RouteMapping.RouteGuid),
+		CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
 	}
 	c.RouteMappingsRepo.Map(r)
 	return &api.MapRouteResponse{}, nil
@@ -99,7 +100,7 @@ func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteReques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := &RouteMapping{RouteGUID: RouteGUID(request.RouteMapping.RouteGuid), CAPIProcessGUID: CAPIProcessGUID(request.RouteMapping.CapiProcessGuid)}
+	r := &models.RouteMapping{RouteGUID: models.RouteGUID(request.RouteMapping.RouteGuid), CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid)}
 	c.RouteMappingsRepo.Unmap(r)
 	return &api.UnmapRouteResponse{}, nil
 }
@@ -110,9 +111,9 @@ func (c *CAPI) UpsertCapiDiegoProcessAssociation(context context.Context, reques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Capi/Diego Process Association %#v is invalid:\n %v", request, err)
 	}
-	association := &CAPIDiegoProcessAssociation{
-		CAPIProcessGUID:   CAPIProcessGUID(request.CapiDiegoProcessAssociation.CapiProcessGuid),
-		DiegoProcessGUIDs: DiegoProcessGUIDsFromStringSlice(request.CapiDiegoProcessAssociation.DiegoProcessGuids),
+	association := &models.CAPIDiegoProcessAssociation{
+		CAPIProcessGUID:   models.CAPIProcessGUID(request.CapiDiegoProcessAssociation.CapiProcessGuid),
+		DiegoProcessGUIDs: models.DiegoProcessGUIDsFromStringSlice(request.CapiDiegoProcessAssociation.DiegoProcessGuids),
 	}
 	c.CAPIDiegoProcessAssociationsRepo.Upsert(association)
 	return &api.UpsertCapiDiegoProcessAssociationResponse{}, nil
@@ -125,7 +126,7 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	cpg := CAPIProcessGUID(request.CapiProcessGuid)
+	cpg := models.CAPIProcessGUID(request.CapiProcessGuid)
 	c.CAPIDiegoProcessAssociationsRepo.Delete(&cpg)
 
 	return &api.DeleteCapiDiegoProcessAssociationResponse{}, nil
@@ -134,32 +135,32 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (*api.BulkSyncResponse, error) {
 	c.Logger.Info("bulk sync...")
 
-	routeMappings := make([]*RouteMapping, len(request.RouteMappings))
+	routeMappings := make([]*models.RouteMapping, len(request.RouteMappings))
 	for i, routeMapping := range request.RouteMappings {
-		routeMappings[i] = &RouteMapping{
-			RouteGUID:       RouteGUID(routeMapping.RouteGuid),
-			CAPIProcessGUID: CAPIProcessGUID(routeMapping.CapiProcessGuid),
+		routeMappings[i] = &models.RouteMapping{
+			RouteGUID:       models.RouteGUID(routeMapping.RouteGuid),
+			CAPIProcessGUID: models.CAPIProcessGUID(routeMapping.CapiProcessGuid),
 		}
 	}
 
-	routes := make([]*Route, len(request.Routes))
+	routes := make([]*models.Route, len(request.Routes))
 
 	for i, route := range request.Routes {
-		routes[i] = &Route{
-			GUID: RouteGUID(route.Guid),
+		routes[i] = &models.Route{
+			GUID: models.RouteGUID(route.Guid),
 			Host: route.Host,
 		}
 	}
 
-	cdpas := make([]*CAPIDiegoProcessAssociation, len(request.CapiDiegoProcessAssociations))
+	cdpas := make([]*models.CAPIDiegoProcessAssociation, len(request.CapiDiegoProcessAssociations))
 
 	for i, cdpa := range request.CapiDiegoProcessAssociations {
-		diegoProcessGuids := make([]DiegoProcessGUID, len(cdpa.DiegoProcessGuids))
+		diegoProcessGuids := make([]models.DiegoProcessGUID, len(cdpa.DiegoProcessGuids))
 		for j, diegoProcessGuid := range cdpa.DiegoProcessGuids {
-			diegoProcessGuids[j] = DiegoProcessGUID(diegoProcessGuid)
+			diegoProcessGuids[j] = models.DiegoProcessGUID(diegoProcessGuid)
 		}
-		cdpas[i] = &CAPIDiegoProcessAssociation{
-			CAPIProcessGUID:   CAPIProcessGUID(cdpa.CapiProcessGuid),
+		cdpas[i] = &models.CAPIDiegoProcessAssociation{
+			CAPIProcessGUID:   models.CAPIProcessGUID(cdpa.CapiProcessGuid),
 			DiegoProcessGUIDs: diegoProcessGuids,
 		}
 	}

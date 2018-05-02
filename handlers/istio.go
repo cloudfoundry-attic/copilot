@@ -7,6 +7,8 @@ import (
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/internal_routes"
+	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -16,7 +18,41 @@ type Istio struct {
 	RoutesRepo                       routesRepoInterface
 	RouteMappingsRepo                routeMappingsRepoInterface
 	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
-	VIPProvider                      vipProvider
+	InternalRoutesRepo               internalRoutesRepo
+}
+
+type BBSClient interface {
+	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
+}
+
+//go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
+type routesRepoInterface interface {
+	Upsert(route *models.Route)
+	Delete(guid models.RouteGUID)
+	Sync(routes []*models.Route)
+	Get(guid models.RouteGUID) (*models.Route, bool)
+	List() map[string]string
+}
+
+//go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
+type routeMappingsRepoInterface interface {
+	Map(routeMapping *models.RouteMapping)
+	Unmap(routeMapping *models.RouteMapping)
+	Sync(routeMappings []*models.RouteMapping)
+	List() map[string]*models.RouteMapping
+}
+
+//go:generate counterfeiter -o fakes/capi_diego_process_associations_repo.go --fake-name CAPIDiegoProcessAssociationsRepo . capiDiegoProcessAssociationsRepoInterface
+type capiDiegoProcessAssociationsRepoInterface interface {
+	Upsert(capiDiegoProcessAssociation *models.CAPIDiegoProcessAssociation)
+	Delete(capiProcessGUID *models.CAPIProcessGUID)
+	Sync(capiDiegoProcessAssociations []*models.CAPIDiegoProcessAssociation)
+	List() map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
+	Get(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
+}
+
+type internalRoutesRepo interface {
+	Get() (map[internal_routes.InternalRoute][]internal_routes.Backend, error)
 }
 
 func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
@@ -38,59 +74,26 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 	return &api.RoutesResponse{Backends: c.hostnameToBackendSet(diegoProcessGUIDToBackendSet)}, nil
 }
 
-//go:generate counterfeiter -o fakes/vip_provider.go --fake-name VIPProvider . vipProvider
-type vipProvider interface {
-	Get(hostname string) string
-}
-
 func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*api.InternalRoutesResponse, error) {
-	lrpNetInfosMap, err := c.retrieveActualLRPNetInfos()
+	hostnamesToBackends, err := c.InternalRoutesRepo.Get()
 	if err != nil {
-		panic(err)
-	}
-
-	hostnamesToBackends := map[string][]*api.Backend{}
-
-	for _, routeMapping := range c.RouteMappingsRepo.List() {
-		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
-		if !ok {
-			continue
-		}
-
-		hostname := route.Hostname()
-		if !strings.HasSuffix(hostname, ".apps.internal") {
-			continue
-		}
-
-		capiDiegoProcessAssociation := c.CAPIDiegoProcessAssociationsRepo.Get(&routeMapping.CAPIProcessGUID)
-		if capiDiegoProcessAssociation == nil {
-			continue
-		}
-
-		allBackendsForThisRouteMapping := []*api.Backend{}
-		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			for _, lrpNetInfo := range lrpNetInfosMap[diegoProcessGUID] {
-				appContainerPort := c.getAppContainerPort(lrpNetInfo)
-				if appContainerPort == 0 {
-					continue
-				}
-				allBackendsForThisRouteMapping = append(allBackendsForThisRouteMapping, &api.Backend{
-					Address: lrpNetInfo.InstanceAddress,
-					Port:    appContainerPort,
-				})
-			}
-		}
-
-		hostnamesToBackends[hostname] = append(hostnamesToBackends[hostname], allBackendsForThisRouteMapping...)
+		return nil, err
 	}
 
 	internalRoutesWithBackends := []*api.InternalRouteWithBackends{}
-	for hostname, backends := range hostnamesToBackends {
+	for internalRoute, backends := range hostnamesToBackends {
+		apiBackends := []*api.Backend{}
+		for _, b := range backends {
+			apiBackends = append(apiBackends, &api.Backend{
+				Address: b.Address,
+				Port:    b.Port,
+			})
+		}
 		internalRoutesWithBackends = append(internalRoutesWithBackends, &api.InternalRouteWithBackends{
-			Hostname: hostname,
-			Vip:      c.VIPProvider.Get(hostname),
+			Hostname: internalRoute.Hostname,
+			Vip:      internalRoute.VIP,
 			Backends: &api.BackendSet{
-				Backends: backends,
+				Backends: apiBackends,
 			},
 		})
 	}
@@ -100,44 +103,20 @@ func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*ap
 	}, nil
 }
 
-func (c *Istio) retrieveActualLRPNetInfos() (map[DiegoProcessGUID][]bbsmodels.ActualLRPNetInfo, error) {
+func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[models.DiegoProcessGUID]*api.BackendSet, error) {
 	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
 	if err != nil {
 		return nil, err
 	}
-	actualLRPNetInfos := make(map[DiegoProcessGUID][]bbsmodels.ActualLRPNetInfo)
+
+	diegoProcessGUIDToBackendSet := make(map[models.DiegoProcessGUID]*api.BackendSet)
 	for _, actualGroup := range actualLRPGroups {
 		instance := actualGroup.Instance
 		if instance == nil {
 			c.Logger.Debug("skipping-nil-instance")
 			continue
 		}
-		diegoProcessGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
-		if instance.State != bbsmodels.ActualLRPStateRunning {
-			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": diegoProcessGUID})
-			continue
-		}
-		netInfos := actualLRPNetInfos[diegoProcessGUID]
-		netInfos = append(netInfos, instance.ActualLRPNetInfo)
-		actualLRPNetInfos[diegoProcessGUID] = netInfos
-	}
-	return actualLRPNetInfos, nil
-}
-
-func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*api.BackendSet, error) {
-	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
-	if err != nil {
-		return nil, err
-	}
-
-	diegoProcessGUIDToBackendSet := make(map[DiegoProcessGUID]*api.BackendSet)
-	for _, actualGroup := range actualLRPGroups {
-		instance := actualGroup.Instance
-		if instance == nil {
-			c.Logger.Debug("skipping-nil-instance")
-			continue
-		}
-		diegoProcessGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
+		diegoProcessGUID := models.DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
 		if instance.State != bbsmodels.ActualLRPStateRunning {
 			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": diegoProcessGUID})
 			continue
@@ -158,26 +137,16 @@ func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*ap
 	return diegoProcessGUIDToBackendSet, nil
 }
 
-func (c *Istio) getAppContainerPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
-	for _, port := range netInfo.Ports {
-		if port.ContainerPort != CF_APP_SSH_PORT {
-			return port.ContainerPort
-		}
-	}
-
-	return 0
-}
-
 func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 	for _, port := range netInfo.Ports {
-		if port.ContainerPort != CF_APP_SSH_PORT {
+		if port.ContainerPort != models.CF_APP_SSH_PORT {
 			return port.HostPort
 		}
 	}
 	return 0
 }
 
-func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
+func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
 	hostnameToBackendSet := make(map[string]*api.BackendSet)
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
@@ -192,7 +161,7 @@ func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[DiegoProce
 			continue
 		}
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			backends, ok := diegoProcessGUIDToBackendSet[DiegoProcessGUID(diegoProcessGUID)]
+			backends, ok := diegoProcessGUIDToBackendSet[models.DiegoProcessGUID(diegoProcessGUID)]
 			if !ok {
 				continue
 			}

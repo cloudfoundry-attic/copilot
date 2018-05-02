@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"code.cloudfoundry.org/copilot/models"
 )
 
 var _ = Describe("Capi Handlers", func() {
@@ -69,7 +70,7 @@ var _ = Describe("Capi Handlers", func() {
 				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
-			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&handlers.Route{
+			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.example.com",
 			}))
@@ -84,7 +85,7 @@ var _ = Describe("Capi Handlers", func() {
 			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{Guid: "route-guid-a"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.DeleteCallCount()).To(Equal(1))
-			Expect(fakeRoutesRepo.DeleteArgsForCall(0)).To(Equal(handlers.RouteGUID("route-guid-a")))
+			Expect(fakeRoutesRepo.DeleteArgsForCall(0)).To(Equal(models.RouteGUID("route-guid-a")))
 		})
 
 		It("validates the inputs", func() {
@@ -96,7 +97,7 @@ var _ = Describe("Capi Handlers", func() {
 
 	Describe("MapRoute", func() {
 		BeforeEach(func() {
-			handler.RoutesRepo.Upsert(&handlers.Route{
+			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.example.com",
 			})
@@ -125,7 +126,7 @@ var _ = Describe("Capi Handlers", func() {
 				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
+			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&models.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "some-capi-process-guid",
 			}))
@@ -148,7 +149,7 @@ var _ = Describe("Capi Handlers", func() {
 			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{&api.RouteMapping{RouteGuid: "to-be-deleted-route-guid", CapiProcessGuid: "some-capi-process-guid"}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&handlers.RouteMapping{
+			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&models.RouteMapping{
 				RouteGUID:       "to-be-deleted-route-guid",
 				CAPIProcessGUID: "some-capi-process-guid",
 			}))
@@ -189,9 +190,9 @@ var _ = Describe("Capi Handlers", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.UpsertCallCount()).To(Equal(1))
-			Expect(fakeCAPIDiegoProcessAssociationsRepo.UpsertArgsForCall(0)).To(Equal(&handlers.CAPIDiegoProcessAssociation{
+			Expect(fakeCAPIDiegoProcessAssociationsRepo.UpsertArgsForCall(0)).To(Equal(&models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "some-capi-process-guid",
-				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
 					"some-diego-process-guid-1",
 					"some-diego-process-guid-2",
 				},
@@ -213,7 +214,7 @@ var _ = Describe("Capi Handlers", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.DeleteCallCount()).To(Equal(1))
-			cpg := handlers.CAPIProcessGUID("some-capi-process-guid")
+			cpg := models.CAPIProcessGUID("some-capi-process-guid")
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.DeleteArgsForCall(0)).To(Equal(&cpg))
 		})
 	})
@@ -253,21 +254,21 @@ var _ = Describe("Capi Handlers", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.SyncArgsForCall(0)).To(Equal([]*handlers.RouteMapping{{
+			Expect(fakeRouteMappingsRepo.SyncArgsForCall(0)).To(Equal([]*models.RouteMapping{{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "some-capi-process-guid",
 			}}))
 
 			Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
-			Expect(fakeRoutesRepo.SyncArgsForCall(0)).To(Equal([]*handlers.Route{{
+			Expect(fakeRoutesRepo.SyncArgsForCall(0)).To(Equal([]*models.Route{{
 				GUID: "route-guid-a",
 				Host: "example.host.com",
 			}}))
 
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncCallCount()).To(Equal(1))
-			Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncArgsForCall(0)).To(Equal([]*handlers.CAPIDiegoProcessAssociation{{
+			Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncArgsForCall(0)).To(Equal([]*models.CAPIDiegoProcessAssociation{{
 				CAPIProcessGUID: "some-capi-process-guid",
-				DiegoProcessGUIDs: []handlers.DiegoProcessGUID{
+				DiegoProcessGUIDs: []models.DiegoProcessGUID{
 					"some-diego-process-guid-1",
 					"some-diego-process-guid-2",
 				},
