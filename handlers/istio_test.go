@@ -6,6 +6,7 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/handlers/fakes"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
@@ -24,12 +25,15 @@ func (b mockBBSClient) ActualLRPGroups(l lager.Logger, bbsModel bbsmodels.Actual
 
 var _ = Describe("Istio Handlers", func() {
 	var (
-		handler           *handlers.Istio
-		bbsClient         *mockBBSClient
-		logger            lager.Logger
-		bbsClientResponse []*bbsmodels.ActualLRPGroup
-		backendSetA       *api.BackendSet
-		backendSetB       *api.BackendSet
+		handler                        *handlers.Istio
+		bbsClient                      *mockBBSClient
+		logger                         lager.Logger
+		bbsClientResponse              []*bbsmodels.ActualLRPGroup
+		expectedExternalRouteBackendsA *api.BackendSet
+		expectedExternalRouteBackendsB *api.BackendSet
+		expectedInternalRouteBackendsA *api.BackendSet
+		expectedInternalRouteBackendsB *api.BackendSet
+		vipProvider                    *fakes.VIPProvider
 	)
 
 	BeforeEach(func() {
@@ -39,7 +43,8 @@ var _ = Describe("Istio Handlers", func() {
 					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address: "10.10.1.5",
+						Address:         "10.10.1.5",
+						InstanceAddress: "10.255.0.16",
 						Ports: []*bbsmodels.PortMapping{
 							{ContainerPort: 2222, HostPort: 61006},
 							{ContainerPort: 8080, HostPort: 61005},
@@ -53,7 +58,8 @@ var _ = Describe("Istio Handlers", func() {
 					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 2, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address: "10.0.40.2",
+						Address:         "10.0.40.2",
+						InstanceAddress: "10.255.1.34",
 						Ports: []*bbsmodels.PortMapping{
 							{ContainerPort: 9080, HostPort: 61008},
 						},
@@ -63,9 +69,10 @@ var _ = Describe("Istio Handlers", func() {
 			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
-					State:        bbsmodels.ActualLRPStateClaimed,
+					State:        bbsmodels.ActualLRPStateClaimed, // not yet started
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address: "10.0.40.4",
+						Address:         "10.0.40.4",
+						InstanceAddress: "10.255.7.77",
 						Ports: []*bbsmodels.PortMapping{
 							{ContainerPort: 8080, HostPort: 61007},
 						},
@@ -75,9 +82,10 @@ var _ = Describe("Istio Handlers", func() {
 			{
 				Instance: &bbsmodels.ActualLRP{
 					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
-					State:        bbsmodels.ActualLRPStateRunning,
+					State:        bbsmodels.ActualLRPStateRunning, // actually running
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address: "10.0.50.4",
+						Address:         "10.0.50.4",
+						InstanceAddress: "10.255.9.16",
 						Ports: []*bbsmodels.PortMapping{
 							{ContainerPort: 8080, HostPort: 61009},
 						},
@@ -89,7 +97,8 @@ var _ = Describe("Istio Handlers", func() {
 					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 2, "domain1"),
 					State:        bbsmodels.ActualLRPStateRunning,
 					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address: "10.0.60.2",
+						Address:         "10.0.60.2",
+						InstanceAddress: "10.255.9.34",
 						Ports: []*bbsmodels.PortMapping{
 							{ContainerPort: 8080, HostPort: 61001},
 						},
@@ -98,7 +107,7 @@ var _ = Describe("Istio Handlers", func() {
 			},
 		}
 
-		backendSetA = &api.BackendSet{
+		expectedExternalRouteBackendsA = &api.BackendSet{
 			Backends: []*api.Backend{
 				{
 					Address: "10.10.1.5",
@@ -110,7 +119,7 @@ var _ = Describe("Istio Handlers", func() {
 				},
 			},
 		}
-		backendSetB = &api.BackendSet{
+		expectedExternalRouteBackendsB = &api.BackendSet{
 			Backends: []*api.Backend{
 				{
 					Address: "10.0.50.4",
@@ -123,11 +132,44 @@ var _ = Describe("Istio Handlers", func() {
 			},
 		}
 
+		expectedInternalRouteBackendsA = &api.BackendSet{
+			Backends: []*api.Backend{
+				{
+					Address: "10.255.0.16",
+					Port:    8080,
+				},
+				{
+					Address: "10.255.1.34",
+					Port:    9080,
+				},
+			},
+		}
+		expectedInternalRouteBackendsB = &api.BackendSet{
+			Backends: []*api.Backend{
+				{
+					Address: "10.255.9.16",
+					Port:    8080,
+				},
+				{
+					Address: "10.255.9.34",
+					Port:    8080,
+				},
+			},
+		}
+
 		bbsClient = &mockBBSClient{
 			actualLRPGroupsData: bbsClientResponse,
 		}
 
 		logger = lagertest.NewTestLogger("test")
+
+		vipProvider = &fakes.VIPProvider{}
+		vipProvider.GetStub = func(hostname string) string {
+			return map[string]string{
+				"route-a.apps.internal": "vip-for-route-a",
+				"route-b.apps.internal": "vip-for-route-b",
+			}[hostname]
+		}
 
 		handler = &handlers.Istio{
 			BBSClient: bbsClient,
@@ -141,6 +183,7 @@ var _ = Describe("Istio Handlers", func() {
 			CAPIDiegoProcessAssociationsRepo: &handlers.CAPIDiegoProcessAssociationsRepo{
 				Repo: make(map[handlers.CAPIProcessGUID]*handlers.CAPIDiegoProcessAssociation),
 			},
+			VIPProvider: vipProvider,
 		}
 	})
 
@@ -150,6 +193,93 @@ var _ = Describe("Istio Handlers", func() {
 			resp, err := handler.Health(ctx, new(api.HealthRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.HealthResponse{Healthy: true}))
+		})
+	})
+
+	Describe("listing InternalRoutes (using real repos, to cover more intration-y things", func() {
+		It("returns the internal routes for each running backend instance", func() {
+			handler.RoutesRepo.Upsert(&handlers.Route{
+				GUID: "internal-route-guid-a",
+				Host: "route-a.apps.internal",
+			})
+			handler.RoutesRepo.Upsert(&handlers.Route{
+				GUID: "internal-route-guid-b",
+				Host: "route-b.apps.internal",
+			})
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
+				RouteGUID:       "internal-route-guid-a",
+				CAPIProcessGUID: "capi-process-guid-a",
+			})
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
+				RouteGUID:       "internal-route-guid-b",
+				CAPIProcessGUID: "capi-process-guid-b",
+			})
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "capi-process-guid-a",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"diego-process-guid-a",
+				},
+			})
+			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&handlers.CAPIDiegoProcessAssociation{
+				CAPIProcessGUID: "capi-process-guid-b",
+				DiegoProcessGUIDs: handlers.DiegoProcessGUIDs{
+					"diego-process-guid-b",
+				},
+			})
+			ctx := context.Background()
+			externalRouteResp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(externalRouteResp.Backends).To(HaveLen(0))
+
+			resp, err := handler.InternalRoutes(ctx, new(api.InternalRoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.InternalRoutes).To(HaveLen(2))
+
+			receivedInternalRoutes := make(map[string]*api.InternalRouteWithBackends)
+			for _, ir := range resp.InternalRoutes {
+				receivedInternalRoutes[ir.Hostname] = ir
+			}
+			Expect(receivedInternalRoutes).To(HaveKey("route-a.apps.internal"))
+			Expect(receivedInternalRoutes).To(HaveKey("route-b.apps.internal"))
+
+			internalRoute0 := receivedInternalRoutes["route-a.apps.internal"]
+			Expect(internalRoute0.Hostname).To(Equal("route-a.apps.internal"))
+			Expect(internalRoute0.Vip).To(Equal("vip-for-route-a"))
+			Expect(internalRoute0.Backends.Backends).To(ConsistOf(expectedInternalRouteBackendsA.Backends))
+
+			internalRoute1 := receivedInternalRoutes["route-b.apps.internal"]
+			Expect(internalRoute1.Hostname).To(Equal("route-b.apps.internal"))
+			Expect(internalRoute1.Vip).To(Equal("vip-for-route-b"))
+			Expect(internalRoute1.Backends.Backends).To(ConsistOf(expectedInternalRouteBackendsB.Backends))
+
+			// and now map the route-a to diego-process-b
+			// and assert we see all 4 backends for route-a
+			handler.RouteMappingsRepo.Map(&handlers.RouteMapping{
+				RouteGUID:       "internal-route-guid-a",
+				CAPIProcessGUID: "capi-process-guid-b",
+			})
+
+			externalRouteResp, err = handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(externalRouteResp.Backends).To(HaveLen(0))
+
+			resp, err = handler.InternalRoutes(ctx, new(api.InternalRoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.InternalRoutes).To(HaveLen(2))
+
+			receivedInternalRoutes = make(map[string]*api.InternalRouteWithBackends)
+			for _, ir := range resp.InternalRoutes {
+				receivedInternalRoutes[ir.Hostname] = ir
+			}
+			Expect(receivedInternalRoutes).To(HaveKey("route-a.apps.internal"))
+			Expect(receivedInternalRoutes).To(HaveKey("route-b.apps.internal"))
+
+			internalRoute0 = receivedInternalRoutes["route-a.apps.internal"]
+			Expect(internalRoute0.Hostname).To(Equal("route-a.apps.internal"))
+			Expect(internalRoute0.Vip).To(Equal("vip-for-route-a"))
+			Expect(internalRoute0.Backends.Backends).To(ConsistOf(
+				append(expectedInternalRouteBackendsA.Backends, expectedInternalRouteBackendsB.Backends...),
+			))
 		})
 	})
 
@@ -184,12 +314,17 @@ var _ = Describe("Istio Handlers", func() {
 				},
 			})
 			ctx := context.Background()
+
+			internalRouteResp, err := handler.InternalRoutes(ctx, new(api.InternalRoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(internalRouteResp.InternalRoutes).To(HaveLen(0))
+
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"route-a.cfapps.com": backendSetA,
-					"route-b.cfapps.com": backendSetB,
+					"route-a.cfapps.com": expectedExternalRouteBackendsA,
+					"route-b.cfapps.com": expectedExternalRouteBackendsB,
 				},
 			}))
 		})
@@ -224,7 +359,7 @@ var _ = Describe("Istio Handlers", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Backends: map[string]*api.BackendSet{
-					"route-b.cfapps.com": backendSetB,
+					"route-b.cfapps.com": expectedExternalRouteBackendsB,
 				},
 			}))
 		})

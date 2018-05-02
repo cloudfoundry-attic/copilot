@@ -71,7 +71,8 @@ var _ = Describe("Copilot", func() {
 							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
 							State:        bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address: "10.10.1.5",
+								Address:         "10.10.1.5",
+								InstanceAddress: "10.255.1.16",
 								Ports: []*bbsmodels.PortMapping{
 									{ContainerPort: 8080, HostPort: 61005},
 								},
@@ -83,7 +84,8 @@ var _ = Describe("Copilot", func() {
 							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
 							State:        bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address: "10.10.1.6",
+								Address:         "10.10.1.6",
+								InstanceAddress: "10.255.0.34",
 								Ports: []*bbsmodels.PortMapping{
 									{ContainerPort: 8080, HostPort: 61006},
 								},
@@ -252,6 +254,64 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		}))
+
+		By("cc maps an internal route")
+		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
+			Route: &api.Route{
+				Guid: "internal-route-guid",
+				Host: "route.apps.internal",
+			}})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
+			RouteMapping: &api.RouteMapping{
+				RouteGuid:       "internal-route-guid",
+				CapiProcessGuid: "capi-process-guid-b",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("istio client sees internal routes")
+		istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
+		Expect(err).NotTo(HaveOccurred())
+		istioVisibleInternalRoutes, err := istioClient.InternalRoutes(context.Background(), new(api.InternalRoutesRequest))
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(istioVisibleRoutes.Backends).To(HaveLen(1))
+		//The list of backends does not have a guaranteed order, this test is flakey if you assert on the whole set of Routes at once
+		Expect(istioVisibleRoutes.Backends["some-url"].Backends).To(ConsistOf(
+			&api.Backend{Address: "10.10.1.6", Port: 61006},
+		))
+
+		Expect(istioVisibleInternalRoutes.InternalRoutes).To(HaveLen(1))
+		internalRoute := istioVisibleInternalRoutes.InternalRoutes[0]
+		Expect(internalRoute.Hostname).To(Equal("route.apps.internal"))
+		Expect(internalRoute.Vip).To(Equal("127.0.0.1"))
+
+		By("checking that the backend for the capi process is returned for that route")
+		Expect(internalRoute.Backends.Backends).To(ConsistOf(
+			&api.Backend{Address: "10.255.0.34", Port: 8080},
+		))
+
+		By("mapping another capi process to the same internal route")
+		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
+			RouteMapping: &api.RouteMapping{
+				RouteGuid:       "internal-route-guid",
+				CapiProcessGuid: "capi-process-guid-a",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		istioVisibleInternalRoutes, err = istioClient.InternalRoutes(context.Background(), new(api.InternalRoutesRequest))
+		Expect(err).NotTo(HaveOccurred())
+		internalRoute = istioVisibleInternalRoutes.InternalRoutes[0]
+		Expect(istioVisibleInternalRoutes.InternalRoutes).To(HaveLen(1))
+		Expect(internalRoute.Hostname).To(Equal("route.apps.internal"))
+		Expect(internalRoute.Vip).To(Equal("127.0.0.1"))
+		By("checking that backends for both capi processes are returned for that route")
+		Expect(internalRoute.Backends.Backends).To(ConsistOf(
+			&api.Backend{Address: "10.255.1.16", Port: 8080},
+			&api.Backend{Address: "10.255.0.34", Port: 8080},
+		))
 	})
 
 	Context("when the BBS is not available", func() {

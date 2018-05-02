@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -81,6 +82,7 @@ func mainWithError() error {
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		BBSClient:                        bbsClient,
 		Logger:                           logger,
+		VIPProvider:                      vip.Provider{},
 	}
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,

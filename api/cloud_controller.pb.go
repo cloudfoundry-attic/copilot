@@ -34,6 +34,9 @@ It has these top-level messages:
 	DeleteCapiDiegoProcessAssociationResponse
 	BulkSyncRequest
 	BulkSyncResponse
+	InternalRoutesRequest
+	InternalRoutesResponse
+	InternalRouteWithBackends
 	RoutesRequest
 	RoutesResponse
 	BackendSet
