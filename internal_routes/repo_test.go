@@ -1,6 +1,8 @@
 package internal_routes_test
 
 import (
+	"errors"
+
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/internal_routes"
 	"code.cloudfoundry.org/copilot/internal_routes/fakes"
@@ -12,22 +14,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type mockBBSClient struct {
-	actualLRPGroupsData []*bbsmodels.ActualLRPGroup
-	actualLRPErr        error
-}
-
-func (b mockBBSClient) ActualLRPGroups(l lager.Logger, bbsModel bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error) {
-	return b.actualLRPGroupsData, b.actualLRPErr
-}
-
 var _ = Describe("Repo", func() {
 	Describe("Get", func() {
 		var (
 			routesRepo                       *models.RoutesRepo
 			routeMappingsRepo                *models.RouteMappingsRepo
 			capiDiegoProcessAssociationsRepo *models.CAPIDiegoProcessAssociationsRepo
-			bbsClient                        *mockBBSClient
+			bbsClient                        *fakes.BBSClient
 			logger                           lager.Logger
 			vipProvider                      *fakes.VIPProvider
 			internalRoutesRepo               *internal_routes.Repo
@@ -103,9 +96,8 @@ var _ = Describe("Repo", func() {
 					},
 				},
 			}
-			bbsClient = &mockBBSClient{
-				actualLRPGroupsData: bbsClientResponse,
-			}
+			bbsClient = &fakes.BBSClient{}
+			bbsClient.ActualLRPGroupsReturns(bbsClientResponse, nil)
 
 			logger = lagertest.NewTestLogger("test")
 
@@ -238,6 +230,17 @@ var _ = Describe("Repo", func() {
 					Port:    8080,
 				},
 			}))
+		})
+
+		Context("when bbs client returns an error", func() {
+			BeforeEach(func() {
+				bbsClient.ActualLRPGroupsReturns(nil, errors.New("bad"))
+			})
+
+			It("returns an error", func() {
+				_, err := internalRoutesRepo.Get()
+				Expect(err).To(MatchError("bad"))
+			})
 		})
 	})
 })

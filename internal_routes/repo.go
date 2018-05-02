@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/lager"
 )
 
 const CF_APP_SSH_PORT = 2222
@@ -33,6 +33,7 @@ type capiDiegoProcessAssociationsRepoInterface interface {
 	Get(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
 }
 
+//go:generate counterfeiter -o fakes/bbs_client.go --fake-name BBSClient . bbsClient
 type bbsClient interface {
 	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }
@@ -64,7 +65,7 @@ type InternalRoute struct {
 func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
 	lrpNetInfosMap, err := r.retrieveActualLRPNetInfos()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	hostnamesToBackends := map[string][]Backend{}
