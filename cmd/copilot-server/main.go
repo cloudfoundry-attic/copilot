@@ -82,7 +82,7 @@ func mainWithError() error {
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		BBSClient:                        bbsClient,
 		Logger:                           logger,
-		VIPProvider:                      vip.Provider{},
+		VIPProvider:                      &vip.Provider{},
 	}
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,

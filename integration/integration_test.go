@@ -285,7 +285,7 @@ var _ = Describe("Copilot", func() {
 		Expect(istioVisibleInternalRoutes.InternalRoutes).To(HaveLen(1))
 		internalRoute := istioVisibleInternalRoutes.InternalRoutes[0]
 		Expect(internalRoute.Hostname).To(Equal("route.apps.internal"))
-		Expect(internalRoute.Vip).To(Equal("127.0.0.1"))
+		Expect(internalRoute.Vip).To(Equal("127.254.10.143")) // magic number, if you change the VIP provider, you'll need to change this too!
 
 		By("checking that the backend for the capi process is returned for that route")
 		Expect(internalRoute.Backends.Backends).To(ConsistOf(
@@ -306,7 +306,7 @@ var _ = Describe("Copilot", func() {
 		internalRoute = istioVisibleInternalRoutes.InternalRoutes[0]
 		Expect(istioVisibleInternalRoutes.InternalRoutes).To(HaveLen(1))
 		Expect(internalRoute.Hostname).To(Equal("route.apps.internal"))
-		Expect(internalRoute.Vip).To(Equal("127.0.0.1"))
+		Expect(internalRoute.Vip).To(Equal("127.254.10.143")) // magic number, if you change the VIP provider, you'll need to change this too!
 		By("checking that backends for both capi processes are returned for that route")
 		Expect(internalRoute.Backends.Backends).To(ConsistOf(
 			&api.Backend{Address: "10.255.1.16", Port: 8080},
