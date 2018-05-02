@@ -197,7 +197,7 @@ var _ = Describe("Istio Handlers", func() {
 	})
 
 	Describe("listing InternalRoutes (using real repos, to cover more intration-y things", func() {
-		It("returns the internal routes for each running backend instance", func() {
+		BeforeEach(func() {
 			handler.RoutesRepo.Upsert(&handlers.Route{
 				GUID: "internal-route-guid-a",
 				Host: "route-a.apps.internal",
@@ -226,6 +226,9 @@ var _ = Describe("Istio Handlers", func() {
 					"diego-process-guid-b",
 				},
 			})
+		})
+
+		It("returns the internal routes for each running backend instance", func() {
 			ctx := context.Background()
 			externalRouteResp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())

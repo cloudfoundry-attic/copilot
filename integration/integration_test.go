@@ -66,6 +66,19 @@ var _ = Describe("Copilot", func() {
 		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list", func(w http.ResponseWriter, req *http.Request) {
 			actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
 				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
+					{ // this instance only has SSH port, not app port.  it shouldn't show up in route results
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
+							State:        bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address:         "10.10.1.4",
+								InstanceAddress: "10.255.1.15",
+								Ports: []*bbsmodels.PortMapping{
+									{ContainerPort: 2222, HostPort: 61004},
+								},
+							},
+						},
+					},
 					{
 						Instance: &bbsmodels.ActualLRP{
 							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
@@ -87,6 +100,7 @@ var _ = Describe("Copilot", func() {
 								Address:         "10.10.1.6",
 								InstanceAddress: "10.255.0.34",
 								Ports: []*bbsmodels.PortMapping{
+									{ContainerPort: 2222, HostPort: 61008},
 									{ContainerPort: 8080, HostPort: 61006},
 								},
 							},

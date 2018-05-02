@@ -70,11 +70,9 @@ func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*ap
 		allBackendsForThisRouteMapping := []*api.Backend{}
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			for _, lrpNetInfo := range lrpNetInfosMap[diegoProcessGUID] {
-				var appContainerPort uint32
-				for _, port := range lrpNetInfo.Ports {
-					if port.ContainerPort != CF_APP_SSH_PORT {
-						appContainerPort = port.ContainerPort
-					}
+				appContainerPort := c.getAppContainerPort(lrpNetInfo)
+				if appContainerPort == 0 {
+					continue
 				}
 				allBackendsForThisRouteMapping = append(allBackendsForThisRouteMapping, &api.Backend{
 					Address: lrpNetInfo.InstanceAddress,
@@ -144,14 +142,13 @@ func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*ap
 			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": diegoProcessGUID})
 			continue
 		}
+		appHostPort := c.getAppHostPort(instance.ActualLRPNetInfo)
+		if appHostPort == 0 {
+			continue
+		}
+
 		if _, ok := diegoProcessGUIDToBackendSet[diegoProcessGUID]; !ok {
 			diegoProcessGUIDToBackendSet[diegoProcessGUID] = &api.BackendSet{}
-		}
-		var appHostPort uint32
-		for _, port := range instance.ActualLRPNetInfo.Ports {
-			if port.ContainerPort != CF_APP_SSH_PORT {
-				appHostPort = port.HostPort
-			}
 		}
 		diegoProcessGUIDToBackendSet[diegoProcessGUID].Backends = append(diegoProcessGUIDToBackendSet[diegoProcessGUID].Backends, &api.Backend{
 			Address: instance.ActualLRPNetInfo.Address,
@@ -159,6 +156,25 @@ func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[DiegoProcessGUID]*ap
 		})
 	}
 	return diegoProcessGUIDToBackendSet, nil
+}
+
+func (c *Istio) getAppContainerPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
+	for _, port := range netInfo.Ports {
+		if port.ContainerPort != CF_APP_SSH_PORT {
+			return port.ContainerPort
+		}
+	}
+
+	return 0
+}
+
+func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
+	for _, port := range netInfo.Ports {
+		if port.ContainerPort != CF_APP_SSH_PORT {
+			return port.HostPort
+		}
+	}
+	return 0
 }
 
 func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
