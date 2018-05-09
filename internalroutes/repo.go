@@ -1,4 +1,4 @@
-package internal_routes
+package internalroutes
 
 import (
 	"strings"

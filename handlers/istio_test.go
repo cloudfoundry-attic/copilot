@@ -6,8 +6,8 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
-	"code.cloudfoundry.org/copilot/internal_routes"
-	internal_routes_fakes "code.cloudfoundry.org/copilot/internal_routes/fakes"
+	"code.cloudfoundry.org/copilot/internalroutes"
+	internalroutes_fakes "code.cloudfoundry.org/copilot/internalroutes/fakes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -35,7 +35,7 @@ var _ = Describe("Istio Handlers", func() {
 		expectedExternalRouteBackendsB *api.BackendSet
 		expectedInternalRouteBackendsA *api.BackendSet
 		expectedInternalRouteBackendsB *api.BackendSet
-		vipProvider                    *internal_routes_fakes.VIPProvider
+		vipProvider                    *internalroutes_fakes.VIPProvider
 	)
 
 	BeforeEach(func() {
@@ -165,7 +165,7 @@ var _ = Describe("Istio Handlers", func() {
 
 		logger = lagertest.NewTestLogger("test")
 
-		vipProvider = &internal_routes_fakes.VIPProvider{}
+		vipProvider = &internalroutes_fakes.VIPProvider{}
 		vipProvider.GetStub = func(hostname string) string {
 			return map[string]string{
 				"route-a.apps.internal": "vip-for-route-a",
@@ -183,7 +183,7 @@ var _ = Describe("Istio Handlers", func() {
 			Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 		}
 
-		internalRoutesRepo := &internal_routes.Repo{
+		internalRoutesRepo := &internalroutes.Repo{
 			BBSClient:                        bbsClient,
 			Logger:                           logger,
 			RoutesRepo:                       routesRepo,

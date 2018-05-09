@@ -1,11 +1,11 @@
-package internal_routes_test
+package internalroutes_test
 
 import (
 	"errors"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/copilot/internal_routes"
-	"code.cloudfoundry.org/copilot/internal_routes/fakes"
+	"code.cloudfoundry.org/copilot/internalroutes"
+	"code.cloudfoundry.org/copilot/internalroutes/fakes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -23,7 +23,7 @@ var _ = Describe("Repo", func() {
 			bbsClient                        *fakes.BBSClient
 			logger                           lager.Logger
 			vipProvider                      *fakes.VIPProvider
-			internalRoutesRepo               *internal_routes.Repo
+			internalRoutesRepo               *internalroutes.Repo
 		)
 
 		BeforeEach(func() {
@@ -146,7 +146,7 @@ var _ = Describe("Repo", func() {
 				}[hostname]
 			}
 
-			internalRoutesRepo = &internal_routes.Repo{
+			internalRoutesRepo = &internalroutes.Repo{
 				BBSClient:                        bbsClient,
 				Logger:                           logger,
 				RoutesRepo:                       routesRepo,
@@ -157,15 +157,15 @@ var _ = Describe("Repo", func() {
 		})
 
 		It("returns the internal routes for each running backend instance", func() {
-			routeAKey := internal_routes.InternalRoute{Hostname: "route-a.apps.internal", VIP: "vip-for-route-a"}
-			routeBKey := internal_routes.InternalRoute{Hostname: "route-b.apps.internal", VIP: "vip-for-route-b"}
+			routeAKey := internalroutes.InternalRoute{Hostname: "route-a.apps.internal", VIP: "vip-for-route-a"}
+			routeBKey := internalroutes.InternalRoute{Hostname: "route-b.apps.internal", VIP: "vip-for-route-b"}
 
 			internalRoutes, err := internalRoutesRepo.Get()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(internalRoutes).To(HaveLen(2))
 
 			Expect(internalRoutes).To(HaveKey(routeAKey))
-			Expect(internalRoutes[routeAKey]).To(ConsistOf([]internal_routes.Backend{
+			Expect(internalRoutes[routeAKey]).To(ConsistOf([]internalroutes.Backend{
 				{
 					Address: "10.255.0.16",
 					Port:    8080,
@@ -177,7 +177,7 @@ var _ = Describe("Repo", func() {
 			}))
 
 			Expect(internalRoutes).To(HaveKey(routeBKey))
-			Expect(internalRoutes[routeBKey]).To(ConsistOf([]internal_routes.Backend{
+			Expect(internalRoutes[routeBKey]).To(ConsistOf([]internalroutes.Backend{
 				{
 					Address: "10.255.9.16",
 					Port:    8080,
@@ -200,7 +200,7 @@ var _ = Describe("Repo", func() {
 			Expect(internalRoutes).To(HaveLen(2))
 
 			Expect(internalRoutes).To(HaveKey(routeAKey))
-			Expect(internalRoutes[routeAKey]).To(ConsistOf([]internal_routes.Backend{
+			Expect(internalRoutes[routeAKey]).To(ConsistOf([]internalroutes.Backend{
 				{
 					Address: "10.255.0.16",
 					Port:    8080,
@@ -220,7 +220,7 @@ var _ = Describe("Repo", func() {
 			}))
 
 			Expect(internalRoutes).To(HaveKey(routeBKey))
-			Expect(internalRoutes[routeBKey]).To(ConsistOf([]internal_routes.Backend{
+			Expect(internalRoutes[routeBKey]).To(ConsistOf([]internalroutes.Backend{
 				{
 					Address: "10.255.9.16",
 					Port:    8080,

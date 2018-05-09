@@ -1,4 +1,4 @@
-package internal_routes_test
+package internalroutes_test
 
 import (
 	"testing"

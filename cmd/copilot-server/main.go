@@ -17,7 +17,7 @@ import (
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/handlers"
-	"code.cloudfoundry.org/copilot/internal_routes"
+	"code.cloudfoundry.org/copilot/internalroutes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
@@ -78,7 +78,7 @@ func mainWithError() error {
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
 
-	internalRoutesRepo := &internal_routes.Repo{
+	internalRoutesRepo := &internalroutes.Repo{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,

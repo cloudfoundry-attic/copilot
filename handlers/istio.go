@@ -7,7 +7,7 @@ import (
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
-	"code.cloudfoundry.org/copilot/internal_routes"
+	"code.cloudfoundry.org/copilot/internalroutes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -52,7 +52,7 @@ type capiDiegoProcessAssociationsRepoInterface interface {
 }
 
 type internalRoutesRepo interface {
-	Get() (map[internal_routes.InternalRoute][]internal_routes.Backend, error)
+	Get() (map[internalroutes.InternalRoute][]internalroutes.Backend, error)
 }
 
 func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
