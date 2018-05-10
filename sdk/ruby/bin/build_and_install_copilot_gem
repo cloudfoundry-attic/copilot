@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -eu -o pipefail
+
+pushd "${COPILOT_ROOT}/sdk/ruby"
+  gem build ./cf-copilot.gemspec && gem install cf-copilot
+popd

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+
+pushd "${COPILOT_ROOT}/cmd"
+  go install ./copilot-server
+popd
+
+pushd "${COPILOT_ROOT}/sdk/ruby"
+  bundle install
+  bundle exec rspec
+popd
