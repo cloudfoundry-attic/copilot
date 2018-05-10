@@ -26,14 +26,14 @@ class RealCopilotServer
     config_file.write(config.to_json)
     config_file.close
 
-    @copilotServer = fork do
+    @copilot_server = fork do
       exec "copilot-server -config #{config_file.path}"
     end
 
-    Process.detach(@copilotServer)
+    Process.detach(@copilot_server)
   end
 
   def stop
-    Process.kill("TERM", @copilotServer)
+    Process.kill("TERM", @copilot_server)
   end
 end
