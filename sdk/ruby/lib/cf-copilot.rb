@@ -6,6 +6,7 @@ require 'copilot/protos/cloud_controller_services_pb'
 module Cloudfoundry
   module Copilot
     class Client
+      class PilotError < StandardError; end
 
       attr_reader :host, :port
 
@@ -28,23 +29,31 @@ module Cloudfoundry
         route = Api::Route.new(guid: guid, host: host)
         request = Api::UpsertRouteRequest.new(route: route)
         service.upsert_route(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       def delete_route(guid:)
         request = Api::DeleteRouteRequest.new(guid: guid)
         service.delete_route(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       def map_route(capi_process_guid:, route_guid:)
         route_mapping = Api::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
         request = Api::MapRouteRequest.new(route_mapping: route_mapping)
         service.map_route(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       def unmap_route(capi_process_guid:, route_guid:)
         route_mapping = Api::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
         request = Api::UnmapRouteRequest.new(route_mapping: route_mapping)
         service.unmap_route(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       def upsert_capi_diego_process_association(capi_process_guid:, diego_process_guids:)
@@ -55,6 +64,8 @@ module Cloudfoundry
           })
 
         service.upsert_capi_diego_process_association(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       def delete_capi_diego_process_association(capi_process_guid:)
@@ -62,6 +73,8 @@ module Cloudfoundry
           capi_process_guid: capi_process_guid
         )
         service.delete_capi_diego_process_association(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       def bulk_sync(routes:, route_mappings:, capi_diego_process_associations:)
@@ -71,6 +84,8 @@ module Cloudfoundry
           capi_diego_process_associations: capi_diego_process_associations
         )
         service.bulk_sync(request)
+      rescue GRPC::BadStatus => e
+        raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
       private
