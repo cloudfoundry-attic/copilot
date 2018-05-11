@@ -191,13 +191,16 @@ var _ = Describe("Copilot", func() {
 		By("istio client sees that route")
 		istioVisibleRoutes, err := istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"some-url": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.5", Port: 61005},
-				},
+
+		Expect(istioVisibleRoutes.Routes).To(HaveLen(1))
+		route := istioVisibleRoutes.Routes[0]
+		Expect(route.Hostname).To(Equal("some-url"))
+		Expect(route.Backends).To(Equal(&api.BackendSet{
+			Backends: []*api.Backend{
+				{Address: "10.10.1.5", Port: 61005},
 			},
-		}))
+		},
+		))
 
 		By("cc maps another backend to the same route")
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
@@ -232,17 +235,32 @@ var _ = Describe("Copilot", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("istio client sees that new stuff")
+		By("istio client sees both routes and their respective backends")
 		istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(istioVisibleRoutes.Backends).To(HaveLen(2))
+
+		routes := istioVisibleRoutes.Routes
+		Expect(routes).To(HaveLen(2))
 		//The list of backends does not have a guaranteed order, this test is flakey if you assert on the whole set of Routes at once
-		Expect(istioVisibleRoutes.Backends["some-url"].Backends).To(ConsistOf(
-			&api.Backend{Address: "10.10.1.5", Port: 61005},
-			&api.Backend{Address: "10.10.1.6", Port: 61006},
-		))
-		Expect(istioVisibleRoutes.Backends["some-url-b"].Backends).To(ConsistOf(
-			&api.Backend{Address: "10.10.1.6", Port: 61006},
+		Expect(istioVisibleRoutes.Routes).To(ConsistOf([]*api.RouteWithBackends{
+			&api.RouteWithBackends{
+				Hostname: "some-url",
+				Backends: &api.BackendSet{
+					Backends: []*api.Backend{
+						&api.Backend{Address: "10.10.1.5", Port: 61005},
+						&api.Backend{Address: "10.10.1.6", Port: 61006},
+					},
+				},
+			},
+			&api.RouteWithBackends{
+				Hostname: "some-url-b",
+				Backends: &api.BackendSet{
+					Backends: []*api.Backend{
+						&api.Backend{Address: "10.10.1.6", Port: 61006},
+					},
+				},
+			},
+		},
 		))
 
 		By("cc unmaps the first backend from the first route")
@@ -261,13 +279,12 @@ var _ = Describe("Copilot", func() {
 		istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 		By("istio client sees the updated stuff")
-		Expect(istioVisibleRoutes.Backends).To(Equal(map[string]*api.BackendSet{
-			"some-url": {
-				Backends: []*api.Backend{
-					{Address: "10.10.1.6", Port: 61006},
-				},
-			},
-		}))
+		Expect(istioVisibleRoutes.Routes).To(HaveLen(1))
+		route = istioVisibleRoutes.Routes[0]
+		Expect(route.Hostname).To(Equal("some-url"))
+		Expect(route.Backends.Backends).To(ConsistOf(
+			&api.Backend{Address: "10.10.1.6", Port: 61006},
+		))
 
 		By("cc maps an internal route")
 		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
@@ -290,9 +307,11 @@ var _ = Describe("Copilot", func() {
 		istioVisibleInternalRoutes, err := istioClient.InternalRoutes(context.Background(), new(api.InternalRoutesRequest))
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(istioVisibleRoutes.Backends).To(HaveLen(1))
+		Expect(istioVisibleRoutes.Routes).To(HaveLen(1))
 		//The list of backends does not have a guaranteed order, this test is flakey if you assert on the whole set of Routes at once
-		Expect(istioVisibleRoutes.Backends["some-url"].Backends).To(ConsistOf(
+		route = istioVisibleRoutes.Routes[0]
+		Expect(route.Hostname).To(Equal("some-url"))
+		Expect(route.Backends.Backends).To(ConsistOf(
 			&api.Backend{Address: "10.10.1.6", Port: 61006},
 		))
 

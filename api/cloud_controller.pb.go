@@ -39,6 +39,7 @@ It has these top-level messages:
 	InternalRouteWithBackends
 	RoutesRequest
 	RoutesResponse
+	RouteWithBackends
 	BackendSet
 	Backend
 	HealthResponse

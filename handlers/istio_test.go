@@ -247,7 +247,7 @@ var _ = Describe("Istio Handlers", func() {
 			ctx := context.Background()
 			externalRouteResp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(externalRouteResp.Backends).To(HaveLen(0))
+			Expect(externalRouteResp.Routes).To(HaveLen(0))
 
 			resp, err := handler.InternalRoutes(ctx, new(api.InternalRoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
@@ -279,7 +279,7 @@ var _ = Describe("Istio Handlers", func() {
 
 			externalRouteResp, err = handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(externalRouteResp.Backends).To(HaveLen(0))
+			Expect(externalRouteResp.Routes).To(HaveLen(0))
 
 			resp, err = handler.InternalRoutes(ctx, new(api.InternalRoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
@@ -339,12 +339,18 @@ var _ = Describe("Istio Handlers", func() {
 
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Backends: map[string]*api.BackendSet{
-					"route-a.cfapps.com": expectedExternalRouteBackendsA,
-					"route-b.cfapps.com": expectedExternalRouteBackendsB,
+			Expect(resp.Routes).To(HaveLen(2))
+			Expect(resp.Routes).To(ConsistOf([]*api.RouteWithBackends{
+				&api.RouteWithBackends{
+					Hostname: "route-b.cfapps.com",
+					Backends: expectedExternalRouteBackendsB,
 				},
-			}))
+				&api.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: expectedExternalRouteBackendsA,
+				},
+			},
+			))
 		})
 
 		It("ignores route mappings for routes that do not exist", func() {
@@ -376,8 +382,11 @@ var _ = Describe("Istio Handlers", func() {
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
-				Backends: map[string]*api.BackendSet{
-					"route-b.cfapps.com": expectedExternalRouteBackendsB,
+				Routes: []*api.RouteWithBackends{
+					&api.RouteWithBackends{
+						Hostname: "route-b.cfapps.com",
+						Backends: expectedExternalRouteBackendsB,
+					},
 				},
 			}))
 		})

@@ -28,8 +28,12 @@ message RoutesRequest {
 }
 
 message RoutesResponse {
-  // key is hostname
-  map<string, BackendSet> backends = 1;
+  repeated RouteWithBackends routes = 1;
+}
+
+message RouteWithBackends {
+  string hostname = 1;
+  BackendSet backends = 3;
 }
 
 message BackendSet {

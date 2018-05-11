@@ -71,7 +71,7 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 		return nil, err
 	}
 
-	return &api.RoutesResponse{Backends: c.hostnameToBackendSet(diegoProcessGUIDToBackendSet)}, nil
+	return &api.RoutesResponse{Routes: c.hostnameToBackendSet(diegoProcessGUIDToBackendSet)}, nil
 }
 
 func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*api.InternalRoutesResponse, error) {
@@ -146,7 +146,8 @@ func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 	return 0
 }
 
-func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) map[string]*api.BackendSet {
+func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) []*api.RouteWithBackends {
+	var routes []*api.RouteWithBackends
 	hostnameToBackendSet := make(map[string]*api.BackendSet)
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
@@ -165,11 +166,19 @@ func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.Die
 			if !ok {
 				continue
 			}
+
 			if _, ok := hostnameToBackendSet[route.Hostname()]; !ok {
 				hostnameToBackendSet[route.Hostname()] = &api.BackendSet{Backends: []*api.Backend{}}
 			}
 			hostnameToBackendSet[route.Hostname()].Backends = append(hostnameToBackendSet[route.Hostname()].Backends, backends.Backends...)
 		}
 	}
-	return hostnameToBackendSet
+
+	for hostname, backends := range hostnameToBackendSet {
+		routes = append(routes, &api.RouteWithBackends{
+			Hostname: hostname,
+			Backends: backends,
+		})
+	}
+	return routes
 }
