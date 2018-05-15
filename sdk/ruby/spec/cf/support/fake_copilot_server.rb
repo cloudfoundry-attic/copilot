@@ -2,13 +2,13 @@ class FakeCopilotServer
   attr_reader :port, :host, :handlers
 
   def initialize(handlers)
-    @port = 51002
+    @port = 51_002
     @host = '127.0.0.1'
 
     private_key_content = File.read('spec/cf/fixtures/copilot-server.key')
     cert_content = File.read('spec/cf/fixtures/copilot-server.crt')
     server_creds = GRPC::Core::ServerCredentials.new(
-        nil, [{ private_key: private_key_content, cert_chain: cert_content }], true
+      nil, [{ private_key: private_key_content, cert_chain: cert_content }], true
     )
 
     @server = GRPC::RpcServer.new

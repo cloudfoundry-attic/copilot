@@ -9,9 +9,9 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
+	"code.cloudfoundry.org/copilot/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"code.cloudfoundry.org/copilot/models"
 )
 
 var _ = Describe("Capi Handlers", func() {
@@ -138,15 +138,15 @@ var _ = Describe("Capi Handlers", func() {
 			ctx := context.Background()
 			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{&api.RouteMapping{RouteGuid: "some-route-guid"}})
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{RouteGuid: "some-route-guid"}})
 			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{&api.RouteMapping{CapiProcessGuid: "some-process-guid"}})
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{CapiProcessGuid: "some-process-guid"}})
 			Expect(err.Error()).To(ContainSubstring("required"))
 		})
 
 		It("unmaps the routes", func() {
 			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{&api.RouteMapping{RouteGuid: "to-be-deleted-route-guid", CapiProcessGuid: "some-capi-process-guid"}})
+			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{RouteGuid: "to-be-deleted-route-guid", CapiProcessGuid: "some-capi-process-guid"}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
 			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&models.RouteMapping{
@@ -162,13 +162,13 @@ var _ = Describe("Capi Handlers", func() {
 			_, err := handler.UpsertCapiDiegoProcessAssociation(ctx, &api.UpsertCapiDiegoProcessAssociationRequest{})
 			Expect(err.Error()).To(ContainSubstring("required"))
 			_, err = handler.UpsertCapiDiegoProcessAssociation(ctx, &api.UpsertCapiDiegoProcessAssociationRequest{
-				&api.CapiDiegoProcessAssociation{
+				CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
 					CapiProcessGuid: "some-capi-process-guid",
 				},
 			})
 			Expect(err.Error()).To(ContainSubstring("required"))
 			_, err = handler.UpsertCapiDiegoProcessAssociation(ctx, &api.UpsertCapiDiegoProcessAssociationRequest{
-				&api.CapiDiegoProcessAssociation{
+				CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
 					DiegoProcessGuids: []string{
 						"some-diego-process-guid",
 					},
@@ -180,7 +180,7 @@ var _ = Describe("Capi Handlers", func() {
 		It("associates the capi and diego process guids", func() {
 			ctx := context.Background()
 			_, err := handler.UpsertCapiDiegoProcessAssociation(ctx, &api.UpsertCapiDiegoProcessAssociationRequest{
-				&api.CapiDiegoProcessAssociation{
+				CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
 					CapiProcessGuid: "some-capi-process-guid",
 					DiegoProcessGuids: []string{
 						"some-diego-process-guid-1",
@@ -210,7 +210,7 @@ var _ = Describe("Capi Handlers", func() {
 		It("deletes the association", func() {
 			ctx := context.Background()
 			_, err := handler.DeleteCapiDiegoProcessAssociation(ctx, &api.DeleteCapiDiegoProcessAssociationRequest{
-				"some-capi-process-guid",
+				CapiProcessGuid: "some-capi-process-guid",
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.DeleteCallCount()).To(Equal(1))

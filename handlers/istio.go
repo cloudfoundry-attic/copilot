@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
@@ -147,20 +148,28 @@ func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 }
 
 func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) []*api.RouteWithBackends {
+	type RouteDetails struct {
+		backendSet *api.BackendSet
+		path       string
+	}
+
 	var routes []*api.RouteWithBackends
-	hostnameToBackendSet := make(map[string]*api.BackendSet)
+	hostnameToBackendSet := make(map[string]*RouteDetails)
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
 			continue
 		}
+
 		if strings.HasSuffix(route.Hostname(), ".apps.internal") {
 			continue
 		}
+
 		capiDiegoProcessAssociation := c.CAPIDiegoProcessAssociationsRepo.Get(&routeMapping.CAPIProcessGUID)
 		if capiDiegoProcessAssociation == nil {
 			continue
 		}
+
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			backends, ok := diegoProcessGUIDToBackendSet[models.DiegoProcessGUID(diegoProcessGUID)]
 			if !ok {
@@ -168,16 +177,24 @@ func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.Die
 			}
 
 			if _, ok := hostnameToBackendSet[route.Hostname()]; !ok {
-				hostnameToBackendSet[route.Hostname()] = &api.BackendSet{Backends: []*api.Backend{}}
+				hostnameToBackendSet[route.Hostname()] = &RouteDetails{backendSet: &api.BackendSet{Backends: []*api.Backend{}}}
 			}
-			hostnameToBackendSet[route.Hostname()].Backends = append(hostnameToBackendSet[route.Hostname()].Backends, backends.Backends...)
+
+			hsbs := hostnameToBackendSet[route.Hostname()]
+			hsbs.backendSet.Backends = append(hostnameToBackendSet[route.Hostname()].backendSet.Backends, backends.Backends...)
+			hsbs.path = route.Path
 		}
 	}
 
-	for hostname, backends := range hostnameToBackendSet {
+	for hostname, details := range hostnameToBackendSet {
+		sort.SliceStable(details.backendSet.Backends, func(i, j int) bool {
+			return details.backendSet.Backends[i].Address < details.backendSet.Backends[j].Address
+		})
+
 		routes = append(routes, &api.RouteWithBackends{
 			Hostname: hostname,
-			Backends: backends,
+			Backends: details.backendSet,
+			Path:     details.path,
 		})
 	}
 	return routes

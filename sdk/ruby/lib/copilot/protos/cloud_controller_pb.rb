@@ -26,6 +26,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   add_message "api.Route" do
     optional :guid, :string, 1
     optional :host, :string, 2
+    optional :path, :string, 3
   end
   add_message "api.UpsertRouteRequest" do
     optional :route, :message, 1, "api.Route"

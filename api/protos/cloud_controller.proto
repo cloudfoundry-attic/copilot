@@ -37,6 +37,7 @@ message ListCapiDiegoProcessAssociationsResponse {
 message Route {
   string guid = 1;
   string host = 2;
+  string path = 3;
 }
 
 message UpsertRouteRequest {

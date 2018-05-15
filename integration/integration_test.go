@@ -170,6 +170,7 @@ var _ = Describe("Copilot", func() {
 				Guid: "route-guid-a",
 				Host: "some-url",
 			}})
+
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
@@ -177,9 +178,10 @@ var _ = Describe("Copilot", func() {
 				CapiProcessGuid: "capi-process-guid-a",
 			},
 		})
+
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
-			&api.CapiDiegoProcessAssociation{
+			CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
 				CapiProcessGuid: "capi-process-guid-a",
 				DiegoProcessGuids: []string{
 					"diego-process-guid-a",
@@ -211,7 +213,7 @@ var _ = Describe("Copilot", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
-			&api.CapiDiegoProcessAssociation{
+			CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
 				CapiProcessGuid: "capi-process-guid-b",
 				DiegoProcessGuids: []string{
 					"diego-process-guid-b",
@@ -225,7 +227,9 @@ var _ = Describe("Copilot", func() {
 			Route: &api.Route{
 				Guid: "route-guid-b",
 				Host: "some-url-b",
+				Path: "/some/path",
 			}})
+
 		Expect(err).NotTo(HaveOccurred())
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
@@ -241,7 +245,6 @@ var _ = Describe("Copilot", func() {
 
 		routes := istioVisibleRoutes.Routes
 		Expect(routes).To(HaveLen(2))
-		//The list of backends does not have a guaranteed order, this test is flakey if you assert on the whole set of Routes at once
 		Expect(istioVisibleRoutes.Routes).To(ConsistOf([]*api.RouteWithBackends{
 			&api.RouteWithBackends{
 				Hostname: "some-url",
@@ -254,6 +257,7 @@ var _ = Describe("Copilot", func() {
 			},
 			&api.RouteWithBackends{
 				Hostname: "some-url-b",
+				Path:     "/some/path",
 				Backends: &api.BackendSet{
 					Backends: []*api.Backend{
 						&api.Backend{Address: "10.10.1.6", Port: 61006},
@@ -264,7 +268,7 @@ var _ = Describe("Copilot", func() {
 		))
 
 		By("cc unmaps the first backend from the first route")
-		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{&api.RouteMapping{
+		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{
 			RouteGuid:       "route-guid-a",
 			CapiProcessGuid: "capi-process-guid-a",
 		}})

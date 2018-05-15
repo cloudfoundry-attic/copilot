@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -eo pipefail
+
+docker build -t protobuf-ruby-dependencies .
+docker run -e BUILD_ROOT="/tmp/copilot" -v "${COPILOT_ROOT}:/tmp/copilot" protobuf-ruby-dependencies

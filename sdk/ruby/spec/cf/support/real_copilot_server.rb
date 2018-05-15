@@ -9,20 +9,20 @@ class RealCopilotServer
   end
 
   def initialize
-    @port = 51002
-    @host = "127.0.0.1"
+    @port = 51_002
+    @host = '127.0.0.1'
 
     config = {
-      "ListenAddressForPilot" => "#{host}:51001",
-      "ListenAddressForCloudController" => "#{host}:#{port}",
-      "PilotClientCAPath" => fixture("fakeCA.crt"),
-      "CloudControllerClientCAPath" => fixture("fakeCA.crt"),
-      "ServerCertPath" => fixture("copilot-server.crt"),
-      "ServerKeyPath" => fixture("copilot-server.key"),
-      "BBS" => { "Disable" => true  }
+      'ListenAddressForPilot' => "#{host}:51001",
+      'ListenAddressForCloudController' => "#{host}:#{port}",
+      'PilotClientCAPath' => fixture('fakeCA.crt'),
+      'CloudControllerClientCAPath' => fixture('fakeCA.crt'),
+      'ServerCertPath' => fixture('copilot-server.crt'),
+      'ServerKeyPath' => fixture('copilot-server.key'),
+      'BBS' => { 'Disable' => true }
     }
 
-    config_file = Tempfile.new("copilot-config")
+    config_file = Tempfile.new('copilot-config')
     config_file.write(config.to_json)
     config_file.close
 
@@ -34,6 +34,6 @@ class RealCopilotServer
   end
 
   def stop
-    Process.kill("TERM", @copilot_server)
+    Process.kill('TERM', @copilot_server)
   end
 end

@@ -112,12 +112,12 @@ var _ = Describe("Istio Handlers", func() {
 		expectedExternalRouteBackendsA = &api.BackendSet{
 			Backends: []*api.Backend{
 				{
-					Address: "10.10.1.5",
-					Port:    61005,
-				},
-				{
 					Address: "10.0.40.2",
 					Port:    61008,
+				},
+				{
+					Address: "10.10.1.5",
+					Port:    61005,
 				},
 			},
 		}
@@ -310,6 +310,7 @@ var _ = Describe("Istio Handlers", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-b",
 				Host: "route-b.cfapps.com",
+				Path: "/some/path",
 			})
 			handler.RouteMappingsRepo.Map(&models.RouteMapping{
 				RouteGUID:       "route-guid-a",
@@ -344,6 +345,7 @@ var _ = Describe("Istio Handlers", func() {
 				&api.RouteWithBackends{
 					Hostname: "route-b.cfapps.com",
 					Backends: expectedExternalRouteBackendsB,
+					Path:     "/some/path",
 				},
 				&api.RouteWithBackends{
 					Hostname: "route-a.cfapps.com",

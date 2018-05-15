@@ -11,10 +11,15 @@ type RouteGUID string
 type Route struct {
 	GUID RouteGUID
 	Host string
+	Path string
 }
 
 func (r *Route) Hostname() string {
 	return r.Host
+}
+
+func (r *Route) GetPath() string {
+	return r.Path
 }
 
 type RoutesRepo struct {

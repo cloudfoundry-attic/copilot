@@ -20,4 +20,3 @@ class TestClient < Cloudfoundry::Copilot::Client
     end
   end
 end
-

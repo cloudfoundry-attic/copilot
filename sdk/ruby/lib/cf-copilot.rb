@@ -25,8 +25,8 @@ module Cloudfoundry
         service.health(request)
       end
 
-      def upsert_route(guid:, host:)
-        route = Api::Route.new(guid: guid, host: host)
+      def upsert_route(guid:, host:, path: '')
+        route = Api::Route.new(guid: guid, host: host, path: path)
         request = Api::UpsertRouteRequest.new(route: route)
         service.upsert_route(request)
       rescue GRPC::BadStatus => e
@@ -61,7 +61,8 @@ module Cloudfoundry
           capi_diego_process_association: {
             capi_process_guid: capi_process_guid,
             diego_process_guids: diego_process_guids
-          })
+          }
+        )
 
         service.upsert_capi_diego_process_association(request)
       rescue GRPC::BadStatus => e

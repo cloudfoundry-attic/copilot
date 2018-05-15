@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"code.cloudfoundry.org/copilot/models"
 )
 
 type CAPI struct {
@@ -51,7 +51,7 @@ func (c *CAPI) ListCapiDiegoProcessAssociations(context.Context, *api.ListCapiDi
 		CapiDiegoProcessAssociations: make(map[string]*api.DiegoProcessGuids),
 	}
 	for capiProcessGUID, diegoProcessGUIDs := range c.CAPIDiegoProcessAssociationsRepo.List() {
-		response.CapiDiegoProcessAssociations[string(capiProcessGUID)] = &api.DiegoProcessGuids{diegoProcessGUIDs.ToStringSlice()}
+		response.CapiDiegoProcessAssociations[string(capiProcessGUID)] = &api.DiegoProcessGuids{DiegoProcessGuids: diegoProcessGUIDs.ToStringSlice()}
 	}
 	return response, nil
 }
@@ -65,6 +65,7 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 	route := &models.Route{
 		GUID: models.RouteGUID(request.Route.Guid),
 		Host: request.Route.Host,
+		Path: request.Route.Path,
 	}
 	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil

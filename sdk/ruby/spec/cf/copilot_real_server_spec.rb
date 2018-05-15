@@ -5,8 +5,8 @@ RSpec.describe Cloudfoundry::Copilot do
   before(:all) do
     @server = RealCopilotServer.new
     @client = TestClient.new(
-        @server.host,
-        @server.port
+      @server.host,
+      @server.port
     )
   end
 
@@ -16,8 +16,9 @@ RSpec.describe Cloudfoundry::Copilot do
 
   it 'can upsert a route' do
     @client.upsert_route(
-       guid: 'some-route-guid',
-       host: 'some-route-url'
+      guid: 'some-route-guid',
+      host: 'some-route-url',
+      path: '/some/path'
     )
   end
 
@@ -56,9 +57,25 @@ RSpec.describe Cloudfoundry::Copilot do
 
   it 'can bulk sync' do
     @client.bulk_sync(
-      routes: [{guid: 'some-route-guid', host: 'example.host.com'}],
-      route_mappings: [{route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid'}],
-      capi_diego_process_associations: [{capi_process_guid: 'some-capi-process-guid', diego_process_guids: ['some-diego-process-guid']}]
+      routes: [
+        {
+          guid: 'some-route-guid',
+          host: 'example.host.com',
+          path: '/some/path'
+        }
+      ],
+      route_mappings: [
+        {
+          route_guid: 'some-route-guid',
+          capi_process_guid: 'some-capi-process-guid'
+        }
+      ],
+      capi_diego_process_associations: [
+        {
+          capi_process_guid: 'some-capi-process-guid',
+          diego_process_guids: ['some-diego-process-guid']
+        }
+      ]
     )
   end
 
@@ -72,107 +89,119 @@ RSpec.describe Cloudfoundry::Copilot do
     context 'upsert route' do
       before do
         allow(service).to receive(:upsert_route)
-        .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
+        expect do
           @client.upsert_route(
             guid: 'some-route-guid',
             host: 'some-route-url'
           )
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        end.to raise_error(
+          Cloudfoundry::Copilot::Client::PilotError,
+          'some cause - {:data=>"metadata"}'
+        )
       end
     end
 
     context 'delete route' do
       before do
         allow(service).to receive(:delete_route)
-        .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
+        expect do
           @client.delete_route(
             guid: 'some-route-guid'
           )
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        end.to raise_error(
+          Cloudfoundry::Copilot::Client::PilotError,
+          'some cause - {:data=>"metadata"}'
+        )
       end
     end
 
     context 'map route' do
       before do
         allow(service).to receive(:map_route)
-        .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
+        expect do
           @client.map_route(
             capi_process_guid: 'some-capi-process-guid',
             route_guid: 'some-route-guid'
           )
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        end.to raise_error(
+          Cloudfoundry::Copilot::Client::PilotError,
+          'some cause - {:data=>"metadata"}'
+        )
       end
     end
 
     context 'unmap route' do
       before do
         allow(service).to receive(:unmap_route)
-        .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::Unknown.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
+        expect do
           @client.unmap_route(
             capi_process_guid: 'some-capi-process-guid',
             route_guid: 'some-route-guid'
           )
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        end.to raise_error(
+          Cloudfoundry::Copilot::Client::PilotError,
+          'some cause - {:data=>"metadata"}'
+        )
       end
     end
 
-    context 'upsert cdpas' do
+    context 'upsert capi diego process association' do
       before do
         allow(service).to receive(:upsert_capi_diego_process_association)
-        .and_raise(GRPC::Cancelled.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::Cancelled.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
+        expect do
           @client.upsert_capi_diego_process_association(
             capi_process_guid: 'some-capi-process-guid',
             diego_process_guids: ['some-diego-guid']
           )
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        end.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
       end
     end
 
-    context 'delete cdpas' do
+    context 'delete capi diego process association' do
       before do
         allow(service).to receive(:delete_capi_diego_process_association)
-        .and_raise(GRPC::Cancelled.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::Cancelled.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
-          @client.delete_capi_diego_process_association( capi_process_guid: 'some-capi-process-guid')
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        expect do
+          @client.delete_capi_diego_process_association(capi_process_guid: 'some-capi-process-guid')
+        end.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
       end
     end
 
     context 'bulk sync' do
       before do
         allow(service).to receive(:bulk_sync)
-        .and_raise(GRPC::DeadlineExceeded.new('some cause', data: 'metadata'))
+          .and_raise(GRPC::DeadlineExceeded.new('some cause', data: 'metadata'))
       end
 
       it 'raises a PilotError' do
-        expect {
+        expect do
           @client.bulk_sync(routes: [],
                             route_mappings: [],
                             capi_diego_process_associations: [])
-        }.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
+        end.to raise_error(Cloudfoundry::Copilot::Client::PilotError, 'some cause - {:data=>"metadata"}')
       end
     end
   end
