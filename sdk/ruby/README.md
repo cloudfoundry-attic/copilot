@@ -7,7 +7,6 @@
 
 ### How to generate services and messages from the `.proto` file
 ```
-export COPILOT_ROOT=$(pwd)
 pushd sdk/ruby
   bin/dockerized-rebuild-proto
 popd
@@ -22,7 +21,6 @@ popd
 
 ### How to build and install the `cf-copilot` ruby gem
 ```
-export COPILOT_ROOT=$(pwd)
 pushd sdk/ruby
   bin/build-and-install-copilot-gem
 popd
