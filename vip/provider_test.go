@@ -11,9 +11,19 @@ import (
 
 var _ = Describe("Provider", func() {
 
-	var provider *vip.Provider
+	var (
+		provider *vip.Provider
+		cidr     *net.IPNet
+	)
+
 	BeforeEach(func() {
-		provider = &vip.Provider{}
+		var err error
+		_, cidr, err = net.ParseCIDR("127.128.0.0/9")
+		Expect(err).NotTo(HaveOccurred())
+
+		provider = &vip.Provider{
+			CIDR: cidr,
+		}
 	})
 
 	It("returns a parsable IP", func() {
@@ -40,21 +50,30 @@ var _ = Describe("Provider", func() {
 		Expect(vip2).NotTo(Equal(vip3))
 	})
 
-	It("never returns 127.0.0.1 or 127.0.0.0", func() {
-		for i := 0; i < 10000; i++ {
-			vip := provider.Get(fmt.Sprintf("%d", i))
-			Expect(vip).NotTo(Equal("127.0.0.1"), fmt.Sprintf("failed on %d", i))
-			Expect(vip).NotTo(Equal("127.0.0.0"), fmt.Sprintf("failed on %d", i))
-		}
-	})
-
-	It("uses the full range of 127/8", func() {
-		foundPrefixes := map[byte]interface{}{}
+	It("uses the full range of 127.128.0.0/9", func() {
+		foundPrefixes0 := map[byte]interface{}{}
+		foundPrefixes1 := map[byte]interface{}{}
+		foundPrefixes2 := map[byte]interface{}{}
+		foundPrefixes3 := map[byte]interface{}{}
 		for i := 0; i < 10000; i++ {
 			vipStr := provider.Get(fmt.Sprintf("%d", i))
 			vip := net.ParseIP(vipStr)
-			foundPrefixes[vip.To4()[1]] = true
+			foundPrefixes0[vip.To4()[0]] = true
+			foundPrefixes1[vip.To4()[1]] = true
+			foundPrefixes2[vip.To4()[2]] = true
+			foundPrefixes3[vip.To4()[3]] = true
 		}
-		Expect(foundPrefixes).To(HaveLen(256))
+		Expect(foundPrefixes0).To(HaveLen(1))
+		Expect(foundPrefixes1).To(HaveLen(128))
+		Expect(foundPrefixes2).To(HaveLen(256))
+		Expect(foundPrefixes3).To(HaveLen(256))
+	})
+
+	It("returns ips from within the specified range", func() {
+		for i := 0; i < 10000; i++ {
+			vipStr := provider.Get(fmt.Sprintf("%d", i))
+			vip := net.ParseIP(vipStr)
+			Expect(cidr.Contains(vip)).To(BeTrue(), fmt.Sprintf("%s is not within %s", vipStr, cidr))
+		}
 	})
 })

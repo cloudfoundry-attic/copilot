@@ -28,6 +28,7 @@ type Config struct {
 	CloudControllerClientCAPath     string `validate:"nonzero"`
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
+	VIPCIDR                         string `validate:"nonzero"`
 
 	BBS *BBSConfig
 }
@@ -56,6 +57,7 @@ func Load(path string) (*Config, error) {
 	if c.BBS.Disable {
 		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
 	}
+
 	err = validator.Validate(c)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config: %s", err)

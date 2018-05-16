@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
@@ -78,13 +79,22 @@ func mainWithError() error {
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
 
+	_, cidr, err := net.ParseCIDR(cfg.VIPCIDR)
+	if err != nil {
+		return fmt.Errorf("parsing vip cidr: %s", err)
+	}
+
+	vipProvider := &vip.Provider{
+		CIDR: cidr,
+	}
+
 	internalRoutesRepo := &internalroutes.Repo{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		BBSClient:                        bbsClient,
 		Logger:                           logger,
-		VIPProvider:                      &vip.Provider{},
+		VIPProvider:                      vipProvider,
 	}
 
 	istioHandler := &handlers.Istio{

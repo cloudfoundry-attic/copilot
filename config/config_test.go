@@ -29,6 +29,7 @@ var _ = Describe("Config", func() {
 			CloudControllerClientCAPath:     "some-cloud-controller-ca-path",
 			ServerCertPath:                  "some-cert-path",
 			ServerKeyPath:                   "some-key-path",
+			VIPCIDR:                         "127.128.0.0/9",
 			BBS: &config.BBSConfig{
 				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",
@@ -81,6 +82,7 @@ var _ = Describe("Config", func() {
 		Entry("CloudControllerClientCAPath", "CloudControllerClientCAPath"),
 		Entry("ServerCertPath", "ServerCertPath"),
 		Entry("ServerKeyPath", "ServerKeyPath"),
+		Entry("VIPCIDR", "VIPCIDR"),
 	)
 
 	DescribeTable("required BBS fields",

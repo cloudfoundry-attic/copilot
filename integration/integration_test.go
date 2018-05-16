@@ -124,6 +124,7 @@ var _ = Describe("Copilot", func() {
 			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
 			ServerCertPath:                  copilotTLSFiles.ServerCert,
 			ServerKeyPath:                   copilotTLSFiles.ServerKey,
+			VIPCIDR:                         "127.128.0.0/9",
 			BBS: &config.BBSConfig{
 				ServerCACertPath: bbsTLSFiles.ServerCA,
 				ClientCertPath:   bbsTLSFiles.ClientCert,
@@ -335,7 +336,7 @@ var _ = Describe("Copilot", func() {
 		Expect(istioVisibleInternalRoutes.InternalRoutes).To(HaveLen(1))
 		internalRoute := istioVisibleInternalRoutes.InternalRoutes[0]
 		Expect(internalRoute.Hostname).To(Equal("route.apps.internal"))
-		Expect(internalRoute.Vip).To(Equal("127.254.10.143")) // magic number, if you change the VIP provider, you'll need to change this too!
+		Expect(internalRoute.Vip).To(Equal("127.138.254.35")) // magic number, if you change the VIP provider, you'll need to change this too!
 
 		By("checking that the backend for the capi process is returned for that route")
 		Expect(internalRoute.Backends.Backends).To(ConsistOf(
@@ -356,12 +357,32 @@ var _ = Describe("Copilot", func() {
 		internalRoute = istioVisibleInternalRoutes.InternalRoutes[0]
 		Expect(istioVisibleInternalRoutes.InternalRoutes).To(HaveLen(1))
 		Expect(internalRoute.Hostname).To(Equal("route.apps.internal"))
-		Expect(internalRoute.Vip).To(Equal("127.254.10.143")) // magic number, if you change the VIP provider, you'll need to change this too!
+		Expect(internalRoute.Vip).To(Equal("127.138.254.35")) // magic number, if you change the VIP provider, you'll need to change this too!
 		By("checking that backends for both capi processes are returned for that route")
 		Expect(internalRoute.Backends.Backends).To(ConsistOf(
 			&api.Backend{Address: "10.255.1.16", Port: 8080},
 			&api.Backend{Address: "10.255.0.34", Port: 8080},
 		))
+	})
+
+	Context("when the vip cidr is invalid", func() {
+		BeforeEach(func() {
+			// stop copilot
+			session.Interrupt()
+			Eventually(session, "2s").Should(gexec.Exit())
+			serverConfig.VIPCIDR = "not an ip"
+			Expect(serverConfig.Save(configFilePath)).To(Succeed())
+		})
+
+		It("exits with a helpful error message", func() {
+			cmd := exec.Command(binaryPath, "-config", configFilePath)
+			var err error
+			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, "2s").Should(gexec.Exit(1))
+			Expect(session.Out).To(gbytes.Say(`parsing vip cidr: invalid CIDR address: not an ip`))
+		})
 	})
 
 	Context("when the BBS is not available", func() {
