@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+
+echo "Generating services and messages for cf-copilot..."
+
+pushd "${BUILD_ROOT}/api/protos"
+  protoc --ruby_out="${BUILD_ROOT}/sdk/ruby/lib/copilot/protos" \
+  --grpc_out="${BUILD_ROOT}/sdk/ruby/lib/copilot/protos" \
+  --plugin="protoc-gen-grpc=$(which grpc_tools_ruby_protoc_plugin)" \
+  ./cloud_controller.proto
+popd
