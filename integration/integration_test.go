@@ -267,6 +267,19 @@ var _ = Describe("Copilot", func() {
 		},
 		))
 
+		Expect(istioVisibleRoutes.Backends).To(HaveKeyWithValue("some-url", &api.BackendSet{
+			Backends: []*api.Backend{
+				&api.Backend{Address: "10.10.1.5", Port: 61005},
+				&api.Backend{Address: "10.10.1.6", Port: 61006},
+			},
+		}))
+
+		Expect(istioVisibleRoutes.Backends).To(HaveKeyWithValue("some-url-b", &api.BackendSet{
+			Backends: []*api.Backend{
+				&api.Backend{Address: "10.10.1.6", Port: 61006},
+			},
+		}))
+
 		By("cc unmaps the first backend from the first route")
 		_, err = ccClient.UnmapRoute(context.Background(), &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{
 			RouteGuid:       "route-guid-a",

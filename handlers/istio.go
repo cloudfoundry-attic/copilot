@@ -72,7 +72,15 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 		return nil, err
 	}
 
-	return &api.RoutesResponse{Routes: c.hostnameToBackendSet(diegoProcessGUIDToBackendSet)}, nil
+	// TODO: highly inefficient but we will be removing this field
+	// once the Backends field has been deprecated in istio-pilot
+	routesWithBackends := c.hostnameToBackendSet(diegoProcessGUIDToBackendSet)
+	backends := make(map[string]*api.BackendSet)
+	for _, route := range routesWithBackends {
+		backends[route.GetHostname()] = route.GetBackends()
+	}
+
+	return &api.RoutesResponse{Backends: backends, Routes: routesWithBackends}, nil
 }
 
 func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*api.InternalRoutesResponse, error) {

@@ -28,8 +28,9 @@ message RoutesRequest {
 }
 
 message RoutesResponse {
-  reserved 1;
-  reserved "backends";
+  // key is hostname
+  // field 1 will be reserved in a future update
+  map<string, BackendSet> backends = 1;
   repeated RouteWithBackends routes = 2;
 }
 

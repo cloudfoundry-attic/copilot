@@ -353,6 +353,9 @@ var _ = Describe("Istio Handlers", func() {
 				},
 			},
 			))
+
+			Expect(resp.Backends).To(HaveKeyWithValue("route-a.cfapps.com", expectedExternalRouteBackendsA))
+			Expect(resp.Backends).To(HaveKeyWithValue("route-b.cfapps.com", expectedExternalRouteBackendsB))
 		})
 
 		It("ignores route mappings for routes that do not exist", func() {
@@ -384,6 +387,9 @@ var _ = Describe("Istio Handlers", func() {
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.RoutesResponse{
+				Backends: map[string]*api.BackendSet{
+					"route-b.cfapps.com": expectedExternalRouteBackendsB,
+				},
 				Routes: []*api.RouteWithBackends{
 					&api.RouteWithBackends{
 						Hostname: "route-b.cfapps.com",
