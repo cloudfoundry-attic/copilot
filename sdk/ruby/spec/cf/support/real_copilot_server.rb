@@ -19,6 +19,7 @@ class RealCopilotServer
       'CloudControllerClientCAPath' => fixture('fakeCA.crt'),
       'ServerCertPath' => fixture('copilot-server.crt'),
       'ServerKeyPath' => fixture('copilot-server.key'),
+      'VIPCIDR' => "127.128.0.0/9",
       'BBS' => { 'Disable' => true }
     }
 
