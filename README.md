@@ -1,6 +1,10 @@
 # Copilot
 
-To help Pilot work with Cloud Foundry
+To help Istio Pilot work with Cloud Foundry
+
+You probably want to deploy this using [Istio Release](https://github.com/cloudfoundry/istio-release).
+
+## Development
 
 To get started:
 
