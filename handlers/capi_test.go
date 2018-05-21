@@ -239,10 +239,13 @@ var _ = Describe("Capi Handlers", func() {
 					RouteGuid:       "route-guid-a",
 					CapiProcessGuid: "some-capi-process-guid",
 				}},
-				Routes: []*api.Route{{
-					Guid: "route-guid-a",
-					Host: "example.host.com",
-				}},
+				Routes: []*api.Route{
+					{
+						Guid: "route-guid-a",
+						Host: "example.host.com",
+						Path: "/nothing/matters",
+					},
+				},
 				CapiDiegoProcessAssociations: []*api.CapiDiegoProcessAssociation{{
 					CapiProcessGuid: "some-capi-process-guid",
 					DiegoProcessGuids: []string{
@@ -260,10 +263,13 @@ var _ = Describe("Capi Handlers", func() {
 			}}))
 
 			Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
-			Expect(fakeRoutesRepo.SyncArgsForCall(0)).To(Equal([]*models.Route{{
-				GUID: "route-guid-a",
-				Host: "example.host.com",
-			}}))
+			Expect(fakeRoutesRepo.SyncArgsForCall(0)).To(Equal([]*models.Route{
+				{
+					GUID: "route-guid-a",
+					Host: "example.host.com",
+					Path: "/nothing/matters",
+				},
+			}))
 
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncCallCount()).To(Equal(1))
 			Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncArgsForCall(0)).To(Equal([]*models.CAPIDiegoProcessAssociation{{
