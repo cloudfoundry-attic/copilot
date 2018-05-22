@@ -66,6 +66,19 @@ var _ = Describe("Copilot", func() {
 		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list", func(w http.ResponseWriter, req *http.Request) {
 			actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
 				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
+					{
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
+							State:        bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address:         "10.10.1.3",
+								InstanceAddress: "10.255.1.13",
+								Ports: []*bbsmodels.PortMapping{
+									{ContainerPort: 8080, HostPort: 61003},
+								},
+							},
+						},
+					},
 					{ // this instance only has SSH port, not app port.  it shouldn't show up in route results
 						Instance: &bbsmodels.ActualLRP{
 							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
@@ -102,6 +115,19 @@ var _ = Describe("Copilot", func() {
 								Ports: []*bbsmodels.PortMapping{
 									{ContainerPort: 2222, HostPort: 61008},
 									{ContainerPort: 8080, HostPort: 61006},
+								},
+							},
+						},
+					},
+					{
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-other", 1, "domain1"),
+							State:        bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address:         "10.10.1.7",
+								InstanceAddress: "10.255.0.35",
+								Ports: []*bbsmodels.PortMapping{
+									{ContainerPort: 8080, HostPort: 61111},
 								},
 							},
 						},
@@ -200,10 +226,12 @@ var _ = Describe("Copilot", func() {
 		Expect(route.Hostname).To(Equal("some-url"))
 		Expect(route.Backends).To(Equal(&api.BackendSet{
 			Backends: []*api.Backend{
+				{Address: "10.10.1.3", Port: 61003},
 				{Address: "10.10.1.5", Port: 61005},
 			},
-		},
-		))
+		}))
+		Expect(route.CapiProcessGuid).To(Equal("capi-process-guid-a"))
+		Expect(route.Path).To(BeEmpty())
 
 		By("cc maps another backend to the same route")
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
@@ -213,6 +241,7 @@ var _ = Describe("Copilot", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+
 		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
 			CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
 				CapiProcessGuid: "capi-process-guid-b",
@@ -227,15 +256,25 @@ var _ = Describe("Copilot", func() {
 		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
 			Route: &api.Route{
 				Guid: "route-guid-b",
-				Host: "some-url-b",
+				Host: "some-url",
 				Path: "/some/path",
 			}})
-
 		Expect(err).NotTo(HaveOccurred())
+
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
 				RouteGuid:       "route-guid-b",
-				CapiProcessGuid: "capi-process-guid-b",
+				CapiProcessGuid: "capi-process-guid-other",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
+			CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
+				CapiProcessGuid: "capi-process-guid-other",
+				DiegoProcessGuids: []string{
+					"diego-process-guid-other",
+				},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -245,39 +284,36 @@ var _ = Describe("Copilot", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := istioVisibleRoutes.Routes
-		Expect(routes).To(HaveLen(2))
+		Expect(routes).To(HaveLen(3))
 		Expect(istioVisibleRoutes.Routes).To(ConsistOf([]*api.RouteWithBackends{
+			&api.RouteWithBackends{
+				Hostname: "some-url",
+				Path:     "/some/path",
+				Backends: &api.BackendSet{
+					Backends: []*api.Backend{
+						&api.Backend{Address: "10.10.1.7", Port: 61111},
+					},
+				},
+				CapiProcessGuid: "capi-process-guid-other",
+			},
 			&api.RouteWithBackends{
 				Hostname: "some-url",
 				Backends: &api.BackendSet{
 					Backends: []*api.Backend{
+						&api.Backend{Address: "10.10.1.3", Port: 61003},
 						&api.Backend{Address: "10.10.1.5", Port: 61005},
-						&api.Backend{Address: "10.10.1.6", Port: 61006},
 					},
 				},
+				CapiProcessGuid: "capi-process-guid-a",
 			},
 			&api.RouteWithBackends{
-				Hostname: "some-url-b",
-				Path:     "/some/path",
+				Hostname: "some-url",
 				Backends: &api.BackendSet{
 					Backends: []*api.Backend{
 						&api.Backend{Address: "10.10.1.6", Port: 61006},
 					},
 				},
-			},
-		},
-		))
-
-		Expect(istioVisibleRoutes.Backends).To(HaveKeyWithValue("some-url", &api.BackendSet{
-			Backends: []*api.Backend{
-				&api.Backend{Address: "10.10.1.5", Port: 61005},
-				&api.Backend{Address: "10.10.1.6", Port: 61006},
-			},
-		}))
-
-		Expect(istioVisibleRoutes.Backends).To(HaveKeyWithValue("some-url-b", &api.BackendSet{
-			Backends: []*api.Backend{
-				&api.Backend{Address: "10.10.1.6", Port: 61006},
+				CapiProcessGuid: "capi-process-guid-b",
 			},
 		}))
 
@@ -361,6 +397,7 @@ var _ = Describe("Copilot", func() {
 		By("checking that backends for both capi processes are returned for that route")
 		Expect(internalRoute.Backends.Backends).To(ConsistOf(
 			&api.Backend{Address: "10.255.1.16", Port: 8080},
+			&api.Backend{Address: "10.255.1.13", Port: 8080},
 			&api.Backend{Address: "10.255.0.34", Port: 8080},
 		))
 	})
@@ -420,7 +457,7 @@ var _ = Describe("Copilot", func() {
 				WaitForHealthy(istioClient, ccClient)
 				_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
 					Route: &api.Route{
-						Guid: "route-guid-a",
+						Guid: "route-guid-xyz",
 						Host: "some-url",
 					}})
 				Expect(err).NotTo(HaveOccurred())

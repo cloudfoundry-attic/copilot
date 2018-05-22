@@ -28,9 +28,8 @@ message RoutesRequest {
 }
 
 message RoutesResponse {
-  // key is hostname
-  // field 1 will be reserved in a future update
-  map<string, BackendSet> backends = 1;
+  reserved 1;
+  reserved "backends";
   repeated RouteWithBackends routes = 2;
 }
 
@@ -38,6 +37,7 @@ message RouteWithBackends {
   string hostname = 1;
   string path = 2;
   BackendSet backends = 3;
+  string capi_process_guid = 4;
 }
 
 message BackendSet {

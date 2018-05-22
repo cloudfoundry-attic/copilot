@@ -72,15 +72,9 @@ func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse
 		return nil, err
 	}
 
-	// TODO: highly inefficient but we will be removing this field
-	// once the Backends field has been deprecated in istio-pilot
-	routesWithBackends := c.hostnameToBackendSet(diegoProcessGUIDToBackendSet)
-	backends := make(map[string]*api.BackendSet)
-	for _, route := range routesWithBackends {
-		backends[route.GetHostname()] = route.GetBackends()
-	}
+	routesWithBackends := c.collectRoutes(diegoProcessGUIDToBackendSet)
 
-	return &api.RoutesResponse{Backends: backends, Routes: routesWithBackends}, nil
+	return &api.RoutesResponse{Routes: routesWithBackends}, nil
 }
 
 func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*api.InternalRoutesResponse, error) {
@@ -155,14 +149,15 @@ func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 	return 0
 }
 
-func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) []*api.RouteWithBackends {
+func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) []*api.RouteWithBackends {
 	type RouteDetails struct {
-		backendSet *api.BackendSet
-		path       string
+		hostname        string
+		backendSet      *api.BackendSet
+		path            string
+		capiProcessGUID string
 	}
 
 	var routes []*api.RouteWithBackends
-	hostnameToBackendSet := make(map[string]*RouteDetails)
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
@@ -178,32 +173,27 @@ func (c *Istio) hostnameToBackendSet(diegoProcessGUIDToBackendSet map[models.Die
 			continue
 		}
 
+		var sets []*api.Backend
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			backends, ok := diegoProcessGUIDToBackendSet[models.DiegoProcessGUID(diegoProcessGUID)]
 			if !ok {
 				continue
 			}
 
-			if _, ok := hostnameToBackendSet[route.Hostname()]; !ok {
-				hostnameToBackendSet[route.Hostname()] = &RouteDetails{backendSet: &api.BackendSet{Backends: []*api.Backend{}}}
-			}
-
-			hsbs := hostnameToBackendSet[route.Hostname()]
-			hsbs.backendSet.Backends = append(hostnameToBackendSet[route.Hostname()].backendSet.Backends, backends.Backends...)
-			hsbs.path = route.Path
+			sets = append(sets, backends.Backends...)
 		}
-	}
 
-	for hostname, details := range hostnameToBackendSet {
-		sort.SliceStable(details.backendSet.Backends, func(i, j int) bool {
-			return details.backendSet.Backends[i].Address < details.backendSet.Backends[j].Address
+		sort.SliceStable(sets, func(i, j int) bool {
+			return sets[i].Address < sets[j].Address
 		})
 
 		routes = append(routes, &api.RouteWithBackends{
-			Hostname: hostname,
-			Backends: details.backendSet,
-			Path:     details.path,
+			Hostname:        route.Hostname(),
+			Path:            route.Path,
+			Backends:        &api.BackendSet{Backends: sets},
+			CapiProcessGuid: string(routeMapping.CAPIProcessGUID),
 		})
 	}
+
 	return routes
 }
