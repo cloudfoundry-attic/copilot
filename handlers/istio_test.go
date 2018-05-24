@@ -305,7 +305,7 @@ var _ = Describe("Istio Handlers", func() {
 		It("returns the routes for each running backend instance", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-a",
-				Host: "route-a.cfapps.com",
+				Host: "ROUTE-a.cfapps.com",
 			})
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-b",

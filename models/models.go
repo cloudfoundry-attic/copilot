@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -15,7 +16,7 @@ type Route struct {
 }
 
 func (r *Route) Hostname() string {
-	return r.Host
+	return strings.ToLower(r.Host)
 }
 
 func (r *Route) GetPath() string {

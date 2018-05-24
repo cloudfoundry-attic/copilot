@@ -67,6 +67,17 @@ var _ = Describe("Handler Models", func() {
 			Expect(r).To(Equal(updatedRoute))
 		})
 
+		It("downcases hosts", func() {
+			route := &models.Route{
+				Host: "HOST.example.com",
+				GUID: "some-route-guid",
+			}
+
+			routesRepo.Upsert(route)
+			r, _ := routesRepo.Get("some-route-guid")
+			Expect(r.Hostname()).To(Equal("host.example.com"))
+		})
+
 		It("can Sync routes", func() {
 			route := &models.Route{
 				Host: "host.example.com",
