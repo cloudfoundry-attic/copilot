@@ -302,7 +302,7 @@ var _ = Describe("Istio Handlers", func() {
 	})
 
 	Describe("listing Routes (using real repos, to cover more integration-y things)", func() {
-		It("returns the routes for each running backend instance", func() {
+		It("returns the sorted routes for each running backend instance", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-a",
 				Host: "ROUTE-a.cfapps.com",
@@ -341,17 +341,17 @@ var _ = Describe("Istio Handlers", func() {
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.Routes).To(HaveLen(2))
-			Expect(resp.Routes).To(ConsistOf([]*api.RouteWithBackends{
+			Expect(resp.Routes).To(Equal([]*api.RouteWithBackends{
+				&api.RouteWithBackends{
+					Hostname:        "route-a.cfapps.com",
+					Backends:        expectedExternalRouteBackendsA,
+					CapiProcessGuid: "capi-process-guid-a",
+				},
 				&api.RouteWithBackends{
 					Hostname:        "route-b.cfapps.com",
 					Backends:        expectedExternalRouteBackendsB,
 					Path:            "/some/path",
 					CapiProcessGuid: "capi-process-guid-b",
-				},
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsA,
-					CapiProcessGuid: "capi-process-guid-a",
 				},
 			},
 			))

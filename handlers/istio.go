@@ -195,5 +195,9 @@ func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProce
 		})
 	}
 
+	sort.SliceStable(routes, func(i, j int) bool {
+		return routes[i].CapiProcessGuid < routes[j].CapiProcessGuid
+	})
+
 	return routes
 }
