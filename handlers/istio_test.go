@@ -346,15 +346,15 @@ var _ = Describe("Istio Handlers", func() {
 			Expect(resp.Routes).To(HaveLen(2))
 			Expect(resp.Routes).To(Equal([]*api.RouteWithBackends{
 				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsA,
-					CapiProcessGuid: "capi-process-guid-a",
-				},
-				&api.RouteWithBackends{
 					Hostname:        "route-b.cfapps.com",
 					Backends:        expectedExternalRouteBackendsB,
 					Path:            "/some/path",
 					CapiProcessGuid: "capi-process-guid-b",
+				},
+				&api.RouteWithBackends{
+					Hostname:        "route-a.cfapps.com",
+					Backends:        expectedExternalRouteBackendsA,
+					CapiProcessGuid: "capi-process-guid-a",
 				},
 			},
 			))
@@ -377,6 +377,52 @@ var _ = Describe("Istio Handlers", func() {
 					},
 				},
 			}))
+		})
+
+		It("sorts routes with multiple context paths from shortest to longest path", func() {
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "route-guid-a",
+				Host: "route-a.cfapps.com",
+			})
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "route-guid-b",
+				Host: "route-a.cfapps.com",
+				Path: "/some/longer/path",
+			})
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "route-guid-c",
+				Host: "route-a.cfapps.com",
+				Path: "/some/path",
+			})
+			handler.RouteMappingsRepo.Map(&models.RouteMapping{
+				RouteGUID:       "route-guid-c",
+				CAPIProcessGUID: "capi-process-guid-b",
+			})
+
+			ctx := context.Background()
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.Routes).To(HaveLen(3))
+			Expect(resp.Routes).To(Equal([]*api.RouteWithBackends{
+				&api.RouteWithBackends{
+					Hostname:        "route-a.cfapps.com",
+					Backends:        expectedExternalRouteBackendsB,
+					Path:            "/some/path",
+					CapiProcessGuid: "capi-process-guid-b",
+				},
+				&api.RouteWithBackends{
+					Hostname:        "route-a.cfapps.com",
+					Backends:        expectedExternalRouteBackendsB,
+					Path:            "/some/longer/path",
+					CapiProcessGuid: "capi-process-guid-b",
+				},
+				&api.RouteWithBackends{
+					Hostname:        "route-a.cfapps.com",
+					Backends:        expectedExternalRouteBackendsA,
+					CapiProcessGuid: "capi-process-guid-a",
+				},
+			},
+			))
 		})
 
 		Context("when the BBSClient is nil (BBS has been disabled)", func() {
