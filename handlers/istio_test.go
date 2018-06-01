@@ -387,7 +387,7 @@ var _ = Describe("Istio Handlers", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-b",
 				Host: "route-a.cfapps.com",
-				Path: "/some/longer/path",
+				Path: "/zxyv/some/longer/path",
 			})
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-c",
@@ -413,7 +413,7 @@ var _ = Describe("Istio Handlers", func() {
 				&api.RouteWithBackends{
 					Hostname:        "route-a.cfapps.com",
 					Backends:        expectedExternalRouteBackendsB,
-					Path:            "/some/longer/path",
+					Path:            "/zxyv/some/longer/path",
 					CapiProcessGuid: "capi-process-guid-b",
 				},
 				&api.RouteWithBackends{

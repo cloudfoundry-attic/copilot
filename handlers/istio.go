@@ -157,7 +157,8 @@ func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProce
 		capiProcessGUID string
 	}
 
-	var routes []*api.RouteWithBackends
+	var routesWithoutPath, routes []*api.RouteWithBackends
+
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
@@ -187,17 +188,26 @@ func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProce
 			return sets[i].Address < sets[j].Address
 		})
 
-		routes = append(routes, &api.RouteWithBackends{
+		builtRoute := &api.RouteWithBackends{
 			Hostname:        route.Hostname(),
 			Path:            route.Path,
 			Backends:        &api.BackendSet{Backends: sets},
 			CapiProcessGuid: string(routeMapping.CAPIProcessGUID),
-		})
+		}
+
+		if route.Path != "" {
+			routes = append(routes, builtRoute)
+		} else {
+			routesWithoutPath = append(routesWithoutPath, builtRoute)
+
+		}
 	}
 
 	sort.SliceStable(routes, func(i, j int) bool {
-		return routes[i].Path > routes[j].Path
+		return len(routes[i].Path) < len(routes[j].Path)
 	})
+
+	routes = append(routes, routesWithoutPath...)
 
 	return routes
 }
