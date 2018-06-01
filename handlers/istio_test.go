@@ -302,16 +302,7 @@ var _ = Describe("Istio Handlers", func() {
 	})
 
 	Describe("listing Routes (using real repos, to cover more integration-y things)", func() {
-		It("returns the sorted routes for each running backend instance", func() {
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-a",
-				Host: "ROUTE-a.cfapps.com",
-			})
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-b",
-				Host: "route-b.cfapps.com",
-				Path: "/some/path",
-			})
+		BeforeEach(func() {
 			handler.RouteMappingsRepo.Map(&models.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "capi-process-guid-a",
@@ -331,6 +322,18 @@ var _ = Describe("Istio Handlers", func() {
 				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
 					"diego-process-guid-b",
 				},
+			})
+		})
+
+		It("returns the sorted routes for each running backend instance", func() {
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "route-guid-a",
+				Host: "ROUTE-a.cfapps.com",
+			})
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "route-guid-b",
+				Host: "route-b.cfapps.com",
+				Path: "/some/path",
 			})
 			ctx := context.Background()
 
@@ -359,28 +362,8 @@ var _ = Describe("Istio Handlers", func() {
 
 		It("ignores route mappings for routes that do not exist", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-b",
-				Host: "route-b.cfapps.com",
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-a",
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-b",
-				CAPIProcessGUID: "capi-process-guid-b",
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-a",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-a",
-				},
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-b",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-b",
-				},
+				GUID: "route-guid-a",
+				Host: "ROUTE-a.cfapps.com",
 			})
 			ctx := context.Background()
 			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
@@ -388,9 +371,9 @@ var _ = Describe("Istio Handlers", func() {
 			Expect(resp).To(Equal(&api.RoutesResponse{
 				Routes: []*api.RouteWithBackends{
 					&api.RouteWithBackends{
-						Hostname:        "route-b.cfapps.com",
-						Backends:        expectedExternalRouteBackendsB,
-						CapiProcessGuid: "capi-process-guid-b",
+						Hostname:        "route-a.cfapps.com",
+						Backends:        expectedExternalRouteBackendsA,
+						CapiProcessGuid: "capi-process-guid-a",
 					},
 				},
 			}))
