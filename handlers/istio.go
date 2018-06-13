@@ -199,12 +199,15 @@ func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProce
 			routes = append(routes, builtRoute)
 		} else {
 			routesWithoutPath = append(routesWithoutPath, builtRoute)
-
 		}
 	}
 
 	sort.SliceStable(routes, func(i, j int) bool {
 		return len(routes[i].Path) < len(routes[j].Path)
+	})
+
+	sort.SliceStable(routesWithoutPath, func(i, j int) bool {
+		return routesWithoutPath[i].Hostname < routesWithoutPath[j].Hostname
 	})
 
 	routes = append(routes, routesWithoutPath...)
