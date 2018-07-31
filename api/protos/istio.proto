@@ -38,6 +38,7 @@ message RouteWithBackends {
   string path = 2;
   BackendSet backends = 3;
   string capi_process_guid = 4;
+  int32 route_weight = 5;
 }
 
 message BackendSet {
