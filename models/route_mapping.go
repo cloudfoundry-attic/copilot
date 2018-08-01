@@ -1,12 +1,15 @@
 package models
 
-import "sync"
+import (
+	"sync"
+)
 
 type CAPIProcessGUID string
 
 type RouteMapping struct {
 	RouteGUID       RouteGUID
 	CAPIProcessGUID CAPIProcessGUID
+	RouteWeight     int32
 }
 
 func (r *RouteMapping) Key() string {
@@ -14,19 +17,34 @@ func (r *RouteMapping) Key() string {
 }
 
 type RouteMappingsRepo struct {
-	Repo map[string]*RouteMapping
+	repo              map[string]*RouteMapping
+	weightDenominator map[RouteGUID]int32
 	sync.Mutex
 }
 
-func (m *RouteMappingsRepo) Map(routeMapping *RouteMapping) {
+func NewRouteMappingsRepo() *RouteMappingsRepo {
+	return &RouteMappingsRepo{
+		repo:              make(map[string]*RouteMapping),
+		weightDenominator: make(map[RouteGUID]int32),
+	}
+}
+
+func (r *RouteMappingsRepo) GetCalculatedWeight(rm *RouteMapping) int32 {
+	percent := (float32(rm.RouteWeight) / float32(r.weightDenominator[rm.RouteGUID])) * 100
+	return int32(percent + 0.5)
+}
+
+func (m *RouteMappingsRepo) Map(rm *RouteMapping) {
 	m.Lock()
-	m.Repo[routeMapping.Key()] = routeMapping
+	i := m.weightDenominator[rm.RouteGUID]
+	m.weightDenominator[rm.RouteGUID] = i + rm.RouteWeight
+	m.repo[rm.Key()] = rm
 	m.Unlock()
 }
 
 func (m *RouteMappingsRepo) Unmap(routeMapping *RouteMapping) {
 	m.Lock()
-	delete(m.Repo, routeMapping.Key())
+	delete(m.repo, routeMapping.Key())
 	m.Unlock()
 }
 
@@ -36,7 +54,7 @@ func (m *RouteMappingsRepo) Sync(routeMappings []*RouteMapping) {
 		repo[routeMapping.Key()] = routeMapping
 	}
 	m.Lock()
-	m.Repo = repo
+	m.repo = repo
 	m.Unlock()
 }
 
@@ -44,7 +62,7 @@ func (m *RouteMappingsRepo) List() map[string]*RouteMapping {
 	list := make(map[string]*RouteMapping)
 
 	m.Lock()
-	for k, v := range m.Repo {
+	for k, v := range m.repo {
 		list[k] = v
 	}
 	m.Unlock()

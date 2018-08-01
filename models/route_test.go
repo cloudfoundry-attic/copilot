@@ -8,96 +8,102 @@ import (
 )
 
 var _ = Describe("RoutesRepo", func() {
-	var routesRepo models.RoutesRepo
+	var routesRepo *models.RoutesRepo
 
 	BeforeEach(func() {
-		routesRepo = models.RoutesRepo{
-			Repo: make(map[models.RouteGUID]*models.Route),
-		}
+		routesRepo = models.NewRoutesRepo()
 	})
 
-	It("can Upsert and Delete routes", func() {
-		route := &models.Route{
-			Host: "host.example.com",
-			GUID: "some-route-guid",
-		}
+	Describe("Delete", func() {
+		It("deletes upsert route", func() {
+			route := &models.Route{
+				Host: "host.example.com",
+				GUID: "some-route-guid",
+			}
 
-		go routesRepo.Upsert(route)
+			go routesRepo.Upsert(route)
 
-		Eventually(func() *models.Route {
+			Eventually(func() *models.Route {
+				r, _ := routesRepo.Get("some-route-guid")
+				return r
+			}).Should(Equal(route))
+
+			routesRepo.Delete(route.GUID)
+
+			r, ok := routesRepo.Get("some-route-guid")
+			Expect(ok).To(BeFalse())
+			Expect(r).To(BeNil())
+		})
+
+		Context("when deleting a route that does not exist", func() {
+			It("does not return an error", func() {
+				route := models.Route{
+					Host: "host.example.com",
+					GUID: "delete-me",
+				}
+
+				routesRepo.Delete(route.GUID)
+				routesRepo.Delete(route.GUID)
+
+				_, ok := routesRepo.Get("delete-me")
+				Expect(ok).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("Upsert", func() {
+		It("updates the same route", func() {
+			route := &models.Route{
+				Host: "host.example.com",
+				GUID: "some-route-guid",
+			}
+
+			updatedRoute := &models.Route{
+				Host: "something.different.com",
+				GUID: route.GUID,
+			}
+
+			routesRepo.Upsert(updatedRoute)
+
 			r, _ := routesRepo.Get("some-route-guid")
-			return r
-		}).Should(Equal(route))
+			Expect(r).To(Equal(updatedRoute))
+		})
 
-		routesRepo.Delete(route.GUID)
+		It("downcases hosts", func() {
+			route := &models.Route{
+				Host: "HOST.example.com",
+				GUID: "some-route-guid",
+			}
 
-		r, ok := routesRepo.Get("some-route-guid")
-		Expect(ok).To(BeFalse())
-		Expect(r).To(BeNil())
-	})
-
-	It("does not error when deleting a route that does not exist", func() {
-		route := models.Route{
-			Host: "host.example.com",
-			GUID: "delete-me",
-		}
-
-		routesRepo.Delete(route.GUID)
-		routesRepo.Delete(route.GUID)
-
-		_, ok := routesRepo.Get("delete-me")
-		Expect(ok).To(BeFalse())
-	})
-
-	It("can Upsert the same route twice", func() {
-		route := &models.Route{
-			Host: "host.example.com",
-			GUID: "some-route-guid",
-		}
-
-		updatedRoute := &models.Route{
-			Host: "something.different.com",
-			GUID: route.GUID,
-		}
-
-		routesRepo.Upsert(updatedRoute)
-
-		r, _ := routesRepo.Get("some-route-guid")
-		Expect(r).To(Equal(updatedRoute))
-	})
-
-	It("downcases hosts", func() {
-		route := &models.Route{
-			Host: "HOST.example.com",
-			GUID: "some-route-guid",
-		}
-
-		routesRepo.Upsert(route)
-		r, _ := routesRepo.Get("some-route-guid")
-		Expect(r.Hostname()).To(Equal("host.example.com"))
-	})
-
-	It("can Sync routes", func() {
-		route := &models.Route{
-			Host: "host.example.com",
-			GUID: "some-route-guid",
-		}
-
-		go routesRepo.Upsert(route)
-
-		Eventually(func() *models.Route {
+			routesRepo.Upsert(route)
 			r, _ := routesRepo.Get("some-route-guid")
-			return r
-		}).Should(Equal(route))
+			Expect(r.Hostname()).To(Equal("host.example.com"))
+		})
+	})
 
-		newRoute := &models.Route{
-			Host: "host.example.com",
-			GUID: "some-other-route-guid",
-		}
+	Describe("Sync", func() {
+		It("saves routes", func() {
+			route := &models.Route{
+				Host: "host.example.com",
+				GUID: "some-route-guid",
+			}
 
-		routesRepo.Sync([]*models.Route{newRoute})
-		Expect(routesRepo.List()).To(Equal(map[string]string{
-			string(newRoute.GUID): newRoute.Host,
-		}))
+			go routesRepo.Upsert(route)
+
+			Eventually(func() *models.Route {
+				r, _ := routesRepo.Get("some-route-guid")
+				return r
+			}).Should(Equal(route))
+
+			newRoute := &models.Route{
+				Host: "host.example.com",
+				GUID: "some-other-route-guid",
+			}
+
+			routesRepo.Sync([]*models.Route{newRoute})
+			Expect(routesRepo.List()).To(Equal(map[string]string{
+				string(newRoute.GUID): newRoute.Host,
+			}))
+		})
 	})
 })

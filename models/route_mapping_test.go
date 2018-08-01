@@ -10,83 +10,120 @@ import (
 var _ = Describe("RouteMappingsRepo", func() {
 	var routeMappingsRepo *models.RouteMappingsRepo
 	BeforeEach(func() {
-		routeMappingsRepo = &models.RouteMappingsRepo{
-			Repo: make(map[string]*models.RouteMapping),
-		}
+		routeMappingsRepo = models.NewRouteMappingsRepo()
 	})
 
-	It("can Map and Unmap Routes", func() {
-		routeMapping := models.RouteMapping{
-			RouteGUID:       "some-route-guid",
-			CAPIProcessGUID: "some-capi-guid",
-		}
+	Describe("GetCalculatedWeight", func() {
+		It("calculates the weight of a route mapping", func() {
+			rmOne := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+				RouteWeight:     1,
+			}
+			routeMappingsRepo.Map(rmOne)
 
-		go routeMappingsRepo.Map(&routeMapping)
+			rmTwo := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-other-capi-guid",
+				RouteWeight:     2,
+			}
+			routeMappingsRepo.Map(rmTwo)
 
-		Eventually(routeMappingsRepo.List).Should(Equal(map[string]*models.RouteMapping{
-			routeMapping.Key(): &routeMapping,
-		}))
-
-		routeMappingsRepo.Unmap(&routeMapping)
-		Expect(routeMappingsRepo.List()).To(HaveLen(0))
+			Expect(routeMappingsRepo.GetCalculatedWeight(rmOne)).To(Equal(int32(33)))
+			Expect(routeMappingsRepo.GetCalculatedWeight(rmTwo)).To(Equal(int32(67)))
+		})
 	})
 
-	It("does not duplicate route mappings", func() {
-		routeMapping := models.RouteMapping{
-			RouteGUID:       "some-route-guid",
-			CAPIProcessGUID: "some-capi-guid",
-		}
+	Describe("Key", func() {
+		It("is unique for process guid and route guid", func() {
+			rmA := models.RouteMapping{
+				RouteGUID:       "route-guid-1",
+				CAPIProcessGUID: "some-capi-guid-1",
+			}
 
-		routeMappingsRepo.Map(&routeMapping)
-		routeMappingsRepo.Map(&routeMapping)
-		routeMappingsRepo.Map(&routeMapping)
+			rmB := models.RouteMapping{
+				RouteGUID:       "route-guid-1",
+				CAPIProcessGUID: "some-capi-guid-2",
+			}
 
-		Expect(routeMappingsRepo.List()).To(HaveLen(1))
+			rmC := models.RouteMapping{
+				RouteGUID:       "route-guid-2",
+				CAPIProcessGUID: "some-capi-guid-1",
+			}
+
+			Expect(rmA.Key()).ToNot(Equal(rmB.Key()))
+			Expect(rmA.Key()).ToNot(Equal(rmC.Key()))
+			Expect(rmB.Key()).ToNot(Equal(rmC.Key()))
+		})
 	})
 
-	It("can Sync RouteMappings", func() {
-		routeMapping := models.RouteMapping{
-			RouteGUID:       "some-route-guid",
-			CAPIProcessGUID: "some-capi-guid",
-		}
+	Describe("Map", func() {
+		It("adds a route to the repo", func() {
+			routeMapping := models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+				RouteWeight:     1,
+			}
 
-		routeMappingsRepo.Map(&routeMapping)
+			go routeMappingsRepo.Map(&routeMapping)
 
-		newRouteMapping := models.RouteMapping{
-			RouteGUID:       "some-other-route-guid",
-			CAPIProcessGUID: "some-other-capi-guid",
-		}
-		updatedRouteMappings := []*models.RouteMapping{&newRouteMapping}
+			Eventually(routeMappingsRepo.List).Should(Equal(map[string]*models.RouteMapping{
+				"some-route-guid-some-capi-guid": &routeMapping,
+			}))
+		})
 
-		routeMappingsRepo.Sync(updatedRouteMappings)
-
-		Eventually(routeMappingsRepo.List).Should(Equal(map[string]*models.RouteMapping{
-			newRouteMapping.Key(): &newRouteMapping,
-		}))
-	})
-
-	Describe("RouteMapping", func() {
-		Describe("Key", func() {
-			It("is unique for process guid and route guid", func() {
-				rmA := models.RouteMapping{
-					RouteGUID:       "route-guid-1",
-					CAPIProcessGUID: "some-capi-guid-1",
+		Context("when submitting the same mapping", func() {
+			It("does not add to the repo", func() {
+				routeMapping := &models.RouteMapping{
+					RouteGUID:       "some-route-guid",
+					CAPIProcessGUID: "some-capi-guid",
 				}
 
-				rmB := models.RouteMapping{
-					RouteGUID:       "route-guid-1",
-					CAPIProcessGUID: "some-capi-guid-2",
-				}
+				routeMappingsRepo.Map(routeMapping)
+				routeMappingsRepo.Map(routeMapping)
+				routeMappingsRepo.Map(routeMapping)
 
-				rmC := models.RouteMapping{
-					RouteGUID:       "route-guid-2",
-					CAPIProcessGUID: "some-capi-guid-1",
-				}
-
-				Expect(rmA.Key()).NotTo(Equal(rmB.Key()))
-				Expect(rmA.Key()).NotTo(Equal(rmC.Key()))
-				Expect(rmB.Key()).NotTo(Equal(rmC.Key()))
+				Expect(routeMappingsRepo.List()).To(HaveLen(1))
 			})
+		})
+	})
+
+	Describe("Unmap", func() {
+		It("removes a route from the repo", func() {
+			routeMapping := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+			}
+
+			routeMappingsRepo.Map(routeMapping)
+			routeMappingsRepo.Unmap(routeMapping)
+
+			Expect(routeMappingsRepo.List()).To(HaveLen(0))
+		})
+	})
+
+	Describe("Sync", func() {
+		It("adds a list of routes to the repo", func() {
+			routeMapping := models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+				RouteWeight:     2,
+			}
+
+			routeMappingsRepo.Map(&routeMapping)
+
+			newRouteMapping := models.RouteMapping{
+				RouteGUID:       "some-other-route-guid",
+				CAPIProcessGUID: "some-other-capi-guid",
+				RouteWeight:     1,
+			}
+			updatedRouteMappings := []*models.RouteMapping{&newRouteMapping}
+
+			routeMappingsRepo.Sync(updatedRouteMappings)
+
+			Expect(routeMappingsRepo.List()).Should(Equal(map[string]*models.RouteMapping{
+				"some-other-route-guid-some-other-capi-guid": &newRouteMapping,
+			}))
 		})
 	})
 })

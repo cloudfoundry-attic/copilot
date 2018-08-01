@@ -203,6 +203,7 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 				RouteGuid:       "route-guid-a",
 				CapiProcessGuid: "capi-process-guid-a",
+				RouteWeight:     1,
 			},
 		})
 
