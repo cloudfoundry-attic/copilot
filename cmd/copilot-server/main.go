@@ -79,12 +79,8 @@ func mainWithError() error {
 		}
 	}
 
-	routesRepo := &models.RoutesRepo{
-		Repo: make(map[models.RouteGUID]*models.Route),
-	}
-	routeMappingsRepo := &models.RouteMappingsRepo{
-		Repo: make(map[string]*models.RouteMapping),
-	}
+	routesRepo := models.NewRoutesRepo()
+	routeMappingsRepo := models.NewRouteMappingsRepo()
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}

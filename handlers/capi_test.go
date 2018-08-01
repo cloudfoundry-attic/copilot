@@ -123,12 +123,14 @@ var _ = Describe("Capi Handlers", func() {
 				RouteMapping: &api.RouteMapping{
 					RouteGuid:       "route-guid-a",
 					CapiProcessGuid: "some-capi-process-guid",
+					RouteWeight:     1,
 				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
 			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&models.RouteMapping{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "some-capi-process-guid",
+				RouteWeight:     1,
 			}))
 		})
 	})

@@ -90,6 +90,7 @@ func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (
 	r := &models.RouteMapping{
 		RouteGUID:       models.RouteGUID(request.RouteMapping.RouteGuid),
 		CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
+		RouteWeight:     request.RouteMapping.RouteWeight,
 	}
 	c.RouteMappingsRepo.Map(r)
 	return &api.MapRouteResponse{}, nil
