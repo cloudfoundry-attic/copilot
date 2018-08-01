@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
@@ -22,6 +23,10 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
+)
+
+const (
+	diegoBulkSyncInterval = 10 * time.Millisecond
 )
 
 func mainWithError() error {
@@ -50,7 +55,8 @@ func mainWithError() error {
 
 	var bbsClient bbs.InternalClient
 	if cfg.BBS == nil {
-		bbsClient = nil // BBS is disabled
+		logger.Info("BBS is disabled")
+		bbsClient = nil
 	} else {
 		bbsClient, err = bbs.NewSecureClient(
 			cfg.BBS.Address,
@@ -78,6 +84,7 @@ func mainWithError() error {
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
+	backendSetRepo := models.NewBackendSetRepo(bbsClient, logger, time.NewTicker(diegoBulkSyncInterval))
 
 	_, cidr, err := net.ParseCIDR(cfg.VIPCIDR)
 	if err != nil {
@@ -87,7 +94,6 @@ func mainWithError() error {
 	vipProvider := &vip.Provider{
 		CIDR: cidr,
 	}
-
 	internalRoutesRepo := &internalroutes.Repo{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
@@ -96,12 +102,11 @@ func mainWithError() error {
 		Logger:                           logger,
 		VIPProvider:                      vipProvider,
 	}
-
 	istioHandler := &handlers.Istio{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		BBSClient:                        bbsClient,
+		BackendSetRepo:                   backendSetRepo,
 		Logger:                           logger,
 		InternalRoutesRepo:               internalRoutesRepo,
 	}
@@ -129,6 +134,9 @@ func mainWithError() error {
 	members := grouper.Members{
 		grouper.Member{Name: "gprc-server-for-pilot", Runner: grpcServerForPilot},
 		grouper.Member{Name: "gprc-server-for-cloud-controller", Runner: grpcServerForCloudController},
+	}
+	if bbsClient != nil {
+		members = append(members, grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo})
 	}
 	group := grouper.NewOrdered(os.Interrupt, members)
 	monitor := ifrit.Invoke(sigmon.New(group))

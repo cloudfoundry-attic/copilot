@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -29,11 +30,11 @@ type bbsEventer interface {
 	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }
 
-func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, refreshDuration time.Duration) *BackendSetRepo {
+func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker *time.Ticker) *BackendSetRepo {
 	return &BackendSetRepo{
 		bbs:    bbs,
 		logger: logger,
-		ticker: time.NewTicker(refreshDuration),
+		ticker: ticker,
 		store: store{
 			content: make(map[DiegoProcessGUID]*api.BackendSet),
 		},
@@ -42,20 +43,22 @@ func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, refreshDuration time
 
 func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	lrps := make(chan *bbsmodels.ActualLRP)
+	stop := make(chan struct{})
 
 	eventSource, err := b.bbs.SubscribeToEvents(b.logger)
 	if err != nil {
 		return err
 	}
 
-	go b.collectEvents(signals, eventSource, lrps)
-	go b.reconcileLRPs(signals, b.ticker, lrps)
+	go b.collectEvents(stop, eventSource, lrps)
+	go b.reconcileLRPs(stop, b.ticker, lrps)
 
 	close(ready)
 
 	for {
 		select {
 		case <-signals:
+			close(stop)
 			return nil
 		case instance := <-lrps:
 			b.createProcessGUIDToBackendSet(instance)
@@ -69,10 +72,11 @@ func (b *BackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
 	return b.store.content[guid]
 }
 
-func (b *BackendSetRepo) collectEvents(signals <-chan os.Signal, eventSource events.EventSource, lrps chan<- *bbsmodels.ActualLRP) {
+func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource, lrps chan<- *bbsmodels.ActualLRP) {
 	for {
 		select {
-		case <-signals:
+		case <-stop:
+			b.logger.Info("events-exit")
 			return
 		default:
 			event, err := eventSource.Next()
@@ -90,7 +94,7 @@ func (b *BackendSetRepo) collectEvents(signals <-chan os.Signal, eventSource eve
 	}
 }
 
-func (b *BackendSetRepo) reconcileLRPs(signals <-chan os.Signal, ticker *time.Ticker, lrps chan<- *bbsmodels.ActualLRP) {
+func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker *time.Ticker, lrps chan<- *bbsmodels.ActualLRP) {
 	for {
 		select {
 		case <-ticker.C:
@@ -102,7 +106,8 @@ func (b *BackendSetRepo) reconcileLRPs(signals <-chan os.Signal, ticker *time.Ti
 			for _, group := range groups {
 				lrps <- group.Instance
 			}
-		case <-signals:
+		case <-stop:
+			b.logger.Info("lrp-groups-exit")
 			return
 		}
 	}
@@ -126,13 +131,22 @@ func (b *BackendSetRepo) createProcessGUIDToBackendSet(instance *bbsmodels.Actua
 	}
 
 	b.store.Lock()
+	defer b.store.Unlock()
 	if _, ok := b.store.content[diegoProcessGUID]; !ok {
 		b.store.content[diegoProcessGUID] = &api.BackendSet{}
 	}
 
-	b.store.content[diegoProcessGUID].Backends = append(b.store.content[diegoProcessGUID].Backends, &api.Backend{
+	backendToAdd := &api.Backend{
 		Address: instance.ActualLRPNetInfo.Address,
 		Port:    appHostPort,
-	})
-	b.store.Unlock()
+	}
+
+	backends := b.store.content[diegoProcessGUID].Backends
+	for _, backend := range backends {
+		if fmt.Sprintf("%s:%d", backend.Address, backend.Port) == fmt.Sprintf("%s:%d", backendToAdd.Address, backendToAdd.Port) {
+			return
+		}
+	}
+
+	b.store.content[diegoProcessGUID].Backends = append(b.store.content[diegoProcessGUID].Backends, backendToAdd)
 }

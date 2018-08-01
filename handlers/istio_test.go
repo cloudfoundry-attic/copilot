@@ -6,6 +6,7 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/handlers/fakes"
 	"code.cloudfoundry.org/copilot/internalroutes"
 	internalroutes_fakes "code.cloudfoundry.org/copilot/internalroutes/fakes"
 	"code.cloudfoundry.org/copilot/models"
@@ -29,6 +30,7 @@ var _ = Describe("Istio Handlers", func() {
 	var (
 		handler                        *handlers.Istio
 		bbsClient                      *mockBBSClient
+		backendSetRepo                 *fakes.BackendSetRepo
 		logger                         lager.Logger
 		bbsClientResponse              []*bbsmodels.ActualLRPGroup
 		expectedExternalRouteBackendsA *api.BackendSet
@@ -163,6 +165,8 @@ var _ = Describe("Istio Handlers", func() {
 			actualLRPGroupsData: bbsClientResponse,
 		}
 
+		backendSetRepo = &fakes.BackendSetRepo{}
+
 		logger = lagertest.NewTestLogger("test")
 
 		vipProvider = &internalroutes_fakes.VIPProvider{}
@@ -193,7 +197,7 @@ var _ = Describe("Istio Handlers", func() {
 		}
 
 		handler = &handlers.Istio{
-			BBSClient:                        bbsClient,
+			BackendSetRepo:                   backendSetRepo,
 			Logger:                           logger,
 			RoutesRepo:                       routesRepo,
 			RouteMappingsRepo:                routeMappingsRepo,
@@ -323,6 +327,19 @@ var _ = Describe("Istio Handlers", func() {
 					"diego-process-guid-b",
 				},
 			})
+
+			backendSetRepo.GetStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
+				switch guid {
+				case "diego-process-guid-a":
+					return expectedExternalRouteBackendsA
+				case "diego-process-guid-b":
+					return expectedExternalRouteBackendsB
+				default:
+					return &api.BackendSet{
+						Backends: []*api.Backend{},
+					}
+				}
+			}
 		})
 
 		It("returns the sorted routes for each running backend instance", func() {
@@ -437,18 +454,6 @@ var _ = Describe("Istio Handlers", func() {
 				},
 			},
 			))
-		})
-
-		Context("when the BBSClient is nil (BBS has been disabled)", func() {
-			BeforeEach(func() {
-				handler.BBSClient = nil
-			})
-
-			It("returns a helpful error", func() {
-				ctx := context.Background()
-				_, err := handler.Routes(ctx, new(api.RoutesRequest))
-				Expect(err).To(MatchError("communication with bbs is disabled"))
-			})
 		})
 	})
 })

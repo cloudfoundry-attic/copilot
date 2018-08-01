@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -14,16 +14,17 @@ import (
 )
 
 type Istio struct {
-	BBSClient
 	Logger                           lager.Logger
 	RoutesRepo                       routesRepoInterface
+	BackendSetRepo                   backendSetRepo
 	RouteMappingsRepo                routeMappingsRepoInterface
 	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
 	InternalRoutesRepo               internalRoutesRepo
 }
 
-type BBSClient interface {
-	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
+//go:generate counterfeiter -o fakes/backend_set_repo.go --fake-name BackendSetRepo . backendSetRepo
+type backendSetRepo interface {
+	Get(guid models.DiegoProcessGUID) *api.BackendSet
 }
 
 //go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
@@ -63,18 +64,11 @@ func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse
 
 func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
 	c.Logger.Info("listing istio routes...")
-	if c.BBSClient == nil {
-		return nil, errors.New("communication with bbs is disabled")
-	}
-
-	diegoProcessGUIDToBackendSet, err := c.retrieveDiegoProcessGUIDToBackendSet()
+	routes, err := c.collectRoutes()
 	if err != nil {
 		return nil, err
 	}
-
-	routesWithBackends := c.collectRoutes(diegoProcessGUIDToBackendSet)
-
-	return &api.RoutesResponse{Routes: routesWithBackends}, nil
+	return &api.RoutesResponse{Routes: routes}, nil
 }
 
 func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*api.InternalRoutesResponse, error) {
@@ -106,40 +100,6 @@ func (c *Istio) InternalRoutes(context.Context, *api.InternalRoutesRequest) (*ap
 	}, nil
 }
 
-func (c *Istio) retrieveDiegoProcessGUIDToBackendSet() (map[models.DiegoProcessGUID]*api.BackendSet, error) {
-	actualLRPGroups, err := c.BBSClient.ActualLRPGroups(c.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
-	if err != nil {
-		return nil, err
-	}
-
-	diegoProcessGUIDToBackendSet := make(map[models.DiegoProcessGUID]*api.BackendSet)
-	for _, actualGroup := range actualLRPGroups {
-		instance := actualGroup.Instance
-		if instance == nil {
-			c.Logger.Debug("skipping-nil-instance")
-			continue
-		}
-		diegoProcessGUID := models.DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
-		if instance.State != bbsmodels.ActualLRPStateRunning {
-			c.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": diegoProcessGUID})
-			continue
-		}
-		appHostPort := c.getAppHostPort(instance.ActualLRPNetInfo)
-		if appHostPort == 0 {
-			continue
-		}
-
-		if _, ok := diegoProcessGUIDToBackendSet[diegoProcessGUID]; !ok {
-			diegoProcessGUIDToBackendSet[diegoProcessGUID] = &api.BackendSet{}
-		}
-		diegoProcessGUIDToBackendSet[diegoProcessGUID].Backends = append(diegoProcessGUIDToBackendSet[diegoProcessGUID].Backends, &api.Backend{
-			Address: instance.ActualLRPNetInfo.Address,
-			Port:    appHostPort,
-		})
-	}
-	return diegoProcessGUIDToBackendSet, nil
-}
-
 func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 	for _, port := range netInfo.Ports {
 		if port.ContainerPort != models.CF_APP_SSH_PORT {
@@ -149,7 +109,7 @@ func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 	return 0
 }
 
-func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProcessGUID]*api.BackendSet) []*api.RouteWithBackends {
+func (c *Istio) collectRoutes() []*api.RouteWithBackends {
 	type RouteDetails struct {
 		hostname        string
 		backendSet      *api.BackendSet
@@ -160,6 +120,7 @@ func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProce
 	var routesWithoutPath, routes []*api.RouteWithBackends
 
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
+		fmt.Printf("routeMappingRouteGUID: %+v\n", routeMapping)
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
 			continue
@@ -174,24 +135,24 @@ func (c *Istio) collectRoutes(diegoProcessGUIDToBackendSet map[models.DiegoProce
 			continue
 		}
 
-		var sets []*api.Backend
+		var backends []*api.Backend
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			backends, ok := diegoProcessGUIDToBackendSet[models.DiegoProcessGUID(diegoProcessGUID)]
-			if !ok {
+			backendSet := c.BackendSetRepo.Get(models.DiegoProcessGUID(diegoProcessGUID))
+			if backendSet == nil {
 				continue
 			}
 
-			sets = append(sets, backends.Backends...)
+			backends = append(backends, backendSet.Backends...)
 		}
 
-		sort.SliceStable(sets, func(i, j int) bool {
-			return sets[i].Address < sets[j].Address
+		sort.SliceStable(backends, func(i, j int) bool {
+			return backends[i].Address < backends[j].Address
 		})
 
 		builtRoute := &api.RouteWithBackends{
 			Hostname:        route.Hostname(),
 			Path:            route.Path,
-			Backends:        &api.BackendSet{Backends: sets},
+			Backends:        &api.BackendSet{Backends: backends},
 			CapiProcessGuid: string(routeMapping.CAPIProcessGUID),
 		}
 

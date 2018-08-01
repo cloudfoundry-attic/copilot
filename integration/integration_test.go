@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/bbs/events"
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot"
 	"code.cloudfoundry.org/copilot/api"
@@ -55,6 +56,42 @@ var _ = Describe("Copilot", func() {
 		bbsServer = ghttp.NewUnstartedServer()
 		bbsServer.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
 
+		bbsServer.RouteToHandler("GET", "/v1/events", func(w http.ResponseWriter, req *http.Request) {
+			lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
+				Instance: &bbsmodels.ActualLRP{
+					ActualLRPKey: bbsmodels.ActualLRPKey{
+						ProcessGuid: "diego-process-guid-a",
+					},
+					State: bbsmodels.ActualLRPStateRunning,
+					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+						Address:         "10.10.1.3",
+						InstanceAddress: "10.255.1.13",
+						Ports: []*bbsmodels.PortMapping{
+							{ContainerPort: 8080, HostPort: 61003},
+						},
+					},
+				},
+			})
+			w.Header().Add("Content-Type", "text/event-stream; charset=utf-8")
+			w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+			w.Header().Add("Connection", "keep-alive")
+			w.Header().Set("Transfer-Encoding", "identity")
+			w.WriteHeader(http.StatusOK)
+
+			conn, rw, err := w.(http.Hijacker).Hijack()
+			if err != nil {
+				return
+			}
+
+			defer func() {
+				conn.Close()
+			}()
+
+			rw.Flush()
+
+			event, _ := events.NewEventFromModelEvent(0, lrpEvent)
+			event.Write(conn)
+		})
 		bbsServer.RouteToHandler("POST", "/v1/cells/list.r1", func(w http.ResponseWriter, req *http.Request) {
 			cellsResponse := bbsmodels.CellsResponse{}
 			data, _ := proto.Marshal(&cellsResponse)
@@ -68,8 +105,10 @@ var _ = Describe("Copilot", func() {
 				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
 					{
 						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
-							State:        bbsmodels.ActualLRPStateRunning,
+							ActualLRPKey: bbsmodels.ActualLRPKey{
+								ProcessGuid: "diego-process-guid-a",
+							},
+							State: bbsmodels.ActualLRPStateRunning,
 							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
 								Address:         "10.10.1.3",
 								InstanceAddress: "10.255.1.13",
@@ -181,7 +220,7 @@ var _ = Describe("Copilot", func() {
 
 	AfterEach(func() {
 		session.Interrupt()
-		Eventually(session, "2s").Should(gexec.Exit())
+		Eventually(session, "10s").Should(gexec.Exit())
 
 		for i := len(cleanupFuncs) - 1; i >= 0; i-- {
 			cleanupFuncs[i]()
@@ -418,7 +457,7 @@ var _ = Describe("Copilot", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session, "2s").Should(gexec.Exit(1))
-			Expect(session.Out).To(gbytes.Say(`parsing vip cidr: invalid CIDR address: not an ip`))
+			Eventually(session.Out).Should(gbytes.Say(`parsing vip cidr: invalid CIDR address: not an ip`))
 		})
 	})
 
@@ -439,7 +478,7 @@ var _ = Describe("Copilot", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session, "2s").Should(gexec.Exit(1))
-			Expect(session.Out).To(gbytes.Say(`unable to reach BBS`))
+			Eventually(session.Out).Should(gbytes.Say(`unable to reach BBS`))
 		})
 
 		Context("but if the user sets config BBS.Disable", func() {
@@ -453,6 +492,7 @@ var _ = Describe("Copilot", func() {
 				var err error
 				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
+				Eventually(session.Out).Should(gbytes.Say(`BBS is disabled`))
 
 				WaitForHealthy(istioClient, ccClient)
 				_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
@@ -461,9 +501,6 @@ var _ = Describe("Copilot", func() {
 						Host: "some-url",
 					}})
 				Expect(err).NotTo(HaveOccurred())
-
-				_, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
-				Expect(err).To(MatchError(ContainSubstring("communication with bbs is disabled")))
 			})
 		})
 	})

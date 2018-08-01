@@ -21,10 +21,11 @@ var _ = Describe("BackendSetRepo", func() {
 	Describe("Get", func() {
 		Context("when we miss a diego event", func() {
 			It("runs a reconciliation to get all events", func() {
+				ticker := time.NewTicker(10 * time.Millisecond)
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, 100*time.Millisecond)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -78,15 +79,21 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeNil())
 				Expect(backends[0].Address).To(Equal("11.11.11.11"))
 				Expect(backends[0].Port).To(Equal(uint32(2323)))
+
+				Consistently(func() []*api.Backend {
+					res := bs.Get("some-guid")
+					return res.GetBackends()
+				}).Should(HaveLen(1))
 			})
 		})
 
 		Context("when successfully subscribed to diego events", func() {
 			It("returns a backendset", func() {
+				ticker := time.NewTicker(100 * time.Millisecond)
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, 100*time.Millisecond)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -136,10 +143,11 @@ var _ = Describe("BackendSetRepo", func() {
 	Context("when an error occurs", func() {
 		Context("when the event stream fails", func() {
 			It("logs an error", func() {
+				ticker := time.NewTicker(100 * time.Millisecond)
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, 100*time.Millisecond)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -160,9 +168,10 @@ var _ = Describe("BackendSetRepo", func() {
 
 		Context("when getting all actual LRP groups fails", func() {
 			It("logs an error", func() {
+				ticker := time.NewTicker(100 * time.Millisecond)
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
-				bs := models.NewBackendSetRepo(bbsEventer, logger, 100*time.Millisecond)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -186,10 +195,11 @@ var _ = Describe("BackendSetRepo", func() {
 
 		Context("when subscribing to events fails", func() {
 			It("returns an error", func() {
+				ticker := time.NewTicker(100 * time.Millisecond)
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, 100*time.Millisecond)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
 
 				bbsEventer.SubscribeToEventsReturns(nil, errors.New("subscribe-error"))
 
