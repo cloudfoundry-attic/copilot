@@ -15,6 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("BackendSetRepo", func() {
@@ -88,16 +89,26 @@ var _ = Describe("BackendSetRepo", func() {
 		})
 
 		Context("when successfully subscribed to diego events", func() {
-			It("returns a backendset", func() {
-				ticker := time.NewTicker(100 * time.Millisecond)
-				logger := lagertest.NewTestLogger("test")
-				bbsEventer := &fakes.BBSEventer{}
+			var (
+				ticker     *time.Ticker
+				logger     *lagertest.TestLogger
+				bbsEventer *fakes.BBSEventer
+				bs         *models.BackendSetRepo
+				ef         *eventfakes.FakeEventSource
+			)
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
+			BeforeEach(func() {
+				ticker = time.NewTicker(100 * time.Millisecond)
+				logger = lagertest.NewTestLogger("test")
+				bbsEventer = &fakes.BBSEventer{}
 
-				ef := &eventfakes.FakeEventSource{}
+				bs = models.NewBackendSetRepo(bbsEventer, logger, ticker)
+
+				ef = &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
+			})
 
+			It("returns a backendset", func() {
 				lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
 					Instance: &bbsmodels.ActualLRP{
 						ActualLRPKey: bbsmodels.ActualLRPKey{
@@ -136,6 +147,70 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeNil())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
+			})
+
+			Context("when delete event is received", func() {
+				It("removes backend from the repo", func() {
+					lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.ActualLRPKey{
+								ProcessGuid: "meow",
+							},
+							State: bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address: "10.10.10.10",
+								Ports: []*bbsmodels.PortMapping{
+									{HostPort: 1555, ContainerPort: 1000},
+									{HostPort: 5685, ContainerPort: 2222},
+								},
+							},
+						},
+					})
+
+					deletedLRPEvent := bbsmodels.NewActualLRPRemovedEvent(&bbsmodels.ActualLRPGroup{
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.ActualLRPKey{
+								ProcessGuid: "meow",
+							},
+							State: bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address: "10.10.10.10",
+								Ports: []*bbsmodels.PortMapping{
+									{HostPort: 1555, ContainerPort: 1000},
+									{HostPort: 5685, ContainerPort: 2222},
+								},
+							},
+						},
+					})
+
+					wait := make(chan struct{})
+					ef.NextStub = func() (bbsmodels.Event, error) {
+						switch ef.NextCallCount() {
+						case 1:
+							return lrpEvent, nil
+						case 2:
+							<-wait
+							return deletedLRPEvent, nil
+						default:
+							return nil, errors.New("whoops")
+						}
+					}
+					sig := make(<-chan os.Signal)
+					ready := make(chan<- struct{})
+
+					go bs.Run(sig, ready)
+
+					Eventually(func() []*api.Backend {
+						res := bs.Get("meow")
+						return res.GetBackends()
+					}, "2s").Should(HaveLen(1))
+					wait <- struct{}{}
+
+					Eventually(func() []*api.Backend {
+						res := bs.Get("meow")
+						return res.GetBackends()
+					}, "2s").Should(HaveLen(0))
+				})
 			})
 		})
 	})
@@ -179,17 +254,13 @@ var _ = Describe("BackendSetRepo", func() {
 				sig := make(<-chan os.Signal)
 				ready := make(chan<- struct{})
 
-				ef.NextReturns(bbsmodels.NewActualLRPRemovedEvent(&bbsmodels.ActualLRPGroup{}), nil)
+				ef.NextReturns(bbsmodels.NewActualLRPCrashedEvent(&bbsmodels.ActualLRP{}, &bbsmodels.ActualLRP{}), nil)
 
 				bbsEventer.ActualLRPGroupsReturns(nil, errors.New("lrp-groups-error"))
 
 				go bs.Run(sig, ready)
 
-				Eventually(func() []lager.LogFormat {
-					return logger.Logs()
-				}).ShouldNot(HaveLen(0))
-
-				Expect(logger.Logs()[0].Data["lrp-groups-error"]).To(Equal("lrp-groups-error"))
+				Eventually(logger.Buffer).Should(gbytes.Say("lrp-groups-error"))
 			})
 		})
 

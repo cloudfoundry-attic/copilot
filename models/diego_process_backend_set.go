@@ -42,7 +42,7 @@ func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker *time.Ticker)
 }
 
 func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	lrps := make(chan *bbsmodels.ActualLRP)
+	events := make(chan bbsmodels.Event)
 	stop := make(chan struct{})
 
 	eventSource, err := b.bbs.SubscribeToEvents(b.logger)
@@ -50,8 +50,8 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 		return err
 	}
 
-	go b.collectEvents(stop, eventSource, lrps)
-	go b.reconcileLRPs(stop, b.ticker, lrps)
+	go b.collectEvents(stop, eventSource, events)
+	go b.reconcileLRPs(stop, b.ticker, events)
 
 	close(ready)
 
@@ -60,8 +60,8 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 		case <-signals:
 			close(stop)
 			return nil
-		case instance := <-lrps:
-			b.createProcessGUIDToBackendSet(instance)
+		case event := <-events:
+			b.processEvent(event)
 		}
 	}
 }
@@ -72,7 +72,7 @@ func (b *BackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
 	return b.store.content[guid]
 }
 
-func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource, lrps chan<- *bbsmodels.ActualLRP) {
+func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource, events chan<- bbsmodels.Event) {
 	for {
 		select {
 		case <-stop:
@@ -85,16 +85,12 @@ func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.
 				continue
 			}
 
-			switch event.EventType() {
-			case bbsmodels.EventTypeActualLRPCreated:
-				createdEvent := event.(*bbsmodels.ActualLRPCreatedEvent)
-				lrps <- createdEvent.GetActualLrpGroup().GetInstance()
-			}
+			events <- event
 		}
 	}
 }
 
-func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker *time.Ticker, lrps chan<- *bbsmodels.ActualLRP) {
+func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker *time.Ticker, events chan<- bbsmodels.Event) {
 	for {
 		select {
 		case <-ticker.C:
@@ -104,7 +100,7 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker *time.Ticker
 			}
 
 			for _, group := range groups {
-				lrps <- group.Instance
+				events <- bbsmodels.NewActualLRPCreatedEvent(group)
 			}
 		case <-stop:
 			b.logger.Info("lrp-groups-exit")
@@ -113,7 +109,24 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker *time.Ticker
 	}
 }
 
-func (b *BackendSetRepo) createProcessGUIDToBackendSet(instance *bbsmodels.ActualLRP) {
+func (b *BackendSetRepo) processEvent(e bbsmodels.Event) {
+	var instance *bbsmodels.ActualLRP
+	switch e.EventType() {
+	case bbsmodels.EventTypeActualLRPCreated:
+		createdEvent := e.(*bbsmodels.ActualLRPCreatedEvent)
+		instance = createdEvent.GetActualLrpGroup().GetInstance()
+	case bbsmodels.EventTypeActualLRPRemoved:
+		deletedEvent := e.(*bbsmodels.ActualLRPRemovedEvent)
+		b.store.Lock()
+		diegoProcessGUID := DiegoProcessGUID(deletedEvent.ActualLrpGroup.Instance.ActualLRPKey.ProcessGuid)
+		delete(b.store.content, diegoProcessGUID)
+		b.store.Unlock()
+		return
+	default:
+		b.logger.Debug("unhandled-event-type")
+		return
+	}
+
 	diegoProcessGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
 	if instance.State != bbsmodels.ActualLRPStateRunning {
 		return

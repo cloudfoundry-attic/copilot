@@ -195,6 +195,7 @@ var _ = Describe("Copilot", func() {
 				ClientCertPath:   bbsTLSFiles.ClientCert,
 				ClientKeyPath:    bbsTLSFiles.ClientKey,
 				Address:          bbsServer.URL(),
+				SyncInterval:     "10ms",
 			},
 		}
 

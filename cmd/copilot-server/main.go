@@ -25,10 +25,6 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-const (
-	diegoBulkSyncInterval = 10 * time.Millisecond
-)
-
 func mainWithError() error {
 	var configFilePath string
 	flag.StringVar(&configFilePath, "config", "", "path to config file")
@@ -54,10 +50,18 @@ func mainWithError() error {
 	logger.RegisterSink(reconfigurableSink)
 
 	var bbsClient bbs.InternalClient
+	diegoBulkSyncInterval := 60 * time.Second
 	if cfg.BBS == nil {
 		logger.Info("BBS is disabled")
 		bbsClient = nil
 	} else {
+		if cfg.BBS.SyncInterval != "" {
+			diegoBulkSyncInterval, err = time.ParseDuration(cfg.BBS.SyncInterval)
+			if err != nil {
+				return err
+			}
+		}
+
 		bbsClient, err = bbs.NewSecureClient(
 			cfg.BBS.Address,
 			cfg.BBS.ServerCACertPath,

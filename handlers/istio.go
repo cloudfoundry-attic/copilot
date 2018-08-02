@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -64,10 +63,7 @@ func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse
 
 func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
 	c.Logger.Info("listing istio routes...")
-	routes, err := c.collectRoutes()
-	if err != nil {
-		return nil, err
-	}
+	routes := c.collectRoutes()
 	return &api.RoutesResponse{Routes: routes}, nil
 }
 
@@ -120,7 +116,6 @@ func (c *Istio) collectRoutes() []*api.RouteWithBackends {
 	var routesWithoutPath, routes []*api.RouteWithBackends
 
 	for _, routeMapping := range c.RouteMappingsRepo.List() {
-		fmt.Printf("routeMappingRouteGUID: %+v\n", routeMapping)
 		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
 		if !ok {
 			continue

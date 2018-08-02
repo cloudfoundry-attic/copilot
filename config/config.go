@@ -19,6 +19,7 @@ type BBSConfig struct {
 	ClientSessionCacheSize int
 	MaxIdleConnsPerHost    int
 	Disable                bool
+	SyncInterval           string
 }
 
 type Config struct {
