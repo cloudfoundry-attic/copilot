@@ -17,11 +17,16 @@ type store struct {
 	content map[DiegoProcessGUID]*api.BackendSet
 }
 
+type lrpCache struct {
+	content map[string]*bbsmodels.ActualLRPGroup
+}
+
 type BackendSetRepo struct {
 	bbs    bbsEventer
 	logger lager.Logger
 	ticker <-chan time.Time
 	store  store
+	cache  lrpCache
 }
 
 //go:generate counterfeiter -o fakes/bbs_eventer.go --fake-name BBSEventer . bbsEventer
@@ -38,6 +43,9 @@ func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker <-chan time.T
 		store: store{
 			content: make(map[DiegoProcessGUID]*api.BackendSet),
 		},
+		cache: lrpCache{
+			content: make(map[string]*bbsmodels.ActualLRPGroup),
+		},
 	}
 }
 
@@ -52,6 +60,15 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 
 	go b.collectEvents(stop, eventSource, events)
 	go b.reconcileLRPs(stop, b.ticker, events)
+
+	groups, err := b.bbs.ActualLRPGroups(b.logger, bbsmodels.ActualLRPFilter{})
+	if err != nil {
+		return err
+	}
+
+	for _, group := range groups {
+		b.cache.content[group.GetInstance().GetProcessGuid()] = group
+	}
 
 	close(ready)
 
@@ -97,11 +114,22 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.
 			groups, err := b.bbs.ActualLRPGroups(b.logger, bbsmodels.ActualLRPFilter{})
 			if err != nil {
 				b.logger.Debug("lrp-groups-error", lager.Data{"lrp-groups-error": err.Error()})
+				continue
 			}
 
+			guids := make(map[string]*bbsmodels.ActualLRPGroup)
 			for _, group := range groups {
+				guids[group.GetInstance().GetProcessGuid()] = group
 				events <- bbsmodels.NewActualLRPCreatedEvent(group)
 			}
+
+			for guid, group := range b.cache.content {
+				if _, ok := guids[guid]; !ok {
+					events <- bbsmodels.NewActualLRPRemovedEvent(group)
+				}
+			}
+
+			b.cache.content = guids
 		case <-stop:
 			b.logger.Info("lrp-groups-exit")
 			return

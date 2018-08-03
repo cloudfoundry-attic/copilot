@@ -96,7 +96,6 @@ var _ = Describe("BackendSetRepo", func() {
 				logger     *lagertest.TestLogger
 				bbsEventer *fakes.BBSEventer
 				bs         *models.BackendSetRepo
-				ef         *eventfakes.FakeEventSource
 				sig        chan os.Signal
 				ready      chan<- struct{}
 			)
@@ -109,9 +108,6 @@ var _ = Describe("BackendSetRepo", func() {
 				ready = make(chan<- struct{})
 
 				bs = models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
-
-				ef = &eventfakes.FakeEventSource{}
-				bbsEventer.SubscribeToEventsReturns(ef, nil)
 			})
 
 			AfterEach(func() {
@@ -119,6 +115,9 @@ var _ = Describe("BackendSetRepo", func() {
 			})
 
 			It("returns a backendset", func() {
+				ef := &eventfakes.FakeEventSource{}
+				bbsEventer.SubscribeToEventsReturns(ef, nil)
+
 				lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
 					Instance: &bbsmodels.ActualLRP{
 						ActualLRPKey: bbsmodels.ActualLRPKey{
@@ -154,11 +153,13 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeNil())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
-
 			})
 
 			Context("when delete event is received", func() {
 				It("removes backend from the repo", func() {
+					ef := &eventfakes.FakeEventSource{}
+					bbsEventer.SubscribeToEventsReturns(ef, nil)
+
 					lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
 						Instance: &bbsmodels.ActualLRP{
 							ActualLRPKey: bbsmodels.ActualLRPKey{
@@ -203,8 +204,6 @@ var _ = Describe("BackendSetRepo", func() {
 							return nil, errors.New("whoops")
 						}
 					}
-					sig := make(<-chan os.Signal)
-					ready := make(chan<- struct{})
 
 					go bs.Run(sig, ready)
 
@@ -218,6 +217,67 @@ var _ = Describe("BackendSetRepo", func() {
 						res := bs.Get("meow")
 						return res.GetBackends()
 					}, "2s").Should(HaveLen(0))
+				})
+			})
+
+			Context("when delete event is missed", func() {
+				Context("when reconciliation runs", func() {
+					It("removes backend from the repo", func() {
+						ef := &eventfakes.FakeEventSource{}
+						bbsEventer.SubscribeToEventsReturns(ef, nil)
+
+						firstLRP := &bbsmodels.ActualLRPGroup{
+							Instance: &bbsmodels.ActualLRP{
+								ActualLRPKey: bbsmodels.ActualLRPKey{
+									ProcessGuid: "other-guid",
+								},
+								State: bbsmodels.ActualLRPStateRunning,
+								ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+									Address: "11.11.11.11",
+									Ports: []*bbsmodels.PortMapping{
+										{HostPort: 2323, ContainerPort: 2424},
+									},
+								},
+							},
+						}
+
+						secondLRP := &bbsmodels.ActualLRPGroup{
+							Instance: &bbsmodels.ActualLRP{
+								ActualLRPKey: bbsmodels.ActualLRPKey{
+									ProcessGuid: "any-guid",
+								},
+								State: bbsmodels.ActualLRPStateRunning,
+								ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+									Address: "10.10.10.10",
+									Ports: []*bbsmodels.PortMapping{
+										{HostPort: 4545, ContainerPort: 4646},
+									},
+								},
+							},
+						}
+
+						ef.NextReturns(bbsmodels.NewActualLRPCrashedEvent(&bbsmodels.ActualLRP{}, &bbsmodels.ActualLRP{}), nil)
+						bbsEventer.ActualLRPGroupsReturnsOnCall(0, []*bbsmodels.ActualLRPGroup{firstLRP}, nil)
+						bbsEventer.ActualLRPGroupsReturnsOnCall(1, []*bbsmodels.ActualLRPGroup{firstLRP}, nil)
+						bbsEventer.ActualLRPGroupsReturnsOnCall(2, []*bbsmodels.ActualLRPGroup{secondLRP}, nil)
+
+						go bs.Run(sig, ready)
+						ticker.C <- time.Time{}
+
+						Eventually(func() []*api.Backend {
+							return bs.Get("other-guid").GetBackends()
+						}).Should(HaveLen(1))
+
+						ticker.C <- time.Time{}
+
+						Eventually(func() []*api.Backend {
+							return bs.Get("other-guid").GetBackends()
+						}).Should(HaveLen(0))
+
+						Eventually(func() []*api.Backend {
+							return bs.Get("any-guid").GetBackends()
+						}).Should(HaveLen(1))
+					})
 				})
 			})
 		})
@@ -249,28 +309,54 @@ var _ = Describe("BackendSetRepo", func() {
 			})
 		})
 
-		Context("when getting all actual LRP groups fails", func() {
-			It("logs an error", func() {
-				ticker := fakes.NewTicker()
-				logger := lagertest.NewTestLogger("test")
-				bbsEventer := &fakes.BBSEventer{}
-				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
+		Context("when getting all actual LRP groups", func() {
+			Context("when populating the initial cache fails", func() {
+				It("returns an error", func() {
+					ticker := fakes.NewTicker()
+					logger := lagertest.NewTestLogger("test")
+					bbsEventer := &fakes.BBSEventer{}
+					bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
-				ef := &eventfakes.FakeEventSource{}
-				bbsEventer.SubscribeToEventsReturns(ef, nil)
+					ef := &eventfakes.FakeEventSource{}
+					bbsEventer.SubscribeToEventsReturns(ef, nil)
 
-				sig := make(<-chan os.Signal)
-				ready := make(chan<- struct{})
+					sig := make(<-chan os.Signal)
+					ready := make(chan<- struct{})
 
-				ef.NextReturns(bbsmodels.NewActualLRPCrashedEvent(&bbsmodels.ActualLRP{}, &bbsmodels.ActualLRP{}), nil)
+					ef.NextReturns(bbsmodels.NewActualLRPCrashedEvent(&bbsmodels.ActualLRP{}, &bbsmodels.ActualLRP{}), nil)
 
-				bbsEventer.ActualLRPGroupsReturns(nil, errors.New("lrp-groups-error"))
+					bbsEventer.ActualLRPGroupsReturns(nil, errors.New("lrp-groups-error"))
 
-				go bs.Run(sig, ready)
+					err := bs.Run(sig, ready)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(errors.New("lrp-groups-error")))
+				})
+			})
 
-				ticker.C <- time.Time{}
+			Context("when reconciling the lrps fails", func() {
+				It("logs an error", func() {
+					ticker := fakes.NewTicker()
+					logger := lagertest.NewTestLogger("test")
+					bbsEventer := &fakes.BBSEventer{}
+					bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
-				Eventually(logger.Buffer).Should(gbytes.Say("lrp-groups-error"))
+					ef := &eventfakes.FakeEventSource{}
+					bbsEventer.SubscribeToEventsReturns(ef, nil)
+
+					sig := make(<-chan os.Signal)
+					ready := make(chan<- struct{})
+
+					ef.NextReturns(bbsmodels.NewActualLRPCrashedEvent(&bbsmodels.ActualLRP{}, &bbsmodels.ActualLRP{}), nil)
+
+					bbsEventer.ActualLRPGroupsReturnsOnCall(0, nil, nil)
+					bbsEventer.ActualLRPGroupsReturnsOnCall(1, nil, errors.New("lrp-groups-error"))
+
+					go bs.Run(sig, ready)
+
+					ticker.C <- time.Time{}
+
+					Eventually(logger.Buffer).Should(gbytes.Say("lrp-groups-error"))
+				})
 			})
 		})
 
