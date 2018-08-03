@@ -22,11 +22,11 @@ var _ = Describe("BackendSetRepo", func() {
 	Describe("Get", func() {
 		Context("when we miss a diego event", func() {
 			It("runs a reconciliation to get all events", func() {
-				ticker := time.NewTicker(10 * time.Millisecond)
+				ticker := fakes.NewTicker()
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -72,6 +72,8 @@ var _ = Describe("BackendSetRepo", func() {
 
 				go bs.Run(sig, ready)
 
+				ticker.C <- time.Time{}
+
 				var backends []*api.Backend
 				Eventually(func() *api.BackendSet {
 					res := bs.Get("other-guid")
@@ -90,22 +92,30 @@ var _ = Describe("BackendSetRepo", func() {
 
 		Context("when successfully subscribed to diego events", func() {
 			var (
-				ticker     *time.Ticker
+				ticker     *fakes.Ticker
 				logger     *lagertest.TestLogger
 				bbsEventer *fakes.BBSEventer
 				bs         *models.BackendSetRepo
 				ef         *eventfakes.FakeEventSource
+				sig        chan os.Signal
+				ready      chan<- struct{}
 			)
 
 			BeforeEach(func() {
-				ticker = time.NewTicker(100 * time.Millisecond)
+				ticker = fakes.NewTicker()
 				logger = lagertest.NewTestLogger("test")
 				bbsEventer = &fakes.BBSEventer{}
+				sig = make(chan os.Signal, 2)
+				ready = make(chan<- struct{})
 
-				bs = models.NewBackendSetRepo(bbsEventer, logger, ticker)
+				bs = models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
 				ef = &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
+			})
+
+			AfterEach(func() {
+				sig <- os.Kill
 			})
 
 			It("returns a backendset", func() {
@@ -134,9 +144,6 @@ var _ = Describe("BackendSetRepo", func() {
 					}
 				}
 
-				sig := make(<-chan os.Signal)
-				ready := make(chan<- struct{})
-
 				go bs.Run(sig, ready)
 
 				var backends []*api.Backend
@@ -147,6 +154,7 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeNil())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
+
 			})
 
 			Context("when delete event is received", func() {
@@ -218,11 +226,11 @@ var _ = Describe("BackendSetRepo", func() {
 	Context("when an error occurs", func() {
 		Context("when the event stream fails", func() {
 			It("logs an error", func() {
-				ticker := time.NewTicker(100 * time.Millisecond)
+				ticker := fakes.NewTicker()
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -243,10 +251,10 @@ var _ = Describe("BackendSetRepo", func() {
 
 		Context("when getting all actual LRP groups fails", func() {
 			It("logs an error", func() {
-				ticker := time.NewTicker(100 * time.Millisecond)
+				ticker := fakes.NewTicker()
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
-				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
 				ef := &eventfakes.FakeEventSource{}
 				bbsEventer.SubscribeToEventsReturns(ef, nil)
@@ -260,17 +268,19 @@ var _ = Describe("BackendSetRepo", func() {
 
 				go bs.Run(sig, ready)
 
+				ticker.C <- time.Time{}
+
 				Eventually(logger.Buffer).Should(gbytes.Say("lrp-groups-error"))
 			})
 		})
 
 		Context("when subscribing to events fails", func() {
 			It("returns an error", func() {
-				ticker := time.NewTicker(100 * time.Millisecond)
+				ticker := fakes.NewTicker()
 				logger := lagertest.NewTestLogger("test")
 				bbsEventer := &fakes.BBSEventer{}
 
-				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker)
+				bs := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
 				bbsEventer.SubscribeToEventsReturns(nil, errors.New("subscribe-error"))
 

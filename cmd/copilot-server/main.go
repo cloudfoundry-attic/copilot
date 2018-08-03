@@ -88,7 +88,9 @@ func mainWithError() error {
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
-	backendSetRepo := models.NewBackendSetRepo(bbsClient, logger, time.NewTicker(diegoBulkSyncInterval))
+
+	t := time.NewTicker(diegoBulkSyncInterval)
+	backendSetRepo := models.NewBackendSetRepo(bbsClient, logger, t.C)
 
 	_, cidr, err := net.ParseCIDR(cfg.VIPCIDR)
 	if err != nil {

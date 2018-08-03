@@ -20,7 +20,7 @@ type store struct {
 type BackendSetRepo struct {
 	bbs    bbsEventer
 	logger lager.Logger
-	ticker *time.Ticker
+	ticker <-chan time.Time
 	store  store
 }
 
@@ -30,7 +30,7 @@ type bbsEventer interface {
 	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }
 
-func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker *time.Ticker) *BackendSetRepo {
+func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker <-chan time.Time) *BackendSetRepo {
 	return &BackendSetRepo{
 		bbs:    bbs,
 		logger: logger,
@@ -90,10 +90,10 @@ func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.
 	}
 }
 
-func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker *time.Ticker, events chan<- bbsmodels.Event) {
+func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.Time, events chan<- bbsmodels.Event) {
 	for {
 		select {
-		case <-ticker.C:
+		case <-ticker:
 			groups, err := b.bbs.ActualLRPGroups(b.logger, bbsmodels.ActualLRPFilter{})
 			if err != nil {
 				b.logger.Debug("lrp-groups-error", lager.Data{"lrp-groups-error": err.Error()})
