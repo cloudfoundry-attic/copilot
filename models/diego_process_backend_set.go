@@ -17,8 +17,24 @@ type store struct {
 	content map[DiegoProcessGUID]*api.BackendSet
 }
 
-type lrpCache struct {
-	content map[string]*bbsmodels.ActualLRPGroup
+func (s *store) Insert(guid DiegoProcessGUID, additionalBackend *api.Backend) {
+	s.Lock()
+	if _, ok := s.content[guid]; !ok {
+		s.content[guid] = &api.BackendSet{}
+	}
+
+	backends := s.content[guid].Backends
+	s.Unlock()
+
+	for _, backend := range backends {
+		if fmt.Sprintf("%s:%d", backend.Address, backend.Port) == fmt.Sprintf("%s:%d", additionalBackend.Address, additionalBackend.Port) {
+			return
+		}
+	}
+
+	s.Lock()
+	s.content[guid].Backends = append(s.content[guid].Backends, additionalBackend)
+	s.Unlock()
 }
 
 type BackendSetRepo struct {
@@ -26,7 +42,6 @@ type BackendSetRepo struct {
 	logger lager.Logger
 	ticker <-chan time.Time
 	store  store
-	cache  lrpCache
 }
 
 //go:generate counterfeiter -o fakes/bbs_eventer.go --fake-name BBSEventer . bbsEventer
@@ -43,14 +58,10 @@ func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker <-chan time.T
 		store: store{
 			content: make(map[DiegoProcessGUID]*api.BackendSet),
 		},
-		cache: lrpCache{
-			content: make(map[string]*bbsmodels.ActualLRPGroup),
-		},
 	}
 }
 
 func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	events := make(chan bbsmodels.Event)
 	stop := make(chan struct{})
 
 	eventSource, err := b.bbs.SubscribeToEvents(b.logger)
@@ -58,17 +69,8 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 		return err
 	}
 
-	go b.collectEvents(stop, eventSource, events)
-	go b.reconcileLRPs(stop, b.ticker, events)
-
-	groups, err := b.bbs.ActualLRPGroups(b.logger, bbsmodels.ActualLRPFilter{})
-	if err != nil {
-		return err
-	}
-
-	for _, group := range groups {
-		b.cache.content[group.GetInstance().GetProcessGuid()] = group
-	}
+	go b.collectEvents(stop, eventSource)
+	go b.reconcileLRPs(stop, b.ticker)
 
 	close(ready)
 
@@ -77,8 +79,6 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 		case <-signals:
 			close(stop)
 			return nil
-		case event := <-events:
-			b.processEvent(event)
 		}
 	}
 }
@@ -89,7 +89,7 @@ func (b *BackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
 	return b.store.content[guid]
 }
 
-func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource, events chan<- bbsmodels.Event) {
+func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource) {
 	for {
 		select {
 		case <-stop:
@@ -102,12 +102,22 @@ func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.
 				continue
 			}
 
-			events <- event
+			switch event.EventType() {
+			case bbsmodels.EventTypeActualLRPCreated:
+				createdEvent := event.(*bbsmodels.ActualLRPCreatedEvent)
+				instance := createdEvent.GetActualLrpGroup().GetInstance()
+				be := processInstance(instance)
+				guid := DiegoProcessGUID(instance.ActualLRPKey.GetProcessGuid())
+				b.store.Insert(guid, be)
+			default:
+				b.logger.Debug("unhandled-event-type")
+				return
+			}
 		}
 	}
 }
 
-func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.Time, events chan<- bbsmodels.Event) {
+func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.Time) {
 	for {
 		select {
 		case <-ticker:
@@ -117,19 +127,17 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.
 				continue
 			}
 
-			guids := make(map[string]*bbsmodels.ActualLRPGroup)
+			// not locking replacement store - no other goroutine can update it
+			replaceStore := store{content: make(map[DiegoProcessGUID]*api.BackendSet)}
 			for _, group := range groups {
-				guids[group.GetInstance().GetProcessGuid()] = group
-				events <- bbsmodels.NewActualLRPCreatedEvent(group)
+				be := processInstance(group.Instance)
+				guid := DiegoProcessGUID(group.GetInstance().ActualLRPKey.GetProcessGuid())
+				replaceStore.Insert(guid, be)
 			}
 
-			for guid, group := range b.cache.content {
-				if _, ok := guids[guid]; !ok {
-					events <- bbsmodels.NewActualLRPRemovedEvent(group)
-				}
-			}
-
-			b.cache.content = guids
+			b.store.Lock()
+			b.store.content = replaceStore.content
+			b.store.Unlock()
 		case <-stop:
 			b.logger.Info("lrp-groups-exit")
 			return
@@ -137,27 +145,9 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.
 	}
 }
 
-func (b *BackendSetRepo) processEvent(e bbsmodels.Event) {
-	var instance *bbsmodels.ActualLRP
-	switch e.EventType() {
-	case bbsmodels.EventTypeActualLRPCreated:
-		createdEvent := e.(*bbsmodels.ActualLRPCreatedEvent)
-		instance = createdEvent.GetActualLrpGroup().GetInstance()
-	case bbsmodels.EventTypeActualLRPRemoved:
-		deletedEvent := e.(*bbsmodels.ActualLRPRemovedEvent)
-		b.store.Lock()
-		diegoProcessGUID := DiegoProcessGUID(deletedEvent.ActualLrpGroup.Instance.ActualLRPKey.ProcessGuid)
-		delete(b.store.content, diegoProcessGUID)
-		b.store.Unlock()
-		return
-	default:
-		b.logger.Debug("unhandled-event-type")
-		return
-	}
-
-	diegoProcessGUID := DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
+func processInstance(instance *bbsmodels.ActualLRP) *api.Backend {
 	if instance.State != bbsmodels.ActualLRPStateRunning {
-		return
+		return nil
 	}
 
 	var appHostPort uint32
@@ -168,26 +158,11 @@ func (b *BackendSetRepo) processEvent(e bbsmodels.Event) {
 	}
 
 	if appHostPort == 0 {
-		return
+		return nil
 	}
 
-	b.store.Lock()
-	defer b.store.Unlock()
-	if _, ok := b.store.content[diegoProcessGUID]; !ok {
-		b.store.content[diegoProcessGUID] = &api.BackendSet{}
-	}
-
-	backendToAdd := &api.Backend{
+	return &api.Backend{
 		Address: instance.ActualLRPNetInfo.Address,
 		Port:    appHostPort,
 	}
-
-	backends := b.store.content[diegoProcessGUID].Backends
-	for _, backend := range backends {
-		if fmt.Sprintf("%s:%d", backend.Address, backend.Port) == fmt.Sprintf("%s:%d", backendToAdd.Address, backendToAdd.Port) {
-			return
-		}
-	}
-
-	b.store.content[diegoProcessGUID].Backends = append(b.store.content[diegoProcessGUID].Backends, backendToAdd)
 }
