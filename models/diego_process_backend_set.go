@@ -18,6 +18,10 @@ type store struct {
 }
 
 func (s *store) Insert(guid DiegoProcessGUID, additionalBackend *api.Backend) {
+	if additionalBackend == nil {
+		return
+	}
+
 	s.Lock()
 	if _, ok := s.content[guid]; !ok {
 		s.content[guid] = &api.BackendSet{}
@@ -35,6 +39,13 @@ func (s *store) Insert(guid DiegoProcessGUID, additionalBackend *api.Backend) {
 	s.Lock()
 	s.content[guid].Backends = append(s.content[guid].Backends, additionalBackend)
 	s.Unlock()
+}
+
+func (s *store) Remove(guid DiegoProcessGUID) {
+	s.Lock()
+	defer s.Unlock()
+
+	delete(s.content, guid)
 }
 
 type BackendSetRepo struct {
@@ -109,6 +120,10 @@ func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.
 				be := processInstance(instance)
 				guid := DiegoProcessGUID(instance.ActualLRPKey.GetProcessGuid())
 				b.store.Insert(guid, be)
+			case bbsmodels.EventTypeActualLRPRemoved:
+				removedEvent := event.(*bbsmodels.ActualLRPRemovedEvent)
+				guid := DiegoProcessGUID(removedEvent.GetActualLrpGroup().GetInstance().ActualLRPKey.GetProcessGuid())
+				b.store.Remove(guid)
 			default:
 				b.logger.Debug("unhandled-event-type")
 				return
