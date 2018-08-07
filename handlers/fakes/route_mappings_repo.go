@@ -8,6 +8,17 @@ import (
 )
 
 type RouteMappingsRepo struct {
+	GetCalculatedWeightStub        func(rm *models.RouteMapping) int32
+	getCalculatedWeightMutex       sync.RWMutex
+	getCalculatedWeightArgsForCall []struct {
+		rm *models.RouteMapping
+	}
+	getCalculatedWeightReturns struct {
+		result1 int32
+	}
+	getCalculatedWeightReturnsOnCall map[int]struct {
+		result1 int32
+	}
 	MapStub        func(routeMapping *models.RouteMapping)
 	mapMutex       sync.RWMutex
 	mapArgsForCall []struct {
@@ -34,6 +45,54 @@ type RouteMappingsRepo struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *RouteMappingsRepo) GetCalculatedWeight(rm *models.RouteMapping) int32 {
+	fake.getCalculatedWeightMutex.Lock()
+	ret, specificReturn := fake.getCalculatedWeightReturnsOnCall[len(fake.getCalculatedWeightArgsForCall)]
+	fake.getCalculatedWeightArgsForCall = append(fake.getCalculatedWeightArgsForCall, struct {
+		rm *models.RouteMapping
+	}{rm})
+	fake.recordInvocation("GetCalculatedWeight", []interface{}{rm})
+	fake.getCalculatedWeightMutex.Unlock()
+	if fake.GetCalculatedWeightStub != nil {
+		return fake.GetCalculatedWeightStub(rm)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.getCalculatedWeightReturns.result1
+}
+
+func (fake *RouteMappingsRepo) GetCalculatedWeightCallCount() int {
+	fake.getCalculatedWeightMutex.RLock()
+	defer fake.getCalculatedWeightMutex.RUnlock()
+	return len(fake.getCalculatedWeightArgsForCall)
+}
+
+func (fake *RouteMappingsRepo) GetCalculatedWeightArgsForCall(i int) *models.RouteMapping {
+	fake.getCalculatedWeightMutex.RLock()
+	defer fake.getCalculatedWeightMutex.RUnlock()
+	return fake.getCalculatedWeightArgsForCall[i].rm
+}
+
+func (fake *RouteMappingsRepo) GetCalculatedWeightReturns(result1 int32) {
+	fake.GetCalculatedWeightStub = nil
+	fake.getCalculatedWeightReturns = struct {
+		result1 int32
+	}{result1}
+}
+
+func (fake *RouteMappingsRepo) GetCalculatedWeightReturnsOnCall(i int, result1 int32) {
+	fake.GetCalculatedWeightStub = nil
+	if fake.getCalculatedWeightReturnsOnCall == nil {
+		fake.getCalculatedWeightReturnsOnCall = make(map[int]struct {
+			result1 int32
+		})
+	}
+	fake.getCalculatedWeightReturnsOnCall[i] = struct {
+		result1 int32
+	}{result1}
 }
 
 func (fake *RouteMappingsRepo) Map(routeMapping *models.RouteMapping) {
@@ -156,6 +215,8 @@ func (fake *RouteMappingsRepo) ListReturnsOnCall(i int, result1 map[string]*mode
 func (fake *RouteMappingsRepo) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.getCalculatedWeightMutex.RLock()
+	defer fake.getCalculatedWeightMutex.RUnlock()
 	fake.mapMutex.RLock()
 	defer fake.mapMutex.RUnlock()
 	fake.unmapMutex.RLock()

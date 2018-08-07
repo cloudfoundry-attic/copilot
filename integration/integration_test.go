@@ -279,6 +279,7 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 				RouteGuid:       "route-guid-a",
 				CapiProcessGuid: "capi-process-guid-b",
+				RouteWeight:     1,
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -306,6 +307,7 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 				RouteGuid:       "route-guid-b",
 				CapiProcessGuid: "capi-process-guid-other",
+				RouteWeight:     1,
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -336,6 +338,7 @@ var _ = Describe("Copilot", func() {
 					},
 				},
 				CapiProcessGuid: "capi-process-guid-other",
+				RouteWeight:     100,
 			},
 			&api.RouteWithBackends{
 				Hostname: "some-url",
@@ -346,6 +349,7 @@ var _ = Describe("Copilot", func() {
 					},
 				},
 				CapiProcessGuid: "capi-process-guid-a",
+				RouteWeight:     50,
 			},
 			&api.RouteWithBackends{
 				Hostname: "some-url",
@@ -355,6 +359,7 @@ var _ = Describe("Copilot", func() {
 					},
 				},
 				CapiProcessGuid: "capi-process-guid-b",
+				RouteWeight:     50,
 			},
 		}))
 

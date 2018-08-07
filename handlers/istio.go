@@ -37,6 +37,7 @@ type routesRepoInterface interface {
 
 //go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
 type routeMappingsRepoInterface interface {
+	GetCalculatedWeight(rm *models.RouteMapping) int32
 	Map(routeMapping *models.RouteMapping)
 	Unmap(routeMapping *models.RouteMapping)
 	Sync(routeMappings []*models.RouteMapping)
@@ -149,6 +150,7 @@ func (c *Istio) collectRoutes() []*api.RouteWithBackends {
 			Path:            route.Path,
 			Backends:        &api.BackendSet{Backends: backends},
 			CapiProcessGuid: string(routeMapping.CAPIProcessGUID),
+			RouteWeight:     c.RouteMappingsRepo.GetCalculatedWeight(routeMapping),
 		}
 
 		if route.Path != "" {
@@ -163,7 +165,7 @@ func (c *Istio) collectRoutes() []*api.RouteWithBackends {
 	})
 
 	sort.SliceStable(routesWithoutPath, func(i, j int) bool {
-		return routesWithoutPath[i].Hostname < routesWithoutPath[j].Hostname
+		return routesWithoutPath[i].CapiProcessGuid < routesWithoutPath[j].CapiProcessGuid
 	})
 
 	routes = append(routes, routesWithoutPath...)

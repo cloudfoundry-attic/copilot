@@ -30,7 +30,14 @@ func NewRouteMappingsRepo() *RouteMappingsRepo {
 }
 
 func (r *RouteMappingsRepo) GetCalculatedWeight(rm *RouteMapping) int32 {
-	percent := (float32(rm.RouteWeight) / float32(r.weightDenominator[rm.RouteGUID])) * 100
+	var percent float32
+
+	if rm.RouteWeight != 0 {
+		percent = (float32(rm.RouteWeight) / float32(r.weightDenominator[rm.RouteGUID])) * 100
+	} else {
+		percent = 100
+	}
+
 	return int32(percent + 0.5)
 }
 
