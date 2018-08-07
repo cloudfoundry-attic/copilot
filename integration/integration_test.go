@@ -328,7 +328,7 @@ var _ = Describe("Copilot", func() {
 
 		routes := istioVisibleRoutes.Routes
 		Expect(routes).To(HaveLen(3))
-		Expect(istioVisibleRoutes.Routes).To(ConsistOf([]*api.RouteWithBackends{
+		Expect(istioVisibleRoutes.Routes).To(Equal([]*api.RouteWithBackends{
 			&api.RouteWithBackends{
 				Hostname: "some-url",
 				Path:     "/some/path",
