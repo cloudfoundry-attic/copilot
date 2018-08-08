@@ -38,6 +38,7 @@ func (c *CAPI) ListCfRouteMappings(context.Context, *api.ListCfRouteMappingsRequ
 		apiRoutMappings[k] = &api.RouteMapping{
 			CapiProcessGuid: string(v.CAPIProcessGUID),
 			RouteGuid:       string(v.RouteGUID),
+			RouteWeight:     v.RouteWeight,
 		}
 	}
 	return &api.ListCfRouteMappingsResponse{RouteMappings: apiRoutMappings}, nil
