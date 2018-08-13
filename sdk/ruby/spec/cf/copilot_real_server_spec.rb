@@ -31,7 +31,8 @@ RSpec.describe Cloudfoundry::Copilot do
   it 'can map a route' do
     @client.map_route(
       capi_process_guid: 'some-capi-process-guid',
-      route_guid: 'some-route-guid'
+      route_guid: 'some-route-guid',
+      route_weight: 128
     )
   end
 
@@ -67,7 +68,8 @@ RSpec.describe Cloudfoundry::Copilot do
       route_mappings: [
         {
           route_guid: 'some-route-guid',
-          capi_process_guid: 'some-capi-process-guid'
+          capi_process_guid: 'some-capi-process-guid',
+          route_weight: 128
         }
       ],
       capi_diego_process_associations: [
@@ -133,7 +135,8 @@ RSpec.describe Cloudfoundry::Copilot do
         expect do
           @client.map_route(
             capi_process_guid: 'some-capi-process-guid',
-            route_guid: 'some-route-guid'
+            route_guid: 'some-route-guid',
+            route_weight: 128
           )
         end.to raise_error(
           Cloudfoundry::Copilot::Client::PilotError,

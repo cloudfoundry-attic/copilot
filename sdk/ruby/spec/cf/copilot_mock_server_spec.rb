@@ -51,13 +51,15 @@ RSpec.describe Cloudfoundry::Copilot do
   it 'can map a route' do
     expect(@client.map_route(
              capi_process_guid: 'some-capi-process-guid-to-map',
-             route_guid: 'some-route-guid-to-map'
+             route_guid: 'some-route-guid-to-map',
+             route_weight: 128
     )).to be_a(::Api::MapRouteResponse)
 
     expect(@handlers.map_route_got_request).to eq(
       Api::MapRouteRequest.new(route_mapping: Api::RouteMapping.new(
         capi_process_guid: 'some-capi-process-guid-to-map',
-        route_guid: 'some-route-guid-to-map'
+        route_guid: 'some-route-guid-to-map',
+        route_weight: 128
       ))
     )
   end
@@ -103,13 +105,13 @@ RSpec.describe Cloudfoundry::Copilot do
   it 'can sync' do
     expect(@client.bulk_sync(
              routes: [{ guid: 'some-route-guid', host: 'example.host.com', path: '/some/path' }],
-             route_mappings: [{ route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid' }],
+             route_mappings: [{ route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid', route_weight: 128 }],
              capi_diego_process_associations: [{ capi_process_guid: 'some-capi-process-guid', diego_process_guids: ['some-diego-process-guid'] }]
     )).to be_a(::Api::BulkSyncResponse)
 
     expect(@handlers.bulk_sync_got_request).to eq(Api::BulkSyncRequest.new(
                                                     routes: [{ guid: 'some-route-guid', host: 'example.host.com', path: '/some/path' }],
-                                                    route_mappings: [{ route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid' }],
+                                                    route_mappings: [{ route_guid: 'some-route-guid', capi_process_guid: 'some-capi-process-guid', route_weight: 128 }],
                                                     capi_diego_process_associations: [{ capi_process_guid: 'some-capi-process-guid', diego_process_guids: ['some-diego-process-guid'] }]
     ))
   end
