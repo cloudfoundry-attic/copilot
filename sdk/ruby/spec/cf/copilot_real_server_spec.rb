@@ -39,7 +39,8 @@ RSpec.describe Cloudfoundry::Copilot do
   it 'can unmap a route' do
     @client.unmap_route(
       capi_process_guid: 'some-capi-process-guid',
-      route_guid: 'some-route-guid'
+      route_guid: 'some-route-guid',
+      route_weight: 128
     )
   end
 
@@ -155,7 +156,8 @@ RSpec.describe Cloudfoundry::Copilot do
         expect do
           @client.unmap_route(
             capi_process_guid: 'some-capi-process-guid',
-            route_guid: 'some-route-guid'
+            route_guid: 'some-route-guid',
+            route_weight: 128
           )
         end.to raise_error(
           Cloudfoundry::Copilot::Client::PilotError,

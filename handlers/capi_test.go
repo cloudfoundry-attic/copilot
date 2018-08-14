@@ -148,12 +148,17 @@ var _ = Describe("Capi Handlers", func() {
 
 		It("unmaps the routes", func() {
 			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{RouteGuid: "to-be-deleted-route-guid", CapiProcessGuid: "some-capi-process-guid"}})
+			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{
+				RouteMapping: &api.RouteMapping{RouteGuid: "to-be-deleted-route-guid",
+					CapiProcessGuid: "some-capi-process-guid",
+					RouteWeight:     1,
+				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
 			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&models.RouteMapping{
 				RouteGUID:       "to-be-deleted-route-guid",
 				CAPIProcessGUID: "some-capi-process-guid",
+				RouteWeight:     1,
 			}))
 		})
 	})

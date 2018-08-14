@@ -48,8 +48,8 @@ module Cloudfoundry
         raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
-      def unmap_route(capi_process_guid:, route_guid:)
-        route_mapping = Api::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid)
+      def unmap_route(capi_process_guid:, route_guid:, route_weight:)
+        route_mapping = Api::RouteMapping.new(capi_process_guid: capi_process_guid, route_guid: route_guid, route_weight: route_weight)
         request = Api::UnmapRouteRequest.new(route_mapping: route_mapping)
         service.unmap_route(request)
       rescue GRPC::BadStatus => e

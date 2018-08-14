@@ -103,7 +103,11 @@ func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteReques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
 	}
-	r := &models.RouteMapping{RouteGUID: models.RouteGUID(request.RouteMapping.RouteGuid), CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid)}
+	r := &models.RouteMapping{
+		RouteGUID:       models.RouteGUID(request.RouteMapping.RouteGuid),
+		CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
+		RouteWeight:     request.RouteMapping.RouteWeight,
+	}
 	c.RouteMappingsRepo.Unmap(r)
 	return &api.UnmapRouteResponse{}, nil
 }

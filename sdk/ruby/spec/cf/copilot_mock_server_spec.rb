@@ -67,13 +67,15 @@ RSpec.describe Cloudfoundry::Copilot do
   it 'can unmap a route' do
     expect(@client.unmap_route(
              capi_process_guid: 'some-capi-process-guid-to-unmap',
-             route_guid: 'some-route-guid-to-unmap'
+             route_guid: 'some-route-guid-to-unmap',
+             route_weight: 128
     )).to be_a(::Api::UnmapRouteResponse)
 
     expect(@handlers.unmap_route_got_request).to eq(
       Api::UnmapRouteRequest.new(route_mapping: Api::RouteMapping.new(
         capi_process_guid: 'some-capi-process-guid-to-unmap',
-        route_guid: 'some-route-guid-to-unmap'
+        route_guid: 'some-route-guid-to-unmap',
+        route_weight: 128
       ))
     )
   end
