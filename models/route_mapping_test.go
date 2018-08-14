@@ -114,30 +114,53 @@ var _ = Describe("RouteMappingsRepo", func() {
 
 			Expect(routeMappingsRepo.List()).To(HaveLen(0))
 		})
-	})
 
-	Describe("Sync", func() {
-		It("adds a list of routes to the repo", func() {
-			routeMapping := models.RouteMapping{
+		It("zeroes out the denominator", func() {
+			routeMapping := &models.RouteMapping{
 				RouteGUID:       "some-route-guid",
 				CAPIProcessGUID: "some-capi-guid",
 				RouteWeight:     2,
 			}
 
-			routeMappingsRepo.Map(&routeMapping)
+			routeMappingsRepo.Map(routeMapping)
+			routeMappingsRepo.Unmap(routeMapping)
+			routeMappingsRepo.Map(routeMapping)
 
-			newRouteMapping := models.RouteMapping{
+			Expect(routeMappingsRepo.GetCalculatedWeight(routeMapping)).To(Equal(int32(100)))
+		})
+	})
+
+	Describe("Sync", func() {
+		It("adds a list of routes to the repo", func() {
+			routeMapping := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+				RouteWeight:     2,
+			}
+
+			routeMappingsRepo.Map(routeMapping)
+
+			newRouteMapping := &models.RouteMapping{
 				RouteGUID:       "some-other-route-guid",
 				CAPIProcessGUID: "some-other-capi-guid",
 				RouteWeight:     1,
 			}
-			updatedRouteMappings := []*models.RouteMapping{&newRouteMapping}
+
+			otherRouteMapping := &models.RouteMapping{
+				RouteGUID:       "some-other-route-guid",
+				CAPIProcessGUID: "a-different-capi-guid",
+				RouteWeight:     2,
+			}
+			updatedRouteMappings := []*models.RouteMapping{newRouteMapping, otherRouteMapping}
 
 			routeMappingsRepo.Sync(updatedRouteMappings)
 
 			Expect(routeMappingsRepo.List()).Should(Equal(map[string]*models.RouteMapping{
-				"some-other-route-guid-some-other-capi-guid": &newRouteMapping,
+				"some-other-route-guid-some-other-capi-guid":  newRouteMapping,
+				"some-other-route-guid-a-different-capi-guid": otherRouteMapping,
 			}))
+
+			Expect(routeMappingsRepo.GetCalculatedWeight(otherRouteMapping)).To(Equal(int32(67)))
 		})
 	})
 })

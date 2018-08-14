@@ -43,22 +43,23 @@ func (r *RouteMappingsRepo) GetCalculatedWeight(rm *RouteMapping) int32 {
 
 func (m *RouteMappingsRepo) Map(rm *RouteMapping) {
 	m.Lock()
-	i := m.weightDenominator[rm.RouteGUID]
-	m.weightDenominator[rm.RouteGUID] = i + rm.RouteWeight
+	m.weightDenominator[rm.RouteGUID] += rm.RouteWeight
 	m.repo[rm.Key()] = rm
 	m.Unlock()
 }
 
-func (m *RouteMappingsRepo) Unmap(routeMapping *RouteMapping) {
+func (m *RouteMappingsRepo) Unmap(rm *RouteMapping) {
 	m.Lock()
-	delete(m.repo, routeMapping.Key())
+	delete(m.repo, rm.Key())
+	m.weightDenominator[rm.RouteGUID] -= rm.RouteWeight
 	m.Unlock()
 }
 
 func (m *RouteMappingsRepo) Sync(routeMappings []*RouteMapping) {
 	repo := make(map[string]*RouteMapping)
-	for _, routeMapping := range routeMappings {
-		repo[routeMapping.Key()] = routeMapping
+	for _, rm := range routeMappings {
+		repo[rm.Key()] = rm
+		m.weightDenominator[rm.RouteGUID] += rm.RouteWeight
 	}
 	m.Lock()
 	m.repo = repo
