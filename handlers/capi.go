@@ -147,6 +147,7 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 		routeMappings[i] = &models.RouteMapping{
 			RouteGUID:       models.RouteGUID(routeMapping.RouteGuid),
 			CAPIProcessGUID: models.CAPIProcessGUID(routeMapping.CapiProcessGuid),
+			RouteWeight:     routeMapping.RouteWeight,
 		}
 	}
 

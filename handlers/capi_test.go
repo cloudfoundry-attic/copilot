@@ -245,6 +245,7 @@ var _ = Describe("Capi Handlers", func() {
 				RouteMappings: []*api.RouteMapping{{
 					RouteGuid:       "route-guid-a",
 					CapiProcessGuid: "some-capi-process-guid",
+					RouteWeight:     1,
 				}},
 				Routes: []*api.Route{
 					{
@@ -267,6 +268,7 @@ var _ = Describe("Capi Handlers", func() {
 			Expect(fakeRouteMappingsRepo.SyncArgsForCall(0)).To(Equal([]*models.RouteMapping{{
 				RouteGUID:       "route-guid-a",
 				CAPIProcessGUID: "some-capi-process-guid",
+				RouteWeight:     1,
 			}}))
 
 			Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
