@@ -45,6 +45,7 @@ var _ = Describe("Copilot", func() {
 
 		listenAddrForPilot := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 
 		bbsCreds := testhelpers.GenerateMTLS()
@@ -185,6 +186,7 @@ var _ = Describe("Copilot", func() {
 		serverConfig = &config.Config{
 			ListenAddressForPilot:           listenAddrForPilot,
 			ListenAddressForCloudController: listenAddrForCloudController,
+			ListenAddressForMCP:             listenAddrForMCP,
 			PilotClientCAPath:               copilotTLSFiles.ClientCA,
 			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
 			ServerCertPath:                  copilotTLSFiles.ServerCert,

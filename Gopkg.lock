@@ -48,17 +48,33 @@
   revision = "6226ea591a40176dd3ff9cd8eff81ed6ca721a00"
 
 [[projects]]
-  digest = "1:70a80170917a15e1ff02faab5f9e716e945e0676e86599ba144d38f96e30c3bf"
+  digest = "1:54d5c6a784a9de9c836fc070d51d0689c3e99ee6d24dba8a36f0762039dae830"
+  name = "github.com/gogo/googleapis"
+  packages = ["google/rpc"]
+  pruneopts = ""
+  revision = "8558fb44d2f1fc223118afc694129d2c2d2924d1"
+  version = "v1.1.0"
+
+[[projects]]
+  digest = "1:6e73003ecd35f4487a5e88270d3ca0a81bc80dc88053ac7e4dcfec5fba30d918"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
     "proto",
     "protoc-gen-gogo/descriptor",
     "sortkeys",
+    "types",
   ]
   pruneopts = ""
-  revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
-  version = "v0.5"
+  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
+  version = "v1.1.1"
+
+[[projects]]
+  digest = "1:ad98e18b5774cb6eb9f0e81d594c76f8872796c5e8ed99ac781e0338700c55a6"
+  name = "github.com/gogo/status"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d60b5acac426cb52f7e28124c6aaa862d9f339f5"
 
 [[projects]]
   digest = "1:f958a1c137db276e52f0b50efee41a1a389dcdded59a69711f3e872757dab34b"
@@ -88,6 +104,22 @@
   pruneopts = ""
   revision = "a30252cb686a21eb2d0b98132633053ec2f7f1e5"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  pruneopts = ""
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
+  digest = "1:11c58e19ff7ce22740423bb933f1ddca3bf575def40d5ac3437ec12871b1648b"
+  name = "github.com/natefinch/lumberjack"
+  packages = ["."]
+  pruneopts = ""
+  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
+  version = "v2.1"
 
 [[projects]]
   digest = "1:a7fd918fb5bd2188436785c0424f8a50b4addfedf37a2b14d796be2a927b8007"
@@ -150,6 +182,22 @@
   revision = "4272315231ce0d2636eeb44ed0479e56ca165581"
 
 [[projects]]
+  digest = "1:a1403cc8a94b8d7956ee5e9694badef0e7b051af289caad1cf668331e3ffa4f6"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
+
+[[projects]]
+  digest = "1:0a52bcb568386d98f4894575d53ce3e456f56471de6897bb8b9de13c33d9340e"
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  pruneopts = ""
+  revision = "9a97c102cda95a86cec2345a6f09f55a939babf5"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:0fc3b06901e4732c29c433efe8d956f7c5dedde5baad16e88ec1289ecf86362f"
   name = "github.com/square/certstrap"
   packages = ["pkix"]
@@ -184,6 +232,38 @@
   packages = ["sse"]
   pruneopts = ""
   revision = "fd69d275caac5d78d793e77ddbe9bd2001d9b88d"
+
+[[projects]]
+  digest = "1:74f86c458e82e1c4efbab95233e0cf51b7cc02dc03193be9f62cd81224e10401"
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  pruneopts = ""
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
+
+[[projects]]
+  digest = "1:22c7effcb4da0eacb2bb1940ee173fac010e9ef3c691f5de4b524d538bd980f5"
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
+
+[[projects]]
+  digest = "1:246f378f80fba6fcf0f191c486b6613265abd2bc0f2fa55a36b928c67352021e"
+  name = "go.uber.org/zap"
+  packages = [
+    ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
+    "zapcore",
+    "zapgrpc",
+  ]
+  pruneopts = ""
+  revision = "ff33455a0e382e8a81d14dd7c922020b6b5e7982"
+  version = "v1.9.1"
 
 [[projects]]
   branch = "master"
@@ -323,6 +403,28 @@
   pruneopts = ""
   revision = "eb3733d160e74a9c7e442f435eb3bea458e1d19f"
 
+[[projects]]
+  branch = "master"
+  digest = "1:9e32bde65b2b1337863170ae1c241be4505caacb0de19e92b403b60d49c8ea49"
+  name = "istio.io/api"
+  packages = ["mcp/v1alpha1"]
+  pruneopts = ""
+  revision = "b387e35ae059b1d107ab1ad9a42b4474b034da61"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4deb2ab1a4acf1cd001d0c83d7d53ceec7b9126286e81699a7f490c99f9469ac"
+  name = "istio.io/istio"
+  packages = [
+    "pkg/log",
+    "pkg/mcp/client",
+    "pkg/mcp/server",
+    "pkg/mcp/snapshot",
+    "security/pkg/pki/util",
+  ]
+  pruneopts = ""
+  revision = "7bf50a53fa67218c2ad64591b192adb97568c38a"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -354,6 +456,10 @@
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
     "gopkg.in/validator.v2",
+    "istio.io/api/mcp/v1alpha1",
+    "istio.io/istio/pkg/mcp/client",
+    "istio.io/istio/pkg/mcp/server",
+    "istio.io/istio/pkg/mcp/snapshot",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

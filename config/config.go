@@ -25,6 +25,7 @@ type BBSConfig struct {
 type Config struct {
 	ListenAddressForPilot           string `validate:"nonzero"`
 	ListenAddressForCloudController string `validate:"nonzero"`
+	ListenAddressForMCP             string `validate:"nonzero"`
 	PilotClientCAPath               string `validate:"nonzero"`
 	CloudControllerClientCAPath     string `validate:"nonzero"`
 	ServerCertPath                  string `validate:"nonzero"`

@@ -25,6 +25,7 @@ var _ = Describe("Config", func() {
 		cfg = &config.Config{
 			ListenAddressForPilot:           "127.0.0.1:1234",
 			ListenAddressForCloudController: "127.0.0.1:1235",
+			ListenAddressForMCP:             "127.0.0.1:1236",
 			PilotClientCAPath:               "some-pilot-ca-path",
 			CloudControllerClientCAPath:     "some-cloud-controller-ca-path",
 			ServerCertPath:                  "some-cert-path",
@@ -78,6 +79,7 @@ var _ = Describe("Config", func() {
 		},
 		Entry("ListenAddressForPilot", "ListenAddressForPilot"),
 		Entry("ListenAddressForCloudController", "ListenAddressForCloudController"),
+		Entry("ListenAddressForMCP", "ListenAddressForMCP"),
 		Entry("PilotClientCAPath", "PilotClientCAPath"),
 		Entry("CloudControllerClientCAPath", "CloudControllerClientCAPath"),
 		Entry("ServerCertPath", "ServerCertPath"),

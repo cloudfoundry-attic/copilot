@@ -14,6 +14,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
+	mcp "istio.io/api/mcp/v1alpha1"
+	"istio.io/istio/pkg/mcp/server"
+	"istio.io/istio/pkg/mcp/snapshot"
 
 	"code.cloudfoundry.org/bbs"
 	"code.cloudfoundry.org/copilot/api"
@@ -133,9 +136,21 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
 	)
 
+	cache := snapshot.New()
+	typeURLs := []string{}
+
+	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
+		func(s *grpc.Server) {
+			snapshotServer := server.New(cache, typeURLs, nil)
+			mcp.RegisterAggregatedMeshConfigServiceServer(s, snapshotServer)
+			reflection.Register(s)
+		},
+	)
+
 	members := grouper.Members{
-		grouper.Member{Name: "gprc-server-for-pilot", Runner: grpcServerForPilot},
-		grouper.Member{Name: "gprc-server-for-cloud-controller", Runner: grpcServerForCloudController},
+		grouper.Member{Name: "grpc-server-for-pilot", Runner: grpcServerForPilot},
+		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
+		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 	}
 	if bbsClient != nil {
 		members = append(members, grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo})
