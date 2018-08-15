@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+
 	"google.golang.org/grpc"
+
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/pkg/mcp/client"
 )
@@ -77,10 +82,19 @@ var _ = Describe("MCP", func() {
 	})
 
 	It("sends config over the wire", func() {
-		conn, err := grpc.Dial(fmt.Sprintf("grpc://%s", listenAddrForMCP), grpc.WithBlock(), grpc.WithInsecure())
+		opts := []grpc.DialOption{
+			grpc.WithBlock(),
+			grpc.WithInsecure(),
+			grpc.WithTimeout(5 * time.Second),
+		}
+
+		conn, err := grpc.Dial(listenAddrForMCP, opts...)
 		Expect(err).NotTo(HaveOccurred())
+		defer conn.Close()
+
 		svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
 		mockUpdater := &MockUpdater{}
+
 		client.New(svcClient, []string{"destination-rule", "virtual-service"}, mockUpdater, "test-id", nil)
 		Expect(mockUpdater.Changes).To(HaveLen(1))
 	})
