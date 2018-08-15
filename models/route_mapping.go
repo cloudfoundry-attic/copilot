@@ -57,12 +57,16 @@ func (m *RouteMappingsRepo) Unmap(rm *RouteMapping) {
 
 func (m *RouteMappingsRepo) Sync(routeMappings []*RouteMapping) {
 	repo := make(map[string]*RouteMapping)
+	weightDenominator := make(map[RouteGUID]int32)
+
 	for _, rm := range routeMappings {
 		repo[rm.Key()] = rm
-		m.weightDenominator[rm.RouteGUID] += rm.RouteWeight
+		weightDenominator[rm.RouteGUID] += rm.RouteWeight
 	}
+
 	m.Lock()
 	m.repo = repo
+	m.weightDenominator = weightDenominator
 	m.Unlock()
 }
 

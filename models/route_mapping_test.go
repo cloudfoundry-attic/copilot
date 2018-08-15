@@ -162,5 +162,24 @@ var _ = Describe("RouteMappingsRepo", func() {
 
 			Expect(routeMappingsRepo.GetCalculatedWeight(otherRouteMapping)).To(Equal(int32(67)))
 		})
+
+		It("syncs correctly after multiple times", func() {
+			routeMapping := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+				RouteWeight:     2,
+			}
+
+			updatedRouteMappings := []*models.RouteMapping{routeMapping}
+
+			routeMappingsRepo.Sync(updatedRouteMappings)
+			routeMappingsRepo.Sync(updatedRouteMappings)
+
+			Expect(routeMappingsRepo.List()).Should(Equal(map[string]*models.RouteMapping{
+				"some-route-guid-some-capi-guid": routeMapping,
+			}))
+
+			Expect(routeMappingsRepo.GetCalculatedWeight(routeMapping)).To(Equal(int32(100)))
+		})
 	})
 })
