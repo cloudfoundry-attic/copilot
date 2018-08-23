@@ -407,7 +407,10 @@
   branch = "master"
   digest = "1:9e32bde65b2b1337863170ae1c241be4505caacb0de19e92b403b60d49c8ea49"
   name = "istio.io/api"
-  packages = ["mcp/v1alpha1"]
+  packages = [
+    "mcp/v1alpha1",
+    "networking/v1alpha3",
+  ]
   pruneopts = ""
   revision = "b387e35ae059b1d107ab1ad9a42b4474b034da61"
 
@@ -436,6 +439,7 @@
     "code.cloudfoundry.org/lager",
     "code.cloudfoundry.org/lager/lagertest",
     "github.com/gogo/protobuf/proto",
+    "github.com/gogo/protobuf/types",
     "github.com/golang/protobuf/proto",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
@@ -457,6 +461,7 @@
     "google.golang.org/grpc/status",
     "gopkg.in/validator.v2",
     "istio.io/api/mcp/v1alpha1",
+    "istio.io/api/networking/v1alpha3",
     "istio.io/istio/pkg/mcp/client",
     "istio.io/istio/pkg/mcp/server",
     "istio.io/istio/pkg/mcp/snapshot",
