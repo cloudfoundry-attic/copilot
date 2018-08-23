@@ -31,6 +31,7 @@ var _ = Describe("Istio Handlers", func() {
 		handler                        *handlers.Istio
 		bbsClient                      *mockBBSClient
 		backendSetRepo                 *fakes.BackendSetRepo
+		collector                      *fakes.Collector
 		logger                         lager.Logger
 		bbsClientResponse              []*bbsmodels.ActualLRPGroup
 		expectedExternalRouteBackendsA *api.BackendSet
@@ -168,6 +169,7 @@ var _ = Describe("Istio Handlers", func() {
 		backendSetRepo = &fakes.BackendSetRepo{}
 
 		logger = lagertest.NewTestLogger("test")
+		collector = &fakes.Collector{}
 
 		vipProvider = &internalroutes_fakes.VIPProvider{}
 		vipProvider.GetStub = func(hostname string) string {
@@ -193,8 +195,9 @@ var _ = Describe("Istio Handlers", func() {
 		}
 
 		handler = &handlers.Istio{
-			BackendSetRepo:                   backendSetRepo,
 			Logger:                           logger,
+			Collector:                        collector,
+			BackendSetRepo:                   backendSetRepo,
 			RoutesRepo:                       routesRepo,
 			RouteMappingsRepo:                routeMappingsRepo,
 			CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
@@ -208,6 +211,43 @@ var _ = Describe("Istio Handlers", func() {
 			resp, err := handler.Health(ctx, new(api.HealthRequest))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).To(Equal(&api.HealthResponse{Healthy: true}))
+		})
+	})
+
+	Describe("Routes", func() {
+		var routesResponse []*api.RouteWithBackends
+
+		BeforeEach(func() {
+			routesResponse = []*api.RouteWithBackends{
+				&api.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: &api.BackendSet{
+						Backends: []*api.Backend{
+							{
+								Address: "10.255.0.16",
+								Port:    8080,
+							},
+							{
+								Address: "10.255.1.34",
+								Port:    9080,
+							},
+						},
+					},
+					CapiProcessGuid: "capi-process-guid-a",
+					RouteWeight:     67,
+				},
+			}
+
+			collector.CollectReturns(routesResponse)
+		})
+
+		It("returns the routes from the collector", func() {
+			ctx := context.Background()
+			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(Equal(&api.RoutesResponse{
+				Routes: routesResponse,
+			}))
 		})
 	})
 
@@ -297,197 +337,6 @@ var _ = Describe("Istio Handlers", func() {
 			Expect(internalRoute0.Vip).To(Equal("vip-for-route-a"))
 			Expect(internalRoute0.Backends.Backends).To(ConsistOf(
 				append(expectedInternalRouteBackendsA.Backends, expectedInternalRouteBackendsB.Backends...),
-			))
-		})
-	})
-
-	Describe("listing Routes (using real repos, to cover more integration-y things)", func() {
-		BeforeEach(func() {
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-a",
-				RouteWeight:     2,
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-c",
-				RouteWeight:     1,
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-a",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-a",
-				},
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-b",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-b",
-				},
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-c",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-b",
-				},
-			})
-
-			backendSetRepo.GetStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
-				switch guid {
-				case "diego-process-guid-a":
-					return expectedExternalRouteBackendsA
-				case "diego-process-guid-b":
-					return expectedExternalRouteBackendsB
-				default:
-					return &api.BackendSet{
-						Backends: []*api.Backend{},
-					}
-				}
-			}
-		})
-
-		It("returns the sorted routes for each running backend instance", func() {
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-a",
-				Host: "ROUTE-a.cfapps.com",
-			})
-			ctx := context.Background()
-
-			internalRouteResp, err := handler.InternalRoutes(ctx, new(api.InternalRoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(internalRouteResp.InternalRoutes).To(HaveLen(0))
-
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Routes).To(HaveLen(2))
-			Expect(resp.Routes).To(Equal([]*api.RouteWithBackends{
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsA,
-					CapiProcessGuid: "capi-process-guid-a",
-					RouteWeight:     67,
-				},
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsB,
-					CapiProcessGuid: "capi-process-guid-c",
-					RouteWeight:     33,
-				},
-			},
-			))
-		})
-
-		It("ignores route mappings for routes that do not exist", func() {
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-a",
-				Host: "ROUTE-a.cfapps.com",
-			})
-			ctx := context.Background()
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Routes: []*api.RouteWithBackends{
-					&api.RouteWithBackends{
-						Hostname:        "route-a.cfapps.com",
-						Backends:        expectedExternalRouteBackendsA,
-						CapiProcessGuid: "capi-process-guid-a",
-						RouteWeight:     67,
-					},
-					&api.RouteWithBackends{
-						Hostname:        "route-a.cfapps.com",
-						Backends:        expectedExternalRouteBackendsB,
-						CapiProcessGuid: "capi-process-guid-c",
-						RouteWeight:     33,
-					},
-				},
-			}))
-		})
-
-		It("sorts routes with multiple context paths from shortest to longest path", func() {
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-a",
-				Host: "route-a.cfapps.com",
-			})
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-z",
-				Host: "route-z.cfapps.com",
-			})
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-b",
-				Host: "route-a.cfapps.com",
-				Path: "/zxyv/some/longer/path",
-			})
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-c",
-				Host: "route-a.cfapps.com",
-				Path: "/some/path",
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-z",
-				CAPIProcessGUID: "capi-process-guid-b",
-				RouteWeight:     1,
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-b",
-				CAPIProcessGUID: "capi-process-guid-y",
-				RouteWeight:     1,
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-c",
-				CAPIProcessGUID: "capi-process-guid-x",
-				RouteWeight:     1,
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-x",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-b",
-				},
-			})
-			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
-				CAPIProcessGUID: "capi-process-guid-y",
-				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
-					"diego-process-guid-b",
-				},
-			})
-
-			ctx := context.Background()
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Routes).To(HaveLen(5))
-			Expect(resp.Routes).To(Equal([]*api.RouteWithBackends{
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsB,
-					Path:            "/some/path",
-					CapiProcessGuid: "capi-process-guid-x",
-					RouteWeight:     100,
-				},
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsB,
-					Path:            "/zxyv/some/longer/path",
-					CapiProcessGuid: "capi-process-guid-y",
-					RouteWeight:     100,
-				},
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsA,
-					CapiProcessGuid: "capi-process-guid-a",
-					RouteWeight:     67,
-				},
-				&api.RouteWithBackends{
-					Hostname:        "route-z.cfapps.com",
-					Backends:        expectedExternalRouteBackendsB,
-					CapiProcessGuid: "capi-process-guid-b",
-					RouteWeight:     100,
-				},
-				&api.RouteWithBackends{
-					Hostname:        "route-a.cfapps.com",
-					Backends:        expectedExternalRouteBackendsB,
-					CapiProcessGuid: "capi-process-guid-c",
-					RouteWeight:     33,
-				},
-			},
 			))
 		})
 	})

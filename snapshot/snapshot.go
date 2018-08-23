@@ -23,7 +23,7 @@ const (
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
 type collector interface {
-	Collect() []api.RouteWithBackends
+	Collect() []*api.RouteWithBackends
 }
 
 type builder interface {
@@ -74,7 +74,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 }
 
-func (s *Snapshot) createEnvelopes(routes []api.RouteWithBackends) ([]*mcp.Envelope, []*mcp.Envelope) {
+func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) ([]*mcp.Envelope, []*mcp.Envelope) {
 	var (
 		vsEnvelopes []*mcp.Envelope
 		drEnvelopes []*mcp.Envelope
@@ -86,17 +86,17 @@ func (s *Snapshot) createEnvelopes(routes []api.RouteWithBackends) ([]*mcp.Envel
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.GetHostname())
 		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.GetHostname())
 
-		dr := createDestinationRule(&route)
+		dr := createDestinationRule(route)
 		dr.Subsets = append(dr.Subsets, createSubset(route.GetCapiProcessGuid()))
 
-		vs := createVirtualService(&route)
+		vs := createVirtualService(route)
 
 		if r, ok := httpRoutes[route.GetHostname()+route.GetPath()]; ok {
-			r.Route = append(r.Route, createDestinationWeight(&route))
+			r.Route = append(r.Route, createDestinationWeight(route))
 		} else {
-			r := createHTTPRoute(&route)
+			r := createHTTPRoute(route)
 			if route.GetPath() != "" {
-				r.Match = createHTTPMatchRequest(&route)
+				r.Match = createHTTPMatchRequest(route)
 				vs.Http = append([]*networking.HTTPRoute{r}, vs.Http...)
 			} else {
 				vs.Http = append(vs.Http, r)

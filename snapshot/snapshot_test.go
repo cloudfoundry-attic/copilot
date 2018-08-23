@@ -39,7 +39,7 @@ var _ = Describe("Run", func() {
 		sig := make(chan os.Signal)
 		ready := make(chan struct{})
 
-		collector.CollectReturns([]api.RouteWithBackends{
+		collector.CollectReturns([]*api.RouteWithBackends{
 			{
 				Hostname: "foo.example.com",
 				Path:     "/something",

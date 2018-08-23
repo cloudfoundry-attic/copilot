@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"context"
-	"sort"
-	"strings"
 
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
@@ -14,6 +12,7 @@ import (
 
 type Istio struct {
 	Logger                           lager.Logger
+	Collector                        collector
 	RoutesRepo                       routesRepoInterface
 	BackendSetRepo                   backendSetRepo
 	RouteMappingsRepo                routeMappingsRepoInterface
@@ -24,6 +23,11 @@ type Istio struct {
 //go:generate counterfeiter -o fakes/backend_set_repo.go --fake-name BackendSetRepo . backendSetRepo
 type backendSetRepo interface {
 	Get(guid models.DiegoProcessGUID) *api.BackendSet
+}
+
+//go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
+type collector interface {
+	Collect() []*api.RouteWithBackends
 }
 
 //go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
@@ -64,7 +68,7 @@ func (c *Istio) Health(context.Context, *api.HealthRequest) (*api.HealthResponse
 
 func (c *Istio) Routes(context.Context, *api.RoutesRequest) (*api.RoutesResponse, error) {
 	c.Logger.Info("listing istio routes...")
-	routes := c.collectRoutes()
+	routes := c.Collector.Collect()
 	return &api.RoutesResponse{Routes: routes}, nil
 }
 
@@ -104,71 +108,4 @@ func (c *Istio) getAppHostPort(netInfo bbsmodels.ActualLRPNetInfo) uint32 {
 		}
 	}
 	return 0
-}
-
-func (c *Istio) collectRoutes() []*api.RouteWithBackends {
-	type RouteDetails struct {
-		hostname        string
-		backendSet      *api.BackendSet
-		path            string
-		capiProcessGUID string
-	}
-
-	var routesWithoutPath, routes []*api.RouteWithBackends
-
-	for _, routeMapping := range c.RouteMappingsRepo.List() {
-		route, ok := c.RoutesRepo.Get(routeMapping.RouteGUID)
-		if !ok {
-			continue
-		}
-
-		if strings.HasSuffix(route.Hostname(), ".apps.internal") {
-			continue
-		}
-
-		capiDiegoProcessAssociation := c.CAPIDiegoProcessAssociationsRepo.Get(&routeMapping.CAPIProcessGUID)
-		if capiDiegoProcessAssociation == nil {
-			continue
-		}
-
-		var backends []*api.Backend
-		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			backendSet := c.BackendSetRepo.Get(models.DiegoProcessGUID(diegoProcessGUID))
-			if backendSet == nil {
-				continue
-			}
-
-			backends = append(backends, backendSet.Backends...)
-		}
-
-		sort.SliceStable(backends, func(i, j int) bool {
-			return backends[i].Address < backends[j].Address
-		})
-
-		builtRoute := &api.RouteWithBackends{
-			Hostname:        route.Hostname(),
-			Path:            route.Path,
-			Backends:        &api.BackendSet{Backends: backends},
-			CapiProcessGuid: string(routeMapping.CAPIProcessGUID),
-			RouteWeight:     c.RouteMappingsRepo.GetCalculatedWeight(routeMapping),
-		}
-
-		if route.Path != "" {
-			routes = append(routes, builtRoute)
-		} else {
-			routesWithoutPath = append(routesWithoutPath, builtRoute)
-		}
-	}
-
-	sort.SliceStable(routes, func(i, j int) bool {
-		return len(routes[i].Path) < len(routes[j].Path)
-	})
-
-	sort.SliceStable(routesWithoutPath, func(i, j int) bool {
-		return routesWithoutPath[i].CapiProcessGuid < routesWithoutPath[j].CapiProcessGuid
-	})
-
-	routes = append(routes, routesWithoutPath...)
-
-	return routes
 }
