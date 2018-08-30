@@ -19,7 +19,6 @@ var _ = Describe("Capi Handlers", func() {
 		handler                              *handlers.CAPI
 		logger                               lager.Logger
 		fakeRoutesRepo                       *fakes.RoutesRepo
-		fakeRouteMappingsRepo                *fakes.RouteMappingsRepo
 		fakeCAPIDiegoProcessAssociationsRepo *fakes.CAPIDiegoProcessAssociationsRepo
 	)
 
@@ -27,12 +26,10 @@ var _ = Describe("Capi Handlers", func() {
 		logger = lagertest.NewTestLogger("test")
 
 		fakeRoutesRepo = &fakes.RoutesRepo{}
-		fakeRouteMappingsRepo = &fakes.RouteMappingsRepo{}
 		fakeCAPIDiegoProcessAssociationsRepo = &fakes.CAPIDiegoProcessAssociationsRepo{}
 		handler = &handlers.CAPI{
 			Logger:                           logger,
 			RoutesRepo:                       fakeRoutesRepo,
-			RouteMappingsRepo:                fakeRouteMappingsRepo,
 			CAPIDiegoProcessAssociationsRepo: fakeCAPIDiegoProcessAssociationsRepo,
 		}
 	})
@@ -67,16 +64,99 @@ var _ = Describe("Capi Handlers", func() {
 				Route: &api.Route{
 					Guid: "route-guid-a",
 					Host: "route-a.example.com",
+					Destinations: []*Destination{
+						{
+							CAPIProcessGUID: "some-capi-process-guid",
+							Weight:          100,
+						},
+					},
 				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
 			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.example.com",
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          100,
+					},
+				},
 			}))
 		})
+
+		It("updates the destinations if they exist", func() {
+			ctx := context.Background()
+			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
+				Route: &api.Route{
+					Guid: "route-guid-a",
+					Host: "route-a.example.com",
+					Destinations: []*Destination{
+						{
+							CAPIProcessGUID: "some-capi-process-guid",
+							Weight:          50,
+						},
+						{
+							CAPIProcessGUID: "some-other-capi-process-guid",
+							Weight:          50,
+						},
+					},
+				}})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
+				Route: &api.Route{
+					Guid: "route-guid-a",
+					Host: "route-a.example.com",
+					Destinations: []*Destination{
+						{
+							CAPIProcessGUID: "some-capi-process-guid",
+							Weight:          60,
+						},
+						{
+							CAPIProcessGUID: "some-other-capi-process-guid",
+							Weight:          40,
+						},
+					},
+				}})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(2))
+
+			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&models.Route{
+				GUID: "route-guid-a",
+				Host: "route-a.example.com",
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          50,
+					},
+					{
+						CAPIProcessGUID: "some-other-capi-process-guid",
+						Weight:          50,
+					},
+				},
+			}))
+
+			Expect(fakeRoutesRepo.UpsertArgsForCall(1)).To(Equal(&models.Route{
+				GUID: "route-guid-a",
+				Host: "route-a.example.com",
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          60,
+					},
+					{
+						CAPIProcessGUID: "some-other-capi-process-guid",
+						Weight:          40,
+					},
+				},
+			}))
+		})
+
 	})
 
+	// Not sure how to handle route deletion yet.
 	Describe("DeleteRoute", func() {
 		It("calls Delete on the RoutesRepo using the provided guid", func() {
 			fakeRoutesRepo := &fakes.RoutesRepo{}
@@ -92,74 +172,6 @@ var _ = Describe("Capi Handlers", func() {
 			ctx := context.Background()
 			_, err := handler.DeleteRoute(ctx, &api.DeleteRouteRequest{})
 			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-	})
-
-	Describe("MapRoute", func() {
-		BeforeEach(func() {
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-a",
-				Host: "route-a.example.com",
-			})
-		})
-
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{RouteMapping: &api.RouteMapping{
-				RouteGuid: "some-route-guid",
-			}})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{RouteMapping: &api.RouteMapping{
-				CapiProcessGuid: "some-process-guid",
-			}})
-			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-
-		It("maps the route", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{
-				RouteMapping: &api.RouteMapping{
-					RouteGuid:       "route-guid-a",
-					CapiProcessGuid: "some-capi-process-guid",
-					RouteWeight:     1,
-				}})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeRouteMappingsRepo.MapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.MapArgsForCall(0)).To(Equal(&models.RouteMapping{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "some-capi-process-guid",
-				RouteWeight:     1,
-			}))
-		})
-	})
-
-	Describe("UnmapRoute", func() {
-		It("validates the inputs", func() {
-			ctx := context.Background()
-			_, err := handler.MapRoute(ctx, &api.MapRouteRequest{})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{RouteGuid: "some-route-guid"}})
-			Expect(err.Error()).To(ContainSubstring("required"))
-			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{CapiProcessGuid: "some-process-guid"}})
-			Expect(err.Error()).To(ContainSubstring("required"))
-		})
-
-		It("unmaps the routes", func() {
-			ctx := context.Background()
-			_, err := handler.UnmapRoute(ctx, &api.UnmapRouteRequest{
-				RouteMapping: &api.RouteMapping{RouteGuid: "to-be-deleted-route-guid",
-					CapiProcessGuid: "some-capi-process-guid",
-					RouteWeight:     1,
-				}})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeRouteMappingsRepo.UnmapCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.UnmapArgsForCall(0)).To(Equal(&models.RouteMapping{
-				RouteGUID:       "to-be-deleted-route-guid",
-				CAPIProcessGUID: "some-capi-process-guid",
-				RouteWeight:     1,
-			}))
 		})
 	})
 
@@ -232,8 +244,6 @@ var _ = Describe("Capi Handlers", func() {
 				ctx := context.Background()
 				_, err := handler.BulkSync(ctx, &api.BulkSyncRequest{})
 				Expect(err).NotTo(HaveOccurred())
-
-				Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
 				Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
 				Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncCallCount()).To(Equal(1))
 			})
@@ -242,16 +252,17 @@ var _ = Describe("Capi Handlers", func() {
 		It("syncs", func() {
 			ctx := context.Background()
 			_, err := handler.BulkSync(ctx, &api.BulkSyncRequest{
-				RouteMappings: []*api.RouteMapping{{
-					RouteGuid:       "route-guid-a",
-					CapiProcessGuid: "some-capi-process-guid",
-					RouteWeight:     1,
-				}},
 				Routes: []*api.Route{
 					{
 						Guid: "route-guid-a",
 						Host: "example.host.com",
 						Path: "/nothing/matters",
+						Destinations: []*Destination{
+							{
+								CAPIProcessGUID: "some-capi-process-guid",
+								Weight:          100,
+							},
+						},
 					},
 				},
 				CapiDiegoProcessAssociations: []*api.CapiDiegoProcessAssociation{{
@@ -264,19 +275,18 @@ var _ = Describe("Capi Handlers", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
-			Expect(fakeRouteMappingsRepo.SyncArgsForCall(0)).To(Equal([]*models.RouteMapping{{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "some-capi-process-guid",
-				RouteWeight:     1,
-			}}))
-
 			Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
 			Expect(fakeRoutesRepo.SyncArgsForCall(0)).To(Equal([]*models.Route{
 				{
 					GUID: "route-guid-a",
 					Host: "example.host.com",
 					Path: "/nothing/matters",
+					Destinations: []*Destination{
+						{
+							CAPIProcessGUID: "some-capi-process-guid",
+							Weight:          100,
+						},
+					},
 				},
 			}))
 
