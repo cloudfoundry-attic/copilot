@@ -12,14 +12,6 @@ message ListCfRoutesResponse {
   map<string, string> routes = 1;
 }
 
-message ListCfRouteMappingsRequest {}
-
-message ListCfRouteMappingsResponse {
-  // key is '<route guid>-<capi process guid>'
-  // value is a route_mapping
-  map<string, RouteMapping> route_mappings = 1;
-}
-
 message ListCapiDiegoProcessAssociationsRequest {}
 
 // this is only for ListCapiDiegoProcessAssociationsResponse,
@@ -38,6 +30,7 @@ message Route {
   string guid = 1;
   string host = 2;
   string path = 3;
+  repeated Destination destinations = 4;
 }
 
 message UpsertRouteRequest {
@@ -52,23 +45,11 @@ message DeleteRouteRequest {
 
 message DeleteRouteResponse {}
 
-message RouteMapping {
+message Destination {
   string capi_process_guid = 1;
-  string route_guid = 2;
-  int32 route_weight = 3;
+  uint32 weight = 2;
+  uint32 port = 3;
 }
-
-message MapRouteRequest {
-  RouteMapping route_mapping = 1;
-}
-
-message MapRouteResponse {}
-
-message UnmapRouteRequest {
-  RouteMapping route_mapping = 1;
-}
-
-message UnmapRouteResponse {}
 
 message CapiDiegoProcessAssociation {
   string capi_process_guid = 1;
@@ -88,23 +69,18 @@ message DeleteCapiDiegoProcessAssociationRequest {
 message DeleteCapiDiegoProcessAssociationResponse {}
 
 message BulkSyncRequest {
-  repeated RouteMapping route_mappings = 1;
-  repeated Route routes = 2;
-  repeated CapiDiegoProcessAssociation capi_diego_process_associations = 3;
+  repeated Route routes = 1;
+  repeated CapiDiegoProcessAssociation capi_diego_process_associations = 2;
 }
 
 message BulkSyncResponse {}
 
 service CloudControllerCopilot {
   rpc ListCfRoutes(ListCfRoutesRequest) returns (ListCfRoutesResponse) {}
-  rpc ListCfRouteMappings(ListCfRouteMappingsRequest) returns (ListCfRouteMappingsResponse) {}
   rpc ListCapiDiegoProcessAssociations(ListCapiDiegoProcessAssociationsRequest) returns (ListCapiDiegoProcessAssociationsResponse) {}
 
   rpc UpsertRoute(UpsertRouteRequest) returns (UpsertRouteResponse) {}
   rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse) {}
-
-  rpc MapRoute (MapRouteRequest) returns (MapRouteResponse) {}
-  rpc UnmapRoute (UnmapRouteRequest) returns (UnmapRouteResponse) {}
 
   rpc UpsertCapiDiegoProcessAssociation(UpsertCapiDiegoProcessAssociationRequest) returns (UpsertCapiDiegoProcessAssociationResponse) {}
   rpc DeleteCapiDiegoProcessAssociation(DeleteCapiDiegoProcessAssociationRequest) returns (DeleteCapiDiegoProcessAssociationResponse) {}

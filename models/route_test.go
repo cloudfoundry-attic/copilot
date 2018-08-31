@@ -14,6 +14,7 @@ var _ = Describe("RoutesRepo", func() {
 		routesRepo = models.NewRoutesRepo()
 	})
 
+	// We don't know how to delete routes yet.
 	Describe("Delete", func() {
 		It("deletes upsert route", func() {
 			route := &models.Route{
@@ -56,11 +57,31 @@ var _ = Describe("RoutesRepo", func() {
 			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          60,
+					},
+					{
+						CAPIProcessGUID: "some-other-capi-process-guid",
+						Weight:          40,
+					},
+				},
 			}
 
 			updatedRoute := &models.Route{
 				Host: "something.different.com",
 				GUID: route.GUID,
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          50,
+					},
+					{
+						CAPIProcessGUID: "some-other-capi-process-guid",
+						Weight:          50,
+					},
+				},
 			}
 
 			routesRepo.Upsert(updatedRoute)
@@ -86,6 +107,12 @@ var _ = Describe("RoutesRepo", func() {
 			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          100,
+					},
+				},
 			}
 
 			go routesRepo.Upsert(route)
@@ -98,6 +125,12 @@ var _ = Describe("RoutesRepo", func() {
 			newRoute := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-other-route-guid",
+				Destinations: []*Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          100,
+					},
+				},
 			}
 
 			routesRepo.Sync([]*models.Route{newRoute})

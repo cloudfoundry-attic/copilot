@@ -14,7 +14,6 @@ import (
 type CAPI struct {
 	Logger                           lager.Logger
 	RoutesRepo                       routesRepoInterface
-	RouteMappingsRepo                routeMappingsRepoInterface
 	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
 }
 
@@ -27,21 +26,6 @@ func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse,
 func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.ListCfRoutesResponse, error) {
 	c.Logger.Info("listing cf routes...")
 	return &api.ListCfRoutesResponse{Routes: c.RoutesRepo.List()}, nil
-}
-
-// TODO: probably remove or test these eventually, currently using for debugging
-func (c *CAPI) ListCfRouteMappings(context.Context, *api.ListCfRouteMappingsRequest) (*api.ListCfRouteMappingsResponse, error) {
-	c.Logger.Info("listing cf route mappings...")
-	routeMappings := c.RouteMappingsRepo.List()
-	apiRoutMappings := make(map[string]*api.RouteMapping)
-	for k, v := range routeMappings {
-		apiRoutMappings[k] = &api.RouteMapping{
-			CapiProcessGuid: string(v.CAPIProcessGUID),
-			RouteGuid:       string(v.RouteGUID),
-			RouteWeight:     v.RouteWeight,
-		}
-	}
-	return &api.ListCfRouteMappingsResponse{RouteMappings: apiRoutMappings}, nil
 }
 
 // TODO: probably remove or test these eventually, currently using for debugging
@@ -82,36 +66,6 @@ func (c *CAPI) DeleteRoute(context context.Context, request *api.DeleteRouteRequ
 	return &api.DeleteRouteResponse{}, nil
 }
 
-func (c *CAPI) MapRoute(context context.Context, request *api.MapRouteRequest) (*api.MapRouteResponse, error) {
-	c.Logger.Info("mapping route...")
-	err := validateMapRouteRequest(request)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
-	}
-	r := &models.RouteMapping{
-		RouteGUID:       models.RouteGUID(request.RouteMapping.RouteGuid),
-		CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
-		RouteWeight:     request.RouteMapping.RouteWeight,
-	}
-	c.RouteMappingsRepo.Map(r)
-	return &api.MapRouteResponse{}, nil
-}
-
-func (c *CAPI) UnmapRoute(context context.Context, request *api.UnmapRouteRequest) (*api.UnmapRouteResponse, error) {
-	c.Logger.Info("unmapping route...")
-	err := validateUnmapRouteRequest(request)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Route Mapping %#v is invalid:\n %v", request, err)
-	}
-	r := &models.RouteMapping{
-		RouteGUID:       models.RouteGUID(request.RouteMapping.RouteGuid),
-		CAPIProcessGUID: models.CAPIProcessGUID(request.RouteMapping.CapiProcessGuid),
-		RouteWeight:     request.RouteMapping.RouteWeight,
-	}
-	c.RouteMappingsRepo.Unmap(r)
-	return &api.UnmapRouteResponse{}, nil
-}
-
 func (c *CAPI) UpsertCapiDiegoProcessAssociation(context context.Context, request *api.UpsertCapiDiegoProcessAssociationRequest) (*api.UpsertCapiDiegoProcessAssociationResponse, error) {
 	c.Logger.Info("upserting capi/diego process association...")
 	err := validateUpsertCAPIDiegoProcessAssociationRequest(request)
@@ -142,15 +96,6 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (*api.BulkSyncResponse, error) {
 	c.Logger.Info("bulk sync...")
 
-	routeMappings := make([]*models.RouteMapping, len(request.RouteMappings))
-	for i, routeMapping := range request.RouteMappings {
-		routeMappings[i] = &models.RouteMapping{
-			RouteGUID:       models.RouteGUID(routeMapping.RouteGuid),
-			CAPIProcessGUID: models.CAPIProcessGUID(routeMapping.CapiProcessGuid),
-			RouteWeight:     routeMapping.RouteWeight,
-		}
-	}
-
 	routes := make([]*models.Route, len(request.Routes))
 
 	for i, route := range request.Routes {
@@ -174,7 +119,6 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 		}
 	}
 
-	c.RouteMappingsRepo.Sync(routeMappings)
 	c.RoutesRepo.Sync(routes)
 	c.CAPIDiegoProcessAssociationsRepo.Sync(cdpas)
 
@@ -195,28 +139,6 @@ func validateUpsertRouteRequest(r *api.UpsertRouteRequest) error {
 func validateDeleteRouteRequest(r *api.DeleteRouteRequest) error {
 	if r.Guid == "" {
 		return errors.New("route Guid is required")
-	}
-	return nil
-}
-
-func validateMapRouteRequest(r *api.MapRouteRequest) error {
-	rm := r.RouteMapping
-	if rm == nil {
-		return errors.New("RouteMapping is required")
-	}
-	if rm.RouteGuid == "" || rm.CapiProcessGuid == "" {
-		return errors.New("RouteGUID and CapiProcessGUID are required")
-	}
-	return nil
-}
-
-func validateUnmapRouteRequest(r *api.UnmapRouteRequest) error {
-	rm := r.RouteMapping
-	if rm == nil {
-		return errors.New("RouteMapping is required")
-	}
-	if rm.RouteGuid == "" || rm.CapiProcessGuid == "" {
-		return errors.New("RouteGuid and CapiProcessGuid are required")
 	}
 	return nil
 }

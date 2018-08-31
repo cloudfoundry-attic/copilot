@@ -8,9 +8,16 @@ import (
 type RouteGUID string
 
 type Route struct {
-	GUID RouteGUID
-	Host string
-	Path string
+	GUID         RouteGUID
+	Host         string
+	Path         string
+	Destinations []*Destination
+}
+
+type Destination struct {
+	CapiProcessGuid string
+	Weight          uint32
+	Port            uint32
 }
 
 func (r *Route) Hostname() string {
@@ -19,6 +26,10 @@ func (r *Route) Hostname() string {
 
 func (r *Route) GetPath() string {
 	return r.Path
+}
+
+func (r *Route) GetDestinations() []*Destination {
+	return r.Destinations
 }
 
 type RoutesRepo struct {

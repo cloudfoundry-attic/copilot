@@ -7,82 +7,27 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
-import (
-	context "golang.org/x/net/context"
-	grpc "google.golang.org/grpc"
-)
-
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
 type InternalRoutesRequest struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *InternalRoutesRequest) Reset()         { *m = InternalRoutesRequest{} }
-func (m *InternalRoutesRequest) String() string { return proto.CompactTextString(m) }
-func (*InternalRoutesRequest) ProtoMessage()    {}
-func (*InternalRoutesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{0}
-}
-func (m *InternalRoutesRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_InternalRoutesRequest.Unmarshal(m, b)
-}
-func (m *InternalRoutesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_InternalRoutesRequest.Marshal(b, m, deterministic)
-}
-func (dst *InternalRoutesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InternalRoutesRequest.Merge(dst, src)
-}
-func (m *InternalRoutesRequest) XXX_Size() int {
-	return xxx_messageInfo_InternalRoutesRequest.Size(m)
-}
-func (m *InternalRoutesRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_InternalRoutesRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_InternalRoutesRequest proto.InternalMessageInfo
+func (m *InternalRoutesRequest) Reset()                    { *m = InternalRoutesRequest{} }
+func (m *InternalRoutesRequest) String() string            { return proto.CompactTextString(m) }
+func (*InternalRoutesRequest) ProtoMessage()               {}
+func (*InternalRoutesRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 type InternalRoutesResponse struct {
-	InternalRoutes       []*InternalRouteWithBackends `protobuf:"bytes,1,rep,name=internal_routes,json=internalRoutes" json:"internal_routes,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
-	XXX_unrecognized     []byte                       `json:"-"`
-	XXX_sizecache        int32                        `json:"-"`
+	InternalRoutes []*InternalRouteWithBackends `protobuf:"bytes,1,rep,name=internal_routes,json=internalRoutes" json:"internal_routes,omitempty"`
 }
 
-func (m *InternalRoutesResponse) Reset()         { *m = InternalRoutesResponse{} }
-func (m *InternalRoutesResponse) String() string { return proto.CompactTextString(m) }
-func (*InternalRoutesResponse) ProtoMessage()    {}
-func (*InternalRoutesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{1}
-}
-func (m *InternalRoutesResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_InternalRoutesResponse.Unmarshal(m, b)
-}
-func (m *InternalRoutesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_InternalRoutesResponse.Marshal(b, m, deterministic)
-}
-func (dst *InternalRoutesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InternalRoutesResponse.Merge(dst, src)
-}
-func (m *InternalRoutesResponse) XXX_Size() int {
-	return xxx_messageInfo_InternalRoutesResponse.Size(m)
-}
-func (m *InternalRoutesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_InternalRoutesResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_InternalRoutesResponse proto.InternalMessageInfo
+func (m *InternalRoutesResponse) Reset()                    { *m = InternalRoutesResponse{} }
+func (m *InternalRoutesResponse) String() string            { return proto.CompactTextString(m) }
+func (*InternalRoutesResponse) ProtoMessage()               {}
+func (*InternalRoutesResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
 func (m *InternalRoutesResponse) GetInternalRoutes() []*InternalRouteWithBackends {
 	if m != nil {
@@ -92,37 +37,15 @@ func (m *InternalRoutesResponse) GetInternalRoutes() []*InternalRouteWithBackend
 }
 
 type InternalRouteWithBackends struct {
-	Hostname             string      `protobuf:"bytes,1,opt,name=hostname" json:"hostname,omitempty"`
-	Vip                  string      `protobuf:"bytes,2,opt,name=vip" json:"vip,omitempty"`
-	Backends             *BackendSet `protobuf:"bytes,3,opt,name=backends" json:"backends,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	Hostname string      `protobuf:"bytes,1,opt,name=hostname" json:"hostname,omitempty"`
+	Vip      string      `protobuf:"bytes,2,opt,name=vip" json:"vip,omitempty"`
+	Backends *BackendSet `protobuf:"bytes,3,opt,name=backends" json:"backends,omitempty"`
 }
 
-func (m *InternalRouteWithBackends) Reset()         { *m = InternalRouteWithBackends{} }
-func (m *InternalRouteWithBackends) String() string { return proto.CompactTextString(m) }
-func (*InternalRouteWithBackends) ProtoMessage()    {}
-func (*InternalRouteWithBackends) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{2}
-}
-func (m *InternalRouteWithBackends) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_InternalRouteWithBackends.Unmarshal(m, b)
-}
-func (m *InternalRouteWithBackends) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_InternalRouteWithBackends.Marshal(b, m, deterministic)
-}
-func (dst *InternalRouteWithBackends) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InternalRouteWithBackends.Merge(dst, src)
-}
-func (m *InternalRouteWithBackends) XXX_Size() int {
-	return xxx_messageInfo_InternalRouteWithBackends.Size(m)
-}
-func (m *InternalRouteWithBackends) XXX_DiscardUnknown() {
-	xxx_messageInfo_InternalRouteWithBackends.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_InternalRouteWithBackends proto.InternalMessageInfo
+func (m *InternalRouteWithBackends) Reset()                    { *m = InternalRouteWithBackends{} }
+func (m *InternalRouteWithBackends) String() string            { return proto.CompactTextString(m) }
+func (*InternalRouteWithBackends) ProtoMessage()               {}
+func (*InternalRouteWithBackends) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
 
 func (m *InternalRouteWithBackends) GetHostname() string {
 	if m != nil {
@@ -146,65 +69,21 @@ func (m *InternalRouteWithBackends) GetBackends() *BackendSet {
 }
 
 type RoutesRequest struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RoutesRequest) Reset()         { *m = RoutesRequest{} }
-func (m *RoutesRequest) String() string { return proto.CompactTextString(m) }
-func (*RoutesRequest) ProtoMessage()    {}
-func (*RoutesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{3}
-}
-func (m *RoutesRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RoutesRequest.Unmarshal(m, b)
-}
-func (m *RoutesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RoutesRequest.Marshal(b, m, deterministic)
-}
-func (dst *RoutesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RoutesRequest.Merge(dst, src)
-}
-func (m *RoutesRequest) XXX_Size() int {
-	return xxx_messageInfo_RoutesRequest.Size(m)
-}
-func (m *RoutesRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RoutesRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RoutesRequest proto.InternalMessageInfo
+func (m *RoutesRequest) Reset()                    { *m = RoutesRequest{} }
+func (m *RoutesRequest) String() string            { return proto.CompactTextString(m) }
+func (*RoutesRequest) ProtoMessage()               {}
+func (*RoutesRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
 
 type RoutesResponse struct {
-	Routes               []*RouteWithBackends `protobuf:"bytes,2,rep,name=routes" json:"routes,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	Routes []*RouteWithBackends `protobuf:"bytes,2,rep,name=routes" json:"routes,omitempty"`
 }
 
-func (m *RoutesResponse) Reset()         { *m = RoutesResponse{} }
-func (m *RoutesResponse) String() string { return proto.CompactTextString(m) }
-func (*RoutesResponse) ProtoMessage()    {}
-func (*RoutesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{4}
-}
-func (m *RoutesResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RoutesResponse.Unmarshal(m, b)
-}
-func (m *RoutesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RoutesResponse.Marshal(b, m, deterministic)
-}
-func (dst *RoutesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RoutesResponse.Merge(dst, src)
-}
-func (m *RoutesResponse) XXX_Size() int {
-	return xxx_messageInfo_RoutesResponse.Size(m)
-}
-func (m *RoutesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RoutesResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RoutesResponse proto.InternalMessageInfo
+func (m *RoutesResponse) Reset()                    { *m = RoutesResponse{} }
+func (m *RoutesResponse) String() string            { return proto.CompactTextString(m) }
+func (*RoutesResponse) ProtoMessage()               {}
+func (*RoutesResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
 
 func (m *RoutesResponse) GetRoutes() []*RouteWithBackends {
 	if m != nil {
@@ -214,39 +93,17 @@ func (m *RoutesResponse) GetRoutes() []*RouteWithBackends {
 }
 
 type RouteWithBackends struct {
-	Hostname             string      `protobuf:"bytes,1,opt,name=hostname" json:"hostname,omitempty"`
-	Path                 string      `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
-	Backends             *BackendSet `protobuf:"bytes,3,opt,name=backends" json:"backends,omitempty"`
-	CapiProcessGuid      string      `protobuf:"bytes,4,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
-	RouteWeight          int32       `protobuf:"varint,5,opt,name=route_weight,json=routeWeight" json:"route_weight,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	Hostname        string      `protobuf:"bytes,1,opt,name=hostname" json:"hostname,omitempty"`
+	Path            string      `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
+	Backends        *BackendSet `protobuf:"bytes,3,opt,name=backends" json:"backends,omitempty"`
+	CapiProcessGuid string      `protobuf:"bytes,4,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
+	RouteWeight     int32       `protobuf:"varint,5,opt,name=route_weight,json=routeWeight" json:"route_weight,omitempty"`
 }
 
-func (m *RouteWithBackends) Reset()         { *m = RouteWithBackends{} }
-func (m *RouteWithBackends) String() string { return proto.CompactTextString(m) }
-func (*RouteWithBackends) ProtoMessage()    {}
-func (*RouteWithBackends) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{5}
-}
-func (m *RouteWithBackends) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RouteWithBackends.Unmarshal(m, b)
-}
-func (m *RouteWithBackends) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RouteWithBackends.Marshal(b, m, deterministic)
-}
-func (dst *RouteWithBackends) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RouteWithBackends.Merge(dst, src)
-}
-func (m *RouteWithBackends) XXX_Size() int {
-	return xxx_messageInfo_RouteWithBackends.Size(m)
-}
-func (m *RouteWithBackends) XXX_DiscardUnknown() {
-	xxx_messageInfo_RouteWithBackends.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RouteWithBackends proto.InternalMessageInfo
+func (m *RouteWithBackends) Reset()                    { *m = RouteWithBackends{} }
+func (m *RouteWithBackends) String() string            { return proto.CompactTextString(m) }
+func (*RouteWithBackends) ProtoMessage()               {}
+func (*RouteWithBackends) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
 
 func (m *RouteWithBackends) GetHostname() string {
 	if m != nil {
@@ -284,35 +141,13 @@ func (m *RouteWithBackends) GetRouteWeight() int32 {
 }
 
 type BackendSet struct {
-	Backends             []*Backend `protobuf:"bytes,1,rep,name=backends" json:"backends,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
-	XXX_unrecognized     []byte     `json:"-"`
-	XXX_sizecache        int32      `json:"-"`
+	Backends []*Backend `protobuf:"bytes,1,rep,name=backends" json:"backends,omitempty"`
 }
 
-func (m *BackendSet) Reset()         { *m = BackendSet{} }
-func (m *BackendSet) String() string { return proto.CompactTextString(m) }
-func (*BackendSet) ProtoMessage()    {}
-func (*BackendSet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{6}
-}
-func (m *BackendSet) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_BackendSet.Unmarshal(m, b)
-}
-func (m *BackendSet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_BackendSet.Marshal(b, m, deterministic)
-}
-func (dst *BackendSet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BackendSet.Merge(dst, src)
-}
-func (m *BackendSet) XXX_Size() int {
-	return xxx_messageInfo_BackendSet.Size(m)
-}
-func (m *BackendSet) XXX_DiscardUnknown() {
-	xxx_messageInfo_BackendSet.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_BackendSet proto.InternalMessageInfo
+func (m *BackendSet) Reset()                    { *m = BackendSet{} }
+func (m *BackendSet) String() string            { return proto.CompactTextString(m) }
+func (*BackendSet) ProtoMessage()               {}
+func (*BackendSet) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{6} }
 
 func (m *BackendSet) GetBackends() []*Backend {
 	if m != nil {
@@ -322,36 +157,14 @@ func (m *BackendSet) GetBackends() []*Backend {
 }
 
 type Backend struct {
-	Address              string   `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
-	Port                 uint32   `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Address string `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
+	Port    uint32 `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
 }
 
-func (m *Backend) Reset()         { *m = Backend{} }
-func (m *Backend) String() string { return proto.CompactTextString(m) }
-func (*Backend) ProtoMessage()    {}
-func (*Backend) Descriptor() ([]byte, []int) {
-	return fileDescriptor_istio_e9c83f90e20ab33a, []int{7}
-}
-func (m *Backend) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Backend.Unmarshal(m, b)
-}
-func (m *Backend) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Backend.Marshal(b, m, deterministic)
-}
-func (dst *Backend) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Backend.Merge(dst, src)
-}
-func (m *Backend) XXX_Size() int {
-	return xxx_messageInfo_Backend.Size(m)
-}
-func (m *Backend) XXX_DiscardUnknown() {
-	xxx_messageInfo_Backend.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Backend proto.InternalMessageInfo
+func (m *Backend) Reset()                    { *m = Backend{} }
+func (m *Backend) String() string            { return proto.CompactTextString(m) }
+func (*Backend) ProtoMessage()               {}
+func (*Backend) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{7} }
 
 func (m *Backend) GetAddress() string {
 	if m != nil {
@@ -378,148 +191,9 @@ func init() {
 	proto.RegisterType((*Backend)(nil), "api.Backend")
 }
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
+func init() { proto.RegisterFile("istio.proto", fileDescriptor2) }
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
-
-// IstioCopilotClient is the client API for IstioCopilot service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type IstioCopilotClient interface {
-	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
-	Routes(ctx context.Context, in *RoutesRequest, opts ...grpc.CallOption) (*RoutesResponse, error)
-	InternalRoutes(ctx context.Context, in *InternalRoutesRequest, opts ...grpc.CallOption) (*InternalRoutesResponse, error)
-}
-
-type istioCopilotClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewIstioCopilotClient(cc *grpc.ClientConn) IstioCopilotClient {
-	return &istioCopilotClient{cc}
-}
-
-func (c *istioCopilotClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
-	out := new(HealthResponse)
-	err := c.cc.Invoke(ctx, "/api.IstioCopilot/Health", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *istioCopilotClient) Routes(ctx context.Context, in *RoutesRequest, opts ...grpc.CallOption) (*RoutesResponse, error) {
-	out := new(RoutesResponse)
-	err := c.cc.Invoke(ctx, "/api.IstioCopilot/Routes", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *istioCopilotClient) InternalRoutes(ctx context.Context, in *InternalRoutesRequest, opts ...grpc.CallOption) (*InternalRoutesResponse, error) {
-	out := new(InternalRoutesResponse)
-	err := c.cc.Invoke(ctx, "/api.IstioCopilot/InternalRoutes", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Server API for IstioCopilot service
-
-type IstioCopilotServer interface {
-	Health(context.Context, *HealthRequest) (*HealthResponse, error)
-	Routes(context.Context, *RoutesRequest) (*RoutesResponse, error)
-	InternalRoutes(context.Context, *InternalRoutesRequest) (*InternalRoutesResponse, error)
-}
-
-func RegisterIstioCopilotServer(s *grpc.Server, srv IstioCopilotServer) {
-	s.RegisterService(&_IstioCopilot_serviceDesc, srv)
-}
-
-func _IstioCopilot_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HealthRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(IstioCopilotServer).Health(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.IstioCopilot/Health",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IstioCopilotServer).Health(ctx, req.(*HealthRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _IstioCopilot_Routes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RoutesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(IstioCopilotServer).Routes(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.IstioCopilot/Routes",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IstioCopilotServer).Routes(ctx, req.(*RoutesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _IstioCopilot_InternalRoutes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InternalRoutesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(IstioCopilotServer).InternalRoutes(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.IstioCopilot/InternalRoutes",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IstioCopilotServer).InternalRoutes(ctx, req.(*InternalRoutesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _IstioCopilot_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "api.IstioCopilot",
-	HandlerType: (*IstioCopilotServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Health",
-			Handler:    _IstioCopilot_Health_Handler,
-		},
-		{
-			MethodName: "Routes",
-			Handler:    _IstioCopilot_Routes_Handler,
-		},
-		{
-			MethodName: "InternalRoutes",
-			Handler:    _IstioCopilot_InternalRoutes_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "istio.proto",
-}
-
-func init() { proto.RegisterFile("istio.proto", fileDescriptor_istio_e9c83f90e20ab33a) }
-
-var fileDescriptor_istio_e9c83f90e20ab33a = []byte{
+var fileDescriptor2 = []byte{
 	// 415 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0xb1, 0x8f, 0xd3, 0x30,
 	0x14, 0xc6, 0xcf, 0x4d, 0xaf, 0x57, 0x5e, 0x72, 0xcd, 0x9d, 0x11, 0x25, 0x04, 0x09, 0x85, 0x4c,

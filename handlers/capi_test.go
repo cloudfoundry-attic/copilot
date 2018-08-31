@@ -64,9 +64,9 @@ var _ = Describe("Capi Handlers", func() {
 				Route: &api.Route{
 					Guid: "route-guid-a",
 					Host: "route-a.example.com",
-					Destinations: []*Destination{
+					Destinations: []*api.Destination{
 						{
-							CAPIProcessGUID: "some-capi-process-guid",
+							CapiProcessGuid: "some-capi-process-guid",
 							Weight:          100,
 						},
 					},
@@ -76,9 +76,9 @@ var _ = Describe("Capi Handlers", func() {
 			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.example.com",
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
-						CAPIProcessGUID: "some-capi-process-guid",
+						CapiProcessGuid: "some-capi-process-guid",
 						Weight:          100,
 					},
 				},
@@ -91,13 +91,13 @@ var _ = Describe("Capi Handlers", func() {
 				Route: &api.Route{
 					Guid: "route-guid-a",
 					Host: "route-a.example.com",
-					Destinations: []*Destination{
+					Destinations: []*api.Destination{
 						{
-							CAPIProcessGUID: "some-capi-process-guid",
+							CapiProcessGuid: "some-capi-process-guid",
 							Weight:          50,
 						},
 						{
-							CAPIProcessGUID: "some-other-capi-process-guid",
+							CapiProcessGuid: "some-other-capi-process-guid",
 							Weight:          50,
 						},
 					},
@@ -108,13 +108,13 @@ var _ = Describe("Capi Handlers", func() {
 				Route: &api.Route{
 					Guid: "route-guid-a",
 					Host: "route-a.example.com",
-					Destinations: []*Destination{
+					Destinations: []*api.Destination{
 						{
-							CAPIProcessGUID: "some-capi-process-guid",
+							CapiProcessGuid: "some-capi-process-guid",
 							Weight:          60,
 						},
 						{
-							CAPIProcessGUID: "some-other-capi-process-guid",
+							CapiProcessGuid: "some-other-capi-process-guid",
 							Weight:          40,
 						},
 					},
@@ -126,13 +126,13 @@ var _ = Describe("Capi Handlers", func() {
 			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.example.com",
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
-						CAPIProcessGUID: "some-capi-process-guid",
+						CapiProcessGuid: "some-capi-process-guid",
 						Weight:          50,
 					},
 					{
-						CAPIProcessGUID: "some-other-capi-process-guid",
+						CapiProcessGuid: "some-other-capi-process-guid",
 						Weight:          50,
 					},
 				},
@@ -141,13 +141,13 @@ var _ = Describe("Capi Handlers", func() {
 			Expect(fakeRoutesRepo.UpsertArgsForCall(1)).To(Equal(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.example.com",
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
-						CAPIProcessGUID: "some-capi-process-guid",
+						CapiProcessGuid: "some-capi-process-guid",
 						Weight:          60,
 					},
 					{
-						CAPIProcessGUID: "some-other-capi-process-guid",
+						CapiProcessGuid: "some-other-capi-process-guid",
 						Weight:          40,
 					},
 				},
@@ -257,9 +257,9 @@ var _ = Describe("Capi Handlers", func() {
 						Guid: "route-guid-a",
 						Host: "example.host.com",
 						Path: "/nothing/matters",
-						Destinations: []*Destination{
+						Destinations: []*api.Destination{
 							{
-								CAPIProcessGUID: "some-capi-process-guid",
+								CapiProcessGuid: "some-capi-process-guid",
 								Weight:          100,
 							},
 						},
@@ -281,9 +281,9 @@ var _ = Describe("Capi Handlers", func() {
 					GUID: "route-guid-a",
 					Host: "example.host.com",
 					Path: "/nothing/matters",
-					Destinations: []*Destination{
+					Destinations: []*models.Destination{
 						{
-							CAPIProcessGUID: "some-capi-process-guid",
+							CapiProcessGuid: "some-capi-process-guid",
 							Weight:          100,
 						},
 					},
