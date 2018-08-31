@@ -47,10 +47,17 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
 	}
+
+	destinations := make([]*models.Destination, len(request.Route.Destinations))
+	for i, d := range request.Route.Destinations {
+		destinations[i] = &models.Destination{CapiProcessGuid: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
+	}
+
 	route := &models.Route{
-		GUID: models.RouteGUID(request.Route.Guid),
-		Host: request.Route.Host,
-		Path: request.Route.Path,
+		GUID:         models.RouteGUID(request.Route.GetGuid()),
+		Host:         request.Route.GetHost(),
+		Path:         request.Route.GetPath(),
+		Destinations: destinations,
 	}
 	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil
@@ -99,10 +106,16 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 	routes := make([]*models.Route, len(request.Routes))
 
 	for i, route := range request.Routes {
+		destinations := make([]*models.Destination, len(route.Destinations))
+		for i, d := range route.Destinations {
+			destinations[i] = &models.Destination{CapiProcessGuid: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
+		}
+
 		routes[i] = &models.Route{
-			GUID: models.RouteGUID(route.GetGuid()),
-			Host: route.GetHost(),
-			Path: route.GetPath(),
+			GUID:         models.RouteGUID(route.GetGuid()),
+			Host:         route.GetHost(),
+			Path:         route.GetPath(),
+			Destinations: destinations,
 		}
 	}
 

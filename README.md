@@ -44,6 +44,11 @@ If you are using a cloudfoundry
 - grpcurl is at `/var/vcap/packages/grpcurl/bin/grpcurl`
 - the certs you need are in `/var/vcap/jobs/pilot-discovery/config/certs/`
 
+To generate protobuf objects (from the `protos` directory):
+
+```sh
+go generate
+```
 
 ### Push an App
 

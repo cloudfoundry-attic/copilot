@@ -80,7 +80,6 @@ func mainWithError() error {
 	}
 
 	routesRepo := models.NewRoutesRepo()
-	routeMappingsRepo := models.NewRouteMappingsRepo()
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
@@ -98,7 +97,6 @@ func mainWithError() error {
 	}
 	internalRoutesRepo := &internalroutes.Repo{
 		RoutesRepo:                       routesRepo,
-		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		BBSClient:                        bbsClient,
 		Logger:                           logger,
@@ -106,7 +104,6 @@ func mainWithError() error {
 	}
 	istioHandler := &handlers.Istio{
 		RoutesRepo:                       routesRepo,
-		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		BackendSetRepo:                   backendSetRepo,
 		Logger:                           logger,
@@ -114,7 +111,6 @@ func mainWithError() error {
 	}
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,
-		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 		Logger: logger,
 	}

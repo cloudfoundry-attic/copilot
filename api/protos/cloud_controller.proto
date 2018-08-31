@@ -69,8 +69,10 @@ message DeleteCapiDiegoProcessAssociationRequest {
 message DeleteCapiDiegoProcessAssociationResponse {}
 
 message BulkSyncRequest {
-  repeated Route routes = 1;
-  repeated CapiDiegoProcessAssociation capi_diego_process_associations = 2;
+  reserved 1;
+  reserved "route_mappings";
+  repeated Route routes = 2;
+  repeated CapiDiegoProcessAssociation capi_diego_process_associations = 3;
 }
 
 message BulkSyncResponse {}
