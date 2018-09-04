@@ -7,9 +7,7 @@ package api;
 message ListCfRoutesRequest {}
 
 message ListCfRoutesResponse {
-  // key is route guid
-  // value is host
-  map<string, string> routes = 1;
+  map<string, Route> routes = 1;
 }
 
 message ListCapiDiegoProcessAssociationsRequest {}

@@ -15,12 +15,9 @@ module Api
       self.service_name = 'api.CloudControllerCopilot'
 
       rpc :ListCfRoutes, ListCfRoutesRequest, ListCfRoutesResponse
-      rpc :ListCfRouteMappings, ListCfRouteMappingsRequest, ListCfRouteMappingsResponse
       rpc :ListCapiDiegoProcessAssociations, ListCapiDiegoProcessAssociationsRequest, ListCapiDiegoProcessAssociationsResponse
       rpc :UpsertRoute, UpsertRouteRequest, UpsertRouteResponse
       rpc :DeleteRoute, DeleteRouteRequest, DeleteRouteResponse
-      rpc :MapRoute, MapRouteRequest, MapRouteResponse
-      rpc :UnmapRoute, UnmapRouteRequest, UnmapRouteResponse
       rpc :UpsertCapiDiegoProcessAssociation, UpsertCapiDiegoProcessAssociationRequest, UpsertCapiDiegoProcessAssociationResponse
       rpc :DeleteCapiDiegoProcessAssociation, DeleteCapiDiegoProcessAssociationRequest, DeleteCapiDiegoProcessAssociationResponse
       rpc :BulkSync, BulkSyncRequest, BulkSyncResponse

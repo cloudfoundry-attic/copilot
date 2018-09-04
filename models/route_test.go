@@ -57,7 +57,7 @@ var _ = Describe("RoutesRepo", func() {
 			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
 						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          60,
@@ -72,7 +72,7 @@ var _ = Describe("RoutesRepo", func() {
 			updatedRoute := &models.Route{
 				Host: "something.different.com",
 				GUID: route.GUID,
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
 						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          50,
@@ -107,7 +107,7 @@ var _ = Describe("RoutesRepo", func() {
 			route := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-route-guid",
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
 						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          100,
@@ -125,7 +125,7 @@ var _ = Describe("RoutesRepo", func() {
 			newRoute := &models.Route{
 				Host: "host.example.com",
 				GUID: "some-other-route-guid",
-				Destinations: []*Destination{
+				Destinations: []*models.Destination{
 					{
 						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          100,
@@ -134,8 +134,8 @@ var _ = Describe("RoutesRepo", func() {
 			}
 
 			routesRepo.Sync([]*models.Route{newRoute})
-			Expect(routesRepo.List()).To(Equal(map[string]string{
-				string(newRoute.GUID): newRoute.Host,
+			Expect(routesRepo.List()).To(Equal(map[string]*models.Route{
+				string(newRoute.GUID): newRoute,
 			}))
 		})
 	})

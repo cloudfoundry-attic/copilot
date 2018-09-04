@@ -15,7 +15,7 @@ type Route struct {
 }
 
 type Destination struct {
-	CapiProcessGuid string
+	CAPIProcessGUID string
 	Weight          uint32
 	Port            uint32
 }
@@ -72,15 +72,14 @@ func (r *RoutesRepo) Get(guid RouteGUID) (*Route, bool) {
 	return route, ok
 }
 
-// TODO: probably remove or clean this up, currently using for debugging
-func (r *RoutesRepo) List() map[string]string {
-	list := make(map[string]string)
+func (r *RoutesRepo) List() map[string]*Route {
+	out := make(map[string]*Route)
 
 	r.Lock()
-	for k, v := range r.repo {
-		list[string(k)] = v.Host
+	for routeGUID, route := range r.repo {
+		out[string(routeGUID)] = route
 	}
 	r.Unlock()
 
-	return list
+	return out
 }

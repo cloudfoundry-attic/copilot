@@ -178,7 +178,6 @@ var _ = Describe("Istio Handlers", func() {
 		}
 
 		routesRepo := models.NewRoutesRepo()
-		routeMappingsRepo := models.NewRouteMappingsRepo()
 		capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 			Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 		}
@@ -187,7 +186,6 @@ var _ = Describe("Istio Handlers", func() {
 			BBSClient:                        bbsClient,
 			Logger:                           logger,
 			RoutesRepo:                       routesRepo,
-			RouteMappingsRepo:                routeMappingsRepo,
 			CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 			VIPProvider:                      vipProvider,
 		}
@@ -196,7 +194,6 @@ var _ = Describe("Istio Handlers", func() {
 			BackendSetRepo:                   backendSetRepo,
 			Logger:                           logger,
 			RoutesRepo:                       routesRepo,
-			RouteMappingsRepo:                routeMappingsRepo,
 			CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 			InternalRoutesRepo:               internalRoutesRepo,
 		}
@@ -216,18 +213,22 @@ var _ = Describe("Istio Handlers", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "internal-route-guid-a",
 				Host: "route-a.apps.internal",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          100,
+					},
+				},
 			})
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "internal-route-guid-b",
 				Host: "route-b.apps.internal",
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "internal-route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-a",
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "internal-route-guid-b",
-				CAPIProcessGUID: "capi-process-guid-b",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-b",
+						Weight:          100,
+					},
+				},
 			})
 			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
@@ -272,9 +273,19 @@ var _ = Describe("Istio Handlers", func() {
 
 			// and now map the route-a to diego-process-b
 			// and assert we see all 4 backends for route-a
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "internal-route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-b",
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "internal-route-guid-a",
+				Host: "route-a.apps.internal",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          50,
+					},
+					{
+						CAPIProcessGUID: "capi-process-guid-b",
+						Weight:          50,
+					},
+				},
 			})
 
 			externalRouteResp, err = handler.Routes(ctx, new(api.RoutesRequest))
@@ -303,16 +314,20 @@ var _ = Describe("Istio Handlers", func() {
 
 	Describe("listing Routes (using real repos, to cover more integration-y things)", func() {
 		BeforeEach(func() {
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-a",
-				RouteWeight:     2,
+			handler.RoutesRepo.Upsert(&models.Route{
+				GUID: "route-guid-a",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          67,
+					},
+					{
+						CAPIProcessGUID: "capi-process-guid-c",
+						Weight:          33,
+					},
+				},
 			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-c",
-				RouteWeight:     1,
-			})
+
 			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
 				DiegoProcessGUIDs: models.DiegoProcessGUIDs{
@@ -350,6 +365,16 @@ var _ = Describe("Istio Handlers", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-a",
 				Host: "ROUTE-a.cfapps.com",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          67,
+					},
+					{
+						CAPIProcessGUID: "capi-process-guid-c",
+						Weight:          33,
+					},
+				},
 			})
 			ctx := context.Background()
 
@@ -377,65 +402,52 @@ var _ = Describe("Istio Handlers", func() {
 			))
 		})
 
-		It("ignores route mappings for routes that do not exist", func() {
-			handler.RoutesRepo.Upsert(&models.Route{
-				GUID: "route-guid-a",
-				Host: "ROUTE-a.cfapps.com",
-			})
-			ctx := context.Background()
-			resp, err := handler.Routes(ctx, new(api.RoutesRequest))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp).To(Equal(&api.RoutesResponse{
-				Routes: []*api.RouteWithBackends{
-					&api.RouteWithBackends{
-						Hostname:        "route-a.cfapps.com",
-						Backends:        expectedExternalRouteBackendsA,
-						CapiProcessGuid: "capi-process-guid-a",
-						RouteWeight:     67,
-					},
-					&api.RouteWithBackends{
-						Hostname:        "route-a.cfapps.com",
-						Backends:        expectedExternalRouteBackendsB,
-						CapiProcessGuid: "capi-process-guid-c",
-						RouteWeight:     33,
-					},
-				},
-			}))
-		})
-
 		It("sorts routes with multiple context paths from shortest to longest path", func() {
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-a",
 				Host: "route-a.cfapps.com",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          67,
+					},
+					{
+						CAPIProcessGUID: "capi-process-guid-c",
+						Weight:          33,
+					},
+				},
 			})
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-z",
 				Host: "route-z.cfapps.com",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-b",
+						Weight:          100,
+					},
+				},
 			})
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-b",
 				Host: "route-a.cfapps.com",
 				Path: "/zxyv/some/longer/path",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-y",
+						Weight:          100,
+					},
+				},
 			})
 			handler.RoutesRepo.Upsert(&models.Route{
 				GUID: "route-guid-c",
 				Host: "route-a.cfapps.com",
 				Path: "/some/path",
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-z",
-				CAPIProcessGUID: "capi-process-guid-b",
-				RouteWeight:     1,
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-b",
-				CAPIProcessGUID: "capi-process-guid-y",
-				RouteWeight:     1,
-			})
-			handler.RouteMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "route-guid-c",
-				CAPIProcessGUID: "capi-process-guid-x",
-				RouteWeight:     1,
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-x",
+						Weight:          100,
+					},
+				},
 			})
 			handler.CAPIDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-x",

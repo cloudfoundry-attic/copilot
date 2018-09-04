@@ -22,10 +22,22 @@ func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse,
 	return &api.HealthResponse{Healthy: true}, nil
 }
 
-// TODO: probably remove or test these eventually, currently using for debugging
 func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.ListCfRoutesResponse, error) {
 	c.Logger.Info("listing cf routes...")
-	return &api.ListCfRoutesResponse{Routes: c.RoutesRepo.List()}, nil
+	routes := make(map[string]*api.Route)
+	for routeGUID, route := range c.RoutesRepo.List() {
+		destinations := make([]*api.Destination, len(route.Destinations))
+		for i, d := range route.Destinations {
+			destinations[i] = &api.Destination{CapiProcessGuid: d.CAPIProcessGUID, Weight: d.Weight, Port: d.Port}
+		}
+		routes[routeGUID] = &api.Route{
+			Guid:         string(routeGUID),
+			Host:         route.Hostname(),
+			Path:         route.GetPath(),
+			Destinations: destinations,
+		}
+	}
+	return &api.ListCfRoutesResponse{Routes: routes}, nil
 }
 
 // TODO: probably remove or test these eventually, currently using for debugging
@@ -50,7 +62,7 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 
 	destinations := make([]*models.Destination, len(request.Route.Destinations))
 	for i, d := range request.Route.Destinations {
-		destinations[i] = &models.Destination{CapiProcessGuid: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
+		destinations[i] = &models.Destination{CAPIProcessGUID: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
 	}
 
 	route := &models.Route{
@@ -108,7 +120,7 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 	for i, route := range request.Routes {
 		destinations := make([]*models.Destination, len(route.Destinations))
 		for i, d := range route.Destinations {
-			destinations[i] = &models.Destination{CapiProcessGuid: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
+			destinations[i] = &models.Destination{CAPIProcessGUID: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
 		}
 
 		routes[i] = &models.Route{

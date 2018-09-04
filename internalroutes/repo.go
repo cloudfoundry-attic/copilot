@@ -15,14 +15,7 @@ type routesRepoInterface interface {
 	Delete(guid models.RouteGUID)
 	Sync(routes []*models.Route)
 	Get(guid models.RouteGUID) (*models.Route, bool)
-	List() map[string]string
-}
-
-type routeMappingsRepoInterface interface {
-	Map(routeMapping *models.RouteMapping)
-	Unmap(routeMapping *models.RouteMapping)
-	Sync(routeMappings []*models.RouteMapping)
-	List() map[string]*models.RouteMapping
+	List() map[string]*models.Route
 }
 
 type capiDiegoProcessAssociationsRepoInterface interface {
@@ -47,7 +40,6 @@ type Repo struct {
 	BBSClient                        bbsClient
 	Logger                           lager.Logger
 	RoutesRepo                       routesRepoInterface
-	RouteMappingsRepo                routeMappingsRepoInterface
 	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
 	VIPProvider                      vipProvider
 }
@@ -70,37 +62,35 @@ func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
 
 	hostnamesToBackends := map[string][]Backend{}
 
-	for _, routeMapping := range r.RouteMappingsRepo.List() {
-		route, ok := r.RoutesRepo.Get(routeMapping.RouteGUID)
-		if !ok {
-			continue
-		}
-
+	for _, route := range r.RoutesRepo.List() {
 		hostname := route.Hostname()
 		if !strings.HasSuffix(hostname, ".apps.internal") {
 			continue
 		}
 
-		capiDiegoProcessAssociation := r.CAPIDiegoProcessAssociationsRepo.Get(&routeMapping.CAPIProcessGUID)
-		if capiDiegoProcessAssociation == nil {
-			continue
-		}
-
-		allBackendsForThisRouteMapping := []Backend{}
-		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			for _, lrpNetInfo := range lrpNetInfosMap[diegoProcessGUID] {
-				appContainerPort := getAppContainerPort(lrpNetInfo)
-				if appContainerPort == 0 {
-					continue
-				}
-				allBackendsForThisRouteMapping = append(allBackendsForThisRouteMapping, Backend{
-					Address: lrpNetInfo.InstanceAddress,
-					Port:    appContainerPort,
-				})
+		for _, destination := range route.GetDestinations() {
+			capiProcessGUID := models.CAPIProcessGUID(destination.CAPIProcessGUID)
+			capiDiegoProcessAssociation := r.CAPIDiegoProcessAssociationsRepo.Get(&capiProcessGUID)
+			if capiDiegoProcessAssociation == nil {
+				continue
 			}
-		}
 
-		hostnamesToBackends[hostname] = append(hostnamesToBackends[hostname], allBackendsForThisRouteMapping...)
+			allBackendsForThisRouteMapping := []Backend{}
+			for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
+				for _, lrpNetInfo := range lrpNetInfosMap[diegoProcessGUID] {
+					appContainerPort := getAppContainerPort(lrpNetInfo)
+					if appContainerPort == 0 {
+						continue
+					}
+					allBackendsForThisRouteMapping = append(allBackendsForThisRouteMapping, Backend{
+						Address: lrpNetInfo.InstanceAddress,
+						Port:    appContainerPort,
+					})
+				}
+			}
+
+			hostnamesToBackends[hostname] = append(hostnamesToBackends[hostname], allBackendsForThisRouteMapping...)
+		}
 	}
 
 	result := map[InternalRoute][]Backend{}

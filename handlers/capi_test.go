@@ -78,7 +78,7 @@ var _ = Describe("Capi Handlers", func() {
 				Host: "route-a.example.com",
 				Destinations: []*models.Destination{
 					{
-						CapiProcessGuid: "some-capi-process-guid",
+						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          100,
 					},
 				},
@@ -128,11 +128,11 @@ var _ = Describe("Capi Handlers", func() {
 				Host: "route-a.example.com",
 				Destinations: []*models.Destination{
 					{
-						CapiProcessGuid: "some-capi-process-guid",
+						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          50,
 					},
 					{
-						CapiProcessGuid: "some-other-capi-process-guid",
+						CAPIProcessGUID: "some-other-capi-process-guid",
 						Weight:          50,
 					},
 				},
@@ -143,11 +143,11 @@ var _ = Describe("Capi Handlers", func() {
 				Host: "route-a.example.com",
 				Destinations: []*models.Destination{
 					{
-						CapiProcessGuid: "some-capi-process-guid",
+						CAPIProcessGUID: "some-capi-process-guid",
 						Weight:          60,
 					},
 					{
-						CapiProcessGuid: "some-other-capi-process-guid",
+						CAPIProcessGUID: "some-other-capi-process-guid",
 						Weight:          40,
 					},
 				},
@@ -283,7 +283,7 @@ var _ = Describe("Capi Handlers", func() {
 					Path: "/nothing/matters",
 					Destinations: []*models.Destination{
 						{
-							CapiProcessGuid: "some-capi-process-guid",
+							CAPIProcessGUID: "some-capi-process-guid",
 							Weight:          100,
 						},
 					},

@@ -8,12 +8,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   add_message "api.ListCfRoutesRequest" do
   end
   add_message "api.ListCfRoutesResponse" do
-    map :routes, :string, :string, 1
-  end
-  add_message "api.ListCfRouteMappingsRequest" do
-  end
-  add_message "api.ListCfRouteMappingsResponse" do
-    map :route_mappings, :string, :message, 1, "api.RouteMapping"
+    map :routes, :string, :message, 1, "api.Route"
   end
   add_message "api.ListCapiDiegoProcessAssociationsRequest" do
   end
@@ -27,6 +22,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :guid, :string, 1
     optional :host, :string, 2
     optional :path, :string, 3
+    repeated :destinations, :message, 4, "api.Destination"
   end
   add_message "api.UpsertRouteRequest" do
     optional :route, :message, 1, "api.Route"
@@ -38,20 +34,10 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   end
   add_message "api.DeleteRouteResponse" do
   end
-  add_message "api.RouteMapping" do
+  add_message "api.Destination" do
     optional :capi_process_guid, :string, 1
-    optional :route_guid, :string, 2
-    optional :route_weight, :int32, 3
-  end
-  add_message "api.MapRouteRequest" do
-    optional :route_mapping, :message, 1, "api.RouteMapping"
-  end
-  add_message "api.MapRouteResponse" do
-  end
-  add_message "api.UnmapRouteRequest" do
-    optional :route_mapping, :message, 1, "api.RouteMapping"
-  end
-  add_message "api.UnmapRouteResponse" do
+    optional :weight, :uint32, 2
+    optional :port, :uint32, 3
   end
   add_message "api.CapiDiegoProcessAssociation" do
     optional :capi_process_guid, :string, 1
@@ -68,7 +54,6 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   add_message "api.DeleteCapiDiegoProcessAssociationResponse" do
   end
   add_message "api.BulkSyncRequest" do
-    repeated :route_mappings, :message, 1, "api.RouteMapping"
     repeated :routes, :message, 2, "api.Route"
     repeated :capi_diego_process_associations, :message, 3, "api.CapiDiegoProcessAssociation"
   end
@@ -79,8 +64,6 @@ end
 module Api
   ListCfRoutesRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRoutesRequest").msgclass
   ListCfRoutesResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRoutesResponse").msgclass
-  ListCfRouteMappingsRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRouteMappingsRequest").msgclass
-  ListCfRouteMappingsResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCfRouteMappingsResponse").msgclass
   ListCapiDiegoProcessAssociationsRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCapiDiegoProcessAssociationsRequest").msgclass
   DiegoProcessGuids = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DiegoProcessGuids").msgclass
   ListCapiDiegoProcessAssociationsResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.ListCapiDiegoProcessAssociationsResponse").msgclass
@@ -89,11 +72,7 @@ module Api
   UpsertRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UpsertRouteResponse").msgclass
   DeleteRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DeleteRouteRequest").msgclass
   DeleteRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DeleteRouteResponse").msgclass
-  RouteMapping = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.RouteMapping").msgclass
-  MapRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.MapRouteRequest").msgclass
-  MapRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.MapRouteResponse").msgclass
-  UnmapRouteRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UnmapRouteRequest").msgclass
-  UnmapRouteResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UnmapRouteResponse").msgclass
+  Destination = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.Destination").msgclass
   CapiDiegoProcessAssociation = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.CapiDiegoProcessAssociation").msgclass
   UpsertCapiDiegoProcessAssociationRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UpsertCapiDiegoProcessAssociationRequest").msgclass
   UpsertCapiDiegoProcessAssociationResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.UpsertCapiDiegoProcessAssociationResponse").msgclass

@@ -18,7 +18,6 @@ var _ = Describe("Repo", func() {
 	Describe("Get", func() {
 		var (
 			routesRepo                       *models.RoutesRepo
-			routeMappingsRepo                *models.RouteMappingsRepo
 			capiDiegoProcessAssociationsRepo *models.CAPIDiegoProcessAssociationsRepo
 			bbsClient                        *fakes.BBSClient
 			logger                           lager.Logger
@@ -102,25 +101,28 @@ var _ = Describe("Repo", func() {
 			logger = lagertest.NewTestLogger("test")
 
 			routesRepo = models.NewRoutesRepo()
-			routeMappingsRepo = models.NewRouteMappingsRepo()
 			capiDiegoProcessAssociationsRepo = &models.CAPIDiegoProcessAssociationsRepo{
 				Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 			}
 			routesRepo.Upsert(&models.Route{
 				GUID: "internal-route-guid-a",
 				Host: "route-a.apps.internal",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          100,
+					},
+				},
 			})
 			routesRepo.Upsert(&models.Route{
 				GUID: "internal-route-guid-b",
 				Host: "route-b.apps.internal",
-			})
-			routeMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "internal-route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-a",
-			})
-			routeMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "internal-route-guid-b",
-				CAPIProcessGUID: "capi-process-guid-b",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-b",
+						Weight:          100,
+					},
+				},
 			})
 			capiDiegoProcessAssociationsRepo.Upsert(&models.CAPIDiegoProcessAssociation{
 				CAPIProcessGUID: "capi-process-guid-a",
@@ -146,7 +148,6 @@ var _ = Describe("Repo", func() {
 				BBSClient:                        bbsClient,
 				Logger:                           logger,
 				RoutesRepo:                       routesRepo,
-				RouteMappingsRepo:                routeMappingsRepo,
 				CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
 				VIPProvider:                      vipProvider,
 			}
@@ -186,9 +187,19 @@ var _ = Describe("Repo", func() {
 
 			// and now map the route-a to diego-process-b
 			// and assert we see all 4 backends for route-a
-			routeMappingsRepo.Map(&models.RouteMapping{
-				RouteGUID:       "internal-route-guid-a",
-				CAPIProcessGUID: "capi-process-guid-b",
+			routesRepo.Upsert(&models.Route{
+				GUID: "internal-route-guid-a",
+				Host: "route-a.apps.internal",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "capi-process-guid-a",
+						Weight:          50,
+					},
+					{
+						CAPIProcessGUID: "capi-process-guid-b",
+						Weight:          50,
+					},
+				},
 			})
 
 			internalRoutes, err = internalRoutesRepo.Get()

@@ -379,22 +379,22 @@ var _ = Describe("Copilot", func() {
 			}})
 		Expect(err).NotTo(HaveOccurred())
 
-		// TODO (Open Question) we don't know how to handle route deletions yet
-		// By("cc delete the second route")
-		// _, err = ccClient.DeleteRoute(context.Background(), &api.DeleteRouteRequest{
-		// 	Guid: "route-guid-b",
-		// })
-		// Expect(err).NotTo(HaveOccurred())
-		//
-		// istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
-		// Expect(err).NotTo(HaveOccurred())
-		// By("istio client sees the updated stuff")
-		// Expect(istioVisibleRoutes.Routes).To(HaveLen(1))
-		// route = istioVisibleRoutes.Routes[0]
-		// Expect(route.Hostname).To(Equal("some-url"))
-		// Expect(route.Backends.Backends).To(ConsistOf(
-		// 	&api.Backend{Address: "10.10.1.6", Port: 61006},
-		// ))
+		// TODO: Update to reflect changes in the V3 API once route deletion gets figured out
+		By("cc delete the second route")
+		_, err = ccClient.DeleteRoute(context.Background(), &api.DeleteRouteRequest{
+			Guid: "route-guid-b",
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		istioVisibleRoutes, err = istioClient.Routes(context.Background(), new(api.RoutesRequest))
+		Expect(err).NotTo(HaveOccurred())
+		By("istio client sees the updated stuff")
+		Expect(istioVisibleRoutes.Routes).To(HaveLen(1))
+		route = istioVisibleRoutes.Routes[0]
+		Expect(route.Hostname).To(Equal("some-url"))
+		Expect(route.Backends.Backends).To(ConsistOf(
+			&api.Backend{Address: "10.10.1.6", Port: 61006},
+		))
 
 		By("cc maps an internal route")
 		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{

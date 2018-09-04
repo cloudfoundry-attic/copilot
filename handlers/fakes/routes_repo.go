@@ -36,14 +36,14 @@ type RoutesRepo struct {
 		result1 *models.Route
 		result2 bool
 	}
-	ListStub        func() map[string]string
+	ListStub        func() map[string]*models.Route
 	listMutex       sync.RWMutex
 	listArgsForCall []struct{}
 	listReturns     struct {
-		result1 map[string]string
+		result1 map[string]*models.Route
 	}
 	listReturnsOnCall map[int]struct {
-		result1 map[string]string
+		result1 map[string]*models.Route
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -177,7 +177,7 @@ func (fake *RoutesRepo) GetReturnsOnCall(i int, result1 *models.Route, result2 b
 	}{result1, result2}
 }
 
-func (fake *RoutesRepo) List() map[string]string {
+func (fake *RoutesRepo) List() map[string]*models.Route {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
@@ -198,22 +198,22 @@ func (fake *RoutesRepo) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *RoutesRepo) ListReturns(result1 map[string]string) {
+func (fake *RoutesRepo) ListReturns(result1 map[string]*models.Route) {
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 map[string]string
+		result1 map[string]*models.Route
 	}{result1}
 }
 
-func (fake *RoutesRepo) ListReturnsOnCall(i int, result1 map[string]string) {
+func (fake *RoutesRepo) ListReturnsOnCall(i int, result1 map[string]*models.Route) {
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 map[string]string
+			result1 map[string]*models.Route
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 map[string]string
+		result1 map[string]*models.Route
 	}{result1}
 }
 
