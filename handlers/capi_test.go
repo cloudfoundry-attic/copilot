@@ -300,4 +300,35 @@ var _ = Describe("Capi Handlers", func() {
 			}}))
 		})
 	})
+
+	Describe("ListCfRoutes", func() {
+		It("returns all routes", func() {
+			ctx := context.Background()
+			fakeRoutesRepo.ListReturns(map[string]*models.Route{
+				"route-guid-a": {
+					GUID: "route-guid-a",
+					Host: "route-a.example.com",
+					Destinations: []*models.Destination{
+						{
+							CAPIProcessGUID: "capi-process-guid",
+							Weight:          100,
+						},
+					},
+				},
+				"route-guid-b": {
+					GUID: "route-guid-b",
+					Host: "route-b.example.com",
+					Destinations: []*models.Destination{
+						{
+							CAPIProcessGUID: "some-capi-process-guid",
+							Weight:          100,
+						},
+					},
+				},
+			})
+
+			routes, _ := handler.ListCfRoutes(ctx, &api.ListCfRoutesRequest{})
+			Expect(len(routes.GetRoutes())).To(Equal(2))
+		})
+	})
 })

@@ -15,10 +15,12 @@ type Route struct {
 }
 
 type Destination struct {
-	CAPIProcessGUID string
+	CAPIProcessGUID CAPIProcessGUID
 	Weight          uint32
 	Port            uint32
 }
+
+type CAPIProcessGUID string
 
 func (r *Route) Hostname() string {
 	return strings.ToLower(r.Host)

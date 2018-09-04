@@ -28,7 +28,7 @@ func (c *CAPI) ListCfRoutes(context.Context, *api.ListCfRoutesRequest) (*api.Lis
 	for routeGUID, route := range c.RoutesRepo.List() {
 		destinations := make([]*api.Destination, len(route.Destinations))
 		for i, d := range route.Destinations {
-			destinations[i] = &api.Destination{CapiProcessGuid: d.CAPIProcessGUID, Weight: d.Weight, Port: d.Port}
+			destinations[i] = &api.Destination{CapiProcessGuid: string(d.CAPIProcessGUID), Weight: d.Weight, Port: d.Port}
 		}
 		routes[routeGUID] = &api.Route{
 			Guid:         string(routeGUID),
@@ -62,7 +62,7 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 
 	destinations := make([]*models.Destination, len(request.Route.Destinations))
 	for i, d := range request.Route.Destinations {
-		destinations[i] = &models.Destination{CAPIProcessGUID: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
+		destinations[i] = &models.Destination{CAPIProcessGUID: models.CAPIProcessGUID(d.CapiProcessGuid), Weight: d.Weight, Port: d.Port}
 	}
 
 	route := &models.Route{
@@ -120,7 +120,7 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 	for i, route := range request.Routes {
 		destinations := make([]*models.Destination, len(route.Destinations))
 		for i, d := range route.Destinations {
-			destinations[i] = &models.Destination{CAPIProcessGUID: d.CapiProcessGuid, Weight: d.Weight, Port: d.Port}
+			destinations[i] = &models.Destination{CAPIProcessGUID: models.CAPIProcessGUID(d.CapiProcessGuid), Weight: d.Weight, Port: d.Port}
 		}
 
 		routes[i] = &models.Route{

@@ -139,4 +139,44 @@ var _ = Describe("RoutesRepo", func() {
 			}))
 		})
 	})
+
+	Describe("List", func() {
+		It("returns all routes", func() {
+			route := &models.Route{
+				Host: "host.example.com",
+				GUID: "some-route-guid",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          60,
+					},
+					{
+						CAPIProcessGUID: "some-other-capi-process-guid",
+						Weight:          40,
+					},
+				},
+			}
+
+			route2 := &models.Route{
+				Host: "something.different.com",
+				GUID: "some-other-route-guid",
+				Destinations: []*models.Destination{
+					{
+						CAPIProcessGUID: "some-capi-process-guid",
+						Weight:          50,
+					},
+					{
+						CAPIProcessGUID: "some-other-capi-process-guid",
+						Weight:          50,
+					},
+				},
+			}
+
+			routesRepo.Upsert(route)
+			routesRepo.Upsert(route2)
+
+			routes := routesRepo.List()
+			Expect(len(routes)).To(Equal(2))
+		})
+	})
 })
