@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	copilotsnapshot "code.cloudfoundry.org/snapshot"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -24,6 +25,7 @@ import (
 	"code.cloudfoundry.org/copilot/handlers"
 	"code.cloudfoundry.org/copilot/internalroutes"
 	"code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/copilot/routes"
 	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
 )
@@ -137,7 +139,10 @@ func mainWithError() error {
 	)
 
 	cache := snapshot.New()
-	typeURLs := []string{}
+	typeURLs := []string{
+		snapshot.VSTypeURL,
+		snapshot.DRTypeURL,
+	}
 
 	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
 		func(s *grpc.Server) {
@@ -147,9 +152,15 @@ func mainWithError() error {
 		},
 	)
 
+	ticker := time.NewTicker()
+	builder := snapshot.NewInMemoryBuilder()
+	collector := routes.NewCollector(logger, routesRepo, routesMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
+	snapshot := copilotsnapshot.New(logger, ticker.C, collector, builder, cache)
+
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-pilot", Runner: grpcServerForPilot},
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
+		grouper.Member{Name: "mcp-snapshot", Runner: snapshot},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 	}
 	if bbsClient != nil {
