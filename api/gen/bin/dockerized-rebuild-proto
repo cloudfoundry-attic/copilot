@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -eo pipefail
+
+docker build -t protobuf-go-dependencies .
+docker run -e BUILD_ROOT="/tmp/copilot" -v "${COPILOT_ROOT}:/tmp/copilot" protobuf-go-dependencies

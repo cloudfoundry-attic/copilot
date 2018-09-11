@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+
+echo "Generating protos for cloud controller, istio, and common..."
+
+pushd "${BUILD_ROOT}/api/protos"
+  go generate
+popd
