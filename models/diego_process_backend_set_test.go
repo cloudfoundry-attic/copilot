@@ -88,9 +88,7 @@ var _ = Describe("BackendSetRepo", func() {
 					},
 				}
 
-				bbsEventer.ActualLRPGroupsReturns([]*bbsmodels.ActualLRPGroup{missedLRP}, nil)
-
-				caughtLRPEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
+				caughtLRP := &bbsmodels.ActualLRPGroup{
 					Instance: &bbsmodels.ActualLRP{
 						ActualLRPKey: bbsmodels.ActualLRPKey{
 							ProcessGuid: "some-guid",
@@ -104,8 +102,11 @@ var _ = Describe("BackendSetRepo", func() {
 							},
 						},
 					},
-				})
+				}
 
+				bbsEventer.ActualLRPGroupsReturns([]*bbsmodels.ActualLRPGroup{missedLRP, caughtLRP}, nil)
+
+				caughtLRPEvent := bbsmodels.NewActualLRPCreatedEvent(caughtLRP)
 				ef.NextReturns(caughtLRPEvent, nil)
 
 				sig := make(<-chan os.Signal)
@@ -124,10 +125,12 @@ var _ = Describe("BackendSetRepo", func() {
 				Expect(backends[0].Address).To(Equal("11.11.11.11"))
 				Expect(backends[0].Port).To(Equal(uint32(2323)))
 
-				Consistently(func() []*api.Backend {
+				// Because the caughtLRP is always being emitted as an event there may be
+				// duplicate entries (since it is also in the list of BBS LRP Groups), so we expect at least one
+				Consistently(func() int {
 					res := bs.Get("some-guid")
-					return res.GetBackends()
-				}).Should(HaveLen(1))
+					return len(res.GetBackends())
+				}).Should(BeNumerically(">=", 1))
 			})
 		})
 
