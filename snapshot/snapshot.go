@@ -16,9 +16,22 @@ import (
 )
 
 const (
-	VSTypeURL = "type.googleapis.com/istio.networking.v1alpha3.DestinationRule"
-	DRTypeURL = "type.googleapis.com/istio.networking.v1alpha3.VirtualService"
-	node      = "copilot-node-id"
+	DestinationRuleTypeURL    = "type.googleapis.com/istio.networking.v1alpha3.DestinationRule"
+	VirtualServiceTypeURL     = "type.googleapis.com/istio.networking.v1alpha3.VirtualService"
+	GatewayTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Gateway"
+	ServiceEntryTypeURL       = "type.googleapis.com/istio.networking.v1alpha3.ServiceEntry"
+	EnvoyFilterTypeURL        = "type.googleapis.com/istio.networking.v1alpha3.EnvoyFilter"
+	HTTPAPISpecTypeURL        = "type.googleapis.com/istio.mixer.v1.config.client.HTTPAPISpec"
+	HTTPAPISpecBindingTypeURL = "type.googleapis.com/istio.mixer.v1.config.client.HTTPAPISpecBinding"
+	QuotaSpecTypeURL          = "type.googleapis.com/istio.mixer.v1.config.client.QuotaSpec"
+	QuotaSpecBindingTypeURL   = "type.googleapis.com/istio.mixer.v1.config.client.QuotaSpecBinding"
+	PolicyTypeURL             = "type.googleapis.com/istio.authentication.v1alpha1.Policy"
+	MeshPolicyTypeURL         = "type.googleapis.com/istio.authentication.v1alpha1.Policy"
+	ServiceRoleTypeURL        = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRole"
+	ServiceRoleBindingTypeURL = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRoleBinding"
+	RbacConfigTypeURL         = "type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"
+	defaultGatewayName        = "cloudfoundry-ingress"
+	node                      = "copilot-node-id"
 )
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
@@ -26,10 +39,11 @@ type collector interface {
 	Collect() []*api.RouteWithBackends
 }
 
-type builder interface {
-	Set(typeURL string, version string, resources []*mcp.Envelope)
-	Build() *snap.InMemory
-}
+// type builder interface {
+// 	Set(typeURL string, version string, resources []*mcp.Envelope)
+// 	Build() *snap.InMemory
+// 	Builder() builder
+// }
 
 //go:generate counterfeiter -o fakes/setter.go --fake-name Setter . setter
 type setter interface {
@@ -40,16 +54,14 @@ type Snapshot struct {
 	logger    lager.Logger
 	ticker    <-chan time.Time
 	collector collector
-	builder   builder
 	setter    setter
 }
 
-func New(logger lager.Logger, ticker <-chan time.Time, collector collector, builder builder, setter setter) *Snapshot {
+func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter) *Snapshot {
 	return &Snapshot{
 		logger:    logger,
 		ticker:    ticker,
 		collector: collector,
-		builder:   builder,
 		setter:    setter,
 	}
 }
@@ -62,23 +74,47 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case <-signals:
 			return nil
 		case <-s.ticker:
+			builder := snap.NewInMemoryBuilder()
 			routes := s.collector.Collect()
-			vsEnvelopes, drEnvelopes := s.createEnvelopes(routes)
+			gateways, _, _ := s.createEnvelopes(routes)
 
-			s.builder.Set(VSTypeURL, "1", vsEnvelopes)
-			s.builder.Set(DRTypeURL, "1", drEnvelopes)
+			builder.Set(GatewayTypeURL, "1", gateways)
+			//	builder.Set(VirtualServiceTypeURL, "1", virtualservices)
+			//	builder.Set(DestinationRuleTypeURL, "1", destinationrules)
 
-			shot := s.builder.Build()
+			shot := builder.Build()
 			s.setter.SetSnapshot(node, shot)
 		}
 	}
 }
 
-func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) ([]*mcp.Envelope, []*mcp.Envelope) {
-	var (
-		vsEnvelopes []*mcp.Envelope
-		drEnvelopes []*mcp.Envelope
-	)
+func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes, vsEnvelopes, drEnvelopes []*mcp.Envelope) {
+	gateway := &networking.Gateway{
+		Servers: []*networking.Server{
+			{
+				Port: &networking.Port{
+					Number:   80,
+					Protocol: "http",
+					Name:     "http",
+				},
+				Hosts: []string{"*"},
+			},
+		},
+	}
+
+	gaResource, err := types.MarshalAny(gateway)
+	if err != nil {
+		s.logger.Error("envelope.gateway.marshal", err)
+	}
+
+	gaEnvelopes = []*mcp.Envelope{
+		{
+			Metadata: &mcp.Metadata{
+				Name: defaultGatewayName,
+			},
+			Resource: gaResource,
+		},
+	}
 
 	httpRoutes := make(map[string]*networking.HTTPRoute)
 
@@ -129,12 +165,12 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) ([]*mcp.Enve
 		})
 	}
 
-	return vsEnvelopes, drEnvelopes
+	return gaEnvelopes, vsEnvelopes, drEnvelopes
 }
 
 func createVirtualService(route *api.RouteWithBackends) *networking.VirtualService {
 	return &networking.VirtualService{
-		Gateways: []string{"cloudfoundry-ingress"},
+		Gateways: []string{defaultGatewayName},
 		Hosts:    []string{route.GetHostname()},
 	}
 }

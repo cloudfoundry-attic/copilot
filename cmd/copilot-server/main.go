@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	copilotsnapshot "code.cloudfoundry.org/snapshot"
+	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -28,6 +28,11 @@ import (
 	"code.cloudfoundry.org/copilot/routes"
 	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
+)
+
+var (
+	diegoBulkSyncInterval = 60 * time.Second
+	snapshotInterval      = 30 * time.Second
 )
 
 func mainWithError() error {
@@ -55,7 +60,6 @@ func mainWithError() error {
 	logger.RegisterSink(reconfigurableSink)
 
 	var bbsClient bbs.InternalClient
-	diegoBulkSyncInterval := 60 * time.Second
 	if cfg.BBS == nil {
 		logger.Info("BBS is disabled")
 		bbsClient = nil
@@ -138,12 +142,24 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
 	)
 
-	cache := snapshot.New()
 	typeURLs := []string{
-		snapshot.VSTypeURL,
-		snapshot.DRTypeURL,
+		copilotsnapshot.GatewayTypeURL,
+		copilotsnapshot.VirtualServiceTypeURL,
+		copilotsnapshot.DestinationRuleTypeURL,
+		copilotsnapshot.ServiceEntryTypeURL,
+		copilotsnapshot.EnvoyFilterTypeURL,
+		copilotsnapshot.HTTPAPISpecTypeURL,
+		copilotsnapshot.HTTPAPISpecBindingTypeURL,
+		copilotsnapshot.QuotaSpecTypeURL,
+		copilotsnapshot.QuotaSpecBindingTypeURL,
+		copilotsnapshot.PolicyTypeURL,
+		copilotsnapshot.MeshPolicyTypeURL,
+		copilotsnapshot.ServiceRoleTypeURL,
+		copilotsnapshot.ServiceRoleBindingTypeURL,
+		copilotsnapshot.RbacConfigTypeURL,
 	}
 
+	cache := snapshot.New()
 	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
 		func(s *grpc.Server) {
 			snapshotServer := server.New(cache, typeURLs, nil)
@@ -152,16 +168,16 @@ func mainWithError() error {
 		},
 	)
 
-	ticker := time.NewTicker()
-	builder := snapshot.NewInMemoryBuilder()
-	collector := routes.NewCollector(logger, routesRepo, routesMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
-	snapshot := copilotsnapshot.New(logger, ticker.C, collector, builder, cache)
+	ticker := time.NewTicker(snapshotInterval)
+	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
+	mcpSnapshot := copilotsnapshot.New(logger, ticker.C, collector, cache)
+	istioHandler.Collector = collector
 
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-pilot", Runner: grpcServerForPilot},
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
-		grouper.Member{Name: "mcp-snapshot", Runner: snapshot},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
+		grouper.Member{Name: "mcp-snapshot", Runner: mcpSnapshot},
 	}
 	if bbsClient != nil {
 		members = append(members, grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo})

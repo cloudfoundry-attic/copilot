@@ -10,7 +10,6 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 
 	networking "istio.io/api/networking/v1alpha3"
-	snap "istio.io/istio/pkg/mcp/snapshot"
 
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
@@ -30,12 +29,11 @@ var _ = Describe("Run", func() {
 		ticker = make(chan time.Time)
 		collector = &fakes.Collector{}
 		setter = &fakes.Setter{}
-		builder := snap.NewInMemoryBuilder()
 
-		s = snapshot.New(l, ticker, collector, builder, setter)
+		s = snapshot.New(l, ticker, collector, setter)
 	})
 
-	It("sends mcp snapshots", func() {
+	It("mcp snapshots sends gateways, virutalServices and destinationRules", func() {
 		sig := make(chan os.Signal)
 		ready := make(chan struct{})
 
@@ -63,8 +61,9 @@ var _ = Describe("Run", func() {
 		node, shot := setter.SetSnapshotArgsForCall(0)
 		Expect(node).To(Equal("copilot-node-id"))
 
-		virtualServices := shot.Resources(snapshot.VSTypeURL)
-		destinationRules := shot.Resources(snapshot.DRTypeURL)
+		virtualServices := shot.Resources(snapshot.VirtualServiceTypeURL)
+		destinationRules := shot.Resources(snapshot.DestinationRuleTypeURL)
+		gateways := shot.Resources(snapshot.GatewayTypeURL)
 
 		Expect(virtualServices).To(HaveLen(1))
 		Expect(virtualServices[0].Metadata.Name).To(Equal("copilot-service-for-foo.example.com"))
@@ -72,12 +71,19 @@ var _ = Describe("Run", func() {
 		Expect(destinationRules).To(HaveLen(1))
 		Expect(destinationRules[0].Metadata.Name).To(Equal("copilot-rule-for-foo.example.com"))
 
+		Expect(gateways).To(HaveLen(1))
+		Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
+
 		var vs networking.VirtualService
 		err := types.UnmarshalAny(virtualServices[0].Resource, &vs)
 		Expect(err).NotTo(HaveOccurred())
 
 		var dr networking.DestinationRule
 		err = types.UnmarshalAny(destinationRules[0].Resource, &dr)
+		Expect(err).NotTo(HaveOccurred())
+
+		var ga networking.Gateway
+		err = types.UnmarshalAny(gateways[0].Resource, &ga)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(vs).To(Equal(networking.VirtualService{
@@ -111,6 +117,7 @@ var _ = Describe("Run", func() {
 				},
 			},
 		}))
+
 		Expect(dr).To(Equal(networking.DestinationRule{
 			Host: "foo.example.com",
 			Subsets: []*networking.Subset{
@@ -120,6 +127,20 @@ var _ = Describe("Run", func() {
 				},
 			},
 		}))
+
+		Expect(ga).To(Equal(
+			networking.Gateway{
+				Servers: []*networking.Server{
+					&networking.Server{
+						Port: &networking.Port{
+							Number:   80,
+							Protocol: "http",
+							Name:     "http",
+						},
+						Hosts: []string{"*"},
+					},
+				},
+			}))
 
 		sig <- os.Kill
 	})
