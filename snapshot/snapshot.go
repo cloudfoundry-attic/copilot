@@ -16,6 +16,8 @@ import (
 )
 
 const (
+	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
+	// when mcp client is capable of only sending supported ones
 	DestinationRuleTypeURL    = "type.googleapis.com/istio.networking.v1alpha3.DestinationRule"
 	VirtualServiceTypeURL     = "type.googleapis.com/istio.networking.v1alpha3.VirtualService"
 	GatewayTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Gateway"
@@ -31,19 +33,15 @@ const (
 	ServiceRoleBindingTypeURL = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRoleBinding"
 	RbacConfigTypeURL         = "type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"
 	defaultGatewayName        = "cloudfoundry-ingress"
-	node                      = "copilot-node-id"
+	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
+	// in snapshot, we should add this once the nodeID is configurable in pilot
+	node = ""
 )
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
 type collector interface {
 	Collect() []*api.RouteWithBackends
 }
-
-// type builder interface {
-// 	Set(typeURL string, version string, resources []*mcp.Envelope)
-// 	Build() *snap.InMemory
-// 	Builder() builder
-// }
 
 //go:generate counterfeiter -o fakes/setter.go --fake-name Setter . setter
 type setter interface {
@@ -76,11 +74,12 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case <-s.ticker:
 			builder := snap.NewInMemoryBuilder()
 			routes := s.collector.Collect()
-			gateways, _, _ := s.createEnvelopes(routes)
+			gateways, virtualservices, destinationrules := s.createEnvelopes(routes)
 
+			//TODO send incrementing versions
 			builder.Set(GatewayTypeURL, "1", gateways)
-			//	builder.Set(VirtualServiceTypeURL, "1", virtualservices)
-			//	builder.Set(DestinationRuleTypeURL, "1", destinationrules)
+			builder.Set(VirtualServiceTypeURL, "1", virtualservices)
+			builder.Set(DestinationRuleTypeURL, "1", destinationrules)
 
 			shot := builder.Build()
 			s.setter.SetSnapshot(node, shot)

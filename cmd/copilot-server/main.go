@@ -142,6 +142,8 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
 	)
 
+	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
+	// when mcp client is capable of only sending supported ones
 	typeURLs := []string{
 		copilotsnapshot.GatewayTypeURL,
 		copilotsnapshot.VirtualServiceTypeURL,
