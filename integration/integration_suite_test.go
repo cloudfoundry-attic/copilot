@@ -10,6 +10,9 @@ import (
 	ginkgoConfig "github.com/onsi/ginkgo/config"
 
 	"testing"
+
+	// Import the resource package to pull in all proto types.
+	_ "istio.io/istio/galley/pkg/metadata"
 )
 
 func TestIntegration(t *testing.T) {

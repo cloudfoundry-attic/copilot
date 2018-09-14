@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"sync"
 	"time"
 
 	"code.cloudfoundry.org/bbs/events"
@@ -31,12 +32,21 @@ import (
 )
 
 type MockUpdater struct {
-	Changes []*client.Change
+	changesMux sync.Mutex
+	envelopes  []*client.Change
 }
 
-func (mu *MockUpdater) Apply(c *client.Change) error {
-	mu.Changes = append(mu.Changes, c)
+func (m *MockUpdater) Apply(c *client.Change) error {
+	m.changesMux.Lock()
+	defer m.changesMux.Unlock()
+	m.envelopes = append(m.envelopes, c)
 	return nil
+}
+
+func (m *MockUpdater) changes() []*client.Change {
+	m.changesMux.Lock()
+	defer m.changesMux.Unlock()
+	return m.envelopes
 }
 
 var _ = Describe("MCP", func() {
@@ -44,6 +54,7 @@ var _ = Describe("MCP", func() {
 		session          *gexec.Session
 		listenAddrForMCP string
 		cleanupFuncs     []func()
+		snapshotInterval = 30 * time.Second
 	)
 
 	BeforeEach(func() {
@@ -228,14 +239,38 @@ var _ = Describe("MCP", func() {
 		svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
 		mockUpdater := &MockUpdater{}
 
-		client.New(svcClient, []string{"destination-rule", "virtual-service"}, mockUpdater, "test-id", nil)
-		Expect(mockUpdater.Changes).To(HaveLen(2))
+		typeURLs := []string{
+			"istio.networking.v1alpha3.DestinationRule",
+			"istio.networking.v1alpha3.VirtualService",
+			"istio.networking.v1alpha3.Gateway",
+			"istio.networking.v1alpha3.ServiceEntry",
+			"istio.networking.v1alpha3.EnvoyFilter",
+			"istio.mixer.v1.config.client.HTTPAPISpec",
+			"istio.mixer.v1.config.client.HTTPAPISpecBinding",
+			"istio.mixer.v1.config.client.QuotaSpec",
+			"istio.mixer.v1.config.client.QuotaSpecBinding",
+			"istio.authentication.v1alpha1.Policy",
+			"istio.authentication.v1alpha1.Policy",
+			"istio.rbac.v1alpha1.ServiceRole",
+			"istio.rbac.v1alpha1.ServiceRoleBinding",
+			"istio.rbac.v1alpha1.RbacConfig",
+		}
+		cl := client.New(svcClient, typeURLs, mockUpdater, "", nil)
+		go cl.Run(context.Background())
+
+		// Wait for the MCP client to establish a handshake
+		time.Sleep(snapshotInterval)
+		changes := mockUpdater.changes()
+		Expect(changes).To(HaveLen(3))
 
 		var messageNames []string
-		for _, c := range mockUpdater.Changes {
+		for _, c := range changes {
 			messageNames = append(messageNames, c.MessageName)
 		}
-
-		Expect(messageNames).To(ConsistOf([]string{"virtual-service", "destination-rule"}))
+		Expect(messageNames).To(ConsistOf([]string{
+			"istio.networking.v1alpha3.DestinationRule",
+			"istio.networking.v1alpha3.VirtualService",
+			"istio.networking.v1alpha3.Gateway",
+		}))
 	})
 })
