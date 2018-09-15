@@ -59,7 +59,7 @@ var _ = Describe("Run", func() {
 
 		Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 		node, shot := setter.SetSnapshotArgsForCall(0)
-		Expect(node).To(Equal("copilot-node-id"))
+		Expect(node).To(Equal(""))
 
 		virtualServices := shot.Resources(snapshot.VirtualServiceTypeURL)
 		destinationRules := shot.Resources(snapshot.DestinationRuleTypeURL)
