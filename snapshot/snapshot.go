@@ -3,6 +3,8 @@ package snapshot
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/copilot/api"
@@ -49,10 +51,11 @@ type setter interface {
 }
 
 type Snapshot struct {
-	logger    lager.Logger
-	ticker    <-chan time.Time
-	collector collector
-	setter    setter
+	logger       lager.Logger
+	ticker       <-chan time.Time
+	collector    collector
+	setter       setter
+	inMemoryShot *snap.InMemory
 }
 
 func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter) *Snapshot {
@@ -72,17 +75,41 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case <-signals:
 			return nil
 		case <-s.ticker:
-			builder := snap.NewInMemoryBuilder()
 			routes := s.collector.Collect()
 			gateways, virtualservices, destinationrules := s.createEnvelopes(routes)
 
-			//TODO send incrementing versions
-			builder.Set(GatewayTypeURL, "1", gateways)
-			builder.Set(VirtualServiceTypeURL, "1", virtualservices)
-			builder.Set(DestinationRuleTypeURL, "1", destinationrules)
+			if s.inMemoryShot == nil {
+				builder := snap.NewInMemoryBuilder()
+				builder.Set(GatewayTypeURL, "1", gateways)
+				builder.Set(VirtualServiceTypeURL, "1", virtualservices)
+				builder.Set(DestinationRuleTypeURL, "1", destinationrules)
 
-			shot := builder.Build()
-			s.setter.SetSnapshot(node, shot)
+				shot := builder.Build()
+				s.inMemoryShot = shot
+				s.setter.SetSnapshot(node, shot)
+				continue
+			}
+
+			vsResources := s.inMemoryShot.Resources(VirtualServiceTypeURL)
+			drResources := s.inMemoryShot.Resources(DestinationRuleTypeURL)
+
+			if !reflect.DeepEqual(vsResources, virtualservices) || !reflect.DeepEqual(drResources, destinationrules) {
+				v, err := strconv.Atoi(s.inMemoryShot.Version(VirtualServiceTypeURL))
+				if err != nil {
+					s.logger.Error("run.inmemory.version", err)
+				}
+				v++
+				version := strconv.Itoa(v)
+
+				builder := snap.NewInMemoryBuilder()
+				builder.Set(GatewayTypeURL, "1", gateways)
+				builder.Set(VirtualServiceTypeURL, version, virtualservices)
+				builder.Set(DestinationRuleTypeURL, version, destinationrules)
+
+				shot := builder.Build()
+				s.inMemoryShot = shot
+				s.setter.SetSnapshot(node, shot)
+			}
 		}
 	}
 }

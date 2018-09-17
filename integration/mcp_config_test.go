@@ -234,7 +234,6 @@ var _ = Describe("MCP", func() {
 
 		conn, err := grpc.Dial(listenAddrForMCP, opts...)
 		Expect(err).NotTo(HaveOccurred())
-		defer conn.Close()
 
 		svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
 		mockUpdater := &MockUpdater{}
@@ -262,6 +261,7 @@ var _ = Describe("MCP", func() {
 		time.Sleep(snapshotInterval)
 		changes := mockUpdater.changes()
 		Expect(changes).To(HaveLen(3))
+		conn.Close()
 
 		var messageNames []string
 		for _, c := range changes {
