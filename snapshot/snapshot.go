@@ -14,6 +14,7 @@ import (
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pilot/pkg/model"
 	snap "istio.io/istio/pkg/mcp/snapshot"
 )
 
@@ -142,16 +143,28 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 		},
 	}
 
+	virtualServices := make(map[string]*model.Config, len(routes))
+	destinationRules := make(map[string]*model.Config, len(routes))
 	httpRoutes := make(map[string]*networking.HTTPRoute)
 
 	for _, route := range routes {
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.GetHostname())
 		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.GetHostname())
 
-		dr := createDestinationRule(route)
+		var dr *networking.DestinationRule
+		if config, ok := destinationRules[destinationRuleName]; ok {
+			dr = config.Spec.(*networking.DestinationRule)
+		} else {
+			dr = createDestinationRule(route)
+		}
 		dr.Subsets = append(dr.Subsets, createSubset(route.GetCapiProcessGuid()))
 
-		vs := createVirtualService(route)
+		var vs *networking.VirtualService
+		if config, ok := virtualServices[virtualServiceName]; ok {
+			vs = config.Spec.(*networking.VirtualService)
+		} else {
+			vs = createVirtualService(route)
+		}
 
 		if r, ok := httpRoutes[route.GetHostname()+route.GetPath()]; ok {
 			r.Route = append(r.Route, createDestinationWeight(route))
@@ -166,7 +179,26 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 			httpRoutes[route.GetHostname()+route.GetPath()] = r
 		}
 
-		vsResource, err := types.MarshalAny(vs)
+		virtualServices[virtualServiceName] = &model.Config{
+			ConfigMeta: model.ConfigMeta{
+				Type:    model.VirtualService.Type,
+				Version: model.VirtualService.Version,
+				Name:    virtualServiceName,
+			},
+			Spec: vs,
+		}
+		destinationRules[destinationRuleName] = &model.Config{
+			ConfigMeta: model.ConfigMeta{
+				Type:    model.DestinationRule.Type,
+				Version: model.DestinationRule.Version,
+				Name:    destinationRuleName,
+			},
+			Spec: dr,
+		}
+	}
+
+	for virtualServiceName, vs := range virtualServices {
+		vsResource, err := types.MarshalAny(vs.Spec)
 		if err != nil {
 			s.logger.Error("envelope.virtualservice.marshal", err) //untested
 		}
@@ -177,8 +209,10 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 			},
 			Resource: vsResource,
 		})
+	}
 
-		drResource, err := types.MarshalAny(dr)
+	for destinationRuleName, dr := range destinationRules {
+		drResource, err := types.MarshalAny(dr.Spec)
 		if err != nil {
 			s.logger.Error("envelope.destinationrule.marshal", err) //untested
 		}
