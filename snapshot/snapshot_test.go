@@ -40,7 +40,7 @@ var _ = Describe("Run", func() {
 		collector.CollectReturns([]*api.RouteWithBackends{
 			{
 				Hostname: "foo.example.com",
-				Path:     "/something",
+				Path:     "",
 				Backends: &api.BackendSet{
 					Backends: []*api.Backend{
 						{
@@ -51,6 +51,34 @@ var _ = Describe("Run", func() {
 				},
 				CapiProcessGuid: "a-capi-guid",
 				RouteWeight:     int32(100),
+			},
+			{
+				Hostname: "foo.example.com",
+				Path:     "/something",
+				Backends: &api.BackendSet{
+					Backends: []*api.Backend{
+						{
+							Address: "10.00.00.1",
+							Port:    uint32(65005),
+						},
+					},
+				},
+				CapiProcessGuid: "x-capi-guid",
+				RouteWeight:     int32(50),
+			},
+			{
+				Hostname: "foo.example.com",
+				Path:     "/something",
+				Backends: &api.BackendSet{
+					Backends: []*api.Backend{
+						{
+							Address: "10.00.00.0",
+							Port:    uint32(65007),
+						},
+					},
+				},
+				CapiProcessGuid: "y-capi-guid",
+				RouteWeight:     int32(50),
 			},
 		})
 
@@ -109,6 +137,34 @@ var _ = Describe("Run", func() {
 										Number: 8080,
 									},
 								},
+								Subset: "x-capi-guid",
+							},
+							Weight: 50,
+						},
+						{
+							Destination: &networking.Destination{
+								Host: "foo.example.com",
+								Port: &networking.PortSelector{
+									Port: &networking.PortSelector_Number{
+										Number: 8080,
+									},
+								},
+								Subset: "y-capi-guid",
+							},
+							Weight: 50,
+						},
+					},
+				},
+				{
+					Route: []*networking.DestinationWeight{
+						{
+							Destination: &networking.Destination{
+								Host: "foo.example.com",
+								Port: &networking.PortSelector{
+									Port: &networking.PortSelector_Number{
+										Number: 8080,
+									},
+								},
 								Subset: "a-capi-guid",
 							},
 							Weight: 100,
@@ -124,6 +180,14 @@ var _ = Describe("Run", func() {
 				{
 					Name:   "a-capi-guid",
 					Labels: map[string]string{"cfapp": "a-capi-guid"},
+				},
+				{
+					Name:   "x-capi-guid",
+					Labels: map[string]string{"cfapp": "x-capi-guid"},
+				},
+				{
+					Name:   "y-capi-guid",
+					Labels: map[string]string{"cfapp": "y-capi-guid"},
 				},
 			},
 		}))
