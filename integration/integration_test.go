@@ -475,8 +475,8 @@ var _ = Describe("Copilot", func() {
 			bbsServer.Close()
 
 			// stop copilot
-			session.Interrupt()
-			Eventually(session, "10s").Should(gexec.Exit())
+			gexec.KillAndWait(time.Second * 10)
+			Eventually(session, "2s").Should(gexec.Exit())
 		})
 
 		It("crashes and prints a useful error log", func() {
