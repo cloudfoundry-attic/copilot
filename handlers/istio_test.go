@@ -34,8 +34,6 @@ var _ = Describe("Istio Handlers", func() {
 		collector                      *fakes.Collector
 		logger                         lager.Logger
 		bbsClientResponse              []*bbsmodels.ActualLRPGroup
-		expectedExternalRouteBackendsA *api.BackendSet
-		expectedExternalRouteBackendsB *api.BackendSet
 		expectedInternalRouteBackendsA *api.BackendSet
 		expectedInternalRouteBackendsB *api.BackendSet
 		vipProvider                    *internalroutes_fakes.VIPProvider
@@ -108,31 +106,6 @@ var _ = Describe("Istio Handlers", func() {
 							{ContainerPort: 8080, HostPort: 61001},
 						},
 					},
-				},
-			},
-		}
-
-		expectedExternalRouteBackendsA = &api.BackendSet{
-			Backends: []*api.Backend{
-				{
-					Address: "10.0.40.2",
-					Port:    61008,
-				},
-				{
-					Address: "10.10.1.5",
-					Port:    61005,
-				},
-			},
-		}
-		expectedExternalRouteBackendsB = &api.BackendSet{
-			Backends: []*api.Backend{
-				{
-					Address: "10.0.50.4",
-					Port:    61009,
-				},
-				{
-					Address: "10.0.60.2",
-					Port:    61001,
 				},
 			},
 		}
