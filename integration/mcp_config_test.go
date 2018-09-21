@@ -260,7 +260,7 @@ var _ = Describe("MCP", func() {
 		// Wait for the MCP client to establish a handshake
 		time.Sleep(snapshotInterval)
 		changes := mockUpdater.changes()
-		Expect(changes).To(HaveLen(3))
+		Expect(changes).To(HaveLen(4))
 		conn.Close()
 
 		var messageNames []string
@@ -271,6 +271,7 @@ var _ = Describe("MCP", func() {
 			"istio.networking.v1alpha3.DestinationRule",
 			"istio.networking.v1alpha3.VirtualService",
 			"istio.networking.v1alpha3.Gateway",
+			"istio.networking.v1alpha3.ServiceEntry",
 		}))
 	})
 })

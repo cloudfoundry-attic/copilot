@@ -38,7 +38,9 @@ const (
 	defaultGatewayName        = "cloudfoundry-ingress"
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
-	node = ""
+	node        = ""
+	gatewayPort = 80
+	servicePort = 8080
 )
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
@@ -77,13 +79,14 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
-			gateways, virtualservices, destinationrules := s.createEnvelopes(routes)
+			gateways, virtualservices, destinationrules, serviceentries := s.createEnvelopes(routes)
 
 			if s.inMemoryShot == nil {
 				builder := snap.NewInMemoryBuilder()
 				builder.Set(GatewayTypeURL, "1", gateways)
 				builder.Set(VirtualServiceTypeURL, "1", virtualservices)
 				builder.Set(DestinationRuleTypeURL, "1", destinationrules)
+				builder.Set(ServiceEntryTypeURL, "1", serviceentries)
 
 				shot := builder.Build()
 				s.inMemoryShot = shot
@@ -93,8 +96,11 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 			vsResources := s.inMemoryShot.Resources(VirtualServiceTypeURL)
 			drResources := s.inMemoryShot.Resources(DestinationRuleTypeURL)
+			seResources := s.inMemoryShot.Resources(ServiceEntryTypeURL)
 
-			if !reflect.DeepEqual(vsResources, virtualservices) || !reflect.DeepEqual(drResources, destinationrules) {
+			if !reflect.DeepEqual(vsResources, virtualservices) ||
+				!reflect.DeepEqual(drResources, destinationrules) ||
+				!reflect.DeepEqual(seResources, serviceentries) {
 				v, err := strconv.Atoi(s.inMemoryShot.Version(VirtualServiceTypeURL))
 				if err != nil {
 					s.logger.Error("run.inmemory.version", err)
@@ -106,6 +112,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 				builder.Set(GatewayTypeURL, "1", gateways)
 				builder.Set(VirtualServiceTypeURL, version, virtualservices)
 				builder.Set(DestinationRuleTypeURL, version, destinationrules)
+				builder.Set(ServiceEntryTypeURL, version, serviceentries)
 
 				shot := builder.Build()
 				s.inMemoryShot = shot
@@ -115,12 +122,12 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 }
 
-func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes, vsEnvelopes, drEnvelopes []*mcp.Envelope) {
+func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes, vsEnvelopes, drEnvelopes, seEnvelopes []*mcp.Envelope) {
 	gateway := &networking.Gateway{
 		Servers: []*networking.Server{
 			{
 				Port: &networking.Port{
-					Number:   80,
+					Number:   gatewayPort,
 					Protocol: "http",
 					Name:     "http",
 				},
@@ -145,11 +152,13 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 
 	virtualServices := make(map[string]*model.Config, len(routes))
 	destinationRules := make(map[string]*model.Config, len(routes))
+	serviceEntries := make(map[string]*model.Config, len(routes))
 	httpRoutes := make(map[string]*networking.HTTPRoute)
 
 	for _, route := range routes {
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.GetHostname())
 		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.GetHostname())
+		serviceEntryName := fmt.Sprintf("copilot-service-entry-for-%s", route.GetHostname())
 
 		var dr *networking.DestinationRule
 		if config, ok := destinationRules[destinationRuleName]; ok {
@@ -165,6 +174,14 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 		} else {
 			vs = createVirtualService(route)
 		}
+
+		var se *networking.ServiceEntry
+		if config, ok := serviceEntries[serviceEntryName]; ok {
+			se = config.Spec.(*networking.ServiceEntry)
+		} else {
+			se = createServiceEntry(route)
+		}
+		se.Endpoints = append(se.Endpoints, createEndpoint(route.Backends.GetBackends(), route.GetCapiProcessGuid())...)
 
 		if r, ok := httpRoutes[route.GetHostname()+route.GetPath()]; ok {
 			r.Route = append(r.Route, createDestinationWeight(route))
@@ -194,6 +211,14 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 				Name:    destinationRuleName,
 			},
 			Spec: dr,
+		}
+		serviceEntries[serviceEntryName] = &model.Config{
+			ConfigMeta: model.ConfigMeta{
+				Type:    model.ServiceEntry.Type,
+				Version: model.ServiceEntry.Version,
+				Name:    serviceEntryName,
+			},
+			Spec: se,
 		}
 	}
 
@@ -225,7 +250,50 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 		})
 	}
 
-	return gaEnvelopes, vsEnvelopes, drEnvelopes
+	for serviceEntryName, se := range serviceEntries {
+		seResource, err := types.MarshalAny(se.Spec)
+		if err != nil {
+			s.logger.Error("envelope.serviceentry.marshal", err) //untested
+		}
+
+		seEnvelopes = append(seEnvelopes, &mcp.Envelope{
+			Metadata: &mcp.Metadata{
+				Name: serviceEntryName,
+			},
+			Resource: seResource,
+		})
+	}
+
+	return gaEnvelopes, vsEnvelopes, drEnvelopes, seEnvelopes
+}
+
+func createEndpoint(backends []*api.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
+	endpoints := make([]*networking.ServiceEntry_Endpoint, 0)
+	for _, backend := range backends {
+		endpoints = append(endpoints, &networking.ServiceEntry_Endpoint{
+			Address: backend.GetAddress(),
+			Ports: map[string]uint32{
+				"http": backend.GetPort(),
+			},
+			Labels: map[string]string{"cfapp": capiProcessGuid},
+		})
+	}
+	return endpoints
+}
+
+func createServiceEntry(route *api.RouteWithBackends) *networking.ServiceEntry {
+	return &networking.ServiceEntry{
+		Hosts: []string{route.GetHostname()},
+		Ports: []*networking.Port{
+			{
+				Name:     "http",
+				Number:   servicePort,
+				Protocol: "http",
+			},
+		},
+		Location:   networking.ServiceEntry_MESH_INTERNAL,
+		Resolution: networking.ServiceEntry_STATIC,
+	}
 }
 
 func createVirtualService(route *api.RouteWithBackends) *networking.VirtualService {
@@ -242,7 +310,7 @@ func createDestinationWeight(route *api.RouteWithBackends) *networking.Destinati
 			Subset: route.GetCapiProcessGuid(),
 			Port: &networking.PortSelector{
 				Port: &networking.PortSelector_Number{
-					Number: 8080,
+					Number: servicePort,
 				},
 			},
 		},
