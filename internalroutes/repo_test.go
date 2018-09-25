@@ -26,24 +26,6 @@ var _ = Describe("Repo", func() {
 
 		BeforeEach(func() {
 			backendSetRepo = &fakes.BackendSetRepo{}
-			backendSetRepo.GetInternalBackendsStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
-				diegoClientMap := map[models.DiegoProcessGUID]*api.BackendSet{
-					"diego-process-guid-b": &api.BackendSet{
-						Backends: []*api.Backend{
-							{Address: "10.255.9.34", Port: 8080},
-							{Address: "10.255.9.16", Port: 8080},
-						},
-					},
-					"diego-process-guid-a": &api.BackendSet{
-						Backends: []*api.Backend{
-							{Address: "10.255.0.16", Port: 8080},
-							{Address: "10.255.1.34", Port: 9080},
-						},
-					},
-				}
-				return diegoClientMap[guid]
-			}
-
 			logger = lagertest.NewTestLogger("test")
 
 			routesRepo = models.NewRoutesRepo()
@@ -98,6 +80,24 @@ var _ = Describe("Repo", func() {
 		})
 
 		It("returns the internal routes for each running backend instance", func() {
+			backendSetRepo.GetInternalBackendsStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
+				diegoClientMap := map[models.DiegoProcessGUID]*api.BackendSet{
+					"diego-process-guid-b": &api.BackendSet{
+						Backends: []*api.Backend{
+							{Address: "10.255.9.34", Port: 8080},
+							{Address: "10.255.9.16", Port: 8080},
+						},
+					},
+					"diego-process-guid-a": &api.BackendSet{
+						Backends: []*api.Backend{
+							{Address: "10.255.0.16", Port: 8080},
+							{Address: "10.255.1.34", Port: 9080},
+						},
+					},
+				}
+				return diegoClientMap[guid]
+			}
+
 			routeAKey := internalroutes.InternalRoute{Hostname: "route-a.apps.internal", VIP: "vip-for-route-a"}
 			routeBKey := internalroutes.InternalRoute{Hostname: "route-b.apps.internal", VIP: "vip-for-route-b"}
 
@@ -169,6 +169,13 @@ var _ = Describe("Repo", func() {
 					Port:    8080,
 				},
 			}))
+		})
+
+		Context("when GetInternalBackends returns nil", func() {
+			It("skips the GUID and continues", func() {
+				backendSetRepo.GetInternalBackendsReturns(nil)
+				Expect(func() { internalRoutesRepo.Get() }).ShouldNot(Panic())
+			})
 		})
 	})
 })

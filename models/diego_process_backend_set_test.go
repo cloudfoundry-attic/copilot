@@ -335,6 +335,22 @@ var _ = Describe("BackendSetRepo", func() {
 		})
 	})
 
+	Context("when there is no backend set for a GUID", func() {
+		It("returns nil", func() {
+			ticker := fakes.NewTicker()
+			logger := lagertest.NewTestLogger("test")
+			bbsEventer := &fakes.BBSEventer{}
+
+			bsr := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
+
+			set := bsr.Get("some-guid-does-not-exist")
+			Expect(set).To(BeNil())
+
+			set = bsr.GetInternalBackends("some-guid-not-here")
+			Expect(set).To(BeNil())
+		})
+	})
+
 	Context("when an error occurs", func() {
 		Context("when the event stream fails", func() {
 			It("logs an error", func() {

@@ -84,6 +84,9 @@ func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
 		allBackendsForThisRouteMapping := []Backend{}
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			bs := r.BackendSetRepo.GetInternalBackends(diegoProcessGUID)
+			if bs == nil {
+				continue
+			}
 
 			for _, backend := range bs.Backends {
 				if backend.Port == 0 {
