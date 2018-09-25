@@ -109,7 +109,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		BBSClient:                        bbsClient,
+		BackendSetRepo:                   backendSetRepo,
 		Logger:                           logger,
 		VIPProvider:                      vipProvider,
 	}

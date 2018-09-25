@@ -3,7 +3,7 @@ package internalroutes
 import (
 	"strings"
 
-	bbsmodels "code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -33,9 +33,9 @@ type capiDiegoProcessAssociationsRepoInterface interface {
 	Get(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
 }
 
-//go:generate counterfeiter -o fakes/bbs_client.go --fake-name BBSClient . bbsClient
-type bbsClient interface {
-	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
+//go:generate counterfeiter -o fakes/backendset_repo.go --fake-name BackendSetRepo . backendSetRepo
+type backendSetRepo interface {
+	GetInternalBackends(guid models.DiegoProcessGUID) *api.BackendSet
 }
 
 //go:generate counterfeiter -o fakes/vip_provider.go --fake-name VIPProvider . vipProvider
@@ -44,7 +44,7 @@ type vipProvider interface {
 }
 
 type Repo struct {
-	BBSClient                        bbsClient
+	BackendSetRepo                   backendSetRepo
 	Logger                           lager.Logger
 	RoutesRepo                       routesRepoInterface
 	RouteMappingsRepo                routeMappingsRepoInterface
@@ -63,11 +63,6 @@ type InternalRoute struct {
 }
 
 func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
-	lrpNetInfosMap, err := r.retrieveActualLRPNetInfos()
-	if err != nil {
-		return nil, err
-	}
-
 	hostnamesToBackends := map[string][]Backend{}
 
 	for _, routeMapping := range r.RouteMappingsRepo.List() {
@@ -88,14 +83,16 @@ func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
 
 		allBackendsForThisRouteMapping := []Backend{}
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			for _, lrpNetInfo := range lrpNetInfosMap[diegoProcessGUID] {
-				appContainerPort := getAppContainerPort(lrpNetInfo)
-				if appContainerPort == 0 {
+			bs := r.BackendSetRepo.GetInternalBackends(diegoProcessGUID)
+
+			for _, backend := range bs.Backends {
+				if backend.Port == 0 {
 					continue
 				}
+
 				allBackendsForThisRouteMapping = append(allBackendsForThisRouteMapping, Backend{
-					Address: lrpNetInfo.InstanceAddress,
-					Port:    appContainerPort,
+					Address: backend.Address,
+					Port:    backend.Port,
 				})
 			}
 		}
@@ -113,37 +110,4 @@ func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
 	}
 
 	return result, nil
-}
-
-func (r *Repo) retrieveActualLRPNetInfos() (map[models.DiegoProcessGUID][]bbsmodels.ActualLRPNetInfo, error) {
-	actualLRPGroups, err := r.BBSClient.ActualLRPGroups(r.Logger.Session("bbs-client"), bbsmodels.ActualLRPFilter{})
-	if err != nil {
-		return nil, err
-	}
-	actualLRPNetInfos := make(map[models.DiegoProcessGUID][]bbsmodels.ActualLRPNetInfo)
-	for _, actualGroup := range actualLRPGroups {
-		instance := actualGroup.Instance
-		if instance == nil {
-			r.Logger.Debug("skipping-nil-instance")
-			continue
-		}
-		diegoProcessGUID := models.DiegoProcessGUID(instance.ActualLRPKey.ProcessGuid)
-		if instance.State != bbsmodels.ActualLRPStateRunning {
-			r.Logger.Debug("skipping-non-running-instance", lager.Data{"process-guid": diegoProcessGUID})
-			continue
-		}
-		netInfos := actualLRPNetInfos[diegoProcessGUID]
-		netInfos = append(netInfos, instance.ActualLRPNetInfo)
-		actualLRPNetInfos[diegoProcessGUID] = netInfos
-	}
-	return actualLRPNetInfos, nil
-}
-
-func getAppContainerPort(lrpNetInfo bbsmodels.ActualLRPNetInfo) uint32 {
-	for _, port := range lrpNetInfo.Ports {
-		if port.ContainerPort != CF_APP_SSH_PORT {
-			return port.ContainerPort
-		}
-	}
-	return 0
 }

@@ -12,22 +12,33 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type store struct {
-	sync.RWMutex
-	content map[DiegoProcessGUID]*api.BackendSet
+type sets struct {
+	External *api.BackendSet
+	Internal *api.BackendSet
 }
 
-func (s *store) Insert(guid DiegoProcessGUID, additionalBackend *api.Backend) {
+type store struct {
+	sync.RWMutex
+	content map[DiegoProcessGUID]sets
+}
+
+func (s *store) Insert(guid DiegoProcessGUID, isInternal bool, additionalBackend *api.Backend) {
 	if additionalBackend == nil {
 		return
 	}
 
 	s.Lock()
 	if _, ok := s.content[guid]; !ok {
-		s.content[guid] = &api.BackendSet{}
+		s.content[guid] = sets{
+			External: &api.BackendSet{},
+			Internal: &api.BackendSet{},
+		}
 	}
 
-	backends := s.content[guid].Backends
+	backends := s.content[guid].External.Backends
+	if isInternal {
+		backends = s.content[guid].Internal.Backends
+	}
 	s.Unlock()
 
 	for _, backend := range backends {
@@ -37,7 +48,11 @@ func (s *store) Insert(guid DiegoProcessGUID, additionalBackend *api.Backend) {
 	}
 
 	s.Lock()
-	s.content[guid].Backends = append(s.content[guid].Backends, additionalBackend)
+	if isInternal {
+		s.content[guid].Internal.Backends = append(s.content[guid].Internal.Backends, additionalBackend)
+	} else {
+		s.content[guid].External.Backends = append(s.content[guid].External.Backends, additionalBackend)
+	}
 	s.Unlock()
 }
 
@@ -67,7 +82,7 @@ func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker <-chan time.T
 		logger: logger,
 		ticker: ticker,
 		store: store{
-			content: make(map[DiegoProcessGUID]*api.BackendSet),
+			content: make(map[DiegoProcessGUID]sets),
 		},
 	}
 }
@@ -97,7 +112,13 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 func (b *BackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
 	b.store.RLock()
 	defer b.store.RUnlock()
-	return b.store.content[guid]
+	return b.store.content[guid].External
+}
+
+func (b *BackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet {
+	b.store.RLock()
+	defer b.store.RUnlock()
+	return b.store.content[guid].Internal
 }
 
 func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource) {
@@ -117,9 +138,11 @@ func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.
 			case bbsmodels.EventTypeActualLRPCreated:
 				createdEvent := event.(*bbsmodels.ActualLRPCreatedEvent)
 				instance := createdEvent.GetActualLrpGroup().GetInstance()
-				be := processInstance(instance)
+				ex, in := processInstance(instance)
 				guid := DiegoProcessGUID(instance.ActualLRPKey.GetProcessGuid())
-				b.store.Insert(guid, be)
+				b.store.Insert(guid, false, ex)
+				b.store.Insert(guid, true, in)
+
 			case bbsmodels.EventTypeActualLRPRemoved:
 				removedEvent := event.(*bbsmodels.ActualLRPRemovedEvent)
 				guid := DiegoProcessGUID(removedEvent.GetActualLrpGroup().GetInstance().ActualLRPKey.GetProcessGuid())
@@ -143,11 +166,12 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.
 			}
 
 			// not locking replacement store - no other goroutine can update it
-			replaceStore := store{content: make(map[DiegoProcessGUID]*api.BackendSet)}
+			replaceStore := store{content: make(map[DiegoProcessGUID]sets)}
 			for _, group := range groups {
-				be := processInstance(group.Instance)
+				ex, in := processInstance(group.Instance)
 				guid := DiegoProcessGUID(group.GetInstance().ActualLRPKey.GetProcessGuid())
-				replaceStore.Insert(guid, be)
+				replaceStore.Insert(guid, false, ex)
+				replaceStore.Insert(guid, true, in)
 			}
 
 			b.store.Lock()
@@ -160,24 +184,32 @@ func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.
 	}
 }
 
-func processInstance(instance *bbsmodels.ActualLRP) *api.Backend {
+func processInstance(instance *bbsmodels.ActualLRP) (*api.Backend, *api.Backend) {
+	var (
+		appHostPort      uint32
+		appContainerPort uint32
+		externalBackend  *api.Backend
+		internalBackend  *api.Backend
+	)
+
 	if instance.State != bbsmodels.ActualLRPStateRunning {
-		return nil
+		return externalBackend, internalBackend
 	}
 
-	var appHostPort uint32
 	for _, port := range instance.ActualLRPNetInfo.Ports {
 		if port.ContainerPort != CF_APP_SSH_PORT {
 			appHostPort = port.HostPort
+			appContainerPort = port.ContainerPort
 		}
 	}
 
-	if appHostPort == 0 {
-		return nil
+	if appHostPort != 0 {
+		internalBackend = &api.Backend{Address: instance.ActualLRPNetInfo.Address, Port: appHostPort}
 	}
 
-	return &api.Backend{
-		Address: instance.ActualLRPNetInfo.Address,
-		Port:    appHostPort,
+	if appContainerPort != 0 {
+		externalBackend = &api.Backend{Address: instance.ActualLRPNetInfo.InstanceAddress, Port: appContainerPort}
 	}
+
+	return internalBackend, externalBackend
 }

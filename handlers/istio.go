@@ -23,6 +23,7 @@ type Istio struct {
 //go:generate counterfeiter -o fakes/backend_set_repo.go --fake-name BackendSetRepo . backendSetRepo
 type backendSetRepo interface {
 	Get(guid models.DiegoProcessGUID) *api.BackendSet
+	GetInternalBackends(guid models.DiegoProcessGUID) *api.BackendSet
 }
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector

@@ -3,12 +3,11 @@ package handlers_test
 import (
 	"context"
 
-	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
 	"code.cloudfoundry.org/copilot/handlers/fakes"
 	"code.cloudfoundry.org/copilot/internalroutes"
-	internalroutes_fakes "code.cloudfoundry.org/copilot/internalroutes/fakes"
+	internalroutesfakes "code.cloudfoundry.org/copilot/internalroutes/fakes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -17,97 +16,35 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type mockBBSClient struct {
-	actualLRPGroupsData []*bbsmodels.ActualLRPGroup
-	actualLRPErr        error
-}
-
-func (b mockBBSClient) ActualLRPGroups(l lager.Logger, bbsModel bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error) {
-	return b.actualLRPGroupsData, b.actualLRPErr
-}
-
 var _ = Describe("Istio Handlers", func() {
 	var (
 		handler                        *handlers.Istio
-		bbsClient                      *mockBBSClient
 		backendSetRepo                 *fakes.BackendSetRepo
 		collector                      *fakes.Collector
 		logger                         lager.Logger
-		bbsClientResponse              []*bbsmodels.ActualLRPGroup
 		expectedInternalRouteBackendsA *api.BackendSet
 		expectedInternalRouteBackendsB *api.BackendSet
-		vipProvider                    *internalroutes_fakes.VIPProvider
+		vipProvider                    *internalroutesfakes.VIPProvider
 	)
 
 	BeforeEach(func() {
-		bbsClientResponse = []*bbsmodels.ActualLRPGroup{
-			{
-				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
-					State:        bbsmodels.ActualLRPStateRunning,
-					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address:         "10.10.1.5",
-						InstanceAddress: "10.255.0.16",
-						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 2222, HostPort: 61006},
-							{ContainerPort: 8080, HostPort: 61005},
-						},
+		backendSetRepo = &fakes.BackendSetRepo{}
+		backendSetRepo.GetInternalBackendsStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
+			diegoClientMap := map[models.DiegoProcessGUID]*api.BackendSet{
+				"diego-process-guid-b": &api.BackendSet{
+					Backends: []*api.Backend{
+						{Address: "10.255.9.34", Port: 8080},
+						{Address: "10.255.9.16", Port: 8080},
 					},
 				},
-			},
-			{},
-			{
-				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 2, "domain1"),
-					State:        bbsmodels.ActualLRPStateRunning,
-					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address:         "10.0.40.2",
-						InstanceAddress: "10.255.1.34",
-						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 9080, HostPort: 61008},
-						},
+				"diego-process-guid-a": &api.BackendSet{
+					Backends: []*api.Backend{
+						{Address: "10.255.0.16", Port: 8080},
+						{Address: "10.255.1.34", Port: 9080},
 					},
 				},
-			},
-			{
-				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
-					State:        bbsmodels.ActualLRPStateClaimed, // not yet started
-					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address:         "10.0.40.4",
-						InstanceAddress: "10.255.7.77",
-						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 8080, HostPort: 61007},
-						},
-					},
-				},
-			},
-			{
-				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
-					State:        bbsmodels.ActualLRPStateRunning, // actually running
-					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address:         "10.0.50.4",
-						InstanceAddress: "10.255.9.16",
-						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 8080, HostPort: 61009},
-						},
-					},
-				},
-			},
-			{
-				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 2, "domain1"),
-					State:        bbsmodels.ActualLRPStateRunning,
-					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address:         "10.0.60.2",
-						InstanceAddress: "10.255.9.34",
-						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 8080, HostPort: 61001},
-						},
-					},
-				},
-			},
+			}
+			return diegoClientMap[guid]
 		}
 
 		expectedInternalRouteBackendsA = &api.BackendSet{
@@ -135,16 +72,10 @@ var _ = Describe("Istio Handlers", func() {
 			},
 		}
 
-		bbsClient = &mockBBSClient{
-			actualLRPGroupsData: bbsClientResponse,
-		}
-
-		backendSetRepo = &fakes.BackendSetRepo{}
-
 		logger = lagertest.NewTestLogger("test")
 		collector = &fakes.Collector{}
 
-		vipProvider = &internalroutes_fakes.VIPProvider{}
+		vipProvider = &internalroutesfakes.VIPProvider{}
 		vipProvider.GetStub = func(hostname string) string {
 			return map[string]string{
 				"route-a.apps.internal": "vip-for-route-a",
@@ -159,7 +90,7 @@ var _ = Describe("Istio Handlers", func() {
 		}
 
 		internalRoutesRepo := &internalroutes.Repo{
-			BBSClient:                        bbsClient,
+			BackendSetRepo:                   backendSetRepo,
 			Logger:                           logger,
 			RoutesRepo:                       routesRepo,
 			RouteMappingsRepo:                routeMappingsRepo,

@@ -169,7 +169,8 @@ var _ = Describe("BackendSetRepo", func() {
 						},
 						State: bbsmodels.ActualLRPStateRunning,
 						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-							Address: "10.10.10.10",
+							Address:         "10.10.10.10",
+							InstanceAddress: "13.13.13.13",
 							Ports: []*bbsmodels.PortMapping{
 								{HostPort: 1555, ContainerPort: 1000},
 								{HostPort: 5685, ContainerPort: 2222},
@@ -197,6 +198,14 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeNil())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
+
+				Eventually(func() *api.BackendSet {
+					res := bs.GetInternalBackends("meow")
+					backends = res.GetBackends()
+					return res
+				}).ShouldNot(BeNil())
+				Expect(backends[0].Address).To(Equal("13.13.13.13"))
+				Expect(backends[0].Port).To(Equal(uint32(1000)))
 			})
 
 			Context("when delete event is received", func() {
