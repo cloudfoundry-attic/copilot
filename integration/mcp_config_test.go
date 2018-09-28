@@ -28,6 +28,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/pkg/mcp/client"
@@ -57,10 +58,11 @@ var _ = Describe("MCP", func() {
 		listenAddrForMCP string
 		cleanupFuncs     []func()
 		snapshotInterval = 30 * time.Second
+		copilotCreds     testhelpers.MTLSCredentials
 	)
 
 	BeforeEach(func() {
-		copilotCreds := testhelpers.GenerateMTLS()
+		copilotCreds = testhelpers.GenerateMTLS()
 
 		listenAddrForPilot := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
@@ -228,13 +230,14 @@ var _ = Describe("MCP", func() {
 	})
 
 	It("sends config over the wire", func() {
+		mcpClientTLSConf := copilotCreds.ClientTLSConfig()
 		opts := []grpc.DialOption{
 			grpc.WithBlock(),
-			grpc.WithInsecure(),
+			grpc.WithTransportCredentials(credentials.NewTLS(mcpClientTLSConf)),
 			grpc.WithTimeout(5 * time.Second),
 		}
 
-		conn, err := grpc.Dial(listenAddrForMCP, opts...)
+		conn, err := grpc.DialContext(context.Background(), listenAddrForMCP, opts...)
 		Expect(err).NotTo(HaveOccurred())
 
 		svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
