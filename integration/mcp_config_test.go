@@ -14,7 +14,9 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot"
 	"code.cloudfoundry.org/copilot/api"
+
 	"code.cloudfoundry.org/copilot/config"
+	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/copilot/testhelpers"
 
 	"github.com/gogo/protobuf/proto"
@@ -239,20 +241,20 @@ var _ = Describe("MCP", func() {
 		mockUpdater := &MockUpdater{}
 
 		typeURLs := []string{
-			"istio.networking.v1alpha3.DestinationRule",
-			"istio.networking.v1alpha3.VirtualService",
-			"istio.networking.v1alpha3.Gateway",
-			"istio.networking.v1alpha3.ServiceEntry",
-			"istio.networking.v1alpha3.EnvoyFilter",
-			"istio.mixer.v1.config.client.HTTPAPISpec",
-			"istio.mixer.v1.config.client.HTTPAPISpecBinding",
-			"istio.mixer.v1.config.client.QuotaSpec",
-			"istio.mixer.v1.config.client.QuotaSpecBinding",
-			"istio.authentication.v1alpha1.Policy",
-			"istio.authentication.v1alpha1.Policy",
-			"istio.rbac.v1alpha1.ServiceRole",
-			"istio.rbac.v1alpha1.ServiceRoleBinding",
-			"istio.rbac.v1alpha1.RbacConfig",
+			copilotsnapshot.GatewayTypeURL,
+			copilotsnapshot.VirtualServiceTypeURL,
+			copilotsnapshot.DestinationRuleTypeURL,
+			copilotsnapshot.ServiceEntryTypeURL,
+			copilotsnapshot.EnvoyFilterTypeURL,
+			copilotsnapshot.HTTPAPISpecTypeURL,
+			copilotsnapshot.HTTPAPISpecBindingTypeURL,
+			copilotsnapshot.QuotaSpecTypeURL,
+			copilotsnapshot.QuotaSpecBindingTypeURL,
+			copilotsnapshot.PolicyTypeURL,
+			copilotsnapshot.MeshPolicyTypeURL,
+			copilotsnapshot.ServiceRoleTypeURL,
+			copilotsnapshot.ServiceRoleBindingTypeURL,
+			copilotsnapshot.RbacConfigTypeURL,
 		}
 		cl := client.New(svcClient, typeURLs, mockUpdater, "", nil)
 		go cl.Run(context.Background())
@@ -260,17 +262,18 @@ var _ = Describe("MCP", func() {
 		// Wait for the MCP client to establish a handshake
 		time.Sleep(snapshotInterval)
 		changes := mockUpdater.changes()
-		Expect(changes).To(HaveLen(3))
+		Expect(changes).To(HaveLen(4))
 		conn.Close()
 
 		var messageNames []string
 		for _, c := range changes {
-			messageNames = append(messageNames, c.MessageName)
+			messageNames = append(messageNames, c.TypeURL)
 		}
 		Expect(messageNames).To(ConsistOf([]string{
-			"istio.networking.v1alpha3.DestinationRule",
-			"istio.networking.v1alpha3.VirtualService",
-			"istio.networking.v1alpha3.Gateway",
+			copilotsnapshot.GatewayTypeURL,
+			copilotsnapshot.VirtualServiceTypeURL,
+			copilotsnapshot.DestinationRuleTypeURL,
+			copilotsnapshot.ServiceEntryTypeURL,
 		}))
 	})
 })

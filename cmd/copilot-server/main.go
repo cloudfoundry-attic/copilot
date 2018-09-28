@@ -125,7 +125,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger: logger,
+		Logger:                           logger,
 	}
 	grpcServerForPilot := grpcrunner.New(logger, cfg.ListenAddressForPilot,
 		func(s *grpc.Server) {
@@ -164,10 +164,12 @@ func mainWithError() error {
 	cache := snapshot.New()
 	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
 		func(s *grpc.Server) {
-			snapshotServer := server.New(cache, typeURLs, nil)
+			authChecker := server.NewAllowAllChecker()
+			snapshotServer := server.New(cache, typeURLs, authChecker)
 			mcp.RegisterAggregatedMeshConfigServiceServer(s, snapshotServer)
 			reflection.Register(s)
 		},
+		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
 	)
 
 	ticker := time.NewTicker(snapshotInterval)

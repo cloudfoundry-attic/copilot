@@ -58,7 +58,7 @@ var _ = Describe("Run", func() {
 				Backends: &api.BackendSet{
 					Backends: []*api.Backend{
 						{
-							Address: "10.00.00.1",
+							Address: "10.0.0.1",
 							Port:    uint32(65005),
 						},
 					},
@@ -72,7 +72,7 @@ var _ = Describe("Run", func() {
 				Backends: &api.BackendSet{
 					Backends: []*api.Backend{
 						{
-							Address: "10.00.00.0",
+							Address: "10.0.0.0",
 							Port:    uint32(65007),
 						},
 					},
@@ -92,6 +92,7 @@ var _ = Describe("Run", func() {
 		virtualServices := shot.Resources(snapshot.VirtualServiceTypeURL)
 		destinationRules := shot.Resources(snapshot.DestinationRuleTypeURL)
 		gateways := shot.Resources(snapshot.GatewayTypeURL)
+		serviceEntries := shot.Resources(snapshot.ServiceEntryTypeURL)
 
 		Expect(virtualServices).To(HaveLen(1))
 		Expect(virtualServices[0].Metadata.Name).To(Equal("copilot-service-for-foo.example.com"))
@@ -101,6 +102,9 @@ var _ = Describe("Run", func() {
 
 		Expect(gateways).To(HaveLen(1))
 		Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
+
+		Expect(serviceEntries).To(HaveLen(1))
+		Expect(serviceEntries[0].Metadata.Name).To(Equal("copilot-service-entry-for-foo.example.com"))
 
 		var vs networking.VirtualService
 		err := types.UnmarshalAny(virtualServices[0].Resource, &vs)
@@ -112,6 +116,10 @@ var _ = Describe("Run", func() {
 
 		var ga networking.Gateway
 		err = types.UnmarshalAny(gateways[0].Resource, &ga)
+		Expect(err).NotTo(HaveOccurred())
+
+		var se networking.ServiceEntry
+		err = types.UnmarshalAny(serviceEntries[0].Resource, &se)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(vs).To(Equal(networking.VirtualService{
@@ -202,6 +210,43 @@ var _ = Describe("Run", func() {
 							Name:     "http",
 						},
 						Hosts: []string{"*"},
+					},
+				},
+			}))
+
+		Expect(se).To(Equal(
+			networking.ServiceEntry{
+				Hosts: []string{"foo.example.com"},
+				Ports: []*networking.Port{
+					{
+						Name:     "http",
+						Number:   8080,
+						Protocol: "http",
+					},
+				},
+				Location:   networking.ServiceEntry_MESH_INTERNAL,
+				Resolution: networking.ServiceEntry_STATIC, // do we need to think about DNS?
+				Endpoints: []*networking.ServiceEntry_Endpoint{
+					{
+						Address: "10.10.10.1",
+						Ports: map[string]uint32{
+							"http": 65003,
+						},
+						Labels: map[string]string{"cfapp": "a-capi-guid"},
+					},
+					{
+						Address: "10.0.0.1",
+						Ports: map[string]uint32{
+							"http": 65005,
+						},
+						Labels: map[string]string{"cfapp": "x-capi-guid"},
+					},
+					{
+						Address: "10.0.0.0",
+						Ports: map[string]uint32{
+							"http": 65007,
+						},
+						Labels: map[string]string{"cfapp": "y-capi-guid"},
 					},
 				},
 			}))

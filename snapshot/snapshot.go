@@ -9,7 +9,6 @@ import (
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/lager"
-
 	"github.com/gogo/protobuf/types"
 
 	mcp "istio.io/api/mcp/v1alpha1"
@@ -38,7 +37,9 @@ const (
 	defaultGatewayName        = "cloudfoundry-ingress"
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
-	node = ""
+	node        = ""
+	gatewayPort = 80
+	servicePort = 8080
 )
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
@@ -77,13 +78,19 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
-			gateways, virtualservices, destinationrules := s.createEnvelopes(routes)
+
+			gateways := s.createGateways(routes)
+			virtualServices := s.createVirtualServices(routes)
+			destinationRules := s.createDestinationRules(routes)
+			serviceEntries := s.createServiceEntries(routes)
+
+			builder := snap.NewInMemoryBuilder()
+			builder.Set(GatewayTypeURL, "1", gateways)
 
 			if s.inMemoryShot == nil {
-				builder := snap.NewInMemoryBuilder()
-				builder.Set(GatewayTypeURL, "1", gateways)
-				builder.Set(VirtualServiceTypeURL, "1", virtualservices)
-				builder.Set(DestinationRuleTypeURL, "1", destinationrules)
+				builder.Set(VirtualServiceTypeURL, "1", virtualServices)
+				builder.Set(DestinationRuleTypeURL, "1", destinationRules)
+				builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
 
 				shot := builder.Build()
 				s.inMemoryShot = shot
@@ -91,36 +98,30 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 				continue
 			}
 
-			vsResources := s.inMemoryShot.Resources(VirtualServiceTypeURL)
-			drResources := s.inMemoryShot.Resources(DestinationRuleTypeURL)
-
-			if !reflect.DeepEqual(vsResources, virtualservices) || !reflect.DeepEqual(drResources, destinationrules) {
-				v, err := strconv.Atoi(s.inMemoryShot.Version(VirtualServiceTypeURL))
-				if err != nil {
-					s.logger.Error("run.inmemory.version", err)
-				}
-				v++
-				version := strconv.Itoa(v)
-
-				builder := snap.NewInMemoryBuilder()
-				builder.Set(GatewayTypeURL, "1", gateways)
-				builder.Set(VirtualServiceTypeURL, version, virtualservices)
-				builder.Set(DestinationRuleTypeURL, version, destinationrules)
-
-				shot := builder.Build()
-				s.inMemoryShot = shot
-				s.setter.SetSnapshot(node, shot)
-			}
+			s.updateBuilder(VirtualServiceTypeURL, virtualServices, builder)
+			s.updateBuilder(DestinationRuleTypeURL, destinationRules, builder)
+			s.updateBuilder(ServiceEntryTypeURL, serviceEntries, builder)
+			shot := builder.Build()
+			s.inMemoryShot = shot
+			s.setter.SetSnapshot(node, shot)
 		}
 	}
 }
 
-func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes, vsEnvelopes, drEnvelopes []*mcp.Envelope) {
+func (s *Snapshot) updateBuilder(typeURL string, envelope []*mcp.Envelope, builder *snap.InMemoryBuilder) {
+	version := s.inMemoryShot.Version(typeURL)
+	resources := s.inMemoryShot.Resources(typeURL)
+	if !reflect.DeepEqual(resources, envelope) {
+		builder.Set(typeURL, s.increment(version), envelope)
+	}
+}
+
+func (s *Snapshot) createGateways(routes []*api.RouteWithBackends) (gaEnvelopes []*mcp.Envelope) {
 	gateway := &networking.Gateway{
 		Servers: []*networking.Server{
 			{
 				Port: &networking.Port{
-					Number:   80,
+					Number:   gatewayPort,
 					Protocol: "http",
 					Name:     "http",
 				},
@@ -137,19 +138,20 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 	gaEnvelopes = []*mcp.Envelope{
 		{
 			Metadata: &mcp.Metadata{
-				Name: defaultGatewayName,
+				Name:    defaultGatewayName,
+				Version: s.version(GatewayTypeURL),
 			},
 			Resource: gaResource,
 		},
 	}
+	return gaEnvelopes
+}
 
-	virtualServices := make(map[string]*model.Config, len(routes))
+func (s *Snapshot) createDestinationRules(routes []*api.RouteWithBackends) (drEnvelopes []*mcp.Envelope) {
 	destinationRules := make(map[string]*model.Config, len(routes))
-	httpRoutes := make(map[string]*networking.HTTPRoute)
 
 	for _, route := range routes {
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.GetHostname())
-		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.GetHostname())
 
 		var dr *networking.DestinationRule
 		if config, ok := destinationRules[destinationRuleName]; ok {
@@ -158,6 +160,41 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 			dr = createDestinationRule(route)
 		}
 		dr.Subsets = append(dr.Subsets, createSubset(route.GetCapiProcessGuid()))
+
+		destinationRules[destinationRuleName] = &model.Config{
+			ConfigMeta: model.ConfigMeta{
+				Type:    model.DestinationRule.Type,
+				Version: model.DestinationRule.Version,
+				Name:    destinationRuleName,
+			},
+			Spec: dr,
+		}
+	}
+
+	for destinationRuleName, dr := range destinationRules {
+		drResource, err := types.MarshalAny(dr.Spec)
+		if err != nil {
+			s.logger.Error("envelope.destinationrule.marshal", err)
+		}
+
+		drEnvelopes = append(drEnvelopes, &mcp.Envelope{
+			Metadata: &mcp.Metadata{
+				Name:    destinationRuleName,
+				Version: s.version(DestinationRuleTypeURL),
+			},
+			Resource: drResource,
+		})
+	}
+
+	return drEnvelopes
+}
+
+func (s *Snapshot) createVirtualServices(routes []*api.RouteWithBackends) (vsEnvelopes []*mcp.Envelope) {
+	virtualServices := make(map[string]*model.Config, len(routes))
+	httpRoutes := make(map[string]*networking.HTTPRoute)
+
+	for _, route := range routes {
+		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.GetHostname())
 
 		var vs *networking.VirtualService
 		if config, ok := virtualServices[virtualServiceName]; ok {
@@ -181,51 +218,115 @@ func (s *Snapshot) createEnvelopes(routes []*api.RouteWithBackends) (gaEnvelopes
 
 		virtualServices[virtualServiceName] = &model.Config{
 			ConfigMeta: model.ConfigMeta{
-				Type:    model.VirtualService.Type,
-				Version: model.VirtualService.Version,
-				Name:    virtualServiceName,
+				Name: virtualServiceName,
 			},
 			Spec: vs,
-		}
-		destinationRules[destinationRuleName] = &model.Config{
-			ConfigMeta: model.ConfigMeta{
-				Type:    model.DestinationRule.Type,
-				Version: model.DestinationRule.Version,
-				Name:    destinationRuleName,
-			},
-			Spec: dr,
 		}
 	}
 
 	for virtualServiceName, vs := range virtualServices {
 		vsResource, err := types.MarshalAny(vs.Spec)
 		if err != nil {
-			s.logger.Error("envelope.virtualservice.marshal", err) //untested
+			s.logger.Error("envelope.virtualservice.marshal", err)
 		}
 
 		vsEnvelopes = append(vsEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
-				Name: virtualServiceName,
+				Name:    virtualServiceName,
+				Version: s.version(VirtualServiceTypeURL),
 			},
 			Resource: vsResource,
 		})
 	}
 
-	for destinationRuleName, dr := range destinationRules {
-		drResource, err := types.MarshalAny(dr.Spec)
+	return vsEnvelopes
+}
+
+func (s *Snapshot) createServiceEntries(routes []*api.RouteWithBackends) (seEnvelopes []*mcp.Envelope) {
+	serviceEntries := make(map[string]*model.Config, len(routes))
+
+	for _, route := range routes {
+		serviceEntryName := fmt.Sprintf("copilot-service-entry-for-%s", route.GetHostname())
+
+		if route.Backends.GetBackends() != nil || len(route.Backends.GetBackends()) != 0 {
+			var se *networking.ServiceEntry
+			if config, ok := serviceEntries[serviceEntryName]; ok {
+				se = config.Spec.(*networking.ServiceEntry)
+			} else {
+				se = createServiceEntry(route)
+			}
+			se.Endpoints = append(se.Endpoints, createEndpoint(route.Backends.GetBackends(), route.GetCapiProcessGuid())...)
+
+			serviceEntries[serviceEntryName] = &model.Config{
+				ConfigMeta: model.ConfigMeta{
+					Name: serviceEntryName,
+				},
+				Spec: se,
+			}
+		}
+	}
+
+	for serviceEntryName, se := range serviceEntries {
+		seResource, err := types.MarshalAny(se.Spec)
 		if err != nil {
-			s.logger.Error("envelope.destinationrule.marshal", err) //untested
+			s.logger.Error("envelope.serviceentry.marshal", err)
 		}
 
-		drEnvelopes = append(drEnvelopes, &mcp.Envelope{
+		seEnvelopes = append(seEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
-				Name: destinationRuleName,
+				Name:    serviceEntryName,
+				Version: s.version(ServiceEntryTypeURL),
 			},
-			Resource: drResource,
+			Resource: seResource,
 		})
 	}
 
-	return gaEnvelopes, vsEnvelopes, drEnvelopes
+	return seEnvelopes
+}
+
+func (s *Snapshot) version(typeURL string) string {
+	if s.inMemoryShot == nil {
+		return "1"
+	}
+	return s.inMemoryShot.Version(typeURL)
+}
+
+func (s *Snapshot) increment(version string) string {
+	v, err := strconv.Atoi(version)
+	if err != nil {
+		s.logger.Error("run.inmemory.version", err)
+	}
+	v++
+	return strconv.Itoa(v)
+}
+
+func createEndpoint(backends []*api.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
+	endpoints := make([]*networking.ServiceEntry_Endpoint, 0)
+	for _, backend := range backends {
+		endpoints = append(endpoints, &networking.ServiceEntry_Endpoint{
+			Address: backend.GetAddress(),
+			Ports: map[string]uint32{
+				"http": backend.GetPort(),
+			},
+			Labels: map[string]string{"cfapp": capiProcessGuid},
+		})
+	}
+	return endpoints
+}
+
+func createServiceEntry(route *api.RouteWithBackends) *networking.ServiceEntry {
+	return &networking.ServiceEntry{
+		Hosts: []string{route.GetHostname()},
+		Ports: []*networking.Port{
+			{
+				Name:     "http",
+				Number:   servicePort,
+				Protocol: "http",
+			},
+		},
+		Location:   networking.ServiceEntry_MESH_INTERNAL,
+		Resolution: networking.ServiceEntry_STATIC,
+	}
 }
 
 func createVirtualService(route *api.RouteWithBackends) *networking.VirtualService {
@@ -242,7 +343,7 @@ func createDestinationWeight(route *api.RouteWithBackends) *networking.Destinati
 			Subset: route.GetCapiProcessGuid(),
 			Port: &networking.PortSelector{
 				Port: &networking.PortSelector_Number{
-					Number: 8080,
+					Number: servicePort,
 				},
 			},
 		},

@@ -225,5 +225,5 @@ Now you are ready to start your own pilot:
 - `bosh scp -r istio:/var/vcap/jobs/pilot-discovery/config /tmp/config`
 - check that the `/tmp/config/cf_config.yml` so the IP address matches your tunnel and the cert file paths point to /tmp/config
 - install dlv on your machine `go get -u github.com/derekparker/delve/cmd/dlv`
-- from istio: `dlv debug ./pilot/cmd/pilot-discovery/main.go -- discovery --configDir=/dev/null --registries=CloudFoundry --cfConfig=/users/pivotal/downloads/config/cf_config.yml --meshConfig=/dev/null`
+- from istio: `dlv debug ./pilot/cmd/pilot-discovery/main.go -- discovery --configDir=/dev/null --registries=MCP --meshConfig=/dev/null`
 
