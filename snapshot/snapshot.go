@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"time"
 
@@ -42,6 +43,12 @@ const (
 	servicePort = 8080
 )
 
+//go:generate counterfeiter -o fakes/builder.go --fake-name Builder . builder
+type builder interface {
+	Build() *snap.InMemory
+	Set(typeURL string, version string, resources []*mcp.Envelope)
+}
+
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
 type collector interface {
 	Collect() []*api.RouteWithBackends
@@ -52,67 +59,104 @@ type setter interface {
 	SetSnapshot(node string, istio snap.Snapshot)
 }
 
+type routes []*api.RouteWithBackends
+
+func (r routes) Len() int {
+	return len(r)
+}
+
+func (r routes) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+func (r routes) Less(i, j int) bool {
+	return r[i].Hostname < r[j].Hostname
+}
+
 type Snapshot struct {
 	logger       lager.Logger
 	ticker       <-chan time.Time
 	collector    collector
 	setter       setter
+	builder      builder
 	inMemoryShot *snap.InMemory
+	cachedRoutes routes
+	ver          int
 }
 
-func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter) *Snapshot {
+func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder builder) *Snapshot {
 	return &Snapshot{
 		logger:    logger,
 		ticker:    ticker,
 		collector: collector,
 		setter:    setter,
+		builder:   builder,
 	}
 }
 
 func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
+	// TODO: inject builder into the new
+	// call shot Builder to get a new InMemoryBuilder instead of line 89
+	// we can fake builder in the test
 
 	for {
 		select {
 		case <-signals:
 			return nil
 		case <-s.ticker:
-			routes := s.collector.Collect()
-
-			gateways := s.createGateways(routes)
-			virtualServices := s.createVirtualServices(routes)
-			destinationRules := s.createDestinationRules(routes)
-			serviceEntries := s.createServiceEntries(routes)
-
-			builder := snap.NewInMemoryBuilder()
-			builder.Set(GatewayTypeURL, "1", gateways)
-
-			if s.inMemoryShot == nil {
-				builder.Set(VirtualServiceTypeURL, "1", virtualServices)
-				builder.Set(DestinationRuleTypeURL, "1", destinationRules)
-				builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
-
-				shot := builder.Build()
-				s.inMemoryShot = shot
-				s.setter.SetSnapshot(node, shot)
+			var routes routes
+			routes = s.collector.Collect()
+			sort.Sort(routes)
+			sort.Sort(s.cachedRoutes)
+			if reflect.DeepEqual(routes, s.cachedRoutes) {
 				continue
 			}
 
-			s.updateBuilder(VirtualServiceTypeURL, virtualServices, builder)
-			s.updateBuilder(DestinationRuleTypeURL, destinationRules, builder)
-			s.updateBuilder(ServiceEntryTypeURL, serviceEntries, builder)
-			shot := builder.Build()
-			s.inMemoryShot = shot
-			s.setter.SetSnapshot(node, shot)
+			gateways := s.createGateways(routes)
+			// virtualServices := s.createVirtualServices(routes)
+			// destinationRules := s.createDestinationRules(routes)
+			// serviceEntries := s.createServiceEntries(routes)
+
+			s.builder.Set(GatewayTypeURL, "1", gateways)
+			//
+			//			if s.inMemoryShot == nil {
+			//				s.builder.Set(VirtualServiceTypeURL, "1", virtualServices)
+			//				s.builder.Set(DestinationRuleTypeURL, "1", destinationRules)
+			//				s.builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
+			//
+			//				shot := s.builder.Build()
+			//				s.inMemoryShot = shot
+			//				s.setter.SetSnapshot(node, shot)
+			//				s.builder = shot.Builder()
+			//				continue
+			//			}
+			//
+			//			s.updateBuilder(VirtualServiceTypeURL, virtualServices)
+			//			s.updateBuilder(DestinationRuleTypeURL, destinationRules)
+			//			s.updateBuilder(ServiceEntryTypeURL, serviceEntries)
+			//			shot := s.builder.Build()
+			//			s.inMemoryShot = shot
+			//			s.setter.SetSnapshot(node, shot)
+			//			s.builder = shot.Builder()
 		}
 	}
 }
 
-func (s *Snapshot) updateBuilder(typeURL string, envelope []*mcp.Envelope, builder *snap.InMemoryBuilder) {
-	version := s.inMemoryShot.Version(typeURL)
+func (s *Snapshot) updateBuilder(typeURL string, envelope []*mcp.Envelope) {
+	//version := s.inMemoryShot.Version(typeURL)
 	resources := s.inMemoryShot.Resources(typeURL)
+	//	fmt.Printf("XYZ: resources version is %s and  envelope version is %s\n", version, envelope[0].Metadata.Version)
+	//	fmt.Printf("XYZ: resources len is %d and  envelope len is %d\n", len(resources), len(envelope))
+	//	if len(resources) != 0 {
+	//		fmt.Printf("XYZ: resources 1st is %+v and  envelope 1st is %+v\n", resources[0], envelope[0])
+	//	}
+	// TODO: this is not working since we are deep equaling on two unsorted slices
 	if !reflect.DeepEqual(resources, envelope) {
-		builder.Set(typeURL, s.increment(version), envelope)
+		//		fmt.Println("XYZ: the resources and envelopes are not equal")
+
+		newVersion := s.increment()
+		s.builder.Set(typeURL, newVersion, envelope)
 	}
 }
 
@@ -139,7 +183,7 @@ func (s *Snapshot) createGateways(routes []*api.RouteWithBackends) (gaEnvelopes 
 		{
 			Metadata: &mcp.Metadata{
 				Name:    defaultGatewayName,
-				Version: s.version(GatewayTypeURL),
+				Version: s.version(),
 			},
 			Resource: gaResource,
 		},
@@ -180,7 +224,7 @@ func (s *Snapshot) createDestinationRules(routes []*api.RouteWithBackends) (drEn
 		drEnvelopes = append(drEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    destinationRuleName,
-				Version: s.version(DestinationRuleTypeURL),
+				Version: s.version(),
 			},
 			Resource: drResource,
 		})
@@ -233,7 +277,7 @@ func (s *Snapshot) createVirtualServices(routes []*api.RouteWithBackends) (vsEnv
 		vsEnvelopes = append(vsEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    virtualServiceName,
-				Version: s.version(VirtualServiceTypeURL),
+				Version: s.version(),
 			},
 			Resource: vsResource,
 		})
@@ -275,7 +319,7 @@ func (s *Snapshot) createServiceEntries(routes []*api.RouteWithBackends) (seEnve
 		seEnvelopes = append(seEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    serviceEntryName,
-				Version: s.version(ServiceEntryTypeURL),
+				Version: s.version(),
 			},
 			Resource: seResource,
 		})
@@ -284,20 +328,13 @@ func (s *Snapshot) createServiceEntries(routes []*api.RouteWithBackends) (seEnve
 	return seEnvelopes
 }
 
-func (s *Snapshot) version(typeURL string) string {
-	if s.inMemoryShot == nil {
-		return "1"
-	}
-	return s.inMemoryShot.Version(typeURL)
+func (s *Snapshot) version() string {
+	return strconv.Itoa(s.ver)
 }
 
-func (s *Snapshot) increment(version string) string {
-	v, err := strconv.Atoi(version)
-	if err != nil {
-		s.logger.Error("run.inmemory.version", err)
-	}
-	v++
-	return strconv.Itoa(v)
+func (s *Snapshot) increment() string {
+	s.ver++
+	return s.version()
 }
 
 func createEndpoint(backends []*api.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
