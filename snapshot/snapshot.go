@@ -3,6 +3,7 @@ package snapshot
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -41,12 +42,6 @@ const (
 	servicePort = 8080
 )
 
-//go:generate counterfeiter -o fakes/builder.go --fake-name Builder . builder
-type builder interface {
-	Build() *snap.InMemory
-	Set(typeURL string, version string, resources []*mcp.Envelope)
-}
-
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
 type collector interface {
 	Collect() []*api.RouteWithBackends
@@ -62,20 +57,18 @@ type Snapshot struct {
 	ticker       <-chan time.Time
 	collector    collector
 	setter       setter
-	builder      builder
-	inMemoryShot *snap.InMemory
+	builder      *snap.InMemoryBuilder
 	cachedRoutes []*api.RouteWithBackends
 	ver          int
 }
 
-func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder builder) *Snapshot {
+func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder *snap.InMemoryBuilder) *Snapshot {
 	return &Snapshot{
 		logger:    logger,
 		ticker:    ticker,
 		collector: collector,
 		setter:    setter,
 		builder:   builder,
-		ver:       1,
 	}
 }
 
@@ -88,12 +81,16 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
+			fmt.Printf("XYZ len cached routes: %d ----- len new routes: %d\n", len(s.cachedRoutes), len(routes))
 
-			//	if reflect.DeepEqual(routes, s.cachedRoutes) {
-			//		fmt.Println("XYZ--- routes are equal")
-			//		continue
-			//	}
+			if reflect.DeepEqual(routes, s.cachedRoutes) {
+				fmt.Println("XYZ--- routes are equal")
+				continue
+			}
 
+			fmt.Println("XYZ creating envelopes")
+
+			newVersion := s.increment()
 			s.cachedRoutes = routes
 
 			gateways := s.createGateways(routes)
@@ -103,26 +100,28 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
 
-			if s.inMemoryShot == nil {
-				s.builder.Set(VirtualServiceTypeURL, "1", virtualServices)
-				s.builder.Set(DestinationRuleTypeURL, "1", destinationRules)
-				s.builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
-
-				shot := s.builder.Build()
-				s.inMemoryShot = shot
-				s.setter.SetSnapshot(node, shot)
-				s.builder = shot.Builder()
-				continue
-			}
-
-			newVersion := s.increment()
+			//		if s.inMemoryShot == nil {
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
+
 			shot := s.builder.Build()
-			s.inMemoryShot = shot
+			se := shot.Resources(ServiceEntryTypeURL)
+			fmt.Printf("XYZ service entry cache %+d\n", len(se))
+			//			s.inMemoryShot = shot
 			s.setter.SetSnapshot(node, shot)
 			s.builder = shot.Builder()
+
+			//			continue
+			//		}
+
+			//		s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
+			//		s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
+			//		s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
+			//		shot := s.builder.Build()
+			//		s.inMemoryShot = shot
+			//		s.setter.SetSnapshot(node, shot)
+			//		s.builder = shot.Builder()
 		}
 	}
 }
