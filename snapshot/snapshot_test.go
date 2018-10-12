@@ -1,7 +1,6 @@
 package snapshot_test
 
 import (
-	"math/rand"
 	"os"
 	"time"
 
@@ -18,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Run", func() {
+var _ = Describe("Run", func() {
 	var (
 		ticker    chan time.Time
 		s         *snapshot.Snapshot
@@ -43,6 +42,7 @@ var _ = FDescribe("Run", func() {
 
 		collector.CollectReturnsOnCall(0, routesWithBackends())
 		collector.CollectReturnsOnCall(1, routesWithBackends())
+		collector.CollectReturnsOnCall(2, routesWithBackends()[1:])
 
 		go s.Run(sig, ready)
 		ticker <- time.Time{}
@@ -53,142 +53,138 @@ var _ = FDescribe("Run", func() {
 
 		vs, dr, ga, se := verifyEnvelopes(shot, "1")
 
-		Expect(vs).To(Equal(networking.VirtualService{
-			Hosts:    []string{"foo.example.com"},
-			Gateways: []string{"cloudfoundry-ingress"},
-			Http: []*networking.HTTPRoute{
-				{
-					Match: []*networking.HTTPMatchRequest{
-						{
-							Uri: &networking.StringMatch{
-								MatchType: &networking.StringMatch_Prefix{
-									Prefix: "/something",
-								},
-							},
-						},
-					},
-					Route: []*networking.DestinationWeight{
-						{
-							Destination: &networking.Destination{
-								Host: "foo.example.com",
-								Port: &networking.PortSelector{
-									Port: &networking.PortSelector_Number{
-										Number: 8080,
-									},
-								},
-								Subset: "x-capi-guid",
-							},
-							Weight: 50,
-						},
-						{
-							Destination: &networking.Destination{
-								Host: "foo.example.com",
-								Port: &networking.PortSelector{
-									Port: &networking.PortSelector_Number{
-										Number: 8080,
-									},
-								},
-								Subset: "y-capi-guid",
-							},
-							Weight: 50,
-						},
-					},
-				},
-				{
-					Route: []*networking.DestinationWeight{
-						{
-							Destination: &networking.Destination{
-								Host: "foo.example.com",
-								Port: &networking.PortSelector{
-									Port: &networking.PortSelector_Number{
-										Number: 8080,
-									},
-								},
-								Subset: "a-capi-guid",
-							},
-							Weight: 100,
-						},
-					},
-				},
-			},
-		}))
-
-		Expect(dr).To(Equal(networking.DestinationRule{
-			Host: "foo.example.com",
-			Subsets: []*networking.Subset{
-				{
-					Name:   "a-capi-guid",
-					Labels: map[string]string{"cfapp": "a-capi-guid"},
-				},
-				{
-					Name:   "x-capi-guid",
-					Labels: map[string]string{"cfapp": "x-capi-guid"},
-				},
-				{
-					Name:   "y-capi-guid",
-					Labels: map[string]string{"cfapp": "y-capi-guid"},
-				},
-			},
-		}))
-
-		Expect(ga).To(Equal(
-			networking.Gateway{
-				Servers: []*networking.Server{
-					&networking.Server{
-						Port: &networking.Port{
-							Number:   80,
-							Protocol: "http",
-							Name:     "http",
-						},
-						Hosts: []string{"*"},
-					},
-				},
-			}))
-
-		Expect(se).To(Equal(
-			networking.ServiceEntry{
-				Hosts: []string{"foo.example.com"},
-				Ports: []*networking.Port{
+		Expect(vs.Hosts).To(Equal([]string{"foo.example.com"}))
+		Expect(vs.Gateways).To(Equal([]string{"cloudfoundry-ingress"}))
+		Expect(vs.Http).To(ConsistOf([]*networking.HTTPRoute{
+			{
+				Match: []*networking.HTTPMatchRequest{
 					{
-						Name:     "http",
-						Number:   8080,
+						Uri: &networking.StringMatch{
+							MatchType: &networking.StringMatch_Prefix{
+								Prefix: "/something",
+							},
+						},
+					},
+				},
+				Route: []*networking.HTTPRouteDestination{
+					{
+						Destination: &networking.Destination{
+							Host: "foo.example.com",
+							Port: &networking.PortSelector{
+								Port: &networking.PortSelector_Number{
+									Number: 8080,
+								},
+							},
+							Subset: "x-capi-guid",
+						},
+						Weight: 50,
+					},
+					{
+						Destination: &networking.Destination{
+							Host: "foo.example.com",
+							Port: &networking.PortSelector{
+								Port: &networking.PortSelector_Number{
+									Number: 8080,
+								},
+							},
+							Subset: "y-capi-guid",
+						},
+						Weight: 50,
+					},
+				},
+			},
+			{
+				Route: []*networking.HTTPRouteDestination{
+					{
+						Destination: &networking.Destination{
+							Host: "foo.example.com",
+							Port: &networking.PortSelector{
+								Port: &networking.PortSelector_Number{
+									Number: 8080,
+								},
+							},
+							Subset: "a-capi-guid",
+						},
+						Weight: 100,
+					},
+				},
+			},
+		}))
+
+		Expect(dr.Host).To(Equal("foo.example.com"))
+		Expect(dr.Subsets).To(ConsistOf([]*networking.Subset{
+			{
+				Name:   "a-capi-guid",
+				Labels: map[string]string{"cfapp": "a-capi-guid"},
+			},
+			{
+				Name:   "y-capi-guid",
+				Labels: map[string]string{"cfapp": "y-capi-guid"},
+			},
+			{
+				Name:   "x-capi-guid",
+				Labels: map[string]string{"cfapp": "x-capi-guid"},
+			},
+		}))
+
+		Expect(ga).To(Equal(networking.Gateway{
+			Servers: []*networking.Server{
+				&networking.Server{
+					Port: &networking.Port{
+						Number:   80,
 						Protocol: "http",
+						Name:     "http",
 					},
+					Hosts: []string{"*"},
 				},
-				Location:   networking.ServiceEntry_MESH_INTERNAL,
-				Resolution: networking.ServiceEntry_STATIC, // do we need to think about DNS?
-				Endpoints: []*networking.ServiceEntry_Endpoint{
-					{
-						Address: "10.10.10.1",
-						Ports: map[string]uint32{
-							"http": 65003,
-						},
-						Labels: map[string]string{"cfapp": "a-capi-guid"},
-					},
-					{
-						Address: "10.0.0.1",
-						Ports: map[string]uint32{
-							"http": 65005,
-						},
-						Labels: map[string]string{"cfapp": "x-capi-guid"},
-					},
-					{
-						Address: "10.0.0.0",
-						Ports: map[string]uint32{
-							"http": 65007,
-						},
-						Labels: map[string]string{"cfapp": "y-capi-guid"},
-					},
-				},
-			}))
+			},
+		}))
 
-		//		ticker <- time.Time{}
-		//
-		//		Eventually(setter.SetSnapshotCallCount).Should(Equal(2))
-		//		node, shot = setter.SetSnapshotArgsForCall(0)
-		//		Expect(node).To(Equal(""))
-		//
-		//		verifyEnvelopes(shot, "1")
+		Expect(se.Hosts).To(Equal([]string{"foo.example.com"}))
+		Expect(se.Ports).To(Equal([]*networking.Port{
+			{
+				Name:     "http",
+				Number:   8080,
+				Protocol: "http",
+			},
+		}))
+		Expect(se.Location).To(Equal(networking.ServiceEntry_MESH_INTERNAL))
+		Expect(se.Resolution).To(Equal(networking.ServiceEntry_STATIC))
+		Expect(se.Endpoints).To(ConsistOf([]*networking.ServiceEntry_Endpoint{
+			{
+				Address: "10.10.10.1",
+				Ports: map[string]uint32{
+					"http": 65003,
+				},
+				Labels: map[string]string{"cfapp": "a-capi-guid"},
+			},
+			{
+				Address: "10.0.0.0",
+				Ports: map[string]uint32{
+					"http": 65007,
+				},
+				Labels: map[string]string{"cfapp": "y-capi-guid"},
+			},
+			{
+				Address: "10.0.0.1",
+				Ports: map[string]uint32{
+					"http": 65005,
+				},
+				Labels: map[string]string{"cfapp": "x-capi-guid"},
+			},
+		}))
+
+		ticker <- time.Time{}
+
+		Consistently(setter.SetSnapshotCallCount).Should(Equal(1))
+
+		verifyEnvelopes(shot, "1")
+
+		ticker <- time.Time{}
+
+		Eventually(setter.SetSnapshotCallCount).Should(Equal(2))
+		_, shot = setter.SetSnapshotArgsForCall(1)
+		verifyEnvelopes(shot, "2")
 
 		sig <- os.Kill
 	})
@@ -246,21 +242,7 @@ func verifyEnvelopes(shot snap.Snapshot, version string) (
 }
 
 func routesWithBackends() []*api.RouteWithBackends {
-	routes := []*api.RouteWithBackends{
-		{
-			Hostname: "foo.example.com",
-			Path:     "",
-			Backends: &api.BackendSet{
-				Backends: []*api.Backend{
-					{
-						Address: "10.10.10.1",
-						Port:    uint32(65003),
-					},
-				},
-			},
-			CapiProcessGuid: "a-capi-guid",
-			RouteWeight:     int32(100),
-		},
+	return []*api.RouteWithBackends{
 		{
 			Hostname: "foo.example.com",
 			Path:     "/something",
@@ -289,11 +271,19 @@ func routesWithBackends() []*api.RouteWithBackends {
 			CapiProcessGuid: "y-capi-guid",
 			RouteWeight:     int32(50),
 		},
+		{
+			Hostname: "foo.example.com",
+			Path:     "",
+			Backends: &api.BackendSet{
+				Backends: []*api.Backend{
+					{
+						Address: "10.10.10.1",
+						Port:    uint32(65003),
+					},
+				},
+			},
+			CapiProcessGuid: "a-capi-guid",
+			RouteWeight:     int32(100),
+		},
 	}
-
-	rand.Shuffle(len(routes), func(i, j int) {
-		routes[i], routes[j] = routes[j], routes[i]
-	})
-
-	return routes
 }

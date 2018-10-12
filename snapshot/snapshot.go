@@ -3,8 +3,6 @@ package snapshot
 import (
 	"fmt"
 	"os"
-	"reflect"
-	"sort"
 	"strconv"
 	"time"
 
@@ -59,20 +57,6 @@ type setter interface {
 	SetSnapshot(node string, istio snap.Snapshot)
 }
 
-type routes []*api.RouteWithBackends
-
-func (r routes) Len() int {
-	return len(r)
-}
-
-func (r routes) Swap(i, j int) {
-	r[i], r[j] = r[j], r[i]
-}
-
-func (r routes) Less(i, j int) bool {
-	return r[i].Hostname < r[j].Hostname
-}
-
 type Snapshot struct {
 	logger       lager.Logger
 	ticker       <-chan time.Time
@@ -80,7 +64,7 @@ type Snapshot struct {
 	setter       setter
 	builder      builder
 	inMemoryShot *snap.InMemory
-	cachedRoutes routes
+	cachedRoutes []*api.RouteWithBackends
 	ver          int
 }
 
@@ -91,72 +75,55 @@ func New(logger lager.Logger, ticker <-chan time.Time, collector collector, sett
 		collector: collector,
 		setter:    setter,
 		builder:   builder,
+		ver:       1,
 	}
 }
 
 func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
-	// TODO: inject builder into the new
-	// call shot Builder to get a new InMemoryBuilder instead of line 89
-	// we can fake builder in the test
 
 	for {
 		select {
 		case <-signals:
 			return nil
 		case <-s.ticker:
-			var routes routes
-			routes = s.collector.Collect()
-			sort.Sort(routes)
-			sort.Sort(s.cachedRoutes)
-			if reflect.DeepEqual(routes, s.cachedRoutes) {
+			routes := s.collector.Collect()
+
+			//	if reflect.DeepEqual(routes, s.cachedRoutes) {
+			//		fmt.Println("XYZ--- routes are equal")
+			//		continue
+			//	}
+
+			s.cachedRoutes = routes
+
+			gateways := s.createGateways(routes)
+			virtualServices := s.createVirtualServices(routes)
+			destinationRules := s.createDestinationRules(routes)
+			serviceEntries := s.createServiceEntries(routes)
+
+			s.builder.Set(GatewayTypeURL, "1", gateways)
+
+			if s.inMemoryShot == nil {
+				s.builder.Set(VirtualServiceTypeURL, "1", virtualServices)
+				s.builder.Set(DestinationRuleTypeURL, "1", destinationRules)
+				s.builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
+
+				shot := s.builder.Build()
+				s.inMemoryShot = shot
+				s.setter.SetSnapshot(node, shot)
+				s.builder = shot.Builder()
 				continue
 			}
 
-			gateways := s.createGateways(routes)
-			// virtualServices := s.createVirtualServices(routes)
-			// destinationRules := s.createDestinationRules(routes)
-			// serviceEntries := s.createServiceEntries(routes)
-
-			s.builder.Set(GatewayTypeURL, "1", gateways)
-			//
-			//			if s.inMemoryShot == nil {
-			//				s.builder.Set(VirtualServiceTypeURL, "1", virtualServices)
-			//				s.builder.Set(DestinationRuleTypeURL, "1", destinationRules)
-			//				s.builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
-			//
-			//				shot := s.builder.Build()
-			//				s.inMemoryShot = shot
-			//				s.setter.SetSnapshot(node, shot)
-			//				s.builder = shot.Builder()
-			//				continue
-			//			}
-			//
-			//			s.updateBuilder(VirtualServiceTypeURL, virtualServices)
-			//			s.updateBuilder(DestinationRuleTypeURL, destinationRules)
-			//			s.updateBuilder(ServiceEntryTypeURL, serviceEntries)
-			//			shot := s.builder.Build()
-			//			s.inMemoryShot = shot
-			//			s.setter.SetSnapshot(node, shot)
-			//			s.builder = shot.Builder()
+			newVersion := s.increment()
+			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
+			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
+			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
+			shot := s.builder.Build()
+			s.inMemoryShot = shot
+			s.setter.SetSnapshot(node, shot)
+			s.builder = shot.Builder()
 		}
-	}
-}
-
-func (s *Snapshot) updateBuilder(typeURL string, envelope []*mcp.Envelope) {
-	//version := s.inMemoryShot.Version(typeURL)
-	resources := s.inMemoryShot.Resources(typeURL)
-	//	fmt.Printf("XYZ: resources version is %s and  envelope version is %s\n", version, envelope[0].Metadata.Version)
-	//	fmt.Printf("XYZ: resources len is %d and  envelope len is %d\n", len(resources), len(envelope))
-	//	if len(resources) != 0 {
-	//		fmt.Printf("XYZ: resources 1st is %+v and  envelope 1st is %+v\n", resources[0], envelope[0])
-	//	}
-	// TODO: this is not working since we are deep equaling on two unsorted slices
-	if !reflect.DeepEqual(resources, envelope) {
-		//		fmt.Println("XYZ: the resources and envelopes are not equal")
-
-		newVersion := s.increment()
-		s.builder.Set(typeURL, newVersion, envelope)
 	}
 }
 
@@ -373,8 +340,8 @@ func createVirtualService(route *api.RouteWithBackends) *networking.VirtualServi
 	}
 }
 
-func createDestinationWeight(route *api.RouteWithBackends) *networking.DestinationWeight {
-	return &networking.DestinationWeight{
+func createDestinationWeight(route *api.RouteWithBackends) *networking.HTTPRouteDestination {
+	return &networking.HTTPRouteDestination{
 		Destination: &networking.Destination{
 			Host:   route.GetHostname(),
 			Subset: route.GetCapiProcessGuid(),
@@ -390,7 +357,7 @@ func createDestinationWeight(route *api.RouteWithBackends) *networking.Destinati
 
 func createHTTPRoute(route *api.RouteWithBackends) *networking.HTTPRoute {
 	return &networking.HTTPRoute{
-		Route: []*networking.DestinationWeight{createDestinationWeight(route)},
+		Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
 	}
 }
 
