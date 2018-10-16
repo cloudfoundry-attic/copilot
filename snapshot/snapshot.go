@@ -37,7 +37,7 @@ const (
 	defaultGatewayName        = "cloudfoundry-ingress"
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
-	node        = ""
+	node        = "default"
 	gatewayPort = 80
 	servicePort = 8080
 )
@@ -81,14 +81,10 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
-			fmt.Printf("XYZ len cached routes: %d ----- len new routes: %d\n", len(s.cachedRoutes), len(routes))
 
 			if reflect.DeepEqual(routes, s.cachedRoutes) {
-				fmt.Println("XYZ--- routes are equal")
 				continue
 			}
-
-			fmt.Println("XYZ creating envelopes")
 
 			newVersion := s.increment()
 			s.cachedRoutes = routes
@@ -100,28 +96,13 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
 
-			//		if s.inMemoryShot == nil {
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
 
 			shot := s.builder.Build()
-			se := shot.Resources(ServiceEntryTypeURL)
-			fmt.Printf("XYZ service entry cache %+d\n", len(se))
-			//			s.inMemoryShot = shot
 			s.setter.SetSnapshot(node, shot)
 			s.builder = shot.Builder()
-
-			//			continue
-			//		}
-
-			//		s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
-			//		s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
-			//		s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
-			//		shot := s.builder.Build()
-			//		s.inMemoryShot = shot
-			//		s.setter.SetSnapshot(node, shot)
-			//		s.builder = shot.Builder()
 		}
 	}
 }

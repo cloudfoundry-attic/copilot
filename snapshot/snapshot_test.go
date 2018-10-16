@@ -49,7 +49,7 @@ var _ = Describe("Run", func() {
 
 		Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 		node, shot := setter.SetSnapshotArgsForCall(0)
-		Expect(node).To(Equal(""))
+		Expect(node).To(Equal("default"))
 
 		vs, dr, ga, se := verifyEnvelopes(shot, "1")
 
