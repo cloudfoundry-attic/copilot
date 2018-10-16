@@ -8,6 +8,7 @@ import (
 	"time"
 
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
+	"code.cloudfoundry.org/debugserver"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -58,6 +59,8 @@ func mainWithError() error {
 		lager.NewWriterSink(os.Stdout, lager.DEBUG),
 		lager.INFO)
 	logger.RegisterSink(reconfigurableSink)
+
+	debugserver.Run("127.0.0.1:33333", reconfigurableSink)
 
 	var bbsClient bbs.InternalClient
 	if cfg.BBS == nil {
@@ -125,7 +128,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger:                           logger,
+		Logger: logger,
 	}
 	grpcServerForPilot := grpcrunner.New(logger, cfg.ListenAddressForPilot,
 		func(s *grpc.Server) {
@@ -161,11 +164,12 @@ func mainWithError() error {
 		copilotsnapshot.RbacConfigTypeURL,
 	}
 
-	cache := snapshot.New()
+	cache := snapshot.New(snapshot.DefaultGroupIndex)
 	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
 		func(s *grpc.Server) {
 			authChecker := server.NewAllowAllChecker()
-			snapshotServer := server.New(cache, typeURLs, authChecker)
+			reporter := server.NewStatsContext("copilot/")
+			snapshotServer := server.New(cache, typeURLs, authChecker, reporter)
 			mcp.RegisterAggregatedMeshConfigServiceServer(s, snapshotServer)
 			reflection.Register(s)
 		},
@@ -174,7 +178,8 @@ func mainWithError() error {
 
 	ticker := time.NewTicker(snapshotInterval)
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
-	mcpSnapshot := copilotsnapshot.New(logger, ticker.C, collector, cache)
+	inMemoryBuilder := snapshot.NewInMemoryBuilder()
+	mcpSnapshot := copilotsnapshot.New(logger, ticker.C, collector, cache, inMemoryBuilder)
 	istioHandler.Collector = collector
 
 	members := grouper.Members{

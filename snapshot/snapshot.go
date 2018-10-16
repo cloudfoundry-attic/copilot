@@ -37,7 +37,7 @@ const (
 	defaultGatewayName        = "cloudfoundry-ingress"
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
-	node        = ""
+	node        = "default"
 	gatewayPort = 80
 	servicePort = 8080
 )
@@ -57,15 +57,18 @@ type Snapshot struct {
 	ticker       <-chan time.Time
 	collector    collector
 	setter       setter
-	inMemoryShot *snap.InMemory
+	builder      *snap.InMemoryBuilder
+	cachedRoutes []*api.RouteWithBackends
+	ver          int
 }
 
-func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter) *Snapshot {
+func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder *snap.InMemoryBuilder) *Snapshot {
 	return &Snapshot{
 		logger:    logger,
 		ticker:    ticker,
 		collector: collector,
 		setter:    setter,
+		builder:   builder,
 	}
 }
 
@@ -79,40 +82,28 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case <-s.ticker:
 			routes := s.collector.Collect()
 
+			if reflect.DeepEqual(routes, s.cachedRoutes) {
+				continue
+			}
+
+			newVersion := s.increment()
+			s.cachedRoutes = routes
+
 			gateways := s.createGateways(routes)
 			virtualServices := s.createVirtualServices(routes)
 			destinationRules := s.createDestinationRules(routes)
 			serviceEntries := s.createServiceEntries(routes)
 
-			builder := snap.NewInMemoryBuilder()
-			builder.Set(GatewayTypeURL, "1", gateways)
+			s.builder.Set(GatewayTypeURL, "1", gateways)
 
-			if s.inMemoryShot == nil {
-				builder.Set(VirtualServiceTypeURL, "1", virtualServices)
-				builder.Set(DestinationRuleTypeURL, "1", destinationRules)
-				builder.Set(ServiceEntryTypeURL, "1", serviceEntries)
+			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
+			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
+			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
 
-				shot := builder.Build()
-				s.inMemoryShot = shot
-				s.setter.SetSnapshot(node, shot)
-				continue
-			}
-
-			s.updateBuilder(VirtualServiceTypeURL, virtualServices, builder)
-			s.updateBuilder(DestinationRuleTypeURL, destinationRules, builder)
-			s.updateBuilder(ServiceEntryTypeURL, serviceEntries, builder)
-			shot := builder.Build()
-			s.inMemoryShot = shot
+			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)
+			s.builder = shot.Builder()
 		}
-	}
-}
-
-func (s *Snapshot) updateBuilder(typeURL string, envelope []*mcp.Envelope, builder *snap.InMemoryBuilder) {
-	version := s.inMemoryShot.Version(typeURL)
-	resources := s.inMemoryShot.Resources(typeURL)
-	if !reflect.DeepEqual(resources, envelope) {
-		builder.Set(typeURL, s.increment(version), envelope)
 	}
 }
 
@@ -139,7 +130,7 @@ func (s *Snapshot) createGateways(routes []*api.RouteWithBackends) (gaEnvelopes 
 		{
 			Metadata: &mcp.Metadata{
 				Name:    defaultGatewayName,
-				Version: s.version(GatewayTypeURL),
+				Version: s.version(),
 			},
 			Resource: gaResource,
 		},
@@ -180,7 +171,7 @@ func (s *Snapshot) createDestinationRules(routes []*api.RouteWithBackends) (drEn
 		drEnvelopes = append(drEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    destinationRuleName,
-				Version: s.version(DestinationRuleTypeURL),
+				Version: s.version(),
 			},
 			Resource: drResource,
 		})
@@ -233,7 +224,7 @@ func (s *Snapshot) createVirtualServices(routes []*api.RouteWithBackends) (vsEnv
 		vsEnvelopes = append(vsEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    virtualServiceName,
-				Version: s.version(VirtualServiceTypeURL),
+				Version: s.version(),
 			},
 			Resource: vsResource,
 		})
@@ -275,7 +266,7 @@ func (s *Snapshot) createServiceEntries(routes []*api.RouteWithBackends) (seEnve
 		seEnvelopes = append(seEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    serviceEntryName,
-				Version: s.version(ServiceEntryTypeURL),
+				Version: s.version(),
 			},
 			Resource: seResource,
 		})
@@ -284,20 +275,13 @@ func (s *Snapshot) createServiceEntries(routes []*api.RouteWithBackends) (seEnve
 	return seEnvelopes
 }
 
-func (s *Snapshot) version(typeURL string) string {
-	if s.inMemoryShot == nil {
-		return "1"
-	}
-	return s.inMemoryShot.Version(typeURL)
+func (s *Snapshot) version() string {
+	return strconv.Itoa(s.ver)
 }
 
-func (s *Snapshot) increment(version string) string {
-	v, err := strconv.Atoi(version)
-	if err != nil {
-		s.logger.Error("run.inmemory.version", err)
-	}
-	v++
-	return strconv.Itoa(v)
+func (s *Snapshot) increment() string {
+	s.ver++
+	return s.version()
 }
 
 func createEndpoint(backends []*api.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
@@ -336,8 +320,8 @@ func createVirtualService(route *api.RouteWithBackends) *networking.VirtualServi
 	}
 }
 
-func createDestinationWeight(route *api.RouteWithBackends) *networking.DestinationWeight {
-	return &networking.DestinationWeight{
+func createDestinationWeight(route *api.RouteWithBackends) *networking.HTTPRouteDestination {
+	return &networking.HTTPRouteDestination{
 		Destination: &networking.Destination{
 			Host:   route.GetHostname(),
 			Subset: route.GetCapiProcessGuid(),
@@ -353,7 +337,7 @@ func createDestinationWeight(route *api.RouteWithBackends) *networking.Destinati
 
 func createHTTPRoute(route *api.RouteWithBackends) *networking.HTTPRoute {
 	return &networking.HTTPRoute{
-		Route: []*networking.DestinationWeight{createDestinationWeight(route)},
+		Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
 	}
 }
 

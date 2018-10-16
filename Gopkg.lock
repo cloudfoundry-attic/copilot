@@ -25,6 +25,12 @@
 
 [[projects]]
   branch = "master"
+  name = "code.cloudfoundry.org/debugserver"
+  packages = ["."]
+  revision = "a3ba348dfede68d089bb9e5ffbfd478b31556a17"
+
+[[projects]]
+  branch = "master"
   name = "code.cloudfoundry.org/lager"
   packages = [
     ".",
@@ -51,8 +57,8 @@
     "envoy/api/v2/auth",
     "envoy/api/v2/core"
   ]
-  revision = "676016db8193d83324a507a986a78cd3642ad713"
-  version = "v0.5.0"
+  revision = "1f13d29c5def25a02b9149909472c6a9e6839551"
+  version = "v0.6.0"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -268,6 +274,7 @@
   packages = [
     ".",
     "grouper",
+    "http_server",
     "sigmon"
   ]
   revision = "d787ed1df88a79d9e9b1072738a40500b8ec22ee"
@@ -283,6 +290,18 @@
   name = "github.com/vito/go-sse"
   packages = ["sse"]
   revision = "fd69d275caac5d78d793e77ddbe9bd2001d9b88d"
+
+[[projects]]
+  name = "go.opencensus.io"
+  packages = [
+    "internal/tagencoding",
+    "stats",
+    "stats/internal",
+    "stats/view",
+    "tag"
+  ]
+  revision = "79993219becaa7e29e3b60cb67f5b8e82dee11d6"
+  version = "v0.17.0"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -410,8 +429,8 @@
     "status",
     "tap"
   ]
-  revision = "41344da2231b913fa3d983840a57a6b1b7b631a1"
-  version = "v1.12.0"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
 
 [[projects]]
   name = "gopkg.in/fsnotify.v1"
@@ -443,7 +462,6 @@
   name = "istio.io/api"
   packages = [
     "authentication/v1alpha1",
-    "common/v1alpha1",
     "mcp/v1alpha1",
     "mesh/v1alpha1",
     "mixer/v1",
@@ -452,7 +470,7 @@
     "policy/v1beta1",
     "rbac/v1alpha1"
   ]
-  revision = "0cf306e2fd192c6a37deb94155a77730b20256e2"
+  revision = "e000c2a2987a013a455c459699fdfb178f277dae"
 
 [[projects]]
   branch = "master"
@@ -464,17 +482,18 @@
     "pilot/pkg/model",
     "pilot/pkg/model/test",
     "pkg/cache",
+    "pkg/features/pilot",
     "pkg/log",
     "pkg/mcp/client",
     "pkg/mcp/server",
     "pkg/mcp/snapshot",
     "security/pkg/pki/util"
   ]
-  revision = "19315ed01763585525377460a7fa72237dc3107c"
+  revision = "d9961adc1ca6733e7d4861125962199da2966de3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c5359a2ee18feca8b31c4c97358a3d1d977572892f940da3e821228e1569ce1c"
+  inputs-digest = "fe26785ed5de7e1ace38f6f04db0659966066f63778a7eff714c76590bdac88d"
   solver-name = "gps-cdcl"
   solver-version = 1
