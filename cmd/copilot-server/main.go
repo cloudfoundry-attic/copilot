@@ -32,8 +32,7 @@ import (
 )
 
 var (
-	diegoBulkSyncInterval = 60 * time.Second
-	snapshotInterval      = 30 * time.Second
+	snapshotInterval = 30 * time.Second
 )
 
 func mainWithError() error {
@@ -62,19 +61,10 @@ func mainWithError() error {
 
 	debugserver.Run("127.0.0.1:33333", reconfigurableSink)
 
-	var bbsClient bbs.InternalClient
-	if cfg.BBS == nil {
-		logger.Info("BBS is disabled")
-		bbsClient = nil
-	} else {
-		if cfg.BBS.SyncInterval != "" {
-			diegoBulkSyncInterval, err = time.ParseDuration(cfg.BBS.SyncInterval)
-			if err != nil {
-				return err
-			}
-		}
-
-		bbsClient, err = bbs.NewSecureClient(
+	var bbsEventer models.BBSEventer
+	var diegoTickerChan <-chan time.Time
+	if cfg.BBS != nil {
+		bbsClient, err := bbs.NewSecureClient(
 			cfg.BBS.Address,
 			cfg.BBS.ServerCACertPath,
 			cfg.BBS.ClientCertPath,
@@ -89,16 +79,17 @@ func mainWithError() error {
 		if err != nil {
 			return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
 		}
+		diegoTickerChan = time.NewTicker(cfg.BBS.SyncInterval).C
+		bbsEventer = bbsClient
 	}
+
+	backendSetRepo := models.NewBackendSetRepo(bbsEventer, logger, diegoTickerChan)
 
 	routesRepo := models.NewRoutesRepo()
 	routeMappingsRepo := models.NewRouteMappingsRepo()
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
-
-	t := time.NewTicker(diegoBulkSyncInterval)
-	backendSetRepo := models.NewBackendSetRepo(bbsClient, logger, t.C)
 
 	_, cidr, err := net.ParseCIDR(cfg.VIPCIDR)
 	if err != nil {
@@ -176,10 +167,10 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
 	)
 
-	ticker := time.NewTicker(snapshotInterval)
+	mcpTicker := time.NewTicker(snapshotInterval)
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
-	mcpSnapshot := copilotsnapshot.New(logger, ticker.C, collector, cache, inMemoryBuilder)
+	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder)
 	istioHandler.Collector = collector
 
 	members := grouper.Members{
@@ -187,10 +178,9 @@ func mainWithError() error {
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 		grouper.Member{Name: "mcp-snapshot", Runner: mcpSnapshot},
+		grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo},
 	}
-	if bbsClient != nil {
-		members = append(members, grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo})
-	}
+
 	group := grouper.NewOrdered(os.Interrupt, members)
 	monitor := ifrit.Invoke(sigmon.New(group))
 	err = <-monitor.Wait()

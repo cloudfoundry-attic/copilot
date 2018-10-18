@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"gopkg.in/validator.v2"
 )
@@ -19,8 +20,10 @@ type BBSConfig struct {
 	ClientSessionCacheSize int
 	MaxIdleConnsPerHost    int
 	Disable                bool
-	SyncInterval           string
+	SyncInterval           time.Duration
 }
+
+const DefaultBBSSyncInterval = 60 * time.Second
 
 type Config struct {
 	ListenAddressForPilot           string `validate:"nonzero"`
@@ -56,6 +59,9 @@ func Load(path string) (*Config, error) {
 	if c.BBS == nil {
 		return nil, errors.New("invalid config: missing required 'BBS' field")
 	}
+	if c.BBS.SyncInterval == 0 {
+		c.BBS.SyncInterval = DefaultBBSSyncInterval
+	}
 	if c.BBS.Disable {
 		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
 	}
@@ -64,6 +70,7 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid config: %s", err)
 	}
+
 	return c, nil
 }
 

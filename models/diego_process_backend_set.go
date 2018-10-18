@@ -63,31 +63,41 @@ func (s *store) Remove(guid DiegoProcessGUID) {
 	delete(s.content, guid)
 }
 
-type BackendSetRepo struct {
-	bbs    bbsEventer
+type DiegoBackendSetRepo struct {
+	bbs    BBSEventer
 	logger lager.Logger
 	ticker <-chan time.Time
 	store  store
 }
 
-//go:generate counterfeiter -o fakes/bbs_eventer.go --fake-name BBSEventer . bbsEventer
-type bbsEventer interface {
+//go:generate counterfeiter -o fakes/bbs_eventer.go --fake-name BBSEventer . BBSEventer
+type BBSEventer interface {
 	SubscribeToEvents(logger lager.Logger) (events.EventSource, error)
 	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
 }
 
-func NewBackendSetRepo(bbs bbsEventer, logger lager.Logger, ticker <-chan time.Time) *BackendSetRepo {
-	return &BackendSetRepo{
+type BackendSetRepo interface {
+	Run(signals <-chan os.Signal, ready chan<- struct{}) error
+	Get(guid DiegoProcessGUID) *api.BackendSet
+	GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet
+}
+
+func NewBackendSetRepo(bbs BBSEventer, logger lager.Logger, tChan <-chan time.Time) BackendSetRepo {
+	if bbs == nil {
+		logger.Info("BBS support is disabled, using no-op backend")
+		return &NoopBackendSetRepo{}
+	}
+	return &DiegoBackendSetRepo{
 		bbs:    bbs,
 		logger: logger,
-		ticker: ticker,
+		ticker: tChan,
 		store: store{
 			content: make(map[DiegoProcessGUID]sets),
 		},
 	}
 }
 
-func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+func (b *DiegoBackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	stop := make(chan struct{})
 
 	eventSource, err := b.bbs.SubscribeToEvents(b.logger)
@@ -109,19 +119,19 @@ func (b *BackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 	}
 }
 
-func (b *BackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
+func (b *DiegoBackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
 	b.store.RLock()
 	defer b.store.RUnlock()
 	return b.store.content[guid].External
 }
 
-func (b *BackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet {
+func (b *DiegoBackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet {
 	b.store.RLock()
 	defer b.store.RUnlock()
 	return b.store.content[guid].Internal
 }
 
-func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource) {
+func (b *DiegoBackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource) {
 	for {
 		select {
 		case <-stop:
@@ -155,7 +165,7 @@ func (b *BackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.
 	}
 }
 
-func (b *BackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.Time) {
+func (b *DiegoBackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan time.Time) {
 	for {
 		select {
 		case <-ticker:

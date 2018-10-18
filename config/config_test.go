@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"time"
 
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
@@ -36,6 +37,7 @@ var _ = Describe("Config", func() {
 				ClientCertPath:   "some-cert-path",
 				ClientKeyPath:    "some-key-path",
 				Address:          "127.0.0.1:8889",
+				SyncInterval:     5 * time.Second,
 			},
 		}
 	})
@@ -104,6 +106,40 @@ var _ = Describe("Config", func() {
 		Entry("ClientKeyPath", "ClientKeyPath"),
 		Entry("Address", "Address"),
 	)
+
+	Describe("optional BBS fields", func() {
+		Context("when SyncInterval is provided in the config", func() {
+			BeforeEach(func() {
+				cfg.BBS.SyncInterval = 10 * time.Second
+			})
+
+			It("uses the config's sync interval", func() {
+				err := cfg.Save(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				loadedCfg, err := config.Load(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(loadedCfg.BBS.SyncInterval).To(Equal(10 * time.Second))
+			})
+		})
+
+		Context("when SyncInterval is not set or zero", func() {
+			BeforeEach(func() {
+				cfg.BBS.SyncInterval = 0
+			})
+
+			It("defaults to 60 seconds", func() {
+				err := cfg.Save(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				loadedCfg, err := config.Load(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(loadedCfg.BBS.SyncInterval).To(Equal(60 * time.Second))
+			})
+		})
+	})
 
 	Context("when BBS.Disable is true but other BBS fields are empty", func() {
 		BeforeEach(func() {

@@ -170,7 +170,7 @@ var _ = Describe("MCP", func() {
 				ClientCertPath:   bbsTLSFiles.ClientCert,
 				ClientKeyPath:    bbsTLSFiles.ClientKey,
 				Address:          bbsServer.URL(),
-				SyncInterval:     "10ms",
+				SyncInterval:     10 * time.Millisecond,
 			},
 		}
 

@@ -139,7 +139,7 @@ var _ = Describe("BackendSetRepo", func() {
 				ticker     *fakes.Ticker
 				logger     *lagertest.TestLogger
 				bbsEventer *fakes.BBSEventer
-				bs         *models.BackendSetRepo
+				bs         models.BackendSetRepo
 				sig        chan os.Signal
 				ready      chan<- struct{}
 			)

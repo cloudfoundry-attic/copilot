@@ -6,6 +6,7 @@ import (
 
 	"code.cloudfoundry.org/bbs/events"
 	bbsmodels "code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -169,3 +170,5 @@ func (fake *BBSEventer) recordInvocation(key string, args []interface{}) {
 	}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
+
+var _ models.BBSEventer = new(BBSEventer)

@@ -197,7 +197,7 @@ var _ = Describe("Copilot", func() {
 				ClientCertPath:   bbsTLSFiles.ClientCert,
 				ClientKeyPath:    bbsTLSFiles.ClientKey,
 				Address:          bbsServer.URL(),
-				SyncInterval:     "10ms",
+				SyncInterval:     10 * time.Millisecond,
 			},
 		}
 
@@ -501,7 +501,7 @@ var _ = Describe("Copilot", func() {
 				var err error
 				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session.Out).Should(gbytes.Say(`BBS is disabled`))
+				Eventually(session.Out).Should(gbytes.Say(`BBS support is disabled`))
 
 				WaitForHealthy(istioClient, ccClient)
 				_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
