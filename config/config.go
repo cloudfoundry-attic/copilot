@@ -24,6 +24,7 @@ type BBSConfig struct {
 }
 
 const DefaultBBSSyncInterval = 60 * time.Second
+const DefaultMCPConvergeInterval = 30 * time.Second
 
 type Config struct {
 	ListenAddressForPilot           string `validate:"nonzero"`
@@ -34,6 +35,7 @@ type Config struct {
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
 	VIPCIDR                         string `validate:"nonzero"`
+	MCPConvergeInterval             time.Duration
 
 	BBS *BBSConfig
 }
@@ -64,6 +66,9 @@ func Load(path string) (*Config, error) {
 	}
 	if c.BBS.Disable {
 		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
+	}
+	if c.MCPConvergeInterval == 0 {
+		c.MCPConvergeInterval = DefaultMCPConvergeInterval
 	}
 
 	err = validator.Validate(c)

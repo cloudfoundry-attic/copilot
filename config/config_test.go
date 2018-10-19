@@ -32,6 +32,7 @@ var _ = Describe("Config", func() {
 			ServerCertPath:                  "some-cert-path",
 			ServerKeyPath:                   "some-key-path",
 			VIPCIDR:                         "127.128.0.0/9",
+			MCPConvergeInterval:             10 * time.Second,
 			BBS: &config.BBSConfig{
 				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",
@@ -137,6 +138,40 @@ var _ = Describe("Config", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(loadedCfg.BBS.SyncInterval).To(Equal(60 * time.Second))
+			})
+		})
+	})
+
+	Describe("optional fields", func() {
+		Context("when MCPConvergeInterval is provided in the config", func() {
+			BeforeEach(func() {
+				cfg.MCPConvergeInterval = 7 * time.Second
+			})
+
+			It("uses the config's sync interval", func() {
+				err := cfg.Save(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				loadedCfg, err := config.Load(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(loadedCfg.MCPConvergeInterval).To(Equal(7 * time.Second))
+			})
+		})
+
+		Context("when MCPConvergeInterval is not set or zero", func() {
+			BeforeEach(func() {
+				cfg.MCPConvergeInterval = 0
+			})
+
+			It("defaults to 30 seconds", func() {
+				err := cfg.Save(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				loadedCfg, err := config.Load(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(loadedCfg.MCPConvergeInterval).To(Equal(30 * time.Second))
 			})
 		})
 	})

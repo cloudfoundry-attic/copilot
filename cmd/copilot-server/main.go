@@ -31,10 +31,6 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-var (
-	snapshotInterval = 30 * time.Second
-)
-
 func mainWithError() error {
 	var configFilePath string
 	flag.StringVar(&configFilePath, "config", "", "path to config file")
@@ -119,7 +115,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger: logger,
+		Logger:                           logger,
 	}
 	grpcServerForPilot := grpcrunner.New(logger, cfg.ListenAddressForPilot,
 		func(s *grpc.Server) {
@@ -167,7 +163,7 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
 	)
 
-	mcpTicker := time.NewTicker(snapshotInterval)
+	mcpTicker := time.NewTicker(cfg.MCPConvergeInterval)
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder)
