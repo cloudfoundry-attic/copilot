@@ -19,7 +19,7 @@ import (
 
 const (
 	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
-	// when mcp client is capable of only sending supported ones
+	// when mcp client is capable of only sending a subset of the types
 	DestinationRuleTypeURL    = "type.googleapis.com/istio.networking.v1alpha3.DestinationRule"
 	VirtualServiceTypeURL     = "type.googleapis.com/istio.networking.v1alpha3.VirtualService"
 	GatewayTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Gateway"
@@ -34,7 +34,7 @@ const (
 	ServiceRoleTypeURL        = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRole"
 	ServiceRoleBindingTypeURL = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRoleBinding"
 	RbacConfigTypeURL         = "type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"
-	defaultGatewayName        = "cloudfoundry-ingress"
+	DefaultGatewayName        = "cloudfoundry-ingress"
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
 	node        = "default"
@@ -129,7 +129,7 @@ func (s *Snapshot) createGateways(routes []*api.RouteWithBackends) (gaEnvelopes 
 	gaEnvelopes = []*mcp.Envelope{
 		{
 			Metadata: &mcp.Metadata{
-				Name:    defaultGatewayName,
+				Name:    DefaultGatewayName,
 				Version: s.version(),
 			},
 			Resource: gaResource,
@@ -315,7 +315,7 @@ func createServiceEntry(route *api.RouteWithBackends) *networking.ServiceEntry {
 
 func createVirtualService(route *api.RouteWithBackends) *networking.VirtualService {
 	return &networking.VirtualService{
-		Gateways: []string{defaultGatewayName},
+		Gateways: []string{DefaultGatewayName},
 		Hosts:    []string{route.GetHostname()},
 	}
 }
