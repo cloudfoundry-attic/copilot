@@ -126,6 +126,17 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   api.IstioCopilot/Routes
 ```
 
+### As Istio Pilot, List Internal Routes
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  copilot.service.cf.internal:9000 \
+  api.IstioCopilot/InternalRoutes
+```
+
 ### As Cloud Controller, Delete an Association between a CAPI Process and a Diego Process
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
