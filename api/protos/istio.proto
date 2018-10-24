@@ -1,37 +1,6 @@
 syntax = "proto3";
 
-import "common.proto";
-
 package api;
-
-service IstioCopilot {
-  rpc Health(HealthRequest) returns (HealthResponse) {}
-  rpc Routes(RoutesRequest) returns (RoutesResponse) {}
-
-  rpc InternalRoutes(InternalRoutesRequest) returns (InternalRoutesResponse) {}
-}
-
-message InternalRoutesRequest {
-}
-
-message InternalRoutesResponse {
-  repeated InternalRouteWithBackends internal_routes = 1;
-}
-
-message InternalRouteWithBackends {
-  string hostname = 1;
-  string vip = 2;
-  BackendSet backends = 3;
-}
-
-message RoutesRequest {
-}
-
-message RoutesResponse {
-  reserved 1;
-  reserved "backends";
-  repeated RouteWithBackends routes = 2;
-}
 
 message RouteWithBackends {
   string hostname = 1;

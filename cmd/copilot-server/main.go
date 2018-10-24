@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"time"
 
@@ -24,10 +23,8 @@ import (
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/handlers"
-	"code.cloudfoundry.org/copilot/internalroutes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/routes"
-	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -87,43 +84,12 @@ func mainWithError() error {
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
 
-	_, cidr, err := net.ParseCIDR(cfg.VIPCIDR)
-	if err != nil {
-		return fmt.Errorf("parsing vip cidr: %s", err)
-	}
-
-	vipProvider := &vip.Provider{
-		CIDR: cidr,
-	}
-	internalRoutesRepo := &internalroutes.Repo{
-		RoutesRepo:                       routesRepo,
-		RouteMappingsRepo:                routeMappingsRepo,
-		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		BackendSetRepo:                   backendSetRepo,
-		Logger:                           logger,
-		VIPProvider:                      vipProvider,
-	}
-	istioHandler := &handlers.Istio{
-		RoutesRepo:                       routesRepo,
-		RouteMappingsRepo:                routeMappingsRepo,
-		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		BackendSetRepo:                   backendSetRepo,
-		Logger:                           logger,
-		InternalRoutesRepo:               internalRoutesRepo,
-	}
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger:                           logger,
+		Logger: logger,
 	}
-	grpcServerForPilot := grpcrunner.New(logger, cfg.ListenAddressForPilot,
-		func(s *grpc.Server) {
-			api.RegisterIstioCopilotServer(s, istioHandler)
-			reflection.Register(s)
-		},
-		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
-	)
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
 			api.RegisterCloudControllerCopilotServer(s, capiHandler)
@@ -167,10 +133,8 @@ func mainWithError() error {
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder)
-	istioHandler.Collector = collector
 
 	members := grouper.Members{
-		grouper.Member{Name: "grpc-server-for-pilot", Runner: grpcServerForPilot},
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 		grouper.Member{Name: "mcp-snapshot", Runner: mcpSnapshot},

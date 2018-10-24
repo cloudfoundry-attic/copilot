@@ -18,6 +18,33 @@ type CAPI struct {
 	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
 }
 
+//go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
+type routesRepoInterface interface {
+	Upsert(route *models.Route)
+	Delete(guid models.RouteGUID)
+	Sync(routes []*models.Route)
+	Get(guid models.RouteGUID) (*models.Route, bool)
+	List() map[string]string
+}
+
+//go:generate counterfeiter -o fakes/route_mappings_repo.go --fake-name RouteMappingsRepo . routeMappingsRepoInterface
+type routeMappingsRepoInterface interface {
+	GetCalculatedWeight(rm *models.RouteMapping) int32
+	Map(routeMapping *models.RouteMapping)
+	Unmap(routeMapping *models.RouteMapping)
+	Sync(routeMappings []*models.RouteMapping)
+	List() map[string]*models.RouteMapping
+}
+
+//go:generate counterfeiter -o fakes/capi_diego_process_associations_repo.go --fake-name CAPIDiegoProcessAssociationsRepo . capiDiegoProcessAssociationsRepoInterface
+type capiDiegoProcessAssociationsRepoInterface interface {
+	Upsert(capiDiegoProcessAssociation *models.CAPIDiegoProcessAssociation)
+	Delete(capiProcessGUID *models.CAPIProcessGUID)
+	Sync(capiDiegoProcessAssociations []*models.CAPIDiegoProcessAssociation)
+	List() map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
+	Get(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
+}
+
 func (c *CAPI) Health(context.Context, *api.HealthRequest) (*api.HealthResponse, error) {
 	c.Logger.Info("capi health check...")
 	return &api.HealthResponse{Healthy: true}, nil

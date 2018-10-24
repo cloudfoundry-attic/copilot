@@ -3,9 +3,11 @@
 
 package api
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -31,14 +33,15 @@ func (*HealthResponse) ProtoMessage()    {}
 func (*HealthResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_555bd8c177793206, []int{0}
 }
+
 func (m *HealthResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HealthResponse.Unmarshal(m, b)
 }
 func (m *HealthResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HealthResponse.Marshal(b, m, deterministic)
 }
-func (dst *HealthResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HealthResponse.Merge(dst, src)
+func (m *HealthResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HealthResponse.Merge(m, src)
 }
 func (m *HealthResponse) XXX_Size() int {
 	return xxx_messageInfo_HealthResponse.Size(m)
@@ -68,14 +71,15 @@ func (*HealthRequest) ProtoMessage()    {}
 func (*HealthRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_555bd8c177793206, []int{1}
 }
+
 func (m *HealthRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HealthRequest.Unmarshal(m, b)
 }
 func (m *HealthRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HealthRequest.Marshal(b, m, deterministic)
 }
-func (dst *HealthRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HealthRequest.Merge(dst, src)
+func (m *HealthRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HealthRequest.Merge(m, src)
 }
 func (m *HealthRequest) XXX_Size() int {
 	return xxx_messageInfo_HealthRequest.Size(m)
