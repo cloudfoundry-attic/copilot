@@ -1,7 +1,6 @@
 package internalroutes_test
 
 import (
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/internalroutes"
 	"code.cloudfoundry.org/copilot/internalroutes/fakes"
 	"code.cloudfoundry.org/copilot/models"
@@ -80,16 +79,16 @@ var _ = Describe("Repo", func() {
 		})
 
 		It("returns the internal routes for each running backend instance", func() {
-			backendSetRepo.GetInternalBackendsStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
-				diegoClientMap := map[models.DiegoProcessGUID]*api.BackendSet{
-					"diego-process-guid-b": &api.BackendSet{
-						Backends: []*api.Backend{
+			backendSetRepo.GetInternalBackendsStub = func(guid models.DiegoProcessGUID) *models.BackendSet {
+				diegoClientMap := map[models.DiegoProcessGUID]*models.BackendSet{
+					"diego-process-guid-b": &models.BackendSet{
+						Backends: []*models.Backend{
 							{Address: "10.255.9.34", Port: 8080},
 							{Address: "10.255.9.16", Port: 8080},
 						},
 					},
-					"diego-process-guid-a": &api.BackendSet{
-						Backends: []*api.Backend{
+					"diego-process-guid-a": &models.BackendSet{
+						Backends: []*models.Backend{
 							{Address: "10.255.0.16", Port: 8080},
 							{Address: "10.255.1.34", Port: 9080},
 						},

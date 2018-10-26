@@ -4,7 +4,6 @@ import (
 	"sort"
 	"strings"
 
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -27,7 +26,7 @@ type capiDiego interface {
 
 //go:generate counterfeiter -o fakes/backend_set.go --fake-name BackendSet . backendSet
 type backendSet interface {
-	Get(guid models.DiegoProcessGUID) *api.BackendSet
+	Get(guid models.DiegoProcessGUID) *models.BackendSet
 }
 
 type Collector struct {
@@ -48,15 +47,15 @@ func NewCollector(logger lager.Logger, rr routesRepo, rm routeMappings, cd capiD
 	}
 }
 
-func (c *Collector) Collect() []*api.RouteWithBackends {
+func (c *Collector) Collect() []*models.RouteWithBackends {
 	type RouteDetails struct {
 		hostname        string
-		backendSet      *api.BackendSet
+		backendSet      *models.BackendSet
 		path            string
 		capiProcessGUID string
 	}
 
-	var routesWithoutPath, routes []*api.RouteWithBackends
+	var routesWithoutPath, routes []*models.RouteWithBackends
 
 	for _, routeMapping := range c.routeMappings.List() {
 		route, ok := c.routesRepo.Get(routeMapping.RouteGUID)
@@ -73,7 +72,7 @@ func (c *Collector) Collect() []*api.RouteWithBackends {
 			continue
 		}
 
-		var backends []*api.Backend
+		var backends []*models.Backend
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			backendSet := c.backendSet.Get(models.DiegoProcessGUID(diegoProcessGUID))
 			if backendSet == nil {
@@ -87,11 +86,11 @@ func (c *Collector) Collect() []*api.RouteWithBackends {
 			return backends[i].Address < backends[j].Address
 		})
 
-		builtRoute := &api.RouteWithBackends{
+		builtRoute := &models.RouteWithBackends{
 			Hostname:        route.Hostname(),
 			Path:            route.Path,
-			Backends:        &api.BackendSet{Backends: backends},
-			CapiProcessGuid: string(routeMapping.CAPIProcessGUID),
+			Backends:        models.BackendSet{Backends: backends},
+			CapiProcessGUID: string(routeMapping.CAPIProcessGUID),
 			RouteWeight:     c.routeMappings.GetCalculatedWeight(routeMapping),
 		}
 
@@ -107,7 +106,7 @@ func (c *Collector) Collect() []*api.RouteWithBackends {
 	})
 
 	sort.SliceStable(routesWithoutPath, func(i, j int) bool {
-		return routesWithoutPath[i].CapiProcessGuid < routesWithoutPath[j].CapiProcessGuid
+		return routesWithoutPath[i].CapiProcessGUID < routesWithoutPath[j].CapiProcessGUID
 	})
 
 	routes = append(routes, routesWithoutPath...)

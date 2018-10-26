@@ -3,7 +3,6 @@ package internalroutes
 import (
 	"strings"
 
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -35,7 +34,7 @@ type capiDiegoProcessAssociationsRepoInterface interface {
 
 //go:generate counterfeiter -o fakes/backendset_repo.go --fake-name BackendSetRepo . backendSetRepo
 type backendSetRepo interface {
-	GetInternalBackends(guid models.DiegoProcessGUID) *api.BackendSet
+	GetInternalBackends(guid models.DiegoProcessGUID) *models.BackendSet
 }
 
 //go:generate counterfeiter -o fakes/vip_provider.go --fake-name VIPProvider . vipProvider

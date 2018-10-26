@@ -8,13 +8,12 @@ import (
 
 	"code.cloudfoundry.org/bbs/events"
 	bbsmodels "code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/lager"
 )
 
 type sets struct {
-	External *api.BackendSet
-	Internal *api.BackendSet
+	External *BackendSet
+	Internal *BackendSet
 }
 
 type store struct {
@@ -22,7 +21,24 @@ type store struct {
 	content map[DiegoProcessGUID]sets
 }
 
-func (s *store) Insert(guid DiegoProcessGUID, isInternal bool, additionalBackend *api.Backend) {
+type BackendSet struct {
+	Backends []*Backend
+}
+
+type Backend struct {
+	Address string
+	Port    uint32
+}
+
+type RouteWithBackends struct {
+	Hostname        string
+	Path            string
+	Backends        BackendSet
+	CapiProcessGUID string
+	RouteWeight     int32
+}
+
+func (s *store) Insert(guid DiegoProcessGUID, isInternal bool, additionalBackend *Backend) {
 	if additionalBackend == nil {
 		return
 	}
@@ -30,8 +46,8 @@ func (s *store) Insert(guid DiegoProcessGUID, isInternal bool, additionalBackend
 	s.Lock()
 	if _, ok := s.content[guid]; !ok {
 		s.content[guid] = sets{
-			External: &api.BackendSet{},
-			Internal: &api.BackendSet{},
+			External: &BackendSet{},
+			Internal: &BackendSet{},
 		}
 	}
 
@@ -78,8 +94,8 @@ type BBSEventer interface {
 
 type BackendSetRepo interface {
 	Run(signals <-chan os.Signal, ready chan<- struct{}) error
-	Get(guid DiegoProcessGUID) *api.BackendSet
-	GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet
+	Get(guid DiegoProcessGUID) *BackendSet
+	GetInternalBackends(guid DiegoProcessGUID) *BackendSet
 }
 
 func NewBackendSetRepo(bbs BBSEventer, logger lager.Logger, tChan <-chan time.Time) BackendSetRepo {
@@ -119,16 +135,24 @@ func (b *DiegoBackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{
 	}
 }
 
-func (b *DiegoBackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
+func (b *DiegoBackendSetRepo) Get(guid DiegoProcessGUID) *BackendSet {
 	b.store.RLock()
 	defer b.store.RUnlock()
-	return b.store.content[guid].External
+
+	if val, ok := b.store.content[guid]; ok {
+		return val.External
+	}
+	return &BackendSet{[]*Backend{}}
 }
 
-func (b *DiegoBackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet {
+func (b *DiegoBackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *BackendSet {
 	b.store.RLock()
 	defer b.store.RUnlock()
-	return b.store.content[guid].Internal
+
+	if val, ok := b.store.content[guid]; ok {
+		return val.Internal
+	}
+	return &BackendSet{[]*Backend{}}
 }
 
 func (b *DiegoBackendSetRepo) collectEvents(stop <-chan struct{}, eventSource events.EventSource) {
@@ -194,12 +218,12 @@ func (b *DiegoBackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan 
 	}
 }
 
-func processInstance(instance *bbsmodels.ActualLRP) (*api.Backend, *api.Backend) {
+func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 	var (
 		appHostPort      uint32
 		appContainerPort uint32
-		externalBackend  *api.Backend
-		internalBackend  *api.Backend
+		externalBackend  *Backend
+		internalBackend  *Backend
 	)
 
 	if instance.State != bbsmodels.ActualLRPStateRunning {
@@ -214,11 +238,11 @@ func processInstance(instance *bbsmodels.ActualLRP) (*api.Backend, *api.Backend)
 	}
 
 	if appHostPort != 0 {
-		internalBackend = &api.Backend{Address: instance.ActualLRPNetInfo.Address, Port: appHostPort}
+		internalBackend = &Backend{Address: instance.ActualLRPNetInfo.Address, Port: appHostPort}
 	}
 
 	if appContainerPort != 0 {
-		externalBackend = &api.Backend{Address: instance.ActualLRPNetInfo.InstanceAddress, Port: appContainerPort}
+		externalBackend = &Backend{Address: instance.ActualLRPNetInfo.InstanceAddress, Port: appContainerPort}
 	}
 
 	return internalBackend, externalBackend

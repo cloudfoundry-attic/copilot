@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"github.com/gogo/protobuf/types"
 
@@ -44,7 +44,7 @@ const (
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector
 type collector interface {
-	Collect() []*api.RouteWithBackends
+	Collect() []*models.RouteWithBackends
 }
 
 //go:generate counterfeiter -o fakes/setter.go --fake-name Setter . setter
@@ -58,7 +58,7 @@ type Snapshot struct {
 	collector    collector
 	setter       setter
 	builder      *snap.InMemoryBuilder
-	cachedRoutes []*api.RouteWithBackends
+	cachedRoutes []*models.RouteWithBackends
 	ver          int
 }
 
@@ -107,7 +107,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 }
 
-func (s *Snapshot) createGateways(routes []*api.RouteWithBackends) (gaEnvelopes []*mcp.Envelope) {
+func (s *Snapshot) createGateways(routes []*models.RouteWithBackends) (gaEnvelopes []*mcp.Envelope) {
 	gateway := &networking.Gateway{
 		Servers: []*networking.Server{
 			{
@@ -138,11 +138,11 @@ func (s *Snapshot) createGateways(routes []*api.RouteWithBackends) (gaEnvelopes 
 	return gaEnvelopes
 }
 
-func (s *Snapshot) createDestinationRules(routes []*api.RouteWithBackends) (drEnvelopes []*mcp.Envelope) {
+func (s *Snapshot) createDestinationRules(routes []*models.RouteWithBackends) (drEnvelopes []*mcp.Envelope) {
 	destinationRules := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
-		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.GetHostname())
+		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.Hostname)
 
 		var dr *networking.DestinationRule
 		if config, ok := destinationRules[destinationRuleName]; ok {
@@ -150,7 +150,7 @@ func (s *Snapshot) createDestinationRules(routes []*api.RouteWithBackends) (drEn
 		} else {
 			dr = createDestinationRule(route)
 		}
-		dr.Subsets = append(dr.Subsets, createSubset(route.GetCapiProcessGuid()))
+		dr.Subsets = append(dr.Subsets, createSubset(route.CapiProcessGUID))
 
 		destinationRules[destinationRuleName] = &model.Config{
 			ConfigMeta: model.ConfigMeta{
@@ -180,12 +180,12 @@ func (s *Snapshot) createDestinationRules(routes []*api.RouteWithBackends) (drEn
 	return drEnvelopes
 }
 
-func (s *Snapshot) createVirtualServices(routes []*api.RouteWithBackends) (vsEnvelopes []*mcp.Envelope) {
+func (s *Snapshot) createVirtualServices(routes []*models.RouteWithBackends) (vsEnvelopes []*mcp.Envelope) {
 	virtualServices := make(map[string]*model.Config, len(routes))
 	httpRoutes := make(map[string]*networking.HTTPRoute)
 
 	for _, route := range routes {
-		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.GetHostname())
+		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.Hostname)
 
 		var vs *networking.VirtualService
 		if config, ok := virtualServices[virtualServiceName]; ok {
@@ -194,17 +194,17 @@ func (s *Snapshot) createVirtualServices(routes []*api.RouteWithBackends) (vsEnv
 			vs = createVirtualService(route)
 		}
 
-		if r, ok := httpRoutes[route.GetHostname()+route.GetPath()]; ok {
+		if r, ok := httpRoutes[route.Hostname+route.Path]; ok {
 			r.Route = append(r.Route, createDestinationWeight(route))
 		} else {
 			r := createHTTPRoute(route)
-			if route.GetPath() != "" {
+			if route.Path != "" {
 				r.Match = createHTTPMatchRequest(route)
 				vs.Http = append([]*networking.HTTPRoute{r}, vs.Http...)
 			} else {
 				vs.Http = append(vs.Http, r)
 			}
-			httpRoutes[route.GetHostname()+route.GetPath()] = r
+			httpRoutes[route.Hostname+route.Path] = r
 		}
 
 		virtualServices[virtualServiceName] = &model.Config{
@@ -233,20 +233,20 @@ func (s *Snapshot) createVirtualServices(routes []*api.RouteWithBackends) (vsEnv
 	return vsEnvelopes
 }
 
-func (s *Snapshot) createServiceEntries(routes []*api.RouteWithBackends) (seEnvelopes []*mcp.Envelope) {
+func (s *Snapshot) createServiceEntries(routes []*models.RouteWithBackends) (seEnvelopes []*mcp.Envelope) {
 	serviceEntries := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
-		serviceEntryName := fmt.Sprintf("copilot-service-entry-for-%s", route.GetHostname())
+		serviceEntryName := fmt.Sprintf("copilot-service-entry-for-%s", route.Hostname)
 
-		if route.Backends.GetBackends() != nil || len(route.Backends.GetBackends()) != 0 {
+		if route.Backends.Backends != nil || len(route.Backends.Backends) != 0 {
 			var se *networking.ServiceEntry
 			if config, ok := serviceEntries[serviceEntryName]; ok {
 				se = config.Spec.(*networking.ServiceEntry)
 			} else {
 				se = createServiceEntry(route)
 			}
-			se.Endpoints = append(se.Endpoints, createEndpoint(route.Backends.GetBackends(), route.GetCapiProcessGuid())...)
+			se.Endpoints = append(se.Endpoints, createEndpoint(route.Backends.Backends, route.CapiProcessGUID)...)
 
 			serviceEntries[serviceEntryName] = &model.Config{
 				ConfigMeta: model.ConfigMeta{
@@ -284,13 +284,13 @@ func (s *Snapshot) increment() string {
 	return s.version()
 }
 
-func createEndpoint(backends []*api.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
+func createEndpoint(backends []*models.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
 	endpoints := make([]*networking.ServiceEntry_Endpoint, 0)
 	for _, backend := range backends {
 		endpoints = append(endpoints, &networking.ServiceEntry_Endpoint{
-			Address: backend.GetAddress(),
+			Address: backend.Address,
 			Ports: map[string]uint32{
-				"http": backend.GetPort(),
+				"http": backend.Port,
 			},
 			Labels: map[string]string{"cfapp": capiProcessGuid},
 		})
@@ -298,9 +298,9 @@ func createEndpoint(backends []*api.Backend, capiProcessGuid string) []*networki
 	return endpoints
 }
 
-func createServiceEntry(route *api.RouteWithBackends) *networking.ServiceEntry {
+func createServiceEntry(route *models.RouteWithBackends) *networking.ServiceEntry {
 	return &networking.ServiceEntry{
-		Hosts: []string{route.GetHostname()},
+		Hosts: []string{route.Hostname},
 		Ports: []*networking.Port{
 			{
 				Name:     "http",
@@ -313,40 +313,40 @@ func createServiceEntry(route *api.RouteWithBackends) *networking.ServiceEntry {
 	}
 }
 
-func createVirtualService(route *api.RouteWithBackends) *networking.VirtualService {
+func createVirtualService(route *models.RouteWithBackends) *networking.VirtualService {
 	return &networking.VirtualService{
 		Gateways: []string{DefaultGatewayName},
-		Hosts:    []string{route.GetHostname()},
+		Hosts:    []string{route.Hostname},
 	}
 }
 
-func createDestinationWeight(route *api.RouteWithBackends) *networking.HTTPRouteDestination {
+func createDestinationWeight(route *models.RouteWithBackends) *networking.HTTPRouteDestination {
 	return &networking.HTTPRouteDestination{
 		Destination: &networking.Destination{
-			Host:   route.GetHostname(),
-			Subset: route.GetCapiProcessGuid(),
+			Host:   route.Hostname,
+			Subset: route.CapiProcessGUID,
 			Port: &networking.PortSelector{
 				Port: &networking.PortSelector_Number{
 					Number: servicePort,
 				},
 			},
 		},
-		Weight: route.GetRouteWeight(),
+		Weight: route.RouteWeight,
 	}
 }
 
-func createHTTPRoute(route *api.RouteWithBackends) *networking.HTTPRoute {
+func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
 	return &networking.HTTPRoute{
 		Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
 	}
 }
 
-func createHTTPMatchRequest(route *api.RouteWithBackends) []*networking.HTTPMatchRequest {
+func createHTTPMatchRequest(route *models.RouteWithBackends) []*networking.HTTPMatchRequest {
 	return []*networking.HTTPMatchRequest{
 		{
 			Uri: &networking.StringMatch{
 				MatchType: &networking.StringMatch_Prefix{
-					Prefix: route.GetPath(),
+					Prefix: route.Path,
 				},
 			},
 		},
@@ -360,8 +360,8 @@ func createSubset(capiProcessGUID string) *networking.Subset {
 	}
 }
 
-func createDestinationRule(route *api.RouteWithBackends) *networking.DestinationRule {
+func createDestinationRule(route *models.RouteWithBackends) *networking.DestinationRule {
 	return &networking.DestinationRule{
-		Host: route.GetHostname(),
+		Host: route.Hostname,
 	}
 }

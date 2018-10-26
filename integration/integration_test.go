@@ -53,12 +53,11 @@ var _ = Describe("Copilot", func() {
 		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 
+		// boot a fake BBS
 		bbsCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
 
 		bbsTLSFiles := bbsCreds.CreateClientTLSFiles()
-
-		// boot a fake BBS
 		bbsServer = ghttp.NewUnstartedServer()
 		bbsServer.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
 
@@ -248,8 +247,8 @@ var _ = Describe("Copilot", func() {
 				Guid: "route-guid-a",
 				Host: routeHost,
 			}})
-
 		Expect(err).NotTo(HaveOccurred())
+
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
 			RouteMapping: &api.RouteMapping{
 				RouteGuid:       "route-guid-a",
@@ -257,14 +256,12 @@ var _ = Describe("Copilot", func() {
 				RouteWeight:     1,
 			},
 		})
-
 		Expect(err).NotTo(HaveOccurred())
+
 		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
 			CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
-				CapiProcessGuid: "capi-process-guid-a",
-				DiegoProcessGuids: []string{
-					"diego-process-guid-a",
-				},
+				CapiProcessGuid:   "capi-process-guid-a",
+				DiegoProcessGuids: []string{"diego-process-guid-a"},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())

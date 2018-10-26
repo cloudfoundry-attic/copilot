@@ -7,7 +7,6 @@ import (
 
 	"code.cloudfoundry.org/bbs/events/eventfakes"
 	bbsmodels "code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/models/fakes"
 	"code.cloudfoundry.org/lager"
@@ -55,8 +54,8 @@ var _ = Describe("BackendSetRepo", func() {
 
 				ticker.C <- time.Time{}
 
-				Eventually(func() []*api.Backend {
-					return bs.Get("other-guid").GetBackends()
+				Eventually(func() []*models.Backend {
+					return bs.Get("other-guid").Backends
 				}).Should(HaveLen(0))
 			})
 		})
@@ -116,12 +115,12 @@ var _ = Describe("BackendSetRepo", func() {
 
 				ticker.C <- time.Time{}
 
-				var backends []*api.Backend
-				Eventually(func() *api.BackendSet {
+				var backends []*models.Backend
+				Eventually(func() []*models.Backend {
 					res := bs.Get("other-guid")
-					backends = res.GetBackends()
-					return res
-				}).ShouldNot(BeNil())
+					backends = res.Backends
+					return backends
+				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("11.11.11.11"))
 				Expect(backends[0].Port).To(Equal(uint32(2323)))
 
@@ -129,7 +128,7 @@ var _ = Describe("BackendSetRepo", func() {
 				// duplicate entries (since it is also in the list of BBS LRP Groups), so we expect at least one
 				Consistently(func() int {
 					res := bs.Get("some-guid")
-					return len(res.GetBackends())
+					return len(res.Backends)
 				}).Should(BeNumerically(">=", 1))
 			})
 		})
@@ -190,20 +189,20 @@ var _ = Describe("BackendSetRepo", func() {
 
 				go bs.Run(sig, ready)
 
-				var backends []*api.Backend
-				Eventually(func() *api.BackendSet {
+				var backends []*models.Backend
+				Eventually(func() []*models.Backend {
 					res := bs.Get("meow")
-					backends = res.GetBackends()
-					return res
-				}).ShouldNot(BeNil())
+					backends = res.Backends
+					return backends
+				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
 
-				Eventually(func() *api.BackendSet {
+				Eventually(func() []*models.Backend {
 					res := bs.GetInternalBackends("meow")
-					backends = res.GetBackends()
-					return res
-				}).ShouldNot(BeNil())
+					backends = res.Backends
+					return backends
+				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("13.13.13.13"))
 				Expect(backends[0].Port).To(Equal(uint32(1000)))
 			})
@@ -260,15 +259,15 @@ var _ = Describe("BackendSetRepo", func() {
 
 					go bs.Run(sig, ready)
 
-					Eventually(func() []*api.Backend {
+					Eventually(func() []*models.Backend {
 						res := bs.Get("meow")
-						return res.GetBackends()
+						return res.Backends
 					}, "2s").Should(HaveLen(1))
 					wait <- struct{}{}
 
-					Eventually(func() []*api.Backend {
+					Eventually(func() []*models.Backend {
 						res := bs.Get("meow")
-						return res.GetBackends()
+						return res.Backends
 					}, "2s").Should(HaveLen(0))
 				})
 			})
@@ -316,18 +315,18 @@ var _ = Describe("BackendSetRepo", func() {
 						go bs.Run(sig, ready)
 						ticker.C <- time.Time{}
 
-						Eventually(func() []*api.Backend {
-							return bs.Get("other-guid").GetBackends()
+						Eventually(func() []*models.Backend {
+							return bs.Get("other-guid").Backends
 						}).Should(HaveLen(1))
 
 						ticker.C <- time.Time{}
 
-						Eventually(func() []*api.Backend {
-							return bs.Get("other-guid").GetBackends()
+						Eventually(func() []*models.Backend {
+							return bs.Get("other-guid").Backends
 						}).Should(HaveLen(0))
 
-						Eventually(func() []*api.Backend {
-							return bs.Get("any-guid").GetBackends()
+						Eventually(func() []*models.Backend {
+							return bs.Get("any-guid").Backends
 						}).Should(HaveLen(1))
 					})
 				})
@@ -344,10 +343,10 @@ var _ = Describe("BackendSetRepo", func() {
 			bsr := models.NewBackendSetRepo(bbsEventer, logger, ticker.C)
 
 			set := bsr.Get("some-guid-does-not-exist")
-			Expect(set).To(BeNil())
+			Expect(set.Backends).To(BeEmpty())
 
 			set = bsr.GetInternalBackends("some-guid-not-here")
-			Expect(set).To(BeNil())
+			Expect(set.Backends).To(BeEmpty())
 		})
 	})
 

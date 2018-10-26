@@ -2,8 +2,6 @@ package models
 
 import (
 	"os"
-
-	"code.cloudfoundry.org/copilot/api"
 )
 
 type NoopBackendSetRepo struct{}
@@ -19,10 +17,10 @@ func (b *NoopBackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}
 	}
 }
 
-func (b *NoopBackendSetRepo) Get(guid DiegoProcessGUID) *api.BackendSet {
+func (b *NoopBackendSetRepo) Get(guid DiegoProcessGUID) *BackendSet {
 	return nil
 }
 
-func (b *NoopBackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *api.BackendSet {
+func (b *NoopBackendSetRepo) GetInternalBackends(guid DiegoProcessGUID) *BackendSet {
 	return nil
 }

@@ -1,7 +1,6 @@
 package routes_test
 
 import (
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/routes"
 	"code.cloudfoundry.org/copilot/routes/fakes"
@@ -95,10 +94,10 @@ var _ = Describe("Collect", func() {
 				return cd[*capiProcessGUID]
 			}
 
-			backendSetRepo.GetStub = func(guid models.DiegoProcessGUID) *api.BackendSet {
-				bs := map[models.DiegoProcessGUID]*api.BackendSet{
-					"diego-process-guid-a": &api.BackendSet{
-						Backends: []*api.Backend{
+			backendSetRepo.GetStub = func(guid models.DiegoProcessGUID) *models.BackendSet {
+				bs := map[models.DiegoProcessGUID]*models.BackendSet{
+					"diego-process-guid-a": &models.BackendSet{
+						Backends: []*models.Backend{
 							{
 								Address: "10.255.0.16",
 								Port:    8080,
@@ -109,8 +108,8 @@ var _ = Describe("Collect", func() {
 							},
 						},
 					},
-					"diego-process-guid-c": &api.BackendSet{
-						Backends: []*api.Backend{
+					"diego-process-guid-c": &models.BackendSet{
+						Backends: []*models.Backend{
 							{
 								Address: "10.255.9.16",
 								Port:    8080,
@@ -132,11 +131,11 @@ var _ = Describe("Collect", func() {
 			rwb := rc.Collect()
 			Expect(rwb).To(HaveLen(2))
 
-			Expect(rwb).To(Equal([]*api.RouteWithBackends{
-				&api.RouteWithBackends{
+			Expect(rwb).To(Equal([]*models.RouteWithBackends{
+				&models.RouteWithBackends{
 					Hostname: "route-a.cfapps.com",
-					Backends: &api.BackendSet{
-						Backends: []*api.Backend{
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
 							{
 								Address: "10.255.0.16",
 								Port:    8080,
@@ -147,13 +146,13 @@ var _ = Describe("Collect", func() {
 							},
 						},
 					},
-					CapiProcessGuid: "capi-process-guid-a",
+					CapiProcessGUID: "capi-process-guid-a",
 					RouteWeight:     67,
 				},
-				&api.RouteWithBackends{
+				&models.RouteWithBackends{
 					Hostname: "route-a.cfapps.com",
-					Backends: &api.BackendSet{
-						Backends: []*api.Backend{
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
 							{
 								Address: "10.255.9.16",
 								Port:    8080,
@@ -164,7 +163,7 @@ var _ = Describe("Collect", func() {
 							},
 						},
 					},
-					CapiProcessGuid: "capi-process-guid-c",
+					CapiProcessGUID: "capi-process-guid-c",
 					RouteWeight:     33,
 				},
 			}))

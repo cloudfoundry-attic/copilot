@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-echo "Generating protos for cloud controller, istio, and common..."
+echo "Generating protos for cloud controller and common..."
 
 pushd "${BUILD_ROOT}/api/protos"
   go generate

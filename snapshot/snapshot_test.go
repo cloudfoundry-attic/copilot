@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/copilot/snapshot/fakes"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -241,48 +241,48 @@ func verifyEnvelopes(shot snap.Snapshot, version string) (
 	return vs, dr, ga, se
 }
 
-func routesWithBackends() []*api.RouteWithBackends {
-	return []*api.RouteWithBackends{
+func routesWithBackends() []*models.RouteWithBackends {
+	return []*models.RouteWithBackends{
 		{
 			Hostname: "foo.example.com",
 			Path:     "/something",
-			Backends: &api.BackendSet{
-				Backends: []*api.Backend{
+			Backends: models.BackendSet{
+				Backends: []*models.Backend{
 					{
 						Address: "10.0.0.1",
 						Port:    uint32(65005),
 					},
 				},
 			},
-			CapiProcessGuid: "x-capi-guid",
+			CapiProcessGUID: "x-capi-guid",
 			RouteWeight:     int32(50),
 		},
 		{
 			Hostname: "foo.example.com",
 			Path:     "/something",
-			Backends: &api.BackendSet{
-				Backends: []*api.Backend{
+			Backends: models.BackendSet{
+				Backends: []*models.Backend{
 					{
 						Address: "10.0.0.0",
 						Port:    uint32(65007),
 					},
 				},
 			},
-			CapiProcessGuid: "y-capi-guid",
+			CapiProcessGUID: "y-capi-guid",
 			RouteWeight:     int32(50),
 		},
 		{
 			Hostname: "foo.example.com",
 			Path:     "",
-			Backends: &api.BackendSet{
-				Backends: []*api.Backend{
+			Backends: models.BackendSet{
+				Backends: []*models.Backend{
 					{
 						Address: "10.10.10.1",
 						Port:    uint32(65003),
 					},
 				},
 			},
-			CapiProcessGuid: "a-capi-guid",
+			CapiProcessGUID: "a-capi-guid",
 			RouteWeight:     int32(100),
 		},
 	}

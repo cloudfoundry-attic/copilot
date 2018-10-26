@@ -4,38 +4,37 @@ package fakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 )
 
 type BackendSetRepo struct {
-	GetStub        func(guid models.DiegoProcessGUID) *api.BackendSet
+	GetStub        func(guid models.DiegoProcessGUID) *models.BackendSet
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
 		guid models.DiegoProcessGUID
 	}
 	getReturns struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	getReturnsOnCall map[int]struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
-	GetInternalBackendsStub        func(guid models.DiegoProcessGUID) *api.BackendSet
+	GetInternalBackendsStub        func(guid models.DiegoProcessGUID) *models.BackendSet
 	getInternalBackendsMutex       sync.RWMutex
 	getInternalBackendsArgsForCall []struct {
 		guid models.DiegoProcessGUID
 	}
 	getInternalBackendsReturns struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	getInternalBackendsReturnsOnCall map[int]struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *BackendSetRepo) Get(guid models.DiegoProcessGUID) *api.BackendSet {
+func (fake *BackendSetRepo) Get(guid models.DiegoProcessGUID) *models.BackendSet {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
@@ -64,26 +63,26 @@ func (fake *BackendSetRepo) GetArgsForCall(i int) models.DiegoProcessGUID {
 	return fake.getArgsForCall[i].guid
 }
 
-func (fake *BackendSetRepo) GetReturns(result1 *api.BackendSet) {
+func (fake *BackendSetRepo) GetReturns(result1 *models.BackendSet) {
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 
-func (fake *BackendSetRepo) GetReturnsOnCall(i int, result1 *api.BackendSet) {
+func (fake *BackendSetRepo) GetReturnsOnCall(i int, result1 *models.BackendSet) {
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *api.BackendSet
+			result1 *models.BackendSet
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 
-func (fake *BackendSetRepo) GetInternalBackends(guid models.DiegoProcessGUID) *api.BackendSet {
+func (fake *BackendSetRepo) GetInternalBackends(guid models.DiegoProcessGUID) *models.BackendSet {
 	fake.getInternalBackendsMutex.Lock()
 	ret, specificReturn := fake.getInternalBackendsReturnsOnCall[len(fake.getInternalBackendsArgsForCall)]
 	fake.getInternalBackendsArgsForCall = append(fake.getInternalBackendsArgsForCall, struct {
@@ -112,22 +111,22 @@ func (fake *BackendSetRepo) GetInternalBackendsArgsForCall(i int) models.DiegoPr
 	return fake.getInternalBackendsArgsForCall[i].guid
 }
 
-func (fake *BackendSetRepo) GetInternalBackendsReturns(result1 *api.BackendSet) {
+func (fake *BackendSetRepo) GetInternalBackendsReturns(result1 *models.BackendSet) {
 	fake.GetInternalBackendsStub = nil
 	fake.getInternalBackendsReturns = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 
-func (fake *BackendSetRepo) GetInternalBackendsReturnsOnCall(i int, result1 *api.BackendSet) {
+func (fake *BackendSetRepo) GetInternalBackendsReturnsOnCall(i int, result1 *models.BackendSet) {
 	fake.GetInternalBackendsStub = nil
 	if fake.getInternalBackendsReturnsOnCall == nil {
 		fake.getInternalBackendsReturnsOnCall = make(map[int]struct {
-			result1 *api.BackendSet
+			result1 *models.BackendSet
 		})
 	}
 	fake.getInternalBackendsReturnsOnCall[i] = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 

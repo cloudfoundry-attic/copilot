@@ -4,27 +4,26 @@ package fakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 )
 
 type BackendSet struct {
-	GetStub        func(guid models.DiegoProcessGUID) *api.BackendSet
+	GetStub        func(guid models.DiegoProcessGUID) *models.BackendSet
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
 		guid models.DiegoProcessGUID
 	}
 	getReturns struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	getReturnsOnCall map[int]struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *BackendSet) Get(guid models.DiegoProcessGUID) *api.BackendSet {
+func (fake *BackendSet) Get(guid models.DiegoProcessGUID) *models.BackendSet {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
@@ -53,22 +52,22 @@ func (fake *BackendSet) GetArgsForCall(i int) models.DiegoProcessGUID {
 	return fake.getArgsForCall[i].guid
 }
 
-func (fake *BackendSet) GetReturns(result1 *api.BackendSet) {
+func (fake *BackendSet) GetReturns(result1 *models.BackendSet) {
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 
-func (fake *BackendSet) GetReturnsOnCall(i int, result1 *api.BackendSet) {
+func (fake *BackendSet) GetReturnsOnCall(i int, result1 *models.BackendSet) {
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *api.BackendSet
+			result1 *models.BackendSet
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 

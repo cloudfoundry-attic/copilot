@@ -4,24 +4,24 @@ package fakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/models"
 )
 
 type Collector struct {
-	CollectStub        func() []*api.RouteWithBackends
+	CollectStub        func() []*models.RouteWithBackends
 	collectMutex       sync.RWMutex
 	collectArgsForCall []struct{}
 	collectReturns     struct {
-		result1 []*api.RouteWithBackends
+		result1 []*models.RouteWithBackends
 	}
 	collectReturnsOnCall map[int]struct {
-		result1 []*api.RouteWithBackends
+		result1 []*models.RouteWithBackends
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Collector) Collect() []*api.RouteWithBackends {
+func (fake *Collector) Collect() []*models.RouteWithBackends {
 	fake.collectMutex.Lock()
 	ret, specificReturn := fake.collectReturnsOnCall[len(fake.collectArgsForCall)]
 	fake.collectArgsForCall = append(fake.collectArgsForCall, struct{}{})
@@ -42,22 +42,22 @@ func (fake *Collector) CollectCallCount() int {
 	return len(fake.collectArgsForCall)
 }
 
-func (fake *Collector) CollectReturns(result1 []*api.RouteWithBackends) {
+func (fake *Collector) CollectReturns(result1 []*models.RouteWithBackends) {
 	fake.CollectStub = nil
 	fake.collectReturns = struct {
-		result1 []*api.RouteWithBackends
+		result1 []*models.RouteWithBackends
 	}{result1}
 }
 
-func (fake *Collector) CollectReturnsOnCall(i int, result1 []*api.RouteWithBackends) {
+func (fake *Collector) CollectReturnsOnCall(i int, result1 []*models.RouteWithBackends) {
 	fake.CollectStub = nil
 	if fake.collectReturnsOnCall == nil {
 		fake.collectReturnsOnCall = make(map[int]struct {
-			result1 []*api.RouteWithBackends
+			result1 []*models.RouteWithBackends
 		})
 	}
 	fake.collectReturnsOnCall[i] = struct {
-		result1 []*api.RouteWithBackends
+		result1 []*models.RouteWithBackends
 	}{result1}
 }
 

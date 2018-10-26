@@ -4,27 +4,26 @@ package fakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
 )
 
 type BackendSetRepo struct {
-	GetInternalBackendsStub        func(guid models.DiegoProcessGUID) *api.BackendSet
+	GetInternalBackendsStub        func(guid models.DiegoProcessGUID) *models.BackendSet
 	getInternalBackendsMutex       sync.RWMutex
 	getInternalBackendsArgsForCall []struct {
 		guid models.DiegoProcessGUID
 	}
 	getInternalBackendsReturns struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	getInternalBackendsReturnsOnCall map[int]struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *BackendSetRepo) GetInternalBackends(guid models.DiegoProcessGUID) *api.BackendSet {
+func (fake *BackendSetRepo) GetInternalBackends(guid models.DiegoProcessGUID) *models.BackendSet {
 	fake.getInternalBackendsMutex.Lock()
 	ret, specificReturn := fake.getInternalBackendsReturnsOnCall[len(fake.getInternalBackendsArgsForCall)]
 	fake.getInternalBackendsArgsForCall = append(fake.getInternalBackendsArgsForCall, struct {
@@ -53,22 +52,22 @@ func (fake *BackendSetRepo) GetInternalBackendsArgsForCall(i int) models.DiegoPr
 	return fake.getInternalBackendsArgsForCall[i].guid
 }
 
-func (fake *BackendSetRepo) GetInternalBackendsReturns(result1 *api.BackendSet) {
+func (fake *BackendSetRepo) GetInternalBackendsReturns(result1 *models.BackendSet) {
 	fake.GetInternalBackendsStub = nil
 	fake.getInternalBackendsReturns = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 
-func (fake *BackendSetRepo) GetInternalBackendsReturnsOnCall(i int, result1 *api.BackendSet) {
+func (fake *BackendSetRepo) GetInternalBackendsReturnsOnCall(i int, result1 *models.BackendSet) {
 	fake.GetInternalBackendsStub = nil
 	if fake.getInternalBackendsReturnsOnCall == nil {
 		fake.getInternalBackendsReturnsOnCall = make(map[int]struct {
-			result1 *api.BackendSet
+			result1 *models.BackendSet
 		})
 	}
 	fake.getInternalBackendsReturnsOnCall[i] = struct {
-		result1 *api.BackendSet
+		result1 *models.BackendSet
 	}{result1}
 }
 
