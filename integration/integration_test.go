@@ -4,13 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/bbs/events"
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/copilot"
 	"code.cloudfoundry.org/copilot/api"
@@ -18,174 +15,131 @@ import (
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/copilot/testhelpers"
 
-	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"github.com/onsi/gomega/ghttp"
 
 	"istio.io/api/networking/v1alpha3"
 )
 
 var _ = Describe("Copilot", func() {
 	var (
-		session   *gexec.Session
-		mcpClient *testhelpers.MockPilotMCPClient
-
-		ccClient                       copilot.CloudControllerClient
+		session                        *gexec.Session
 		serverConfig                   *config.Config
 		pilotClientTLSConfig           *tls.Config
 		cloudControllerClientTLSConfig *tls.Config
 		configFilePath                 string
 
-		bbsServer    *ghttp.Server
+		mcpClient *testhelpers.MockPilotMCPClient
+		ccClient  copilot.CloudControllerClient
+		mockBBS   *testhelpers.MockBBSServer
+
 		cleanupFuncs []func()
 		routeHost    string
 	)
 
 	BeforeEach(func() {
-		copilotCreds := testhelpers.GenerateMTLS()
-		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
-
-		listenAddrForPilot := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
-		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
-		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
-		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
-
-		// boot a fake BBS
-		bbsCreds := testhelpers.GenerateMTLS()
-		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
-
-		bbsTLSFiles := bbsCreds.CreateClientTLSFiles()
-		bbsServer = ghttp.NewUnstartedServer()
-		bbsServer.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
-
-		bbsServer.RouteToHandler("GET", "/v1/events", func(w http.ResponseWriter, req *http.Request) {
-			lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
-				Instance: &bbsmodels.ActualLRP{
-					ActualLRPKey: bbsmodels.ActualLRPKey{
-						ProcessGuid: "diego-process-guid-a",
+		mockBBS = testhelpers.NewMockBBSServer()
+		mockBBS.SetGetV1EventsResponse(&bbsmodels.ActualLRPGroup{
+			Instance: &bbsmodels.ActualLRP{
+				ActualLRPKey: bbsmodels.ActualLRPKey{
+					ProcessGuid: "diego-process-guid-a",
+				},
+				State: bbsmodels.ActualLRPStateRunning,
+				ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+					Address:         "10.10.1.3",
+					InstanceAddress: "10.255.1.13",
+					Ports: []*bbsmodels.PortMapping{
+						{ContainerPort: 8080, HostPort: 61003},
 					},
-					State: bbsmodels.ActualLRPStateRunning,
-					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-						Address:         "10.10.1.3",
-						InstanceAddress: "10.255.1.13",
-						Ports: []*bbsmodels.PortMapping{
-							{ContainerPort: 8080, HostPort: 61003},
+				},
+			},
+		})
+
+		mockBBS.SetPostV1ActualLRPGroupsList(
+			[]*bbsmodels.ActualLRPGroup{
+				{
+					Instance: &bbsmodels.ActualLRP{
+						ActualLRPKey: bbsmodels.ActualLRPKey{
+							ProcessGuid: "diego-process-guid-a",
+						},
+						State: bbsmodels.ActualLRPStateRunning,
+						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+							Address:         "10.10.1.3",
+							InstanceAddress: "10.255.1.13",
+							Ports: []*bbsmodels.PortMapping{
+								{ContainerPort: 8080, HostPort: 61003},
+							},
+						},
+					},
+				},
+				{ // this instance only has SSH port, not app port.  it shouldn't show up in route results
+					Instance: &bbsmodels.ActualLRP{
+						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
+						State:        bbsmodels.ActualLRPStateRunning,
+						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+							Address:         "10.10.1.4",
+							InstanceAddress: "10.255.1.15",
+							Ports: []*bbsmodels.PortMapping{
+								{ContainerPort: 2222, HostPort: 61004},
+							},
+						},
+					},
+				},
+				{
+					Instance: &bbsmodels.ActualLRP{
+						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
+						State:        bbsmodels.ActualLRPStateRunning,
+						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+							Address:         "10.10.1.5",
+							InstanceAddress: "10.255.1.16",
+							Ports: []*bbsmodels.PortMapping{
+								{ContainerPort: 8080, HostPort: 61005},
+							},
+						},
+					},
+				},
+				{
+					Instance: &bbsmodels.ActualLRP{
+						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
+						State:        bbsmodels.ActualLRPStateRunning,
+						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+							Address:         "10.10.1.6",
+							InstanceAddress: "10.255.0.34",
+							Ports: []*bbsmodels.PortMapping{
+								{ContainerPort: 2222, HostPort: 61008},
+								{ContainerPort: 8080, HostPort: 61006},
+							},
+						},
+					},
+				},
+				{
+					Instance: &bbsmodels.ActualLRP{
+						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-other", 1, "domain1"),
+						State:        bbsmodels.ActualLRPStateRunning,
+						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+							Address:         "10.10.1.7",
+							InstanceAddress: "10.255.0.35",
+							Ports: []*bbsmodels.PortMapping{
+								{ContainerPort: 8080, HostPort: 61111},
+							},
 						},
 					},
 				},
 			})
-			w.Header().Add("Content-Type", "text/event-stream; charset=utf-8")
-			w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
-			w.Header().Add("Connection", "keep-alive")
-			w.Header().Set("Transfer-Encoding", "identity")
-			w.WriteHeader(http.StatusOK)
+		mockBBS.Server.Start()
+		cleanupFuncs = append(cleanupFuncs, mockBBS.Server.Close)
 
-			conn, rw, err := w.(http.Hijacker).Hijack()
-			if err != nil {
-				return
-			}
-
-			defer func() {
-				conn.Close()
-			}()
-
-			rw.Flush()
-
-			event, _ := events.NewEventFromModelEvent(0, lrpEvent)
-			event.Write(conn)
-		})
-		bbsServer.RouteToHandler("POST", "/v1/cells/list.r1", func(w http.ResponseWriter, req *http.Request) {
-			cellsResponse := bbsmodels.CellsResponse{}
-			data, _ := proto.Marshal(&cellsResponse)
-			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
-			w.Header().Set("Content-Type", "application/x-protobuf")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(data)
-		})
-		bbsServer.RouteToHandler("POST", "/v1/actual_lrp_groups/list", func(w http.ResponseWriter, req *http.Request) {
-			actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
-				ActualLrpGroups: []*bbsmodels.ActualLRPGroup{
-					{
-						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.ActualLRPKey{
-								ProcessGuid: "diego-process-guid-a",
-							},
-							State: bbsmodels.ActualLRPStateRunning,
-							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address:         "10.10.1.3",
-								InstanceAddress: "10.255.1.13",
-								Ports: []*bbsmodels.PortMapping{
-									{ContainerPort: 8080, HostPort: 61003},
-								},
-							},
-						},
-					},
-					{ // this instance only has SSH port, not app port.  it shouldn't show up in route results
-						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
-							State:        bbsmodels.ActualLRPStateRunning,
-							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address:         "10.10.1.4",
-								InstanceAddress: "10.255.1.15",
-								Ports: []*bbsmodels.PortMapping{
-									{ContainerPort: 2222, HostPort: 61004},
-								},
-							},
-						},
-					},
-					{
-						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
-							State:        bbsmodels.ActualLRPStateRunning,
-							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address:         "10.10.1.5",
-								InstanceAddress: "10.255.1.16",
-								Ports: []*bbsmodels.PortMapping{
-									{ContainerPort: 8080, HostPort: 61005},
-								},
-							},
-						},
-					},
-					{
-						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
-							State:        bbsmodels.ActualLRPStateRunning,
-							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address:         "10.10.1.6",
-								InstanceAddress: "10.255.0.34",
-								Ports: []*bbsmodels.PortMapping{
-									{ContainerPort: 2222, HostPort: 61008},
-									{ContainerPort: 8080, HostPort: 61006},
-								},
-							},
-						},
-					},
-					{
-						Instance: &bbsmodels.ActualLRP{
-							ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-other", 1, "domain1"),
-							State:        bbsmodels.ActualLRPStateRunning,
-							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-								Address:         "10.10.1.7",
-								InstanceAddress: "10.255.0.35",
-								Ports: []*bbsmodels.PortMapping{
-									{ContainerPort: 8080, HostPort: 61111},
-								},
-							},
-						},
-					},
-				},
-			}
-			data, _ := proto.Marshal(&actualLRPResponse)
-			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
-			w.Header().Set("Content-Type", "application/x-protobuf")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(data)
-		})
-		bbsServer.Start()
-		cleanupFuncs = append(cleanupFuncs, bbsServer.Close)
+		copilotCreds := testhelpers.GenerateMTLS()
+		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
+		listenAddrForPilot := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
+		bbsCreds := testhelpers.GenerateMTLS()
+		bbsTLSFiles := bbsCreds.CreateClientTLSFiles()
+		mockBBS.Server.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
 
 		serverConfig = &config.Config{
 			ListenAddressForPilot:           listenAddrForPilot,
@@ -201,7 +155,7 @@ var _ = Describe("Copilot", func() {
 				ServerCACertPath: bbsTLSFiles.ServerCA,
 				ClientCertPath:   bbsTLSFiles.ClientCert,
 				ClientKeyPath:    bbsTLSFiles.ClientKey,
-				Address:          bbsServer.URL(),
+				Address:          mockBBS.Server.URL(),
 				SyncInterval:     10 * time.Millisecond,
 			},
 		}
@@ -490,7 +444,7 @@ var _ = Describe("Copilot", func() {
 
 	Context("when the BBS is not available", func() {
 		BeforeEach(func() {
-			bbsServer.Close()
+			mockBBS.Server.Close()
 
 			// stop copilot
 			gexec.KillAndWait(time.Second * 10)
