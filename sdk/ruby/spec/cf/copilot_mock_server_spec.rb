@@ -21,7 +21,8 @@ RSpec.describe Cloudfoundry::Copilot do
       @client.upsert_route(
         guid: 'some-route-guid',
         host: 'some-route-url',
-        path: '/some/path'
+        path: '/some/path',
+        internal: true,
       )
     ).to be_a(::Api::UpsertRouteResponse)
 
@@ -30,7 +31,8 @@ RSpec.describe Cloudfoundry::Copilot do
         route: Api::Route.new(
           guid: 'some-route-guid',
           host: 'some-route-url',
-          path: '/some/path'
+          path: '/some/path',
+          internal: true,
         )
       )
     )

@@ -22,6 +22,15 @@ RSpec.describe Cloudfoundry::Copilot do
     )
   end
 
+  it 'can upsert a route with an internal flag' do
+    @client.upsert_route(
+      guid: 'some-route-guid',
+      host: 'some-route-url',
+      path: '/some/path',
+      internal: true
+    )
+  end
+
   it 'can delete a route' do
     @client.delete_route(
       guid: 'some-route-guid'

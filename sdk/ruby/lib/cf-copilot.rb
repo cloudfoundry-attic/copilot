@@ -25,8 +25,8 @@ module Cloudfoundry
         service.health(request)
       end
 
-      def upsert_route(guid:, host:, path: '')
-        route = Api::Route.new(guid: guid, host: host, path: path)
+      def upsert_route(guid:, host:, path: '', internal: false)
+        route = Api::Route.new(guid: guid, host: host, path: path, internal: internal)
         request = Api::UpsertRouteRequest.new(route: route)
         service.upsert_route(request)
       rescue GRPC::BadStatus => e
