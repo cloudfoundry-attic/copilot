@@ -1,0 +1,18 @@
+{
+  "ListenAddressForPilot":           "127.0.0.1:1234",
+  "ListenAddressForCloudController": "127.0.0.1:1235",
+  "ListenAddressForMCP":             "127.0.0.1:1236",
+  "PilotClientCAPath":               "some-pilot-ca-path",
+  "CloudControllerClientCAPath":     "some-cloud-controller-ca-path",
+  "ServerCertPath":                  "some-cert-path",
+  "ServerKeyPath":                   "some-key-path",
+  "VIPCIDR":                         "127.128.0.0/9",
+  "MCPConvergeInterval":             "10s",
+  "BBS": {
+    "ServerCACertPath": "some-ca-path",
+    "ClientCertPath":   "some-cert-path",
+    "ClientKeyPath":    "some-key-path",
+    "Address":          "127.0.0.1:8889",
+    "SyncInterval":     "5s"
+  }
+}

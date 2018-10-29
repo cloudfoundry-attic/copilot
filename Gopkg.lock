@@ -37,6 +37,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:d0e6be0948046d5257c42c178f9d61e89ed26e894b9d9fcdd788b3e4187d95dc"
+  name = "code.cloudfoundry.org/durationjson"
+  packages = ["."]
+  pruneopts = ""
+  revision = "718cecacb217efc520406308f08a46b9a958da28"
+
+[[projects]]
+  branch = "master"
   digest = "1:79b84ded24b1338dedccd54b7f67ec966407ce4634bd5ccb2560da762619387e"
   name = "code.cloudfoundry.org/lager"
   packages = [
@@ -564,7 +572,6 @@
     "mixer/v1",
     "mixer/v1/config/client",
     "networking/v1alpha3",
-    "policy/v1beta1",
     "rbac/v1alpha1",
   ]
   pruneopts = ""
@@ -575,9 +582,6 @@
   digest = "1:4357eac992a0dd604c5d341c627213ae98998bd8fab7e0e981cd5d311e00f563"
   name = "istio.io/istio"
   packages = [
-    "galley/pkg/kube/converter/legacy",
-    "galley/pkg/metadata",
-    "galley/pkg/runtime/resource",
     "pilot/pkg/model",
     "pilot/pkg/model/test",
     "pkg/cache",
@@ -600,6 +604,7 @@
     "code.cloudfoundry.org/bbs/events/eventfakes",
     "code.cloudfoundry.org/bbs/models",
     "code.cloudfoundry.org/debugserver",
+    "code.cloudfoundry.org/durationjson",
     "code.cloudfoundry.org/lager",
     "code.cloudfoundry.org/lager/lagertest",
     "github.com/gogo/protobuf/proto",
@@ -626,7 +631,6 @@
     "gopkg.in/validator.v2",
     "istio.io/api/mcp/v1alpha1",
     "istio.io/api/networking/v1alpha3",
-    "istio.io/istio/galley/pkg/metadata",
     "istio.io/istio/pilot/pkg/model",
     "istio.io/istio/pkg/mcp/client",
     "istio.io/istio/pkg/mcp/server",

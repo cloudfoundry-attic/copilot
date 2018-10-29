@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"time"
 
+	"code.cloudfoundry.org/durationjson"
 	"gopkg.in/validator.v2"
 )
 
@@ -20,11 +21,11 @@ type BBSConfig struct {
 	ClientSessionCacheSize int
 	MaxIdleConnsPerHost    int
 	Disable                bool
-	SyncInterval           time.Duration
+	SyncInterval           durationjson.Duration
 }
 
-const DefaultBBSSyncInterval = 60 * time.Second
-const DefaultMCPConvergeInterval = 30 * time.Second
+const DefaultBBSSyncInterval = durationjson.Duration(60 * time.Second)
+const DefaultMCPConvergeInterval = durationjson.Duration(30 * time.Second)
 
 type Config struct {
 	ListenAddressForPilot           string `validate:"nonzero"`
@@ -35,7 +36,7 @@ type Config struct {
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
 	VIPCIDR                         string `validate:"nonzero"`
-	MCPConvergeInterval             time.Duration
+	MCPConvergeInterval             durationjson.Duration
 
 	BBS *BBSConfig
 }
@@ -68,7 +69,7 @@ func Load(path string) (*Config, error) {
 		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
 	}
 	if c.MCPConvergeInterval == 0 {
-		c.MCPConvergeInterval = DefaultMCPConvergeInterval
+		c.MCPConvergeInterval = durationjson.Duration(DefaultMCPConvergeInterval)
 	}
 
 	err = validator.Validate(c)

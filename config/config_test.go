@@ -9,13 +9,14 @@ import (
 
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
-
+	"code.cloudfoundry.org/durationjson"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Config", func() {
+	const configFilePath = "./config_test.json"
 	var (
 		configFile string
 		cfg        *config.Config
@@ -32,13 +33,13 @@ var _ = Describe("Config", func() {
 			ServerCertPath:                  "some-cert-path",
 			ServerKeyPath:                   "some-key-path",
 			VIPCIDR:                         "127.128.0.0/9",
-			MCPConvergeInterval:             10 * time.Second,
+			MCPConvergeInterval:             durationjson.Duration(10 * time.Second),
 			BBS: &config.BBSConfig{
 				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",
 				ClientKeyPath:    "some-key-path",
 				Address:          "127.0.0.1:8889",
-				SyncInterval:     5 * time.Second,
+				SyncInterval:     durationjson.Duration(5 * time.Second),
 			},
 		}
 	})
@@ -47,11 +48,8 @@ var _ = Describe("Config", func() {
 		_ = os.Remove(configFile)
 	})
 
-	It("saves and loads via JSON", func() {
-		err := cfg.Save(configFile)
-		Expect(err).NotTo(HaveOccurred())
-
-		loadedCfg, err := config.Load(configFile)
+	It("loads and converts a JSON file to a Config", func() {
+		loadedCfg, err := config.Load(configFilePath)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(loadedCfg).To(Equal(cfg))
@@ -111,7 +109,7 @@ var _ = Describe("Config", func() {
 	Describe("optional BBS fields", func() {
 		Context("when SyncInterval is provided in the config", func() {
 			BeforeEach(func() {
-				cfg.BBS.SyncInterval = 10 * time.Second
+				cfg.BBS.SyncInterval = durationjson.Duration(10 * time.Second)
 			})
 
 			It("uses the config's sync interval", func() {
@@ -121,7 +119,7 @@ var _ = Describe("Config", func() {
 				loadedCfg, err := config.Load(configFile)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(loadedCfg.BBS.SyncInterval).To(Equal(10 * time.Second))
+				Expect(loadedCfg.BBS.SyncInterval).To(Equal(durationjson.Duration(10 * time.Second)))
 			})
 		})
 
@@ -137,7 +135,7 @@ var _ = Describe("Config", func() {
 				loadedCfg, err := config.Load(configFile)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(loadedCfg.BBS.SyncInterval).To(Equal(60 * time.Second))
+				Expect(loadedCfg.BBS.SyncInterval).To(Equal(durationjson.Duration(60 * time.Second)))
 			})
 		})
 	})
@@ -145,7 +143,7 @@ var _ = Describe("Config", func() {
 	Describe("optional fields", func() {
 		Context("when MCPConvergeInterval is provided in the config", func() {
 			BeforeEach(func() {
-				cfg.MCPConvergeInterval = 7 * time.Second
+				cfg.MCPConvergeInterval = durationjson.Duration(7 * time.Second)
 			})
 
 			It("uses the config's sync interval", func() {
@@ -155,7 +153,7 @@ var _ = Describe("Config", func() {
 				loadedCfg, err := config.Load(configFile)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(loadedCfg.MCPConvergeInterval).To(Equal(7 * time.Second))
+				Expect(loadedCfg.MCPConvergeInterval).To(Equal(durationjson.Duration(7 * time.Second)))
 			})
 		})
 
@@ -171,7 +169,7 @@ var _ = Describe("Config", func() {
 				loadedCfg, err := config.Load(configFile)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(loadedCfg.MCPConvergeInterval).To(Equal(30 * time.Second))
+				Expect(loadedCfg.MCPConvergeInterval).To(Equal(durationjson.Duration(30 * time.Second)))
 			})
 		})
 	})

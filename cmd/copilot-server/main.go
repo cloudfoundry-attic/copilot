@@ -6,8 +6,15 @@ import (
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/bbs"
+	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/config"
+	"code.cloudfoundry.org/copilot/handlers"
+	"code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/copilot/routes"
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/debugserver"
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -18,14 +25,6 @@ import (
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/mcp/snapshot"
-
-	"code.cloudfoundry.org/bbs"
-	"code.cloudfoundry.org/copilot/api"
-	"code.cloudfoundry.org/copilot/config"
-	"code.cloudfoundry.org/copilot/handlers"
-	"code.cloudfoundry.org/copilot/models"
-	"code.cloudfoundry.org/copilot/routes"
-	"code.cloudfoundry.org/lager"
 )
 
 func mainWithError() error {
@@ -72,7 +71,7 @@ func mainWithError() error {
 		if err != nil {
 			return fmt.Errorf("unable to reach BBS at address %q: %s", cfg.BBS.Address, err)
 		}
-		diegoTickerChan = time.NewTicker(cfg.BBS.SyncInterval).C
+		diegoTickerChan = time.NewTicker(time.Duration(cfg.BBS.SyncInterval)).C
 		bbsEventer = bbsClient
 	}
 
@@ -88,7 +87,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger: logger,
+		Logger:                           logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
@@ -129,7 +128,7 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
 	)
 
-	mcpTicker := time.NewTicker(cfg.MCPConvergeInterval)
+	mcpTicker := time.NewTicker(time.Duration(cfg.MCPConvergeInterval))
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder)
