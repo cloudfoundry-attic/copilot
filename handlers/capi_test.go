@@ -65,14 +65,16 @@ var _ = Describe("Capi Handlers", func() {
 			ctx := context.Background()
 			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
 				Route: &api.Route{
-					Guid: "route-guid-a",
-					Host: "route-a.example.com",
+					Guid:     "route-guid-a",
+					Host:     "route-a.example.com",
+					Internal: true,
 				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
 			Expect(fakeRoutesRepo.UpsertArgsForCall(0)).To(Equal(&models.Route{
-				GUID: "route-guid-a",
-				Host: "route-a.example.com",
+				GUID:     "route-guid-a",
+				Host:     "route-a.example.com",
+				Internal: true,
 			}))
 		})
 	})

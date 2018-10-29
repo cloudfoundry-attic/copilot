@@ -33,12 +33,14 @@ var _ = Describe("Repo", func() {
 				Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 			}
 			routesRepo.Upsert(&models.Route{
-				GUID: "internal-route-guid-a",
-				Host: "route-a.apps.internal",
+				GUID:     "internal-route-guid-a",
+				Host:     "route-a.myroute.fun",
+				Internal: true,
 			})
 			routesRepo.Upsert(&models.Route{
-				GUID: "internal-route-guid-b",
-				Host: "route-b.apps.internal",
+				GUID:     "internal-route-guid-b",
+				Host:     "route-b.apps.internal",
+				Internal: true,
 			})
 			routeMappingsRepo.Map(&models.RouteMapping{
 				RouteGUID:       "internal-route-guid-a",
@@ -63,7 +65,7 @@ var _ = Describe("Repo", func() {
 			vipProvider = &fakes.VIPProvider{}
 			vipProvider.GetStub = func(hostname string) string {
 				return map[string]string{
-					"route-a.apps.internal": "vip-for-route-a",
+					"route-a.myroute.fun":   "vip-for-route-a",
 					"route-b.apps.internal": "vip-for-route-b",
 				}[hostname]
 			}
@@ -97,7 +99,7 @@ var _ = Describe("Repo", func() {
 				return diegoClientMap[guid]
 			}
 
-			routeAKey := internalroutes.InternalRoute{Hostname: "route-a.apps.internal", VIP: "vip-for-route-a"}
+			routeAKey := internalroutes.InternalRoute{Hostname: "route-a.myroute.fun", VIP: "vip-for-route-a"}
 			routeBKey := internalroutes.InternalRoute{Hostname: "route-b.apps.internal", VIP: "vip-for-route-b"}
 
 			internalRoutes, err := internalRoutesRepo.Get()

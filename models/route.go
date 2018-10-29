@@ -8,9 +8,10 @@ import (
 type RouteGUID string
 
 type Route struct {
-	GUID RouteGUID
-	Host string
-	Path string
+	GUID     RouteGUID
+	Host     string
+	Path     string
+	Internal bool
 }
 
 func (r *Route) Hostname() string {

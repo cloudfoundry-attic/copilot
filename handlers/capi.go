@@ -91,9 +91,10 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 		return nil, status.Errorf(codes.InvalidArgument, "Route %#v is invalid:\n %v", request, err)
 	}
 	route := &models.Route{
-		GUID: models.RouteGUID(request.Route.Guid),
-		Host: request.Route.Host,
-		Path: request.Route.Path,
+		GUID:     models.RouteGUID(request.Route.Guid),
+		Host:     request.Route.Host,
+		Path:     request.Route.Path,
+		Internal: request.Route.Internal,
 	}
 	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil

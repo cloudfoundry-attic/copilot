@@ -1,8 +1,6 @@
 package internalroutes
 
 import (
-	"strings"
-
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -71,7 +69,7 @@ func (r *Repo) Get() (map[InternalRoute][]Backend, error) {
 		}
 
 		hostname := route.Hostname()
-		if !strings.HasSuffix(hostname, ".apps.internal") {
+		if !route.Internal {
 			continue
 		}
 
