@@ -16,6 +16,7 @@ import (
 )
 
 var _ = Describe("Config", func() {
+	const configFilePath = "./config_test.json"
 	var (
 		configFile string
 		cfg        *config.Config
@@ -47,11 +48,8 @@ var _ = Describe("Config", func() {
 		_ = os.Remove(configFile)
 	})
 
-	It("saves and loads via JSON", func() {
-		err := cfg.Save(configFile)
-		Expect(err).NotTo(HaveOccurred())
-
-		loadedCfg, err := config.Load(configFile)
+	It("loads and converts a JSON file to a Config", func() {
+		loadedCfg, err := config.Load(configFilePath)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(loadedCfg).To(Equal(cfg))
