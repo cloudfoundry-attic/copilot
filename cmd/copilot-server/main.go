@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"syscall"
 	"time"
 
 	"code.cloudfoundry.org/bbs"
@@ -141,7 +142,7 @@ func mainWithError() error {
 	}
 
 	group := grouper.NewOrdered(os.Interrupt, members)
-	monitor := ifrit.Invoke(sigmon.New(group))
+	monitor := ifrit.Invoke(sigmon.New(group, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT))
 	err = <-monitor.Wait()
 	if err != nil {
 		return err
