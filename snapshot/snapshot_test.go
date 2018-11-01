@@ -141,6 +141,7 @@ var _ = Describe("Run", func() {
 		}))
 
 		Expect(se.Hosts).To(Equal([]string{"foo.example.com"}))
+		Expect(se.Addresses).To(BeNil())
 		Expect(se.Ports).To(Equal([]*networking.Port{
 			{
 				Name:     "http",
@@ -187,6 +188,89 @@ var _ = Describe("Run", func() {
 		verifyEnvelopes(shot, "2")
 
 		sig <- os.Kill
+	})
+
+	Context("when an internal route exists", func() {
+		It("mcp snapshots sends virutalServices and serviceEntries for internal routes", func() {
+			sig := make(chan os.Signal)
+			ready := make(chan struct{})
+
+			collector.CollectReturnsOnCall(0, internalRoutesWithBackends())
+
+			go s.Run(sig, ready)
+			ticker <- time.Time{}
+
+			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
+			node, shot := setter.SetSnapshotArgsForCall(0)
+			Expect(node).To(Equal("default"))
+
+			virtualServices := shot.Resources(snapshot.VirtualServiceTypeURL)
+			destinationRules := shot.Resources(snapshot.DestinationRuleTypeURL)
+			gateways := shot.Resources(snapshot.GatewayTypeURL)
+			serviceEntries := shot.Resources(snapshot.ServiceEntryTypeURL)
+
+			Expect(gateways).To(HaveLen(1))
+			Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
+
+			Expect(virtualServices).To(HaveLen(1))
+			Expect(virtualServices[0].Metadata.Name).To(Equal("copilot-service-for-foo.bar.internal"))
+
+			var vs networking.VirtualService
+			err := types.UnmarshalAny(virtualServices[0].Resource, &vs)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(vs.Hosts).To(Equal([]string{"foo.bar.internal"}))
+			Expect(vs.Gateways).To(HaveLen(0))
+			Expect(vs.Http).To(ConsistOf([]*networking.HTTPRoute{
+				{
+					Route: []*networking.HTTPRouteDestination{
+						{
+							Destination: &networking.Destination{
+								Host: "foo.bar.internal",
+								Port: &networking.PortSelector{
+									Port: &networking.PortSelector_Number{
+										Number: 8080,
+									},
+								},
+								Subset: "x-capi-guid",
+							},
+							Weight: 100,
+						},
+					},
+				},
+			}))
+
+			Expect(serviceEntries).To(HaveLen(1))
+			Expect(serviceEntries[0].Metadata.Name).To(Equal("copilot-service-entry-for-foo.bar.internal"))
+
+			var se networking.ServiceEntry
+			err = types.UnmarshalAny(serviceEntries[0].Resource, &se)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(se.Hosts).To(Equal([]string{"foo.bar.internal"}))
+			Expect(se.Addresses).To(Equal([]string{"127.127.0.1"}))
+			Expect(se.Ports).To(Equal([]*networking.Port{
+				{
+					Name:     "tcp",
+					Number:   8080,
+					Protocol: "tcp",
+				}}))
+			Expect(se.Location).To(Equal(networking.ServiceEntry_MESH_INTERNAL))
+			Expect(se.Resolution).To(Equal(networking.ServiceEntry_STATIC))
+			Expect(se.Endpoints).To(ConsistOf([]*networking.ServiceEntry_Endpoint{
+				{
+					Address: "10.0.0.1",
+					Ports: map[string]uint32{
+						"tcp": 65005,
+					},
+					Labels: map[string]string{"cfapp": "x-capi-guid"},
+				},
+			}))
+
+			Expect(destinationRules).To(HaveLen(0))
+
+			sig <- os.Kill
+		})
 	})
 })
 
@@ -283,6 +367,27 @@ func routesWithBackends() []*models.RouteWithBackends {
 				},
 			},
 			CapiProcessGUID: "a-capi-guid",
+			RouteWeight:     int32(100),
+		},
+	}
+}
+
+func internalRoutesWithBackends() []*models.RouteWithBackends {
+	return []*models.RouteWithBackends{
+		{
+			Hostname: "foo.bar.internal",
+			VIP:      "127.127.0.1",
+			Internal: true,
+			Path:     "/something",
+			Backends: models.BackendSet{
+				Backends: []*models.Backend{
+					{
+						Address: "10.0.0.1",
+						Port:    uint32(65005),
+					},
+				},
+			},
+			CapiProcessGUID: "x-capi-guid",
 			RouteWeight:     int32(100),
 		},
 	}

@@ -34,8 +34,9 @@ var _ = Describe("Copilot", func() {
 		ccClient  copilot.CloudControllerClient
 		mockBBS   *testhelpers.MockBBSServer
 
-		cleanupFuncs []func()
-		routeHost    string
+		cleanupFuncs      []func()
+		routeHost         string
+		internalRouteHost string
 	)
 
 	BeforeEach(func() {
@@ -219,6 +220,32 @@ var _ = Describe("Copilot", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
+		By("CC creates and maps an internal route")
+		internalRouteHost = "some-internal-url"
+		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
+			Route: &api.Route{
+				Guid:     "internal-route-guid-a",
+				Host:     internalRouteHost,
+				Internal: true,
+			}})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
+			RouteMapping: &api.RouteMapping{
+				RouteGuid:       "internal-route-guid-a",
+				CapiProcessGuid: "capi-process-guid-a",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = ccClient.UpsertCapiDiegoProcessAssociation(context.Background(), &api.UpsertCapiDiegoProcessAssociationRequest{
+			CapiDiegoProcessAssociation: &api.CapiDiegoProcessAssociation{
+				CapiProcessGuid:   "capi-process-guid-a",
+				DiegoProcessGuids: []string{"diego-process-guid-a"},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
 		By("istio pilot MCP client sees the correct messages and objects")
 		Eventually(mcpClient.GetAllMessageNames, "1s").Should(ConsistOf(
 			"type.googleapis.com/istio.networking.v1alpha3.DestinationRule",
@@ -229,8 +256,8 @@ var _ = Describe("Copilot", func() {
 
 		Eventually(mcpClient.GetAllObjectNames, "1s").Should(Equal(map[string][]string{
 			"type.googleapis.com/istio.networking.v1alpha3.DestinationRule": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost)},
-			"type.googleapis.com/istio.networking.v1alpha3.VirtualService":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost)},
-			"type.googleapis.com/istio.networking.v1alpha3.ServiceEntry":    []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost)},
+			"type.googleapis.com/istio.networking.v1alpha3.VirtualService":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("copilot-service-for-%s", internalRouteHost)},
+			"type.googleapis.com/istio.networking.v1alpha3.ServiceEntry":    []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("copilot-service-entry-for-%s", internalRouteHost)},
 			"type.googleapis.com/istio.networking.v1alpha3.Gateway":         []string{copilotsnapshot.DefaultGatewayName},
 		}))
 
@@ -246,8 +273,21 @@ var _ = Describe("Copilot", func() {
 				}),
 			},
 		}
+		expectedRoutesInternal := []Route{
+			{
+				dest: generateDestination([]RouteDestination{
+					{
+						port:   8080,
+						weight: 100,
+						subset: "capi-process-guid-a",
+						host:   "some-internal-url",
+					},
+				}),
+			},
+		}
 		expectedVS := expectedVirtualService("some-url", "cloudfoundry-ingress", expectedRoutes)
-		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(Equal([]*v1alpha3.VirtualService{expectedVS}))
+		expectedInternalVS := expectedVirtualService("some-internal-url", "", expectedRoutesInternal)
+		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(ConsistOf(expectedVS, expectedInternalVS))
 
 		expectedDR := expectedDestinationRule("some-url", []string{"capi-process-guid-a"})
 		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(Equal([]*v1alpha3.DestinationRule{expectedDR}))
@@ -257,6 +297,8 @@ var _ = Describe("Copilot", func() {
 
 		expectedSE := expectedServiceEntry(
 			"some-url",
+			"",
+			"http",
 			[]Endpoint{
 				{
 					port:   61003,
@@ -270,7 +312,24 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		)
-		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(Equal([]*v1alpha3.ServiceEntry{expectedSE}))
+		expectedInternalSE := expectedServiceEntry(
+			"some-internal-url",
+			"127.175.61.18",
+			"tcp",
+			[]Endpoint{
+				{
+					port:   61003,
+					addr:   "10.10.1.3",
+					subset: "capi-process-guid-a",
+				},
+				{
+					port:   61005,
+					addr:   "10.10.1.5",
+					subset: "capi-process-guid-a",
+				},
+			},
+		)
+		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(ConsistOf(expectedSE, expectedInternalSE))
 
 		By("cc maps another backend to the same route")
 		_, err = ccClient.MapRoute(context.Background(), &api.MapRouteRequest{
@@ -323,6 +382,8 @@ var _ = Describe("Copilot", func() {
 		By("istio mcp client sees both routes and their respective backends")
 		expectedSE = expectedServiceEntry(
 			"some-url",
+			"",
+			"http",
 			[]Endpoint{
 				{
 					port:   61111,
@@ -346,7 +407,7 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		)
-		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(Equal([]*v1alpha3.ServiceEntry{expectedSE}))
+		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(ConsistOf(expectedSE, expectedInternalSE))
 
 		expectedRoutes = []Route{
 			{
@@ -378,9 +439,10 @@ var _ = Describe("Copilot", func() {
 			},
 		}
 		expectedVS = expectedVirtualService("some-url", "cloudfoundry-ingress", expectedRoutes)
-		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(Equal([]*v1alpha3.VirtualService{
+		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(ConsistOf(
 			expectedVS,
-		}))
+			expectedInternalVS,
+		))
 
 		expectedDR = expectedDestinationRule("some-url",
 			[]string{"capi-process-guid-other", "capi-process-guid-a", "capi-process-guid-b"})
@@ -406,6 +468,8 @@ var _ = Describe("Copilot", func() {
 		By("istio mcp client sees the updated stuff")
 		expectedSE = expectedServiceEntry(
 			"some-url",
+			"",
+			"http",
 			[]Endpoint{
 				{
 					port:   61006,
@@ -414,7 +478,7 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		)
-		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(Equal([]*v1alpha3.ServiceEntry{expectedSE}))
+		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(ConsistOf(expectedSE, expectedInternalSE))
 
 		expectedRoutes = []Route{
 			{
@@ -429,9 +493,10 @@ var _ = Describe("Copilot", func() {
 			},
 		}
 		expectedVS = expectedVirtualService("some-url", "cloudfoundry-ingress", expectedRoutes)
-		Eventually(mcpClient.GetAllVirtualServices, "3s").Should(Equal([]*v1alpha3.VirtualService{
+		Eventually(mcpClient.GetAllVirtualServices, "3s").Should(ConsistOf(
 			expectedVS,
-		}))
+			expectedInternalVS,
+		))
 
 		expectedDR = expectedDestinationRule("some-url",
 			[]string{"capi-process-guid-b"})
@@ -575,9 +640,13 @@ func expectedVirtualService(host, gateway string, routes []Route) *v1alpha3.Virt
 		})
 	}
 
+	var gateways []string
+	if gateway != "" {
+		gateways = []string{gateway}
+	}
 	return &v1alpha3.VirtualService{
 		Hosts:    []string{host},
-		Gateways: []string{gateway},
+		Gateways: gateways,
 		Tls:      nil,
 		Tcp:      nil,
 		Http:     newRoutes,
@@ -622,22 +691,28 @@ type Endpoint struct {
 	subset string
 }
 
-func expectedServiceEntry(host string, newEndpoints []Endpoint) *v1alpha3.ServiceEntry {
+func expectedServiceEntry(host, address, protocol string, newEndpoints []Endpoint) *v1alpha3.ServiceEntry {
 	endpoints := []*v1alpha3.ServiceEntry_Endpoint{}
 	for i, _ := range newEndpoints {
 		endpoints = append(endpoints, &v1alpha3.ServiceEntry_Endpoint{
 			Address: newEndpoints[i].addr,
-			Ports:   map[string]uint32{"http": newEndpoints[i].port},
+			Ports:   map[string]uint32{protocol: newEndpoints[i].port},
 			Labels: map[string]string{
 				"cfapp": newEndpoints[i].subset,
 			},
 		})
 	}
+
+	var addresses []string
+	if address != "" {
+		addresses = []string{address}
+	}
+
 	return &v1alpha3.ServiceEntry{
 		Hosts:     []string{host},
-		Addresses: nil,
+		Addresses: addresses,
 		Ports: []*v1alpha3.Port{
-			{Number: 8080, Protocol: "http", Name: "http"},
+			{Number: 8080, Protocol: protocol, Name: protocol},
 		},
 		Location:   1,
 		Resolution: 1,

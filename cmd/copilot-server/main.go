@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/routes"
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
+	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
@@ -83,12 +84,17 @@ func mainWithError() error {
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
+	vipCidr, err := cfg.GetVIPCIDR()
+	if err != nil {
+		return err
+	}
+	vipProvider := vip.NewProvider(vipCidr)
 
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger:                           logger,
+		Logger: logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
@@ -130,7 +136,7 @@ func mainWithError() error {
 	)
 
 	mcpTicker := time.NewTicker(time.Duration(cfg.MCPConvergeInterval))
-	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
+	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo, vipProvider)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder)
 

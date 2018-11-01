@@ -18,6 +18,7 @@ var _ = Describe("Collect", func() {
 		routeMappings  *fakes.RouteMappings
 		capiDiego      *fakes.CapiDiego
 		backendSetRepo *fakes.BackendSet
+		vipProvider    *fakes.VIPProvider
 	)
 
 	BeforeEach(func() {
@@ -26,6 +27,7 @@ var _ = Describe("Collect", func() {
 		routeMappings = &fakes.RouteMappings{}
 		capiDiego = &fakes.CapiDiego{}
 		backendSetRepo = &fakes.BackendSet{}
+		vipProvider = &fakes.VIPProvider{}
 
 		rc = routes.NewCollector(
 			logger,
@@ -33,6 +35,7 @@ var _ = Describe("Collect", func() {
 			routeMappings,
 			capiDiego,
 			backendSetRepo,
+			vipProvider,
 		)
 	})
 
@@ -168,52 +171,137 @@ var _ = Describe("Collect", func() {
 				},
 			}))
 		})
-	})
 
-	Context("when a route belongs to an internal domain", func() {
-		It("skips the route", func() {
-			routeMappings.ListReturns(map[string]*models.RouteMapping{
-				"route-guid-a-capi-process-guid-a": &models.RouteMapping{
-					RouteGUID:       "route-guid-z",
-					CAPIProcessGUID: "capi-process-guid-z",
-					RouteWeight:     2,
-				},
+		Context("when a route belongs to an internal domain", func() {
+			BeforeEach(func() {
+				routesRepo.GetStub = func(guid models.RouteGUID) (*models.Route, bool) {
+					r := map[models.RouteGUID]*models.Route{
+						"route-guid-a": &models.Route{
+							GUID:     "route-guid-a",
+							Host:     "route-a.foo.internal",
+							Path:     "",
+							Internal: true,
+						},
+					}
+
+					return r[guid], true
+				}
+
+				vipProvider.GetReturns("127.127.1.1")
 			})
 
-			routesRepo.GetReturns(&models.Route{
-				GUID:     "route-guid-z",
-				Host:     "look-alive.foo.internal",
-				Path:     "",
-				Internal: true,
-			}, true)
+			It("marks the route with backend as internal", func() {
+				rwb := rc.Collect()
 
-			rc.Collect()
+				Expect(vipProvider.GetCallCount()).To(Equal(2))
+				Expect(vipProvider.GetArgsForCall(0)).To(Equal("route-a.foo.internal"))
 
-			Expect(routesRepo.GetArgsForCall(0)).To(Equal(models.RouteGUID("route-guid-z")))
-			Expect(capiDiego.GetCallCount()).To(Equal(0))
-		})
+				Expect(rwb).To(HaveLen(2))
 
-		Context("when the internal domain is apps.internal and internal is false because it is using an older version of CAPI", func() {
-			It("skips the route", func() {
-				routeMappings.ListReturns(map[string]*models.RouteMapping{
-					"route-guid-a-capi-process-guid-a": &models.RouteMapping{
-						RouteGUID:       "route-guid-z",
-						CAPIProcessGUID: "capi-process-guid-z",
-						RouteWeight:     2,
+				Expect(rwb).To(Equal([]*models.RouteWithBackends{
+					&models.RouteWithBackends{
+						Hostname: "route-a.foo.internal",
+						Internal: true,
+						VIP:      "127.127.1.1",
+						Backends: models.BackendSet{
+							Backends: []*models.Backend{
+								{
+									Address: "10.255.0.16",
+									Port:    8080,
+								},
+								{
+									Address: "10.255.1.34",
+									Port:    9080,
+								},
+							},
+						},
+						CapiProcessGUID: "capi-process-guid-a",
+						RouteWeight:     67,
 					},
+					&models.RouteWithBackends{
+						Hostname: "route-a.foo.internal",
+						Internal: true,
+						VIP:      "127.127.1.1",
+						Backends: models.BackendSet{
+							Backends: []*models.Backend{
+								{
+									Address: "10.255.9.16",
+									Port:    8080,
+								},
+								{
+									Address: "10.255.9.34",
+									Port:    8080,
+								},
+							},
+						},
+						CapiProcessGUID: "capi-process-guid-c",
+						RouteWeight:     33,
+					},
+				}))
+			})
+
+			Context("when the internal domain is apps.internal and internal is false because it is using an older version of CAPI", func() {
+				BeforeEach(func() {
+					routesRepo.GetStub = func(guid models.RouteGUID) (*models.Route, bool) {
+						r := map[models.RouteGUID]*models.Route{
+							"route-guid-a": &models.Route{
+								GUID:     "route-guid-a",
+								Host:     "route-a.apps.internal",
+								Path:     "",
+								Internal: false,
+							},
+						}
+
+						return r[guid], true
+					}
 				})
 
-				routesRepo.GetReturns(&models.Route{
-					GUID:     "route-guid-z",
-					Host:     "look-alive.apps.internal",
-					Path:     "",
-					Internal: false,
-				}, true)
+				It("marks the route with backend as internal", func() {
+					rwb := rc.Collect()
 
-				rc.Collect()
+					Expect(rwb).To(HaveLen(2))
 
-				Expect(routesRepo.GetArgsForCall(0)).To(Equal(models.RouteGUID("route-guid-z")))
-				Expect(capiDiego.GetCallCount()).To(Equal(0))
+					Expect(rwb).To(Equal([]*models.RouteWithBackends{
+						&models.RouteWithBackends{
+							Hostname: "route-a.apps.internal",
+							Internal: true,
+							VIP:      "127.127.1.1",
+							Backends: models.BackendSet{
+								Backends: []*models.Backend{
+									{
+										Address: "10.255.0.16",
+										Port:    8080,
+									},
+									{
+										Address: "10.255.1.34",
+										Port:    9080,
+									},
+								},
+							},
+							CapiProcessGUID: "capi-process-guid-a",
+							RouteWeight:     67,
+						},
+						&models.RouteWithBackends{
+							Hostname: "route-a.apps.internal",
+							Internal: true,
+							VIP:      "127.127.1.1",
+							Backends: models.BackendSet{
+								Backends: []*models.Backend{
+									{
+										Address: "10.255.9.16",
+										Port:    8080,
+									},
+									{
+										Address: "10.255.9.34",
+										Port:    8080,
+									},
+								},
+							},
+							CapiProcessGUID: "capi-process-guid-c",
+							RouteWeight:     33,
+						},
+					}))
+				})
 			})
 		})
 	})

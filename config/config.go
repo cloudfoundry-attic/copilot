@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
+	"reflect"
 	"time"
 
 	"code.cloudfoundry.org/durationjson"
@@ -35,10 +37,14 @@ type Config struct {
 	CloudControllerClientCAPath     string `validate:"nonzero"`
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
-	VIPCIDR                         string `validate:"nonzero"`
+	VIPCIDR                         string `validate:"cidr"`
 	MCPConvergeInterval             durationjson.Duration
 
 	BBS *BBSConfig
+}
+
+func init() {
+	validator.SetValidationFunc("cidr", validateCIDR)
 }
 
 func (c *Config) Save(path string) error {
@@ -88,6 +94,11 @@ func (c *Config) ServerTLSConfigForCloudController() (*tls.Config, error) {
 	return c.serverTLSConfigForClient("cloud controller", c.CloudControllerClientCAPath)
 }
 
+func (c *Config) GetVIPCIDR() (*net.IPNet, error) {
+	_, cidr, err := net.ParseCIDR(c.VIPCIDR)
+	return cidr, err
+}
+
 func (c *Config) serverTLSConfigForClient(clientName string, clientCAPath string) (*tls.Config, error) {
 	serverCert, err := tls.LoadX509KeyPair(c.ServerCertPath, c.ServerKeyPath)
 	if err != nil {
@@ -120,4 +131,18 @@ func (c *Config) serverTLSConfigForClient(clientName string, clientCAPath string
 		Certificates: []tls.Certificate{serverCert},
 		ClientCAs:    clientCAs,
 	}, nil
+}
+
+func validateCIDR(v interface{}, param string) error {
+	st := reflect.ValueOf(v)
+	if st.Kind() != reflect.String {
+		return validator.ErrUnsupported
+	}
+
+	_, _, err := net.ParseCIDR(st.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

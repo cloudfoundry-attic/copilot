@@ -142,6 +142,9 @@ func (s *Snapshot) createDestinationRules(routes []*models.RouteWithBackends) (d
 	destinationRules := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
+		if route.Internal {
+			continue
+		}
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.Hostname)
 
 		var dr *networking.DestinationRule
@@ -246,7 +249,7 @@ func (s *Snapshot) createServiceEntries(routes []*models.RouteWithBackends) (seE
 			} else {
 				se = createServiceEntry(route)
 			}
-			se.Endpoints = append(se.Endpoints, createEndpoint(route.Backends.Backends, route.CapiProcessGUID)...)
+			se.Endpoints = append(se.Endpoints, createEndpoint(route)...)
 
 			serviceEntries[serviceEntryName] = &model.Config{
 				ConfigMeta: model.ConfigMeta{
@@ -262,7 +265,6 @@ func (s *Snapshot) createServiceEntries(routes []*models.RouteWithBackends) (seE
 		if err != nil {
 			s.logger.Error("envelope.serviceentry.marshal", err)
 		}
-
 		seEnvelopes = append(seEnvelopes, &mcp.Envelope{
 			Metadata: &mcp.Metadata{
 				Name:    serviceEntryName,
@@ -284,28 +286,40 @@ func (s *Snapshot) increment() string {
 	return s.version()
 }
 
-func createEndpoint(backends []*models.Backend, capiProcessGuid string) []*networking.ServiceEntry_Endpoint {
+func createEndpoint(route *models.RouteWithBackends) []*networking.ServiceEntry_Endpoint {
 	endpoints := make([]*networking.ServiceEntry_Endpoint, 0)
-	for _, backend := range backends {
+	portType := "http"
+	if route.Internal {
+		portType = "tcp"
+	}
+	for _, backend := range route.Backends.Backends {
 		endpoints = append(endpoints, &networking.ServiceEntry_Endpoint{
 			Address: backend.Address,
 			Ports: map[string]uint32{
-				"http": backend.Port,
+				portType: backend.Port,
 			},
-			Labels: map[string]string{"cfapp": capiProcessGuid},
+			Labels: map[string]string{"cfapp": route.CapiProcessGUID},
 		})
 	}
 	return endpoints
 }
 
 func createServiceEntry(route *models.RouteWithBackends) *networking.ServiceEntry {
+	protocol := "http"
+	var addresses []string
+	if route.Internal {
+		addresses = []string{route.VIP}
+		protocol = "tcp"
+	}
+
 	return &networking.ServiceEntry{
-		Hosts: []string{route.Hostname},
+		Hosts:     []string{route.Hostname},
+		Addresses: addresses,
 		Ports: []*networking.Port{
 			{
-				Name:     "http",
+				Name:     protocol,
 				Number:   servicePort,
-				Protocol: "http",
+				Protocol: protocol,
 			},
 		},
 		Location:   networking.ServiceEntry_MESH_INTERNAL,
@@ -314,6 +328,11 @@ func createServiceEntry(route *models.RouteWithBackends) *networking.ServiceEntr
 }
 
 func createVirtualService(route *models.RouteWithBackends) *networking.VirtualService {
+	if route.Internal {
+		return &networking.VirtualService{
+			Hosts: []string{route.Hostname},
+		}
+	}
 	return &networking.VirtualService{
 		Gateways: []string{DefaultGatewayName},
 		Hosts:    []string{route.Hostname},
@@ -342,6 +361,9 @@ func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
 }
 
 func createHTTPMatchRequest(route *models.RouteWithBackends) []*networking.HTTPMatchRequest {
+	if route.Internal {
+		return []*networking.HTTPMatchRequest{}
+	}
 	return []*networking.HTTPMatchRequest{
 		{
 			Uri: &networking.StringMatch{

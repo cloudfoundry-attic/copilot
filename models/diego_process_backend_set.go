@@ -36,6 +36,8 @@ type RouteWithBackends struct {
 	Backends        BackendSet
 	CapiProcessGUID string
 	RouteWeight     int32
+	Internal        bool
+	VIP             string
 }
 
 func (s *store) Insert(guid DiegoProcessGUID, isInternal bool, additionalBackend *Backend) {

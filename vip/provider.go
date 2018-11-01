@@ -9,6 +9,12 @@ type Provider struct {
 	CIDR *net.IPNet
 }
 
+func NewProvider(cidr *net.IPNet) *Provider {
+	return &Provider{
+		CIDR: cidr,
+	}
+}
+
 func (p *Provider) Get(hostname string) string {
 	hasher := sha256.New()
 	hasher.Write([]byte(hostname))

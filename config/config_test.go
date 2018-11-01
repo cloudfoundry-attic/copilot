@@ -3,6 +3,7 @@ package config_test
 import (
 	"crypto/tls"
 	"io/ioutil"
+	"net"
 	"os"
 	"reflect"
 	"time"
@@ -339,6 +340,29 @@ var _ = Describe("Config", func() {
 			It("returns a meaningful error when loading the cloud controller-facing config", func() {
 				_, err := rawConfig.ServerTLSConfigForCloudController()
 				Expect(err).To(MatchError(HavePrefix("parsing cloud controller-facing server cert/key: tls: failed to find any PEM data")))
+			})
+		})
+	})
+
+	Describe("building the vip cidr", func() {
+		It("returns a cidr object", func() {
+			_, cidr, err := net.ParseCIDR("127.128.0.0/9")
+			Expect(err).NotTo(HaveOccurred())
+
+			vipCIDR, err := cfg.GetVIPCIDR()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vipCIDR).To(Equal(cidr))
+		})
+
+		Context("when the provided CIDR cannot be parsed", func() {
+			BeforeEach(func() {
+				cfg.VIPCIDR = "12.12.12.12.12/7"
+				err := cfg.Save(configFile)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("returns a CIDR parsing error", func() {
+				_, err := config.Load(configFile)
+				Expect(err).To(MatchError(HavePrefix("invalid config: VIPCIDR: invalid CIDR address: 12.12.12.12.12/7")))
 			})
 		})
 	})

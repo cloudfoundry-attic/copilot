@@ -21,9 +21,7 @@ var _ = Describe("Provider", func() {
 		_, cidr, err = net.ParseCIDR("127.128.0.0/9")
 		Expect(err).NotTo(HaveOccurred())
 
-		provider = &vip.Provider{
-			CIDR: cidr,
-		}
+		provider = vip.NewProvider(cidr)
 	})
 
 	It("returns a parsable IP", func() {
