@@ -63,7 +63,7 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 			continue
 		}
 
-		if strings.HasSuffix(route.Hostname(), ".apps.internal") {
+		if route.Internal || strings.HasSuffix(route.Hostname(), ".apps.internal") {
 			continue
 		}
 

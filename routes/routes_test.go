@@ -181,15 +181,40 @@ var _ = Describe("Collect", func() {
 			})
 
 			routesRepo.GetReturns(&models.Route{
-				GUID: "route-guid-z",
-				Host: "look-alive.apps.internal",
-				Path: "",
+				GUID:     "route-guid-z",
+				Host:     "look-alive.foo.internal",
+				Path:     "",
+				Internal: true,
 			}, true)
 
 			rc.Collect()
 
 			Expect(routesRepo.GetArgsForCall(0)).To(Equal(models.RouteGUID("route-guid-z")))
 			Expect(capiDiego.GetCallCount()).To(Equal(0))
+		})
+
+		Context("when the internal domain is apps.internal and internal is false because it is using an older version of CAPI", func() {
+			It("skips the route", func() {
+				routeMappings.ListReturns(map[string]*models.RouteMapping{
+					"route-guid-a-capi-process-guid-a": &models.RouteMapping{
+						RouteGUID:       "route-guid-z",
+						CAPIProcessGUID: "capi-process-guid-z",
+						RouteWeight:     2,
+					},
+				})
+
+				routesRepo.GetReturns(&models.Route{
+					GUID:     "route-guid-z",
+					Host:     "look-alive.apps.internal",
+					Path:     "",
+					Internal: false,
+				}, true)
+
+				rc.Collect()
+
+				Expect(routesRepo.GetArgsForCall(0)).To(Equal(models.RouteGUID("route-guid-z")))
+				Expect(capiDiego.GetCallCount()).To(Equal(0))
+			})
 		})
 	})
 
