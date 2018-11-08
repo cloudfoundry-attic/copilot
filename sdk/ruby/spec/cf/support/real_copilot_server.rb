@@ -13,7 +13,6 @@ class RealCopilotServer
     @host = '127.0.0.1'
 
     config = {
-      'ListenAddressForPilot' => "#{host}:51001",
       'ListenAddressForCloudController' => "#{host}:#{port}",
       'ListenAddressForMCP' => "#{host}:51003",
       'PilotClientCAPath' => fixture('fakeCA.crt'),

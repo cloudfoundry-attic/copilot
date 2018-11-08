@@ -26,7 +26,6 @@ var _ = Describe("Config", func() {
 	BeforeEach(func() {
 		configFile = testhelpers.TempFileName()
 		cfg = &config.Config{
-			ListenAddressForPilot:           "127.0.0.1:1234",
 			ListenAddressForCloudController: "127.0.0.1:1235",
 			ListenAddressForMCP:             "127.0.0.1:1236",
 			PilotClientCAPath:               "some-pilot-ca-path",
@@ -79,7 +78,6 @@ var _ = Describe("Config", func() {
 			_, err := config.Load(configFile)
 			Expect(err).To(MatchError(HavePrefix("invalid config: " + fieldName)))
 		},
-		Entry("ListenAddressForPilot", "ListenAddressForPilot"),
 		Entry("ListenAddressForCloudController", "ListenAddressForCloudController"),
 		Entry("ListenAddressForMCP", "ListenAddressForMCP"),
 		Entry("PilotClientCAPath", "PilotClientCAPath"),

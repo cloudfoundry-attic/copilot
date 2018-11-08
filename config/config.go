@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/durationjson"
-	"gopkg.in/validator.v2"
+	validator "gopkg.in/validator.v2"
 )
 
 type BBSConfig struct {
@@ -30,7 +30,6 @@ const DefaultBBSSyncInterval = durationjson.Duration(60 * time.Second)
 const DefaultMCPConvergeInterval = durationjson.Duration(30 * time.Second)
 
 type Config struct {
-	ListenAddressForPilot           string `validate:"nonzero"`
 	ListenAddressForCloudController string `validate:"nonzero"`
 	ListenAddressForMCP             string `validate:"nonzero"`
 	PilotClientCAPath               string `validate:"nonzero"`

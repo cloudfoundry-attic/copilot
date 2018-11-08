@@ -133,7 +133,6 @@ var _ = Describe("Copilot", func() {
 
 		copilotCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
-		listenAddrForPilot := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
@@ -142,7 +141,6 @@ var _ = Describe("Copilot", func() {
 		mockBBS.Server.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
 
 		serverConfig = &config.Config{
-			ListenAddressForPilot:           listenAddrForPilot,
 			ListenAddressForCloudController: listenAddrForCloudController,
 			ListenAddressForMCP:             listenAddrForMCP,
 			PilotClientCAPath:               copilotTLSFiles.ClientCA,
