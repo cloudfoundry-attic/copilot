@@ -23,6 +23,7 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	_ "google.golang.org/grpc/encoding/gzip" // enable GZIP compression on the server side
 	"google.golang.org/grpc/reflection"
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/pkg/mcp/server"
