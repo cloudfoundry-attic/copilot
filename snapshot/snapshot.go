@@ -331,6 +331,16 @@ func createVirtualService(route *models.RouteWithBackends) *networking.VirtualSe
 	if route.Internal {
 		return &networking.VirtualService{
 			Hosts: []string{route.Hostname},
+			Http: []*networking.HTTPRoute{
+				{
+					Retries: &networking.HTTPRetry{
+						Attempts: 3,
+						PerTryTimeout: &types.Duration{
+							Nanos: 200,
+						},
+					},
+				},
+			},
 		}
 	}
 	return &networking.VirtualService{

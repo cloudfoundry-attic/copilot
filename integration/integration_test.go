@@ -15,6 +15,7 @@ import (
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -284,7 +285,7 @@ var _ = Describe("Copilot", func() {
 			},
 		}
 		expectedVS := expectedVirtualService("some-url", "cloudfoundry-ingress", expectedRoutes)
-		expectedInternalVS := expectedVirtualService("some-internal-url", "", expectedRoutesInternal)
+		expectedInternalVS := expectedVirtualServiceWithRetries("some-internal-url", "", expectedRoutesInternal)
 		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(ConsistOf(expectedVS, expectedInternalVS))
 
 		expectedDR := expectedDestinationRule("some-url", []string{"capi-process-guid-a"})
@@ -627,6 +628,46 @@ func expectedVirtualService(host, gateway string, routes []Route) *v1alpha3.Virt
 			WebsocketUpgrade:      false,
 			Timeout:               nil,
 			Retries:               nil,
+			Fault:                 nil,
+			Mirror:                nil,
+			CorsPolicy:            nil,
+			AppendHeaders:         nil,
+			RemoveResponseHeaders: nil,
+			AppendResponseHeaders: nil,
+			RemoveRequestHeaders:  nil,
+			AppendRequestHeaders:  nil,
+		})
+	}
+
+	var gateways []string
+	if gateway != "" {
+		gateways = []string{gateway}
+	}
+	return &v1alpha3.VirtualService{
+		Hosts:    []string{host},
+		Gateways: gateways,
+		Tls:      nil,
+		Tcp:      nil,
+		Http:     newRoutes,
+	}
+}
+
+func expectedVirtualServiceWithRetries(host, gateway string, routes []Route) *v1alpha3.VirtualService {
+	newRoutes := []*v1alpha3.HTTPRoute{}
+	for _, r := range routes {
+		newRoutes = append(newRoutes, &v1alpha3.HTTPRoute{
+			Match:            r.match,
+			Route:            r.dest,
+			Redirect:         nil,
+			Rewrite:          nil,
+			WebsocketUpgrade: false,
+			Timeout:          nil,
+			Retries: &v1alpha3.HTTPRetry{
+				Attempts: 3,
+				PerTryTimeout: &types.Duration{
+					Nanos: 200,
+				},
+			},
 			Fault:                 nil,
 			Mirror:                nil,
 			CorsPolicy:            nil,
