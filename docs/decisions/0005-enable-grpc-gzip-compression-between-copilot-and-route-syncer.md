@@ -1,4 +1,4 @@
-# 5. Record architecture decisions
+# 5. Enable GRPC GZIP compression between Copilot and Route Syncer
 
 Date: 2018-11-07
 
