@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/copilot/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 type CloudControllerClient interface {
@@ -23,6 +24,7 @@ type cloudControllerClient struct {
 func NewCloudControllerClient(serverAddress string, tlsConfig *tls.Config) (CloudControllerClient, error) {
 	conn, err := grpc.Dial(serverAddress,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("grpc dial: %s", err)

@@ -95,8 +95,16 @@ module Cloudfoundry
         @tls_credentials ||= GRPC::Core::ChannelCredentials.new(@client_ca, @client_key, @client_chain)
       end
 
+      def compression_options
+        @compression_options ||= GRPC::Core::CompressionOptions.new(
+          default_algorithm: :gzip,
+          # we could tweak this is compression is not sufficient
+          default_level: :low
+        )
+      end
+
       def service
-        @service ||= Api::CloudControllerCopilot::Stub.new(@url, tls_credentials, timeout: @timeout)
+        @service ||= Api::CloudControllerCopilot::Stub.new(@url, tls_credentials, compression_options, timeout: @timeout)
       end
     end
   end
