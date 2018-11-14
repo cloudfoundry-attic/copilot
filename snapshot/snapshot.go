@@ -142,9 +142,6 @@ func (s *Snapshot) createDestinationRules(routes []*models.RouteWithBackends) (d
 	destinationRules := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
-		if route.Internal {
-			continue
-		}
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.Hostname)
 
 		var dr *networking.DestinationRule
@@ -289,9 +286,6 @@ func (s *Snapshot) increment() string {
 func createEndpoint(route *models.RouteWithBackends) []*networking.ServiceEntry_Endpoint {
 	endpoints := make([]*networking.ServiceEntry_Endpoint, 0)
 	portType := "http"
-	if route.Internal {
-		portType = "tcp"
-	}
 	for _, backend := range route.Backends.Backends {
 		endpoints = append(endpoints, &networking.ServiceEntry_Endpoint{
 			Address: backend.Address,
@@ -309,7 +303,6 @@ func createServiceEntry(route *models.RouteWithBackends) *networking.ServiceEntr
 	var addresses []string
 	if route.Internal {
 		addresses = []string{route.VIP}
-		protocol = "tcp"
 	}
 
 	return &networking.ServiceEntry{
@@ -355,6 +348,15 @@ func createDestinationWeight(route *models.RouteWithBackends) *networking.HTTPRo
 }
 
 func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
+	if route.Internal {
+		return &networking.HTTPRoute{
+			Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
+			Retries: &networking.HTTPRetry{
+				Attempts: 3,
+			},
+		}
+	}
+
 	return &networking.HTTPRoute{
 		Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
 	}

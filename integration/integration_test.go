@@ -253,7 +253,7 @@ var _ = Describe("Copilot", func() {
 		))
 
 		Eventually(mcpClient.GetAllObjectNames, "1s").Should(Equal(map[string][]string{
-			"type.googleapis.com/istio.networking.v1alpha3.DestinationRule": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost)},
+			"type.googleapis.com/istio.networking.v1alpha3.DestinationRule": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost), fmt.Sprintf("copilot-rule-for-%s", internalRouteHost)},
 			"type.googleapis.com/istio.networking.v1alpha3.VirtualService":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("copilot-service-for-%s", internalRouteHost)},
 			"type.googleapis.com/istio.networking.v1alpha3.ServiceEntry":    []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("copilot-service-entry-for-%s", internalRouteHost)},
 			"type.googleapis.com/istio.networking.v1alpha3.Gateway":         []string{copilotsnapshot.DefaultGatewayName},
@@ -284,11 +284,12 @@ var _ = Describe("Copilot", func() {
 			},
 		}
 		expectedVS := expectedVirtualService("some-url", "cloudfoundry-ingress", expectedRoutes)
-		expectedInternalVS := expectedVirtualService("some-internal-url", "", expectedRoutesInternal)
+		expectedInternalVS := expectedVirtualServiceWithRetries("some-internal-url", "", expectedRoutesInternal)
 		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(ConsistOf(expectedVS, expectedInternalVS))
 
 		expectedDR := expectedDestinationRule("some-url", []string{"capi-process-guid-a"})
-		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(Equal([]*v1alpha3.DestinationRule{expectedDR}))
+		expectedInternalDR := expectedDestinationRule("some-internal-url", []string{"capi-process-guid-a"})
+		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(ConsistOf([]*v1alpha3.DestinationRule{expectedDR, expectedInternalDR}))
 
 		expectedGW := expectedGateway(80)
 		Eventually(mcpClient.GetAllGateways, "1s").Should(Equal([]*v1alpha3.Gateway{expectedGW}))
@@ -313,7 +314,7 @@ var _ = Describe("Copilot", func() {
 		expectedInternalSE := expectedServiceEntry(
 			"some-internal-url",
 			"127.175.61.18",
-			"tcp",
+			"http",
 			[]Endpoint{
 				{
 					port:   61003,
@@ -444,7 +445,7 @@ var _ = Describe("Copilot", func() {
 
 		expectedDR = expectedDestinationRule("some-url",
 			[]string{"capi-process-guid-other", "capi-process-guid-a", "capi-process-guid-b"})
-		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(Equal([]*v1alpha3.DestinationRule{expectedDR}))
+		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(ConsistOf([]*v1alpha3.DestinationRule{expectedDR, expectedInternalDR}))
 
 		expectedGW = expectedGateway(80)
 		Eventually(mcpClient.GetAllGateways, "1s").Should(Equal([]*v1alpha3.Gateway{expectedGW}))
@@ -498,7 +499,7 @@ var _ = Describe("Copilot", func() {
 
 		expectedDR = expectedDestinationRule("some-url",
 			[]string{"capi-process-guid-b"})
-		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(Equal([]*v1alpha3.DestinationRule{expectedDR}))
+		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(ConsistOf([]*v1alpha3.DestinationRule{expectedDR, expectedInternalDR}))
 
 		expectedGW = expectedGateway(80)
 		Eventually(mcpClient.GetAllGateways, "1s").Should(Equal([]*v1alpha3.Gateway{expectedGW}))
@@ -627,6 +628,43 @@ func expectedVirtualService(host, gateway string, routes []Route) *v1alpha3.Virt
 			WebsocketUpgrade:      false,
 			Timeout:               nil,
 			Retries:               nil,
+			Fault:                 nil,
+			Mirror:                nil,
+			CorsPolicy:            nil,
+			AppendHeaders:         nil,
+			RemoveResponseHeaders: nil,
+			AppendResponseHeaders: nil,
+			RemoveRequestHeaders:  nil,
+			AppendRequestHeaders:  nil,
+		})
+	}
+
+	var gateways []string
+	if gateway != "" {
+		gateways = []string{gateway}
+	}
+	return &v1alpha3.VirtualService{
+		Hosts:    []string{host},
+		Gateways: gateways,
+		Tls:      nil,
+		Tcp:      nil,
+		Http:     newRoutes,
+	}
+}
+
+func expectedVirtualServiceWithRetries(host, gateway string, routes []Route) *v1alpha3.VirtualService {
+	newRoutes := []*v1alpha3.HTTPRoute{}
+	for _, r := range routes {
+		newRoutes = append(newRoutes, &v1alpha3.HTTPRoute{
+			Match:            r.match,
+			Route:            r.dest,
+			Redirect:         nil,
+			Rewrite:          nil,
+			WebsocketUpgrade: false,
+			Timeout:          nil,
+			Retries: &v1alpha3.HTTPRetry{
+				Attempts: 3,
+			},
 			Fault:                 nil,
 			Mirror:                nil,
 			CorsPolicy:            nil,

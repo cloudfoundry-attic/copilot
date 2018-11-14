@@ -237,6 +237,9 @@ var _ = Describe("Run", func() {
 							Weight: 100,
 						},
 					},
+					Retries: &networking.HTTPRetry{
+						Attempts: 3,
+					},
 				},
 			}))
 
@@ -251,9 +254,9 @@ var _ = Describe("Run", func() {
 			Expect(se.Addresses).To(Equal([]string{"127.127.0.1"}))
 			Expect(se.Ports).To(Equal([]*networking.Port{
 				{
-					Name:     "tcp",
+					Name:     "http",
 					Number:   8080,
-					Protocol: "tcp",
+					Protocol: "http",
 				}}))
 			Expect(se.Location).To(Equal(networking.ServiceEntry_MESH_INTERNAL))
 			Expect(se.Resolution).To(Equal(networking.ServiceEntry_STATIC))
@@ -261,13 +264,26 @@ var _ = Describe("Run", func() {
 				{
 					Address: "10.0.0.1",
 					Ports: map[string]uint32{
-						"tcp": 65005,
+						"http": 65005,
 					},
 					Labels: map[string]string{"cfapp": "x-capi-guid"},
 				},
 			}))
 
-			Expect(destinationRules).To(HaveLen(0))
+			Expect(destinationRules).To(HaveLen(1))
+			Expect(destinationRules[0].Metadata.Name).To(Equal("copilot-rule-for-foo.bar.internal"))
+
+			var dr networking.DestinationRule
+			err = types.UnmarshalAny(destinationRules[0].Resource, &dr)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(dr.Host).To(Equal("foo.bar.internal"))
+			Expect(dr.Subsets).To(ConsistOf([]*networking.Subset{
+				{
+					Name:   "x-capi-guid",
+					Labels: map[string]string{"cfapp": "x-capi-guid"},
+				},
+			}))
 
 			sig <- os.Kill
 		})
