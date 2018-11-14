@@ -98,13 +98,12 @@ module Cloudfoundry
       def compression_options
         @compression_options ||= GRPC::Core::CompressionOptions.new(
           default_algorithm: :gzip,
-          # we could tweak this is compression is not sufficient
           default_level: :low
         )
       end
 
       def service
-        @service ||= Api::CloudControllerCopilot::Stub.new(@url, tls_credentials, compression_options, timeout: @timeout)
+        @service ||= Api::CloudControllerCopilot::Stub.new(@url, tls_credentials, channel_args: compression_options.to_hash, timeout: @timeout)
       end
     end
   end

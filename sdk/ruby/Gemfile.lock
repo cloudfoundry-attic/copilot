@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    cf-copilot (0.0.8)
+    cf-copilot (0.0.10)
       grpc (~> 1.0)
 
 GEM
@@ -45,4 +45,4 @@ DEPENDENCIES
   rspec (~> 3.0)
 
 BUNDLED WITH
-   1.16.4
+   1.16.5
