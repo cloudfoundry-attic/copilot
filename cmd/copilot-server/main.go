@@ -129,8 +129,8 @@ func mainWithError() error {
 		func(s *grpc.Server) {
 			authChecker := server.NewAllowAllChecker()
 			reporter := server.NewStatsContext("copilot/")
-			snapshotServer := server.New(cache, typeURLs, authChecker, reporter)
-			mcp.RegisterAggregatedMeshConfigServiceServer(s, snapshotServer)
+			mcpServer := server.New(cache, typeURLs, authChecker, reporter)
+			mcp.RegisterAggregatedMeshConfigServiceServer(s, mcpServer)
 			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
@@ -139,7 +139,8 @@ func mainWithError() error {
 	mcpTicker := time.NewTicker(time.Duration(cfg.MCPConvergeInterval))
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo, vipProvider)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
-	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder)
+	snapshotConfig := copilotsnapshot.NewConfig(logger)
+	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder, snapshotConfig)
 
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
