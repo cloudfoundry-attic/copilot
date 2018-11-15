@@ -29,6 +29,11 @@ type BBSConfig struct {
 const DefaultBBSSyncInterval = durationjson.Duration(60 * time.Second)
 const DefaultMCPConvergeInterval = durationjson.Duration(30 * time.Second)
 
+type TLSPem struct {
+	CertChain  string
+	PrivateKey string
+}
+
 type Config struct {
 	ListenAddressForCloudController string `validate:"nonzero"`
 	ListenAddressForMCP             string `validate:"nonzero"`
@@ -39,7 +44,8 @@ type Config struct {
 	VIPCIDR                         string `validate:"cidr"`
 	MCPConvergeInterval             durationjson.Duration
 
-	BBS *BBSConfig
+	BBS     *BBSConfig
+	TLSPems []TLSPem
 }
 
 func init() {
