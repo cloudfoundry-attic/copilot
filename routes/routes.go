@@ -2,7 +2,6 @@ package routes
 
 import (
 	"sort"
-	"strings"
 
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
@@ -76,12 +75,10 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 			continue
 		}
 
-		internal := route.Internal || strings.HasSuffix(route.Hostname(), ".apps.internal")
-
 		var backends []*models.Backend
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
 			var backendSet *models.BackendSet
-			if internal {
+			if route.Internal {
 				backendSet = c.backendSet.GetInternalBackends(models.DiegoProcessGUID(diegoProcessGUID))
 			} else {
 				backendSet = c.backendSet.Get(models.DiegoProcessGUID(diegoProcessGUID))
@@ -98,7 +95,7 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 		})
 
 		var vip string
-		if internal {
+		if route.Internal {
 			vip = c.vipProvider.Get(route.Hostname())
 		}
 
@@ -108,7 +105,7 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 			Backends:        models.BackendSet{Backends: backends},
 			CapiProcessGUID: string(routeMapping.CAPIProcessGUID),
 			RouteWeight:     c.routeMappings.GetCalculatedWeight(routeMapping),
-			Internal:        internal,
+			Internal:        route.Internal,
 			VIP:             vip,
 		}
 
