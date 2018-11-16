@@ -95,13 +95,6 @@ var _ = Describe("Config", func() {
 				}))
 			})
 		})
-
-		PContext("internal routes", func() {
-			It("should not create any gateways", func() {
-				gateways := config.CreateGatewayEnvelopes()
-				Expect(gateways).To(HaveLen(0))
-			})
-		})
 	})
 
 	Describe("CreateVirtualServiceEnvelopes", func() {
