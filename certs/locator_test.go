@@ -20,9 +20,11 @@ import (
 var _ = Describe("Locator", func() {
 	var _ = Describe("Locate", func() {
 		It("returns cert and key paths and their associated hostnames", func() {
+			dnsNames := []string{"example.com"}
+			certChain := createPEMSforCertChain(dnsNames)
 			pairs := []certs.CertChainKeyPair{
 				{
-					CertChain: "-----BEGIN CERTIFICATE-----\nMIIC/DCCAeSgAwIBAgIRAPf9lECQDqNwfP1KpPxMqmIwDQYJKoZIhvcNAQELBQAw\nEjEQMA4GA1UEChMHQWNtZSBDbzAeFw0xODExMTQxODU0MThaFw0xOTExMTQxODU0\nMThaMBIxEDAOBgNVBAoTB0FjbWUgQ28wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw\nggEKAoIBAQCgDRgg0xFS7Hw4yN/EMTVYp9+My7R6mZ/s7qYVEcrKVnLYZAAUsXsA\nLG1BVeTWfQSPvshi1EP4SAsRpZ8sO/o3GybVfm5ejBVOC0seA1zm2LHMwPyjeIXU\neM/7S3VdBkve+37vj78uZe149Jj+IkLL3zkfRtI+coG9mw4FpP0TqaRQ41cKqnQS\nD2iRbSfBW/nMRcFQr7aK+z+LQg6LPez7CxCsdXgcMf8kNVdceQSatEFnufnK/Gyy\nDs+P2ovlqLpVC05SsO/dTQp+QtVYMNeCA/eLixNzwfiCXhDZ993JFUWj3TkCr7f6\nBY5U/2naXAGS8ZZVzXlweX2SO0BYicPNAgMBAAGjTTBLMA4GA1UdDwEB/wQEAwIF\noDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMBYGA1UdEQQPMA2C\nC2V4YW1wbGUuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQAbgykDDrDA00rKNx/B4G2j\nAeDAHkAnMK5IjdrgH2KUNeI07eRkLhYobrquwcKRYa9RJcM/eImX8BkviwjlOkDz\noJdU0LMVrsrjBuwj9qYg+D7IywvPrrrdrjgF05BxUfwoH1lTKm8Q9SVnpEWEdJj9\n+sP10reX+O7L4xiqgyuKHjWPEK4NJD+Wsw5n8UvIq5LVvTt3bLWsgN2Mole0lJb4\nvgR4N1absHZN6/yju5s7cY0lLBcEitJNUQeW3lHSOWXJ8xiw9aayFnJ4tmNWpALU\nvqettFbN38gfsH8JElHwyeKLthGL/Kj1Cvb//SbK30RnG8vY8kuqKKs3iwuHB+UU\n-----END CERTIFICATE-----",
+					CertChain: certChain.EndUserCert,
 				},
 			}
 
@@ -39,11 +41,13 @@ var _ = Describe("Locator", func() {
 			Expect(paths).To(ConsistOf(expectedThing))
 		})
 
-		Context("when multiple hostnames and an IP are provided for a cert chain and key pair", func() {
+		Context("when multiple hostnames are provided for a cert chain and key pair", func() {
 			It("returns cert and key paths and their associated hostnames with the first hostname used in path", func() {
+				dnsNames := []string{"example.com", "example2.com", "example3.com"}
+				certChain := createPEMSforCertChain(dnsNames)
 				pairs := []certs.CertChainKeyPair{
 					{
-						CertChain: "-----BEGIN CERTIFICATE-----\nMIIDHTCCAgWgAwIBAgIQCGefatAjgHQs9pOcWlv7ljANBgkqhkiG9w0BAQsFADAS\nMRAwDgYDVQQKEwdBY21lIENvMB4XDTE4MTExNDIyMTkyNloXDTE5MTExNDIyMTky\nNlowEjEQMA4GA1UEChMHQWNtZSBDbzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC\nAQoCggEBALSt5r5z1u1FDvE+LlMYLNh5uNOIvUU4slEutDYYtqlC1IbB/n2VC8RR\nD1V73M0iDzQVr/F8Kt5mFk+9lvcGCbKY2KzjobYSWLgHF7dYJh5VlAjyMA9ZrtGR\nYS/An+SDFoQKmNl3tjjT/LcI0isrM+Z9qujKUAbImWF/zeTJjnyLBXbgW0RPzIbb\n59i1rSEQ7AVrpf5jvZl95dhdV35bJ11h6bIdEz2JdRyaTpfuKXP/zDmHV9ieEnZr\nqo113junw0fJw4EmJ55qovqMq1xzpyGwLpyoFRms3ivAVdS18KrYRxfGdVgEGB74\n4zBafddfXjvo6iSs8Hyj6zHcREy7DUcCAwEAAaNvMG0wDgYDVR0PAQH/BAQDAgWg\nMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwOAYDVR0RBDEwL4IL\nZXhhbXBsZS5jb22CDGV4YW1wbGUyLmNvbYIMZXhhbXBsZTMuY29thwTAqAABMA0G\nCSqGSIb3DQEBCwUAA4IBAQBPhctmVjfCKc5H5ZEdjzDQQeCESfbvSAyYPuNYmaAX\nNmtlxiravYX5C8cgNZtBN22J8i3yRPNuclDxbCLXWrDZUFy2WGVNbbQK6whCgST4\nCrxETdcTZn3lvxa4J51VWZV5y47FRNBMOc7CU2hRgV2mXM69B8l8urlEOEom6dN3\nPFPnNNkBz28vA3DxZGa9JZgcECgq58H9hInsdgewlJyilb1yaRdMgLwZnZmR9nIz\nWK4B6BL3s4TzyJxPrYU/GXF/qHcsEvHom6m/KzNwkBpgUaSTq71QMzsk26ZhWn/h\ne5wy8LDuzQgOAHWS0ZSVLXWf1kfBgSHkYtzAbOGuWlaw\n-----END CERTIFICATE-----",
+						CertChain: certChain.EndUserCert,
 					},
 				}
 
@@ -67,7 +71,7 @@ var _ = Describe("Locator", func() {
 				certChain := createPEMSforCertChain(dnsNames)
 				pairs := []certs.CertChainKeyPair{
 					{
-						CertChain: fmt.Sprintf("%s%s", certChain[0], certChain[1]),
+						CertChain: fmt.Sprintf("%s%s", certChain.EndUserCert, certChain.RootCert),
 					},
 				}
 
@@ -140,7 +144,7 @@ var _ = Describe("Locator", func() {
 					certChain := createPEMSforCertChain([]string{})
 					pairs := []certs.CertChainKeyPair{
 						{
-							CertChain: fmt.Sprintf("%s%s", certChain[0], certChain[1]),
+							CertChain: fmt.Sprintf("%s%s", certChain.EndUserCert, certChain.RootCert),
 						},
 					}
 
@@ -155,8 +159,13 @@ var _ = Describe("Locator", func() {
 	})
 })
 
-func createPEMSforCertChain(dnsNames []string) []string {
-	rootPrivateKey, rootCADER := CreateCACertDER("theCA")
+type certChainPEMs struct {
+	EndUserCert string
+	RootCert    string
+}
+
+func createPEMSforCertChain(dnsNames []string) certChainPEMs {
+	rootPrivateKey, rootCADER := createCACertDER("theCA")
 	// generate a random serial number (a real cert authority would have some logic behind this)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
@@ -186,10 +195,13 @@ func createPEMSforCertChain(dnsNames []string) []string {
 	_, ownCertPEM := parsePEMfromDER(certDER, ownKey)
 	_, rootCertPEM := parsePEMfromDER(rootCADER, rootPrivateKey)
 
-	return []string{string(ownCertPEM), string(rootCertPEM)}
+	return certChainPEMs{
+		EndUserCert: string(ownCertPEM),
+		RootCert:    string(rootCertPEM),
+	}
 }
 
-func CreateCACertDER(cname string) (*rsa.PrivateKey, []byte) {
+func createCACertDER(cname string) (*rsa.PrivateKey, []byte) {
 	// generate a random serial number (a real cert authority would have some logic behind this)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
