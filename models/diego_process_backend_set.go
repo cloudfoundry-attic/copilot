@@ -240,12 +240,12 @@ func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 	}
 
 	if appHostPort != 0 {
-		internalBackend = &Backend{Address: instance.ActualLRPNetInfo.Address, Port: appHostPort}
+		externalBackend = &Backend{Address: instance.ActualLRPNetInfo.Address, Port: appHostPort}
 	}
 
 	if appContainerPort != 0 {
-		externalBackend = &Backend{Address: instance.ActualLRPNetInfo.InstanceAddress, Port: appContainerPort}
+		internalBackend = &Backend{Address: instance.ActualLRPNetInfo.InstanceAddress, Port: appContainerPort}
 	}
 
-	return internalBackend, externalBackend
+	return externalBackend, internalBackend
 }

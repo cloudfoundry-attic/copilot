@@ -27,6 +27,7 @@ type capiDiego interface {
 //go:generate counterfeiter -o fakes/backend_set.go --fake-name BackendSet . backendSet
 type backendSet interface {
 	Get(guid models.DiegoProcessGUID) *models.BackendSet
+	GetInternalBackends(guid models.DiegoProcessGUID) *models.BackendSet
 }
 
 //go:generate counterfeiter -o fakes/vip_provider.go --fake-name VIPProvider . vipProvider
@@ -75,9 +76,16 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 			continue
 		}
 
+		internal := route.Internal || strings.HasSuffix(route.Hostname(), ".apps.internal")
+
 		var backends []*models.Backend
 		for _, diegoProcessGUID := range capiDiegoProcessAssociation.DiegoProcessGUIDs {
-			backendSet := c.backendSet.Get(models.DiegoProcessGUID(diegoProcessGUID))
+			var backendSet *models.BackendSet
+			if internal {
+				backendSet = c.backendSet.GetInternalBackends(models.DiegoProcessGUID(diegoProcessGUID))
+			} else {
+				backendSet = c.backendSet.Get(models.DiegoProcessGUID(diegoProcessGUID))
+			}
 			if backendSet == nil {
 				continue
 			}
@@ -88,8 +96,6 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 		sort.SliceStable(backends, func(i, j int) bool {
 			return backends[i].Address < backends[j].Address
 		})
-
-		internal := route.Internal || strings.HasSuffix(route.Hostname(), ".apps.internal")
 
 		var vip string
 		if internal {

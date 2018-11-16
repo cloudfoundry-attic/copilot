@@ -19,6 +19,17 @@ type BackendSet struct {
 	getReturnsOnCall map[int]struct {
 		result1 *models.BackendSet
 	}
+	GetInternalBackendsStub        func(guid models.DiegoProcessGUID) *models.BackendSet
+	getInternalBackendsMutex       sync.RWMutex
+	getInternalBackendsArgsForCall []struct {
+		guid models.DiegoProcessGUID
+	}
+	getInternalBackendsReturns struct {
+		result1 *models.BackendSet
+	}
+	getInternalBackendsReturnsOnCall map[int]struct {
+		result1 *models.BackendSet
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -71,16 +82,62 @@ func (fake *BackendSet) GetReturnsOnCall(i int, result1 *models.BackendSet) {
 	}{result1}
 }
 
+func (fake *BackendSet) GetInternalBackends(guid models.DiegoProcessGUID) *models.BackendSet {
+	fake.getInternalBackendsMutex.Lock()
+	ret, specificReturn := fake.getInternalBackendsReturnsOnCall[len(fake.getInternalBackendsArgsForCall)]
+	fake.getInternalBackendsArgsForCall = append(fake.getInternalBackendsArgsForCall, struct {
+		guid models.DiegoProcessGUID
+	}{guid})
+	fake.recordInvocation("GetInternalBackends", []interface{}{guid})
+	fake.getInternalBackendsMutex.Unlock()
+	if fake.GetInternalBackendsStub != nil {
+		return fake.GetInternalBackendsStub(guid)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.getInternalBackendsReturns.result1
+}
+
+func (fake *BackendSet) GetInternalBackendsCallCount() int {
+	fake.getInternalBackendsMutex.RLock()
+	defer fake.getInternalBackendsMutex.RUnlock()
+	return len(fake.getInternalBackendsArgsForCall)
+}
+
+func (fake *BackendSet) GetInternalBackendsArgsForCall(i int) models.DiegoProcessGUID {
+	fake.getInternalBackendsMutex.RLock()
+	defer fake.getInternalBackendsMutex.RUnlock()
+	return fake.getInternalBackendsArgsForCall[i].guid
+}
+
+func (fake *BackendSet) GetInternalBackendsReturns(result1 *models.BackendSet) {
+	fake.GetInternalBackendsStub = nil
+	fake.getInternalBackendsReturns = struct {
+		result1 *models.BackendSet
+	}{result1}
+}
+
+func (fake *BackendSet) GetInternalBackendsReturnsOnCall(i int, result1 *models.BackendSet) {
+	fake.GetInternalBackendsStub = nil
+	if fake.getInternalBackendsReturnsOnCall == nil {
+		fake.getInternalBackendsReturnsOnCall = make(map[int]struct {
+			result1 *models.BackendSet
+		})
+	}
+	fake.getInternalBackendsReturnsOnCall[i] = struct {
+		result1 *models.BackendSet
+	}{result1}
+}
+
 func (fake *BackendSet) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	copiedInvocations := map[string][][]interface{}{}
-	for key, value := range fake.invocations {
-		copiedInvocations[key] = value
-	}
-	return copiedInvocations
+	fake.getInternalBackendsMutex.RLock()
+	defer fake.getInternalBackendsMutex.RUnlock()
+	return fake.invocations
 }
 
 func (fake *BackendSet) recordInvocation(key string, args []interface{}) {

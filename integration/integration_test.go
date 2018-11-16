@@ -324,13 +324,13 @@ var _ = Describe("Copilot", func() {
 			"http",
 			[]Endpoint{
 				{
-					port:   61003,
-					addr:   "10.10.1.3",
+					port:   8080,
+					addr:   "10.255.1.13",
 					subset: "capi-process-guid-a",
 				},
 				{
-					port:   61005,
-					addr:   "10.10.1.5",
+					port:   8080,
+					addr:   "10.255.1.16",
 					subset: "capi-process-guid-a",
 				},
 			},

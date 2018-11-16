@@ -102,24 +102,55 @@ var _ = Describe("Collect", func() {
 					"diego-process-guid-a": &models.BackendSet{
 						Backends: []*models.Backend{
 							{
-								Address: "10.255.0.16",
-								Port:    8080,
+								Address: "10.0.1.16",
+								Port:    61080,
 							},
 							{
-								Address: "10.255.1.34",
-								Port:    9080,
+								Address: "10.0.2.34",
+								Port:    61090,
 							},
 						},
 					},
 					"diego-process-guid-c": &models.BackendSet{
 						Backends: []*models.Backend{
 							{
-								Address: "10.255.9.16",
+								Address: "10.0.9.16",
+								Port:    61080,
+							},
+							{
+								Address: "10.0.9.34",
+								Port:    61080,
+							},
+						},
+					},
+				}
+
+				return bs[guid]
+			}
+
+			backendSetRepo.GetInternalBackendsStub = func(guid models.DiegoProcessGUID) *models.BackendSet {
+				bs := map[models.DiegoProcessGUID]*models.BackendSet{
+					"diego-process-guid-a": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "10.255.2.2",
 								Port:    8080,
 							},
 							{
-								Address: "10.255.9.34",
+								Address: "10.255.3.3",
+								Port:    9090,
+							},
+						},
+					},
+					"diego-process-guid-c": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "10.255.8.8",
 								Port:    8080,
+							},
+							{
+								Address: "10.255.9.9",
+								Port:    9090,
 							},
 						},
 					},
@@ -140,12 +171,12 @@ var _ = Describe("Collect", func() {
 					Backends: models.BackendSet{
 						Backends: []*models.Backend{
 							{
-								Address: "10.255.0.16",
-								Port:    8080,
+								Address: "10.0.1.16",
+								Port:    61080,
 							},
 							{
-								Address: "10.255.1.34",
-								Port:    9080,
+								Address: "10.0.2.34",
+								Port:    61090,
 							},
 						},
 					},
@@ -157,12 +188,12 @@ var _ = Describe("Collect", func() {
 					Backends: models.BackendSet{
 						Backends: []*models.Backend{
 							{
-								Address: "10.255.9.16",
-								Port:    8080,
+								Address: "10.0.9.16",
+								Port:    61080,
 							},
 							{
-								Address: "10.255.9.34",
-								Port:    8080,
+								Address: "10.0.9.34",
+								Port:    61080,
 							},
 						},
 					},
@@ -206,12 +237,12 @@ var _ = Describe("Collect", func() {
 						Backends: models.BackendSet{
 							Backends: []*models.Backend{
 								{
-									Address: "10.255.0.16",
+									Address: "10.255.2.2",
 									Port:    8080,
 								},
 								{
-									Address: "10.255.1.34",
-									Port:    9080,
+									Address: "10.255.3.3",
+									Port:    9090,
 								},
 							},
 						},
@@ -225,12 +256,12 @@ var _ = Describe("Collect", func() {
 						Backends: models.BackendSet{
 							Backends: []*models.Backend{
 								{
-									Address: "10.255.9.16",
+									Address: "10.255.8.8",
 									Port:    8080,
 								},
 								{
-									Address: "10.255.9.34",
-									Port:    8080,
+									Address: "10.255.9.9",
+									Port:    9090,
 								},
 							},
 						},
@@ -269,12 +300,12 @@ var _ = Describe("Collect", func() {
 							Backends: models.BackendSet{
 								Backends: []*models.Backend{
 									{
-										Address: "10.255.0.16",
+										Address: "10.255.2.2",
 										Port:    8080,
 									},
 									{
-										Address: "10.255.1.34",
-										Port:    9080,
+										Address: "10.255.3.3",
+										Port:    9090,
 									},
 								},
 							},
@@ -288,12 +319,12 @@ var _ = Describe("Collect", func() {
 							Backends: models.BackendSet{
 								Backends: []*models.Backend{
 									{
-										Address: "10.255.9.16",
+										Address: "10.255.8.8",
 										Port:    8080,
 									},
 									{
-										Address: "10.255.9.34",
-										Port:    8080,
+										Address: "10.255.9.9",
+										Port:    9090,
 									},
 								},
 							},
