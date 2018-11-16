@@ -18,7 +18,8 @@ type CertPairPaths struct {
 	KeyPath  string
 }
 
-type locator interface {
+//go:generate counterfeiter -o fakes/locator.go --fake-name Locator . Librarian
+type Librarian interface {
 	Locate() ([]CertPairPaths, error)
 	Stow() error
 }
@@ -27,8 +28,8 @@ type Locator struct {
 	pairs []CertChainKeyPair
 }
 
-func NewLocator(pairs []CertChainKeyPair) Locator {
-	return Locator{
+func NewLocator(pairs []CertChainKeyPair) *Locator {
+	return &Locator{
 		pairs: pairs,
 	}
 }
@@ -66,4 +67,9 @@ func (l *Locator) Locate() (paths []CertPairPaths, err error) {
 	}
 
 	return paths, nil
+}
+
+func (l *Locator) Stow() error {
+	fmt.Printf("not implemented")
+	return nil
 }

@@ -1,6 +1,8 @@
 package snapshot_test
 
 import (
+	"code.cloudfoundry.org/copilot/certs"
+	"code.cloudfoundry.org/copilot/certs/fakes"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -12,11 +14,13 @@ import (
 
 var _ = Describe("Config", func() {
 	var (
-		config *snapshot.Config
+		config      *snapshot.Config
+		fakeLocator *fakes.Locator
 	)
 
 	BeforeEach(func() {
-		config = snapshot.NewConfig(lagertest.NewTestLogger("config"))
+		fakeLocator = &fakes.Locator{}
+		config = snapshot.NewConfig(fakeLocator, lagertest.NewTestLogger("config"))
 	})
 
 	Describe("CreateGatewayEnvelopes", func() {
@@ -32,7 +36,7 @@ var _ = Describe("Config", func() {
 
 			Expect(ga).To(Equal(networking.Gateway{
 				Servers: []*networking.Server{
-					&networking.Server{
+					{
 						Port: &networking.Port{
 							Number:   80,
 							Protocol: "http",
@@ -42,6 +46,54 @@ var _ = Describe("Config", func() {
 					},
 				},
 			}))
+		})
+
+		Context("When locator returns cert pair paths", func() {
+			It("creates gateway envelopes with http and https servers", func() {
+				certPairs := []certs.CertPairPaths{
+					{
+						Hosts:    []string{"example.com"},
+						CertPath: "/some/path/not/important.crt",
+						KeyPath:  "/some/path/not/important.key",
+					},
+				}
+				fakeLocator.LocateReturns(certPairs, nil)
+
+				gateways := config.CreateGatewayEnvelopes()
+				var ga networking.Gateway
+
+				Expect(gateways).To(HaveLen(1))
+				Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
+
+				err := types.UnmarshalAny(gateways[0].Resource, &ga)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(ga).To(Equal(networking.Gateway{
+					Servers: []*networking.Server{
+						{
+							Port: &networking.Port{
+								Number:   80,
+								Protocol: "http",
+								Name:     "http",
+							},
+							Hosts: []string{"*"},
+						},
+						{
+							Port: &networking.Port{
+								Number:   443,
+								Protocol: "https",
+								Name:     "https",
+							},
+							Tls: &networking.Server_TLSOptions{
+								Mode:              networking.Server_TLSOptions_SIMPLE,
+								ServerCertificate: "/some/path/not/important.crt",
+								PrivateKey:        "/some/path/not/important.key",
+							},
+							Hosts: []string{"example.com"},
+						},
+					},
+				}))
+			})
 		})
 
 		PContext("internal routes", func() {

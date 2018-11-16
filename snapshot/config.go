@@ -3,6 +3,7 @@ package snapshot
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"github.com/gogo/protobuf/types"
@@ -20,11 +21,15 @@ type config interface {
 }
 
 type Config struct {
-	logger lager.Logger
+	logger    lager.Logger
+	librarian certs.Librarian
 }
 
-func NewConfig(logger lager.Logger) *Config {
-	return &Config{logger: logger}
+func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
+	return &Config{
+		librarian: librarian,
+		logger:    logger,
+	}
 }
 
 func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Envelope) {
@@ -39,6 +44,29 @@ func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Envelope) {
 				Hosts: []string{"*"},
 			},
 		},
+	}
+
+	certPairs, err := c.librarian.Locate()
+	if err != nil {
+		c.logger.Error("create gateway", err)
+	}
+
+	if len(certPairs) > 0 {
+		for _, certPair := range certPairs {
+			gateway.Servers = append(gateway.Servers, &networking.Server{
+				Port: &networking.Port{
+					Number:   443,
+					Protocol: "https",
+					Name:     "https",
+				},
+				Tls: &networking.Server_TLSOptions{
+					Mode:              networking.Server_TLSOptions_SIMPLE,
+					ServerCertificate: certPair.CertPath,
+					PrivateKey:        certPair.KeyPath,
+				},
+				Hosts: certPair.Hosts,
+			})
+		}
 	}
 
 	gaResource, err := types.MarshalAny(gateway)

@@ -9,6 +9,7 @@ import (
 
 	"code.cloudfoundry.org/bbs"
 	"code.cloudfoundry.org/copilot/api"
+	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/handlers"
 	"code.cloudfoundry.org/copilot/models"
@@ -139,7 +140,8 @@ func mainWithError() error {
 	mcpTicker := time.NewTicker(time.Duration(cfg.MCPConvergeInterval))
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo, vipProvider)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
-	snapshotConfig := copilotsnapshot.NewConfig(logger)
+	librarian := certs.NewLocator(cfg.TLSPems)
+	snapshotConfig := copilotsnapshot.NewConfig(librarian, logger)
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder, snapshotConfig)
 
 	members := grouper.Members{

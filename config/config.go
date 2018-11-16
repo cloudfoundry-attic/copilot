@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"time"
 
+	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/durationjson"
 	validator "gopkg.in/validator.v2"
 )
@@ -29,11 +30,6 @@ type BBSConfig struct {
 const DefaultBBSSyncInterval = durationjson.Duration(60 * time.Second)
 const DefaultMCPConvergeInterval = durationjson.Duration(30 * time.Second)
 
-type TLSPem struct {
-	CertChain  string
-	PrivateKey string
-}
-
 type Config struct {
 	ListenAddressForCloudController string `validate:"nonzero"`
 	ListenAddressForMCP             string `validate:"nonzero"`
@@ -45,7 +41,7 @@ type Config struct {
 	MCPConvergeInterval             durationjson.Duration
 
 	BBS     *BBSConfig
-	TLSPems []TLSPem
+	TLSPems []certs.CertChainKeyPair
 }
 
 func init() {
