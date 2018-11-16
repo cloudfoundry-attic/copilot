@@ -175,7 +175,7 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("internal routes", func() {
-			It("creates virtualService envelopes that are super special", func() {
+			It("creates virtualService envelopes with retries", func() {
 				virtualServices := config.CreateVirtualServiceEnvelopes(internalRoutesWithBackends(), "1")
 				var vs networking.VirtualService
 
@@ -199,6 +199,9 @@ var _ = Describe("Config", func() {
 								},
 								Weight: 100,
 							},
+						},
+						Retries: &networking.HTTPRetry{
+							Attempts: 3,
 						},
 					},
 				}))
@@ -235,9 +238,23 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("internal routes", func() {
-			It("should not create any destination rules", func() {
+			It("creates destination rules", func() {
 				destinationRules := config.CreateDestinationRuleEnvelopes(internalRoutesWithBackends(), "1")
-				Expect(destinationRules).To(HaveLen(0))
+				var dr networking.DestinationRule
+
+				Expect(destinationRules).To(HaveLen(1))
+				Expect(destinationRules[0].Metadata.Name).To(Equal("copilot-rule-for-foo.bar.internal"))
+
+				err := types.UnmarshalAny(destinationRules[0].Resource, &dr)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(dr.Host).To(Equal("foo.bar.internal"))
+				Expect(dr.Subsets).To(ConsistOf([]*networking.Subset{
+					{
+						Name:   "x-capi-guid",
+						Labels: map[string]string{"cfapp": "x-capi-guid"},
+					},
+				}))
 			})
 		})
 	})
@@ -290,7 +307,7 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("internal routes", func() {
-			It("creates service entries that are super special", func() {
+			It("creates service entries envelopes", func() {
 				serviceEntries := config.CreateServiceEntryEnvelopes(internalRoutesWithBackends(), "1")
 				var se networking.ServiceEntry
 
@@ -304,9 +321,9 @@ var _ = Describe("Config", func() {
 				Expect(se.Addresses).To(Equal([]string{"127.127.0.1"}))
 				Expect(se.Ports).To(Equal([]*networking.Port{
 					{
-						Name:     "tcp",
+						Name:     "http",
 						Number:   8080,
-						Protocol: "tcp",
+						Protocol: "http",
 					}}))
 				Expect(se.Location).To(Equal(networking.ServiceEntry_MESH_INTERNAL))
 				Expect(se.Resolution).To(Equal(networking.ServiceEntry_STATIC))
@@ -314,7 +331,7 @@ var _ = Describe("Config", func() {
 					{
 						Address: "10.0.0.1",
 						Ports: map[string]uint32{
-							"tcp": 65005,
+							"http": 65005,
 						},
 						Labels: map[string]string{"cfapp": "x-capi-guid"},
 					},

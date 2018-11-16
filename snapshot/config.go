@@ -91,10 +91,6 @@ func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBacken
 	destinationRules := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
-		if route.Internal {
-			continue
-		}
-
 		var destinationRule *networking.DestinationRule
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.Hostname)
 
@@ -159,10 +155,7 @@ func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackend
 		if r, ok := httpRoutes[fullRoute]; ok {
 			r.Route = append(r.Route, createDestinationWeight(route))
 		} else {
-			r := &networking.HTTPRoute{
-				Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
-			}
-
+			r := createHTTPRoute(route)
 			if route.Path != "" {
 				if !route.Internal {
 					r.Match = []*networking.HTTPMatchRequest{
@@ -301,5 +294,20 @@ func createDestinationWeight(route *models.RouteWithBackends) *networking.HTTPRo
 			},
 		},
 		Weight: route.RouteWeight,
+	}
+}
+
+func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
+	if route.Internal {
+		return &networking.HTTPRoute{
+			Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
+			Retries: &networking.HTTPRetry{
+				Attempts: 3,
+			},
+		}
+	}
+
+	return &networking.HTTPRoute{
+		Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
 	}
 }
