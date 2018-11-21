@@ -183,9 +183,10 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 
 	for i, route := range request.Routes {
 		routes[i] = &models.Route{
-			GUID: models.RouteGUID(route.GetGuid()),
-			Host: route.GetHost(),
-			Path: route.GetPath(),
+			GUID:     models.RouteGUID(route.GetGuid()),
+			Host:     route.GetHost(),
+			Path:     route.GetPath(),
+			Internal: route.GetInternal(),
 		}
 	}
 
