@@ -2,32 +2,32 @@
 package fakes
 
 import (
-	"sync"
+	sync "sync"
 
-	snap "istio.io/istio/pkg/mcp/snapshot"
+	snapshota "istio.io/istio/pkg/mcp/snapshot"
 )
 
 type Setter struct {
-	SetSnapshotStub        func(node string, istio snap.Snapshot)
+	SetSnapshotStub        func(string, snapshota.Snapshot)
 	setSnapshotMutex       sync.RWMutex
 	setSnapshotArgsForCall []struct {
-		node  string
-		istio snap.Snapshot
+		arg1 string
+		arg2 snapshota.Snapshot
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Setter) SetSnapshot(node string, istio snap.Snapshot) {
+func (fake *Setter) SetSnapshot(arg1 string, arg2 snapshota.Snapshot) {
 	fake.setSnapshotMutex.Lock()
 	fake.setSnapshotArgsForCall = append(fake.setSnapshotArgsForCall, struct {
-		node  string
-		istio snap.Snapshot
-	}{node, istio})
-	fake.recordInvocation("SetSnapshot", []interface{}{node, istio})
+		arg1 string
+		arg2 snapshota.Snapshot
+	}{arg1, arg2})
+	fake.recordInvocation("SetSnapshot", []interface{}{arg1, arg2})
 	fake.setSnapshotMutex.Unlock()
 	if fake.SetSnapshotStub != nil {
-		fake.SetSnapshotStub(node, istio)
+		fake.SetSnapshotStub(arg1, arg2)
 	}
 }
 
@@ -37,10 +37,17 @@ func (fake *Setter) SetSnapshotCallCount() int {
 	return len(fake.setSnapshotArgsForCall)
 }
 
-func (fake *Setter) SetSnapshotArgsForCall(i int) (string, snap.Snapshot) {
+func (fake *Setter) SetSnapshotCalls(stub func(string, snapshota.Snapshot)) {
+	fake.setSnapshotMutex.Lock()
+	defer fake.setSnapshotMutex.Unlock()
+	fake.SetSnapshotStub = stub
+}
+
+func (fake *Setter) SetSnapshotArgsForCall(i int) (string, snapshota.Snapshot) {
 	fake.setSnapshotMutex.RLock()
 	defer fake.setSnapshotMutex.RUnlock()
-	return fake.setSnapshotArgsForCall[i].node, fake.setSnapshotArgsForCall[i].istio
+	argsForCall := fake.setSnapshotArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *Setter) Invocations() map[string][][]interface{} {

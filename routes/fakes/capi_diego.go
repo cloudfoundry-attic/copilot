@@ -2,16 +2,16 @@
 package fakes
 
 import (
-	"sync"
+	sync "sync"
 
-	"code.cloudfoundry.org/copilot/models"
+	models "code.cloudfoundry.org/copilot/models"
 )
 
 type CapiDiego struct {
-	GetStub        func(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
+	GetStub        func(*models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		capiProcessGUID *models.CAPIProcessGUID
+		arg1 *models.CAPIProcessGUID
 	}
 	getReturns struct {
 		result1 *models.CAPIDiegoProcessAssociation
@@ -23,21 +23,22 @@ type CapiDiego struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *CapiDiego) Get(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation {
+func (fake *CapiDiego) Get(arg1 *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		capiProcessGUID *models.CAPIProcessGUID
-	}{capiProcessGUID})
-	fake.recordInvocation("Get", []interface{}{capiProcessGUID})
+		arg1 *models.CAPIProcessGUID
+	}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(capiProcessGUID)
+		return fake.GetStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.getReturns.result1
+	fakeReturns := fake.getReturns
+	return fakeReturns.result1
 }
 
 func (fake *CapiDiego) GetCallCount() int {
@@ -46,13 +47,22 @@ func (fake *CapiDiego) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
+func (fake *CapiDiego) GetCalls(stub func(*models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = stub
+}
+
 func (fake *CapiDiego) GetArgsForCall(i int) *models.CAPIProcessGUID {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	return fake.getArgsForCall[i].capiProcessGUID
+	argsForCall := fake.getArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *CapiDiego) GetReturns(result1 *models.CAPIDiegoProcessAssociation) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	fake.getReturns = struct {
 		result1 *models.CAPIDiegoProcessAssociation
@@ -60,6 +70,8 @@ func (fake *CapiDiego) GetReturns(result1 *models.CAPIDiegoProcessAssociation) {
 }
 
 func (fake *CapiDiego) GetReturnsOnCall(i int, result1 *models.CAPIDiegoProcessAssociation) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {

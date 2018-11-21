@@ -2,16 +2,16 @@
 package fakes
 
 import (
-	"sync"
+	sync "sync"
 
-	"code.cloudfoundry.org/copilot/models"
+	models "code.cloudfoundry.org/copilot/models"
 )
 
 type RouteMappings struct {
-	GetCalculatedWeightStub        func(rm *models.RouteMapping) int32
+	GetCalculatedWeightStub        func(*models.RouteMapping) int32
 	getCalculatedWeightMutex       sync.RWMutex
 	getCalculatedWeightArgsForCall []struct {
-		rm *models.RouteMapping
+		arg1 *models.RouteMapping
 	}
 	getCalculatedWeightReturns struct {
 		result1 int32
@@ -21,8 +21,9 @@ type RouteMappings struct {
 	}
 	ListStub        func() map[string]*models.RouteMapping
 	listMutex       sync.RWMutex
-	listArgsForCall []struct{}
-	listReturns     struct {
+	listArgsForCall []struct {
+	}
+	listReturns struct {
 		result1 map[string]*models.RouteMapping
 	}
 	listReturnsOnCall map[int]struct {
@@ -32,21 +33,22 @@ type RouteMappings struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RouteMappings) GetCalculatedWeight(rm *models.RouteMapping) int32 {
+func (fake *RouteMappings) GetCalculatedWeight(arg1 *models.RouteMapping) int32 {
 	fake.getCalculatedWeightMutex.Lock()
 	ret, specificReturn := fake.getCalculatedWeightReturnsOnCall[len(fake.getCalculatedWeightArgsForCall)]
 	fake.getCalculatedWeightArgsForCall = append(fake.getCalculatedWeightArgsForCall, struct {
-		rm *models.RouteMapping
-	}{rm})
-	fake.recordInvocation("GetCalculatedWeight", []interface{}{rm})
+		arg1 *models.RouteMapping
+	}{arg1})
+	fake.recordInvocation("GetCalculatedWeight", []interface{}{arg1})
 	fake.getCalculatedWeightMutex.Unlock()
 	if fake.GetCalculatedWeightStub != nil {
-		return fake.GetCalculatedWeightStub(rm)
+		return fake.GetCalculatedWeightStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.getCalculatedWeightReturns.result1
+	fakeReturns := fake.getCalculatedWeightReturns
+	return fakeReturns.result1
 }
 
 func (fake *RouteMappings) GetCalculatedWeightCallCount() int {
@@ -55,13 +57,22 @@ func (fake *RouteMappings) GetCalculatedWeightCallCount() int {
 	return len(fake.getCalculatedWeightArgsForCall)
 }
 
+func (fake *RouteMappings) GetCalculatedWeightCalls(stub func(*models.RouteMapping) int32) {
+	fake.getCalculatedWeightMutex.Lock()
+	defer fake.getCalculatedWeightMutex.Unlock()
+	fake.GetCalculatedWeightStub = stub
+}
+
 func (fake *RouteMappings) GetCalculatedWeightArgsForCall(i int) *models.RouteMapping {
 	fake.getCalculatedWeightMutex.RLock()
 	defer fake.getCalculatedWeightMutex.RUnlock()
-	return fake.getCalculatedWeightArgsForCall[i].rm
+	argsForCall := fake.getCalculatedWeightArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *RouteMappings) GetCalculatedWeightReturns(result1 int32) {
+	fake.getCalculatedWeightMutex.Lock()
+	defer fake.getCalculatedWeightMutex.Unlock()
 	fake.GetCalculatedWeightStub = nil
 	fake.getCalculatedWeightReturns = struct {
 		result1 int32
@@ -69,6 +80,8 @@ func (fake *RouteMappings) GetCalculatedWeightReturns(result1 int32) {
 }
 
 func (fake *RouteMappings) GetCalculatedWeightReturnsOnCall(i int, result1 int32) {
+	fake.getCalculatedWeightMutex.Lock()
+	defer fake.getCalculatedWeightMutex.Unlock()
 	fake.GetCalculatedWeightStub = nil
 	if fake.getCalculatedWeightReturnsOnCall == nil {
 		fake.getCalculatedWeightReturnsOnCall = make(map[int]struct {
@@ -83,7 +96,8 @@ func (fake *RouteMappings) GetCalculatedWeightReturnsOnCall(i int, result1 int32
 func (fake *RouteMappings) List() map[string]*models.RouteMapping {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
+	fake.listArgsForCall = append(fake.listArgsForCall, struct {
+	}{})
 	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
@@ -92,7 +106,8 @@ func (fake *RouteMappings) List() map[string]*models.RouteMapping {
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.listReturns.result1
+	fakeReturns := fake.listReturns
+	return fakeReturns.result1
 }
 
 func (fake *RouteMappings) ListCallCount() int {
@@ -101,7 +116,15 @@ func (fake *RouteMappings) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
+func (fake *RouteMappings) ListCalls(stub func() map[string]*models.RouteMapping) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
+	fake.ListStub = stub
+}
+
 func (fake *RouteMappings) ListReturns(result1 map[string]*models.RouteMapping) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
 		result1 map[string]*models.RouteMapping
@@ -109,6 +132,8 @@ func (fake *RouteMappings) ListReturns(result1 map[string]*models.RouteMapping) 
 }
 
 func (fake *RouteMappings) ListReturnsOnCall(i int, result1 map[string]*models.RouteMapping) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {

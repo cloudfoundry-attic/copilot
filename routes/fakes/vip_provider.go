@@ -2,14 +2,14 @@
 package fakes
 
 import (
-	"sync"
+	sync "sync"
 )
 
 type VIPProvider struct {
-	GetStub        func(hostname string) string
+	GetStub        func(string) string
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		hostname string
+		arg1 string
 	}
 	getReturns struct {
 		result1 string
@@ -21,21 +21,22 @@ type VIPProvider struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *VIPProvider) Get(hostname string) string {
+func (fake *VIPProvider) Get(arg1 string) string {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		hostname string
-	}{hostname})
-	fake.recordInvocation("Get", []interface{}{hostname})
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(hostname)
+		return fake.GetStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.getReturns.result1
+	fakeReturns := fake.getReturns
+	return fakeReturns.result1
 }
 
 func (fake *VIPProvider) GetCallCount() int {
@@ -44,13 +45,22 @@ func (fake *VIPProvider) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
+func (fake *VIPProvider) GetCalls(stub func(string) string) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = stub
+}
+
 func (fake *VIPProvider) GetArgsForCall(i int) string {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	return fake.getArgsForCall[i].hostname
+	argsForCall := fake.getArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *VIPProvider) GetReturns(result1 string) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	fake.getReturns = struct {
 		result1 string
@@ -58,6 +68,8 @@ func (fake *VIPProvider) GetReturns(result1 string) {
 }
 
 func (fake *VIPProvider) GetReturnsOnCall(i int, result1 string) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {

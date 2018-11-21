@@ -2,16 +2,16 @@
 package fakes
 
 import (
-	"sync"
+	sync "sync"
 
-	"code.cloudfoundry.org/copilot/models"
+	models "code.cloudfoundry.org/copilot/models"
 )
 
 type RoutesRepo struct {
-	GetStub        func(guid models.RouteGUID) (*models.Route, bool)
+	GetStub        func(models.RouteGUID) (*models.Route, bool)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		guid models.RouteGUID
+		arg1 models.RouteGUID
 	}
 	getReturns struct {
 		result1 *models.Route
@@ -25,21 +25,22 @@ type RoutesRepo struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RoutesRepo) Get(guid models.RouteGUID) (*models.Route, bool) {
+func (fake *RoutesRepo) Get(arg1 models.RouteGUID) (*models.Route, bool) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		guid models.RouteGUID
-	}{guid})
-	fake.recordInvocation("Get", []interface{}{guid})
+		arg1 models.RouteGUID
+	}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(guid)
+		return fake.GetStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.getReturns.result1, fake.getReturns.result2
+	fakeReturns := fake.getReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *RoutesRepo) GetCallCount() int {
@@ -48,13 +49,22 @@ func (fake *RoutesRepo) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
+func (fake *RoutesRepo) GetCalls(stub func(models.RouteGUID) (*models.Route, bool)) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = stub
+}
+
 func (fake *RoutesRepo) GetArgsForCall(i int) models.RouteGUID {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	return fake.getArgsForCall[i].guid
+	argsForCall := fake.getArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *RoutesRepo) GetReturns(result1 *models.Route, result2 bool) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	fake.getReturns = struct {
 		result1 *models.Route
@@ -63,6 +73,8 @@ func (fake *RoutesRepo) GetReturns(result1 *models.Route, result2 bool) {
 }
 
 func (fake *RoutesRepo) GetReturnsOnCall(i int, result1 *models.Route, result2 bool) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
