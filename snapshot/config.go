@@ -153,7 +153,7 @@ func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackend
 
 		fullRoute := route.Hostname + route.Path
 		if r, ok := httpRoutes[fullRoute]; ok {
-			r.Route = append(r.Route, createDestinationWeight(route))
+			r.Route = append(r.Route, createDestinationWeights(route)...)
 		} else {
 			r := createHTTPRoute(route)
 			if route.Path != "" {
@@ -226,6 +226,8 @@ func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends,
 		}
 	}
 
+	c.logger.Info("!!! serviceEntries", lager.Data{"serviceEntries": serviceEntries})
+
 	for serviceEntryName, se := range serviceEntries {
 		seResource, err := types.MarshalAny(se.Spec)
 		if err != nil {
@@ -267,40 +269,53 @@ func createServiceEntry(route *models.RouteWithBackends) *networking.ServiceEntr
 		addresses = []string{route.VIP}
 	}
 
+	uniqueContainerPorts := map[uint32]struct{}{}
+	for _, backend := range route.Backends.Backends {
+		uniqueContainerPorts[backend.ContainerPort] = struct{}{}
+	}
+
+	var serviceEntryPorts []*networking.Port
+	for containerPort := range uniqueContainerPorts {
+		serviceEntryPorts = append(serviceEntryPorts, &networking.Port{
+			Name:     protocol,
+			Number:   containerPort,
+			Protocol: protocol,
+		})
+	}
+
 	return &networking.ServiceEntry{
-		Hosts:     []string{route.Hostname},
-		Addresses: addresses,
-		Ports: []*networking.Port{
-			{
-				Name:     protocol,
-				Number:   servicePort,
-				Protocol: protocol,
-			},
-		},
+		Hosts:      []string{route.Hostname},
+		Addresses:  addresses,
+		Ports:      serviceEntryPorts,
 		Location:   networking.ServiceEntry_MESH_INTERNAL,
 		Resolution: networking.ServiceEntry_STATIC,
 	}
 }
 
-func createDestinationWeight(route *models.RouteWithBackends) *networking.HTTPRouteDestination {
-	return &networking.HTTPRouteDestination{
-		Destination: &networking.Destination{
-			Host:   route.Hostname,
-			Subset: route.CapiProcessGUID,
-			Port: &networking.PortSelector{
-				Port: &networking.PortSelector_Number{
-					Number: servicePort,
+func createDestinationWeights(route *models.RouteWithBackends) []*networking.HTTPRouteDestination {
+	var destinations []*networking.HTTPRouteDestination
+	for _, backend := range route.Backends.Backends {
+		destinations = append(destinations, &networking.HTTPRouteDestination{
+			Destination: &networking.Destination{
+				Host:   route.Hostname,
+				Subset: route.CapiProcessGUID,
+				Port: &networking.PortSelector{
+					Port: &networking.PortSelector_Number{
+						Number: backend.ContainerPort,
+					},
 				},
 			},
-		},
-		Weight: route.RouteWeight,
+			Weight: route.RouteWeight,
+		})
+		break
 	}
+	return destinations
 }
 
 func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
 	if route.Internal {
 		return &networking.HTTPRoute{
-			Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
+			Route: createDestinationWeights(route),
 			Retries: &networking.HTTPRetry{
 				Attempts: 3,
 			},
@@ -308,6 +323,6 @@ func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
 	}
 
 	return &networking.HTTPRoute{
-		Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
+		Route: createDestinationWeights(route),
 	}
 }

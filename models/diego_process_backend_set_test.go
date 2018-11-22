@@ -197,6 +197,7 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
+				Expect(backends[0].ContainerPort).To(Equal(uint32(1000)))
 
 				Eventually(func() []*models.Backend {
 					res := bs.GetInternalBackends("meow")
@@ -205,6 +206,7 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("13.13.13.13"))
 				Expect(backends[0].Port).To(Equal(uint32(1000)))
+				Expect(backends[0].ContainerPort).To(Equal(uint32(1000)))
 			})
 
 			Context("when delete event is received", func() {
