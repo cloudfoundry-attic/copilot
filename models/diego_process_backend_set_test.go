@@ -197,6 +197,7 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("10.10.10.10"))
 				Expect(backends[0].Port).To(Equal(uint32(1555)))
+				Expect(backends[0].ContainerPort).To(Equal(uint32(1000)))
 
 				Eventually(func() []*models.Backend {
 					res := bs.GetInternalBackends("meow")
@@ -205,6 +206,63 @@ var _ = Describe("BackendSetRepo", func() {
 				}).ShouldNot(BeEmpty())
 				Expect(backends[0].Address).To(Equal("13.13.13.13"))
 				Expect(backends[0].Port).To(Equal(uint32(1000)))
+				Expect(backends[0].ContainerPort).To(Equal(uint32(1000)))
+			})
+
+			Context("when a event is sent twice", func() {
+				It("de-duplicates the backend", func() {
+					ef := &eventfakes.FakeEventSource{}
+					bbsEventer.SubscribeToEventsReturns(ef, nil)
+
+					lrpEvent := bbsmodels.NewActualLRPCreatedEvent(&bbsmodels.ActualLRPGroup{
+						Instance: &bbsmodels.ActualLRP{
+							ActualLRPKey: bbsmodels.ActualLRPKey{
+								ProcessGuid: "meow",
+							},
+							State: bbsmodels.ActualLRPStateRunning,
+							ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+								Address:         "10.10.10.10",
+								InstanceAddress: "13.13.13.13",
+								Ports: []*bbsmodels.PortMapping{
+									{HostPort: 1555, ContainerPort: 1000},
+									{HostPort: 5685, ContainerPort: 2222},
+								},
+							},
+						},
+					})
+
+					ef.NextStub = func() (bbsmodels.Event, error) {
+						switch ef.NextCallCount() {
+						case 1:
+							return lrpEvent, nil
+						case 2:
+							return lrpEvent, nil
+						default:
+							return nil, errors.New("whoops")
+						}
+					}
+
+					go bs.Run(sig, ready)
+
+					var backends []*models.Backend
+					Eventually(func() []*models.Backend {
+						res := bs.Get("meow")
+						backends = res.Backends
+						return backends
+					}).Should(HaveLen(1))
+					Expect(backends[0].Address).To(Equal("10.10.10.10"))
+					Expect(backends[0].Port).To(Equal(uint32(1555)))
+					Expect(backends[0].ContainerPort).To(Equal(uint32(1000)))
+
+					Eventually(func() []*models.Backend {
+						res := bs.GetInternalBackends("meow")
+						backends = res.Backends
+						return backends
+					}).Should(HaveLen(1))
+					Expect(backends[0].Address).To(Equal("13.13.13.13"))
+					Expect(backends[0].Port).To(Equal(uint32(1000)))
+					Expect(backends[0].ContainerPort).To(Equal(uint32(1000)))
+				})
 			})
 
 			Context("when delete event is received", func() {

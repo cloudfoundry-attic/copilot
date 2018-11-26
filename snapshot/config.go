@@ -267,16 +267,24 @@ func createServiceEntry(route *models.RouteWithBackends) *networking.ServiceEntr
 		addresses = []string{route.VIP}
 	}
 
+	uniqueContainerPorts := map[uint32]struct{}{}
+	for _, backend := range route.Backends.Backends {
+		uniqueContainerPorts[backend.ContainerPort] = struct{}{}
+	}
+
+	var serviceEntryPorts []*networking.Port
+	for containerPort := range uniqueContainerPorts {
+		serviceEntryPorts = append(serviceEntryPorts, &networking.Port{
+			Name:     protocol,
+			Number:   containerPort,
+			Protocol: protocol,
+		})
+	}
+
 	return &networking.ServiceEntry{
-		Hosts:     []string{route.Hostname},
-		Addresses: addresses,
-		Ports: []*networking.Port{
-			{
-				Name:     protocol,
-				Number:   servicePort,
-				Protocol: protocol,
-			},
-		},
+		Hosts:      []string{route.Hostname},
+		Addresses:  addresses,
+		Ports:      serviceEntryPorts,
 		Location:   networking.ServiceEntry_MESH_INTERNAL,
 		Resolution: networking.ServiceEntry_STATIC,
 	}
@@ -289,7 +297,7 @@ func createDestinationWeight(route *models.RouteWithBackends) *networking.HTTPRo
 			Subset: route.CapiProcessGUID,
 			Port: &networking.PortSelector{
 				Port: &networking.PortSelector_Number{
-					Number: servicePort,
+					Number: route.Backends.Backends[0].ContainerPort,
 				},
 			},
 		},
