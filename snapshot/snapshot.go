@@ -34,6 +34,7 @@ const (
 	// in snapshot, we should add this once the nodeID is configurable in pilot
 	node        = "default"
 	gatewayPort = 80
+	servicePort = 8080
 )
 
 //go:generate counterfeiter -o fakes/collector.go --fake-name Collector . collector

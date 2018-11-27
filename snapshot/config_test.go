@@ -127,7 +127,7 @@ var _ = Describe("Config", func() {
 								Host: "foo.example.com",
 								Port: &networking.PortSelector{
 									Port: &networking.PortSelector_Number{
-										Number: 7070,
+										Number: 8080,
 									},
 								},
 								Subset: "x-capi-guid",
@@ -139,7 +139,7 @@ var _ = Describe("Config", func() {
 								Host: "foo.example.com",
 								Port: &networking.PortSelector{
 									Port: &networking.PortSelector_Number{
-										Number: 9090,
+										Number: 8080,
 									},
 								},
 								Subset: "y-capi-guid",
@@ -185,7 +185,7 @@ var _ = Describe("Config", func() {
 									Host: "foo.bar.internal",
 									Port: &networking.PortSelector{
 										Port: &networking.PortSelector_Number{
-											Number: 8081,
+											Number: 8080,
 										},
 									},
 									Subset: "x-capi-guid",
@@ -268,7 +268,7 @@ var _ = Describe("Config", func() {
 			Expect(se.Ports).To(Equal([]*networking.Port{
 				{
 					Name:     "http",
-					Number:   7070,
+					Number:   8080,
 					Protocol: "http",
 				},
 			}))
@@ -315,16 +315,16 @@ var _ = Describe("Config", func() {
 				Expect(se.Ports).To(Equal([]*networking.Port{
 					{
 						Name:     "http",
-						Number:   8081,
+						Number:   8080,
 						Protocol: "http",
 					}}))
 				Expect(se.Location).To(Equal(networking.ServiceEntry_MESH_INTERNAL))
 				Expect(se.Resolution).To(Equal(networking.ServiceEntry_STATIC))
 				Expect(se.Endpoints).To(ConsistOf([]*networking.ServiceEntry_Endpoint{
 					{
-						Address: "10.255.0.1",
+						Address: "10.0.0.1",
 						Ports: map[string]uint32{
-							"http": 8080,
+							"http": 65005,
 						},
 						Labels: map[string]string{"cfapp": "x-capi-guid"},
 					},
@@ -343,9 +343,8 @@ func routesWithBackends() []*models.RouteWithBackends {
 			Backends: models.BackendSet{
 				Backends: []*models.Backend{
 					{
-						Address:       "10.0.0.1",
-						Port:          uint32(65005),
-						ContainerPort: uint32(7070),
+						Address: "10.0.0.1",
+						Port:    uint32(65005),
 					},
 				},
 			},
@@ -358,9 +357,8 @@ func routesWithBackends() []*models.RouteWithBackends {
 			Backends: models.BackendSet{
 				Backends: []*models.Backend{
 					{
-						Address:       "10.0.0.0",
-						Port:          uint32(65007),
-						ContainerPort: uint32(9090),
+						Address: "10.0.0.0",
+						Port:    uint32(65007),
 					},
 				},
 			},
@@ -373,9 +371,8 @@ func routesWithBackends() []*models.RouteWithBackends {
 			Backends: models.BackendSet{
 				Backends: []*models.Backend{
 					{
-						Address:       "10.10.10.1",
-						Port:          uint32(65003),
-						ContainerPort: uint32(8080),
+						Address: "10.10.10.1",
+						Port:    uint32(65003),
 					},
 				},
 			},
@@ -395,9 +392,8 @@ func internalRoutesWithBackends() []*models.RouteWithBackends {
 			Backends: models.BackendSet{
 				Backends: []*models.Backend{
 					{
-						Address:       "10.255.0.1",
-						Port:          uint32(8080),
-						ContainerPort: uint32(8081),
+						Address: "10.0.0.1",
+						Port:    uint32(65005),
 					},
 				},
 			},

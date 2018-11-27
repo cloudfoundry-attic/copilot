@@ -1,8 +1,8 @@
 package models
 
 import (
+	"fmt"
 	"os"
-	"reflect"
 	"sync"
 	"time"
 
@@ -26,9 +26,8 @@ type BackendSet struct {
 }
 
 type Backend struct {
-	Address       string
-	Port          uint32
-	ContainerPort uint32
+	Address string
+	Port    uint32
 }
 
 type RouteWithBackends struct {
@@ -58,11 +57,10 @@ func (s *store) Insert(guid DiegoProcessGUID, isInternal bool, additionalBackend
 	if isInternal {
 		backends = s.content[guid].Internal.Backends
 	}
-
 	s.Unlock()
 
 	for _, backend := range backends {
-		if reflect.DeepEqual(backend, additionalBackend) {
+		if fmt.Sprintf("%s:%d", backend.Address, backend.Port) == fmt.Sprintf("%s:%d", additionalBackend.Address, additionalBackend.Port) {
 			return
 		}
 	}
@@ -242,19 +240,11 @@ func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 	}
 
 	if appHostPort != 0 {
-		externalBackend = &Backend{
-			Address:       instance.ActualLRPNetInfo.Address,
-			Port:          appHostPort,
-			ContainerPort: appContainerPort,
-		}
+		externalBackend = &Backend{Address: instance.ActualLRPNetInfo.Address, Port: appHostPort}
 	}
 
 	if appContainerPort != 0 {
-		internalBackend = &Backend{
-			Address:       instance.ActualLRPNetInfo.InstanceAddress,
-			Port:          appContainerPort,
-			ContainerPort: appContainerPort,
-		}
+		internalBackend = &Backend{Address: instance.ActualLRPNetInfo.InstanceAddress, Port: appContainerPort}
 	}
 
 	return externalBackend, internalBackend
