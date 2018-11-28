@@ -50,7 +50,7 @@ var _ = Describe("Config", func() {
 
 		Context("When locator returns cert pair paths", func() {
 			It("creates gateway envelopes with http and https servers", func() {
-				certPairs := []certs.CertPairPaths{
+				certPairs := []certs.PemInfo{
 					{
 						Hosts:    []string{"example.com"},
 						CertPath: "/some/path/not/important.crt",

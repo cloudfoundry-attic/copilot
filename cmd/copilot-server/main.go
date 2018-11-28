@@ -31,6 +31,8 @@ import (
 	"istio.io/istio/pkg/mcp/snapshot"
 )
 
+const istioCertRootPath = "/etc/istio"
+
 func mainWithError() error {
 	var configFilePath string
 	flag.StringVar(&configFilePath, "config", "", "path to config file")
@@ -96,7 +98,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger:                           logger,
+		Logger: logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
@@ -140,7 +142,7 @@ func mainWithError() error {
 	mcpTicker := time.NewTicker(time.Duration(cfg.MCPConvergeInterval))
 	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo, vipProvider)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
-	librarian := certs.NewLocator(cfg.TLSPems)
+	librarian := certs.NewLocator(istioCertRootPath, cfg.TLSPems)
 	snapshotConfig := copilotsnapshot.NewConfig(librarian, logger)
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder, snapshotConfig)
 

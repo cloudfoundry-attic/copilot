@@ -8,16 +8,16 @@ import (
 )
 
 type Locator struct {
-	LocateStub        func() ([]certs.CertPairPaths, error)
+	LocateStub        func() ([]certs.PemInfo, error)
 	locateMutex       sync.RWMutex
 	locateArgsForCall []struct {
 	}
 	locateReturns struct {
-		result1 []certs.CertPairPaths
+		result1 []certs.PemInfo
 		result2 error
 	}
 	locateReturnsOnCall map[int]struct {
-		result1 []certs.CertPairPaths
+		result1 []certs.PemInfo
 		result2 error
 	}
 	StowStub        func() error
@@ -34,7 +34,7 @@ type Locator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Locator) Locate() ([]certs.CertPairPaths, error) {
+func (fake *Locator) Locate() ([]certs.PemInfo, error) {
 	fake.locateMutex.Lock()
 	ret, specificReturn := fake.locateReturnsOnCall[len(fake.locateArgsForCall)]
 	fake.locateArgsForCall = append(fake.locateArgsForCall, struct {
@@ -57,34 +57,34 @@ func (fake *Locator) LocateCallCount() int {
 	return len(fake.locateArgsForCall)
 }
 
-func (fake *Locator) LocateCalls(stub func() ([]certs.CertPairPaths, error)) {
+func (fake *Locator) LocateCalls(stub func() ([]certs.PemInfo, error)) {
 	fake.locateMutex.Lock()
 	defer fake.locateMutex.Unlock()
 	fake.LocateStub = stub
 }
 
-func (fake *Locator) LocateReturns(result1 []certs.CertPairPaths, result2 error) {
+func (fake *Locator) LocateReturns(result1 []certs.PemInfo, result2 error) {
 	fake.locateMutex.Lock()
 	defer fake.locateMutex.Unlock()
 	fake.LocateStub = nil
 	fake.locateReturns = struct {
-		result1 []certs.CertPairPaths
+		result1 []certs.PemInfo
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *Locator) LocateReturnsOnCall(i int, result1 []certs.CertPairPaths, result2 error) {
+func (fake *Locator) LocateReturnsOnCall(i int, result1 []certs.PemInfo, result2 error) {
 	fake.locateMutex.Lock()
 	defer fake.locateMutex.Unlock()
 	fake.LocateStub = nil
 	if fake.locateReturnsOnCall == nil {
 		fake.locateReturnsOnCall = make(map[int]struct {
-			result1 []certs.CertPairPaths
+			result1 []certs.PemInfo
 			result2 error
 		})
 	}
 	fake.locateReturnsOnCall[i] = struct {
-		result1 []certs.CertPairPaths
+		result1 []certs.PemInfo
 		result2 error
 	}{result1, result2}
 }
