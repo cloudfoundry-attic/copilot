@@ -82,7 +82,7 @@ var _ = Describe("Config", func() {
 							Port: &networking.Port{
 								Number:   443,
 								Protocol: "https",
-								Name:     "https",
+								Name:     "example.com",
 							},
 							Tls: &networking.Server_TLSOptions{
 								Mode:              networking.Server_TLSOptions_SIMPLE,
@@ -90,6 +90,70 @@ var _ = Describe("Config", func() {
 								PrivateKey:        "/some/path/not/important.key",
 							},
 							Hosts: []string{"example.com"},
+						},
+					},
+				}))
+			})
+
+			It("does not create gateways with the same server port name", func() {
+				certPairs := []certs.PemInfo{
+					{
+						Hosts:    []string{"example.com"},
+						CertPath: "/some/path/not/important.crt",
+						KeyPath:  "/some/path/not/important.key",
+					},
+					{
+						Hosts:    []string{"example2.com", "example3.com"},
+						CertPath: "/some/path/not/important.crt",
+						KeyPath:  "/some/path/not/important.key",
+					},
+				}
+				fakeLocator.LocateReturns(certPairs, nil)
+
+				gateways := config.CreateGatewayEnvelopes()
+				var ga networking.Gateway
+
+				Expect(gateways).To(HaveLen(1))
+				Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
+
+				err := types.UnmarshalAny(gateways[0].Resource, &ga)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(ga).To(Equal(networking.Gateway{
+					Servers: []*networking.Server{
+						{
+							Port: &networking.Port{
+								Number:   80,
+								Protocol: "http",
+								Name:     "http",
+							},
+							Hosts: []string{"*"},
+						},
+						{
+							Port: &networking.Port{
+								Number:   443,
+								Protocol: "https",
+								Name:     "example.com",
+							},
+							Tls: &networking.Server_TLSOptions{
+								Mode:              networking.Server_TLSOptions_SIMPLE,
+								ServerCertificate: "/some/path/not/important.crt",
+								PrivateKey:        "/some/path/not/important.key",
+							},
+							Hosts: []string{"example.com"},
+						},
+						{
+							Port: &networking.Port{
+								Number:   443,
+								Protocol: "https",
+								Name:     "example2.com",
+							},
+							Tls: &networking.Server_TLSOptions{
+								Mode:              networking.Server_TLSOptions_SIMPLE,
+								ServerCertificate: "/some/path/not/important.crt",
+								PrivateKey:        "/some/path/not/important.key",
+							},
+							Hosts: []string{"example2.com", "example3.com"},
 						},
 					},
 				}))

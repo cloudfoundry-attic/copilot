@@ -57,7 +57,7 @@ func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Envelope) {
 				Port: &networking.Port{
 					Number:   443,
 					Protocol: "https",
-					Name:     "https",
+					Name:     certPair.Hosts[0],
 				},
 				Tls: &networking.Server_TLSOptions{
 					Mode:              networking.Server_TLSOptions_SIMPLE,

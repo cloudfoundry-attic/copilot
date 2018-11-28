@@ -727,7 +727,7 @@ func expectedGateway(port uint32) *v1alpha3.Gateway {
 				Port: &v1alpha3.Port{
 					Number:   443,
 					Protocol: "https",
-					Name:     "https",
+					Name:     "example.com",
 				},
 				Tls: &v1alpha3.Server_TLSOptions{
 					Mode:              v1alpha3.Server_TLSOptions_SIMPLE,
