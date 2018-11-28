@@ -66,7 +66,10 @@ func (l *Locator) Stow() error {
 
 		dir := paths.Dir
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			os.Mkdir(dir, os.ModePerm)
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = ioutil.WriteFile(paths.CertPath, certPem, 0600)

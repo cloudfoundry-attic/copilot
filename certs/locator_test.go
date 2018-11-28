@@ -177,11 +177,11 @@ var _ = Describe("Locator", func() {
 			tempDir, err := ioutil.TempDir("", "certs")
 			Expect(err).NotTo(HaveOccurred())
 
-			locator := certs.NewLocator(tempDir, pairs)
+			locator := certs.NewLocator(fmt.Sprintf("%s/istio", tempDir), pairs)
 			err = locator.Stow()
 			Expect(err).NotTo(HaveOccurred())
 
-			certFilePath := fmt.Sprintf("%s/example.com/tls.crt", tempDir)
+			certFilePath := fmt.Sprintf("%s/istio/example.com/tls.crt", tempDir)
 			info, err := os.Stat(certFilePath)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(info.Mode().Perm()).To(Equal(os.FileMode(0600)))
@@ -189,7 +189,7 @@ var _ = Describe("Locator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(cert)).To(Equal(certChain.EndUserCert))
 
-			keyFilePath := fmt.Sprintf("%s/example.com/tls.key", tempDir)
+			keyFilePath := fmt.Sprintf("%s/istio/example.com/tls.key", tempDir)
 			info, err = os.Stat(keyFilePath)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(info.Mode().Perm()).To(Equal(os.FileMode(0600)))
@@ -211,7 +211,7 @@ var _ = Describe("Locator", func() {
 				tempDir, err := ioutil.TempDir("", "certs")
 				Expect(err).NotTo(HaveOccurred())
 
-				err = os.Mkdir(fmt.Sprintf("%s/example.com", tempDir), os.ModePerm)
+				err = os.MkdirAll(fmt.Sprintf("%s/example.com", tempDir), os.ModePerm)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = ioutil.WriteFile(fmt.Sprintf("%s/example.com/tls.crt", tempDir), []byte("blah blah"), 0600)
