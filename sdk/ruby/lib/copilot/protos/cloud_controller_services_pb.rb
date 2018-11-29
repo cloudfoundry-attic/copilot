@@ -23,7 +23,7 @@ module Api
       rpc :UnmapRoute, UnmapRouteRequest, UnmapRouteResponse
       rpc :UpsertCapiDiegoProcessAssociation, UpsertCapiDiegoProcessAssociationRequest, UpsertCapiDiegoProcessAssociationResponse
       rpc :DeleteCapiDiegoProcessAssociation, DeleteCapiDiegoProcessAssociationRequest, DeleteCapiDiegoProcessAssociationResponse
-      rpc :BulkSync, BulkSyncRequest, BulkSyncResponse
+      rpc :BulkSync, stream(BulkSyncRequestChunk), BulkSyncResponse
       rpc :Health, HealthRequest, HealthResponse
     end
 

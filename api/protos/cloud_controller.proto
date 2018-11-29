@@ -94,7 +94,13 @@ message BulkSyncRequest {
   repeated CapiDiegoProcessAssociation capi_diego_process_associations = 3;
 }
 
-message BulkSyncResponse {}
+message BulkSyncRequestChunk {
+  bytes chunk = 1;
+}
+
+message BulkSyncResponse {
+  int32 total_bytes_received = 1;
+}
 
 service CloudControllerCopilot {
   rpc ListCfRoutes(ListCfRoutesRequest) returns (ListCfRoutesResponse) {}
@@ -109,7 +115,7 @@ service CloudControllerCopilot {
 
   rpc UpsertCapiDiegoProcessAssociation(UpsertCapiDiegoProcessAssociationRequest) returns (UpsertCapiDiegoProcessAssociationResponse) {}
   rpc DeleteCapiDiegoProcessAssociation(DeleteCapiDiegoProcessAssociationRequest) returns (DeleteCapiDiegoProcessAssociationResponse) {}
-  rpc BulkSync (BulkSyncRequest) returns (BulkSyncResponse) {}
+  rpc BulkSync (stream BulkSyncRequestChunk) returns (BulkSyncResponse) {}
 
   rpc Health(HealthRequest) returns (HealthResponse) {}
 }

@@ -15,80 +15,68 @@ RSpec.describe Cloudfoundry::Copilot do
   end
 
   it 'can upsert a route' do
-    @client.upsert_route(
+    expect(@client.upsert_route(
       guid: 'some-route-guid',
       host: 'some-route-url',
       path: '/some/path'
-    )
+    )).to be_a(::Api::UpsertRouteResponse)
   end
 
   it 'can upsert a route with an internal flag' do
-    @client.upsert_route(
-      guid: 'some-route-guid',
-      host: 'some-route-url',
-      path: '/some/path',
-      internal: true
-    )
+    expect(
+      @client.upsert_route(
+        guid: 'some-route-guid',
+        host: 'some-route-url',
+        path: '/some/path',
+        internal: true,
+      )
+    ).to be_a(::Api::UpsertRouteResponse)
   end
 
   it 'can delete a route' do
-    @client.delete_route(
+    expect(@client.delete_route(
       guid: 'some-route-guid'
-    )
+    )).to be_a(::Api::DeleteRouteResponse)
   end
 
   it 'can map a route' do
-    @client.map_route(
+    expect(@client.map_route(
       capi_process_guid: 'some-capi-process-guid',
       route_guid: 'some-route-guid',
       route_weight: 128
-    )
+    )).to be_a(::Api::MapRouteResponse)
+
   end
 
   it 'can unmap a route' do
-    @client.unmap_route(
-      capi_process_guid: 'some-capi-process-guid',
-      route_guid: 'some-route-guid',
-      route_weight: 128
-    )
+    expect(@client.unmap_route(
+             capi_process_guid: 'some-capi-process-guid-to-unmap',
+             route_guid: 'some-route-guid-to-unmap',
+             route_weight: 128
+    )).to be_a(::Api::UnmapRouteResponse)
   end
 
   it 'can upsert a capi-diego-process-association' do
-    @client.upsert_capi_diego_process_association(
-      capi_process_guid: 'some-capi-process-guid',
-      diego_process_guids: ['some-diego-guid']
-    )
+    expect(@client.upsert_capi_diego_process_association(
+             capi_process_guid: 'some-capi-process-guid',
+             diego_process_guids: ['some-diego-process-guid']
+    )).to be_a(::Api::UpsertCapiDiegoProcessAssociationResponse)
   end
 
   it 'can delete a capi-diego-process-association' do
-    @client.delete_capi_diego_process_association(
-      capi_process_guid: 'some-capi-process-guid'
-    )
+    expect(@client.delete_capi_diego_process_association(
+             capi_process_guid: 'some-capi-process-guid'
+    )).to be_a(::Api::DeleteCapiDiegoProcessAssociationResponse)
   end
 
-  it 'can bulk sync' do
-    @client.bulk_sync(
-      routes: [
-        {
-          guid: 'some-route-guid',
-          host: 'example.host.com',
-          path: '/some/path'
-        }
-      ],
-      route_mappings: [
-        {
-          route_guid: 'some-route-guid',
-          capi_process_guid: 'some-capi-process-guid',
-          route_weight: 128
-        }
-      ],
-      capi_diego_process_associations: [
-        {
-          capi_process_guid: 'some-capi-process-guid',
-          diego_process_guids: ['some-diego-process-guid']
-        }
-      ]
-    )
+  it 'can chunk requests during bulk sync' do
+    # by sending only a single route, route_mapping, capi_diego_process_association group
+    x = create_and_bulk_sync(1)
+    expect(x[:response].total_bytes_received).to equal(x[:request].to_proto.length)
+
+    # by sending multiple route, route_mapping, capi_diego_process_association groups
+    x = create_and_bulk_sync(3)
+    expect(x[:response].total_bytes_received).to equal(x[:request].to_proto.length)
   end
 
   context 'when GRPC raises a PilotError' do
@@ -219,4 +207,39 @@ RSpec.describe Cloudfoundry::Copilot do
       end
     end
   end
+end
+
+def create_and_bulk_sync(n_messages)
+  n = 0
+  routes = []
+  route_mappings = []
+  capi_diego_process_associations = []
+
+  until n == n_messages
+    routes << Api::Route.new(
+      guid:  "some-route-guid-%d" % n,
+      host: 'example.host.com',
+      path: '/some/path'
+    )
+    route_mappings << Api::RouteMapping.new(
+      route_guid: "some-route-guid-%d" % n,
+      capi_process_guid: "some-capi-process-guid-%d" % n,
+      route_weight: 128
+    )
+    capi_diego_process_associations << Api::CapiDiegoProcessAssociation.new(
+      capi_process_guid: "some-capi-process-guid-%d" % n,
+      diego_process_guids: ["some-diego-process-guid-%d" % n]
+    )
+    n += 1
+  end
+  resp = @client.bulk_sync(routes: routes,
+                           route_mappings: route_mappings,
+                           capi_diego_process_associations: capi_diego_process_associations
+                          )
+  req = Api::BulkSyncRequest.new(
+    routes: routes,
+    route_mappings: route_mappings,
+    capi_diego_process_associations: capi_diego_process_associations
+  )
+  { response: resp, request: req }
 end

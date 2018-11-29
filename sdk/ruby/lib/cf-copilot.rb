@@ -2,11 +2,13 @@
 
 require 'copilot/protos/cloud_controller_pb'
 require 'copilot/protos/cloud_controller_services_pb'
+require 'pry'
 
 module Cloudfoundry
   module Copilot
     class Client
       class PilotError < StandardError; end
+      CHUNK_SIZE = 64 * 1024 # 64KB
 
       attr_reader :host, :port
 
@@ -78,13 +80,37 @@ module Cloudfoundry
         raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end
 
+      class BulkSyncEnum
+        def initialize(routes, route_mappings, capi_diego_process_associations)
+          @routes = routes
+          @route_mappings = route_mappings
+          @capi_diego_process_associations = capi_diego_process_associations
+        end
+
+        def each
+          return enum_for(:each) unless block_given?
+          request = Api::BulkSyncRequest.new(
+            routes: @routes,
+            route_mappings: @route_mappings,
+            capi_diego_process_associations: @capi_diego_process_associations
+          )
+
+          all_bytes = request.to_proto
+
+          current_byte = 0
+          request_bytes_length = all_bytes.length
+          while current_byte < request_bytes_length
+            yield Api::BulkSyncRequestChunk.new(chunk: all_bytes[current_byte..current_byte + CHUNK_SIZE - 1].to_s)
+            current_byte += CHUNK_SIZE
+          end
+          yield Api::BulkSyncRequestChunk.new(chunk: all_bytes[current_byte..request_bytes_length-1].to_s)
+        end
+
+      end
+
       def bulk_sync(routes:, route_mappings:, capi_diego_process_associations:)
-        request = Api::BulkSyncRequest.new(
-          routes: routes,
-          route_mappings: route_mappings,
-          capi_diego_process_associations: capi_diego_process_associations
-        )
-        service.bulk_sync(request)
+        bs_enum = BulkSyncEnum.new(routes, route_mappings, capi_diego_process_associations)
+        service.bulk_sync(bs_enum.each)
       rescue GRPC::BadStatus => e
         raise Cloudfoundry::Copilot::Client::PilotError, "#{e.details} - #{e.metadata}"
       end

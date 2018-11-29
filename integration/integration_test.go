@@ -16,6 +16,7 @@ import (
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
+	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -164,7 +165,7 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		}
-
+		fmt.Printf("%+v\n", serverConfig)
 		configFilePath = testhelpers.TempFileName()
 		cleanupFuncs = append(cleanupFuncs, func() { os.Remove(configFilePath) })
 
@@ -194,6 +195,34 @@ var _ = Describe("Copilot", func() {
 		for i := len(cleanupFuncs) - 1; i >= 0; i-- {
 			cleanupFuncs[i]()
 		}
+	})
+
+	Context("Bulk Sync", func() {
+		It("Receives chunks and returns the number of bytes synced", func() {
+			client, err := ccClient.BulkSync(context.Background())
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sending the first chunk")
+			firstBulkReq := bulkSyncRequest(routeHost)
+			data, err := proto.Marshal(firstBulkReq)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = client.Send(&api.BulkSyncRequestChunk{Chunk: data})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sending the second chunk")
+			secondBulkReq := bulkSyncRequest(routeHost)
+			data2, err := proto.Marshal(secondBulkReq)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = client.Send(&api.BulkSyncRequestChunk{Chunk: data2})
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := client.CloseAndRecv()
+			Expect(err).NotTo(HaveOccurred())
+			totalSent := len(data) + len(data2)
+			Expect(resp.TotalBytesReceived).To(Equal(int32(totalSent)))
+		})
 	})
 
 	Specify("a journey", func() {
@@ -774,4 +803,30 @@ func expectedServiceEntry(host, address, protocol string, newEndpoints []Endpoin
 		Resolution: 1,
 		Endpoints:  endpoints,
 	}
+}
+
+func bulkSyncRequest(routeHost string) *api.BulkSyncRequest {
+	randTag := time.Now().UnixNano()
+	request := &api.BulkSyncRequest{
+		RouteMappings: []*api.RouteMapping{
+			{
+				RouteGuid:       fmt.Sprintf("route-guid-%d", randTag),
+				CapiProcessGuid: fmt.Sprintf("capi-process-guid-%d", randTag),
+				RouteWeight:     1,
+			},
+		},
+		Routes: []*api.Route{
+			{
+				Guid: fmt.Sprintf("route-guid-%d", randTag),
+				Host: routeHost,
+			},
+		},
+		CapiDiegoProcessAssociations: []*api.CapiDiegoProcessAssociation{
+			{
+				CapiProcessGuid:   fmt.Sprintf("capi-process-guid-%d", randTag),
+				DiegoProcessGuids: []string{fmt.Sprintf("diego-process-guid-%d", randTag)},
+			},
+		},
+	}
+	return request
 }

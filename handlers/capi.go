@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"io"
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/models"
@@ -167,9 +168,40 @@ func (c *CAPI) DeleteCapiDiegoProcessAssociation(context context.Context, reques
 	return &api.DeleteCapiDiegoProcessAssociationResponse{}, nil
 }
 
-func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (*api.BulkSyncResponse, error) {
+func (c *CAPI) BulkSync(stream api.CloudControllerCopilot_BulkSyncServer) error {
 	c.Logger.Info("bulk sync...")
+	var (
+		requestChunk *api.BulkSyncRequestChunk
+		err          error
+	)
 
+	allChunks := []byte{}
+	request := &api.BulkSyncRequest{}
+
+	for {
+		requestChunk, err = stream.Recv()
+		if err == io.EOF {
+			if len(allChunks) > 0 {
+				err = request.XXX_Unmarshal(allChunks)
+				if err != nil {
+					return err
+				}
+			}
+			c.syncRequest(request)
+
+			return stream.SendAndClose(&api.BulkSyncResponse{
+				TotalBytesReceived: int32(len(allChunks)),
+			})
+		}
+
+		if err != nil {
+			return err
+		}
+		allChunks = append(allChunks, requestChunk.Chunk...)
+	}
+}
+
+func (c *CAPI) syncRequest(request *api.BulkSyncRequest) {
 	routeMappings := make([]*models.RouteMapping, len(request.RouteMappings))
 	for i, routeMapping := range request.RouteMappings {
 		routeMappings[i] = &models.RouteMapping{
@@ -206,8 +238,6 @@ func (c *CAPI) BulkSync(context context.Context, request *api.BulkSyncRequest) (
 	c.RouteMappingsRepo.Sync(routeMappings)
 	c.RoutesRepo.Sync(routes)
 	c.CAPIDiegoProcessAssociationsRepo.Sync(cdpas)
-
-	return &api.BulkSyncResponse{}, nil
 }
 
 func validateUpsertRouteRequest(r *api.UpsertRouteRequest) error {

@@ -2,12 +2,16 @@ package handlers_test
 
 import (
 	"context"
+	"errors"
+	"io"
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/copilot/handlers"
 	"code.cloudfoundry.org/copilot/handlers/fakes"
+	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/golang/protobuf/proto"
 
 	"code.cloudfoundry.org/copilot/models"
 	. "github.com/onsi/ginkgo"
@@ -229,21 +233,14 @@ var _ = Describe("Capi Handlers", func() {
 	})
 
 	Describe("BulkSync", func() {
-		Context("when inputs are empty", func() {
-			It("does not throw an error", func() {
-				ctx := context.Background()
-				_, err := handler.BulkSync(ctx, &api.BulkSyncRequest{})
-				Expect(err).NotTo(HaveOccurred())
+		var (
+			stream      *testhelpers.FakeCloudControllerCopilot_BulkSyncServer
+			allBytesLen int
+		)
 
-				Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
-				Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
-				Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncCallCount()).To(Equal(1))
-			})
-		})
-
-		It("syncs", func() {
-			ctx := context.Background()
-			_, err := handler.BulkSync(ctx, &api.BulkSyncRequest{
+		BeforeEach(func() {
+			stream = &testhelpers.FakeCloudControllerCopilot_BulkSyncServer{}
+			request := &api.BulkSyncRequest{
 				RouteMappings: []*api.RouteMapping{
 					{
 						RouteGuid:       "route-guid-a",
@@ -285,7 +282,26 @@ var _ = Describe("Capi Handlers", func() {
 						},
 					},
 				},
-			})
+			}
+			allBytes, err := proto.Marshal(request)
+			Expect(err).NotTo(HaveOccurred())
+			allBytesLen = len(allBytes)
+			firstChunkBytes := allBytes[:allBytesLen/2]
+			secondChunkBytes := allBytes[allBytesLen/2:]
+			firstChunkRequest := &api.BulkSyncRequestChunk{
+				Chunk: firstChunkBytes,
+			}
+			secondChunkRequest := &api.BulkSyncRequestChunk{
+				Chunk: secondChunkBytes,
+			}
+			stream.RecvReturnsOnCall(0, firstChunkRequest, nil)
+			stream.RecvReturnsOnCall(1, secondChunkRequest, nil)
+			stream.RecvReturnsOnCall(2, nil, io.EOF)
+			stream.SendAndCloseReturns(nil)
+		})
+
+		It("chunks and syncs", func() {
+			err := handler.BulkSync(stream)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
@@ -335,6 +351,49 @@ var _ = Describe("Capi Handlers", func() {
 					},
 				},
 			}))
+			Expect(stream.SendAndCloseArgsForCall(0)).To(
+				Equal(&api.BulkSyncResponse{TotalBytesReceived: int32(allBytesLen)}))
+		})
+
+		Context("when inputs are empty", func() {
+			BeforeEach(func() {
+				stream.RecvReturnsOnCall(0, &api.BulkSyncRequestChunk{}, nil)
+				stream.RecvReturnsOnCall(1, nil, io.EOF)
+			})
+			It("does not throw an error and syncs", func() {
+				err := handler.BulkSync(stream)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stream.SendAndCloseArgsForCall(0)).To(
+					Equal(&api.BulkSyncResponse{TotalBytesReceived: 0}))
+
+				Expect(fakeRouteMappingsRepo.SyncCallCount()).To(Equal(1))
+				Expect(fakeRoutesRepo.SyncCallCount()).To(Equal(1))
+				Expect(fakeCAPIDiegoProcessAssociationsRepo.SyncCallCount()).To(Equal(1))
+
+			})
+		})
+
+		Context("when the stream returns a non-EOF error", func() {
+			BeforeEach(func() {
+				stream.RecvReturnsOnCall(0, nil, errors.New("some-error"))
+			})
+			It("returns an error", func() {
+				err := handler.BulkSync(stream)
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when unmarshal fails", func() {
+			BeforeEach(func() {
+				stream.RecvReturnsOnCall(0, &api.BulkSyncRequestChunk{
+					Chunk: []byte("lol"),
+				}, nil)
+
+			})
+			It("returns an error", func() {
+				err := handler.BulkSync(stream)
+				Expect(err).To(MatchError("proto: can't skip unknown wire type 4"))
+			})
 		})
 	})
 })

@@ -73,7 +73,11 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     repeated :routes, :message, 2, "api.Route"
     repeated :capi_diego_process_associations, :message, 3, "api.CapiDiegoProcessAssociation"
   end
+  add_message "api.BulkSyncRequestChunk" do
+    optional :chunk, :bytes, 1
+  end
   add_message "api.BulkSyncResponse" do
+    optional :total_bytes_received, :int32, 1
   end
 end
 
@@ -101,5 +105,6 @@ module Api
   DeleteCapiDiegoProcessAssociationRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DeleteCapiDiegoProcessAssociationRequest").msgclass
   DeleteCapiDiegoProcessAssociationResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.DeleteCapiDiegoProcessAssociationResponse").msgclass
   BulkSyncRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.BulkSyncRequest").msgclass
+  BulkSyncRequestChunk = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.BulkSyncRequestChunk").msgclass
   BulkSyncResponse = Google::Protobuf::DescriptorPool.generated_pool.lookup("api.BulkSyncResponse").msgclass
 end
