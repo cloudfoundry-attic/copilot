@@ -89,6 +89,9 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 
 			backends = append(backends, backendSet.Backends...)
 		}
+		if len(backends) == 0 {
+			continue
+		}
 
 		sort.SliceStable(backends, func(i, j int) bool {
 			return backends[i].Address < backends[j].Address

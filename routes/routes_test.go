@@ -296,4 +296,42 @@ var _ = Describe("Collect", func() {
 			Expect(backendSetRepo.GetCallCount()).To(Equal(0))
 		})
 	})
+
+	Context("when a route has an empty backend set", func() {
+		It("skips the route", func() {
+			routeMappings.ListReturns(map[string]*models.RouteMapping{
+				"route-guid-a-capi-process-guid-a": &models.RouteMapping{
+					RouteGUID:       "route-guid-z",
+					CAPIProcessGUID: "capi-process-guid-z",
+					RouteWeight:     2,
+				},
+			})
+
+			capiDiego.GetStub = func(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation {
+				cd := map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation{
+					"capi-process-guid-z": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-z",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-z",
+						},
+					},
+				}
+
+				return cd[*capiProcessGUID]
+			}
+
+			routesRepo.GetReturns(&models.Route{
+				GUID: "route-guid-z",
+				Host: "test.cfapps.com",
+				Path: "/something",
+			}, true)
+
+			rwb := rc.Collect()
+
+			Expect(routesRepo.GetArgsForCall(0)).To(Equal(models.RouteGUID("route-guid-z")))
+			Expect(*capiDiego.GetArgsForCall(0)).To(Equal(models.CAPIProcessGUID("capi-process-guid-z")))
+			Expect(backendSetRepo.GetCallCount()).To(Equal(1))
+			Expect(rwb).To(HaveLen(0))
+		})
+	})
 })
