@@ -14,7 +14,29 @@ import (
 	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/durationjson"
 	validator "gopkg.in/validator.v2"
+	"istio.io/istio/pkg/log"
 )
+
+// copied from istio log pkg above
+// this type should be public so that
+// it is not duplicated
+var stringToLevel = map[string]log.Level{
+	"debug": log.DebugLevel,
+	"info":  log.InfoLevel,
+	"warn":  log.WarnLevel,
+	"error": log.ErrorLevel,
+	"fatal": log.FatalLevel,
+	"none":  log.NoneLevel,
+}
+
+var levelToString = map[log.Level]string{
+	log.DebugLevel: "debug",
+	log.InfoLevel:  "info",
+	log.WarnLevel:  "warn",
+	log.ErrorLevel: "error",
+	log.FatalLevel: "fatal",
+	log.NoneLevel:  "none",
+}
 
 type BBSConfig struct {
 	ServerCACertPath       string `validate:"nonzero"`
@@ -39,6 +61,7 @@ type Config struct {
 	ServerKeyPath                   string `validate:"nonzero"`
 	VIPCIDR                         string `validate:"cidr"`
 	MCPConvergeInterval             durationjson.Duration
+	PilotLogLevel                   log.Level
 
 	BBS     *BBSConfig
 	TLSPems []certs.CertChainKeyPair
@@ -48,43 +71,55 @@ func init() {
 	validator.SetValidationFunc("cidr", validateCIDR)
 }
 
+func (c *Config) UnmarshalJSON(b []byte) error {
+	type OtherConfig Config
+
+	var temp struct {
+		PilotLogLevel string `json:"PilotLogLevel"`
+		OtherConfig
+	}
+
+	err := json.Unmarshal(b, &temp)
+	if err != nil {
+		return err
+	}
+
+	*c = Config(temp.OtherConfig)
+
+	if l, ok := stringToLevel[temp.PilotLogLevel]; !ok {
+		return errors.New("invalid log level")
+	} else {
+		c.PilotLogLevel = l
+	}
+
+	return nil
+}
+
+func (c *Config) MarshalJSON() ([]byte, error) {
+	type OtherConfig Config
+
+	var temp struct {
+		PilotLogLevel string `json:"PilotLogLevel"`
+		OtherConfig
+	}
+
+	temp.OtherConfig = OtherConfig(*c)
+
+	if l, ok := levelToString[c.PilotLogLevel]; !ok {
+		return nil, errors.New("invalid log level")
+	} else {
+		temp.PilotLogLevel = l
+	}
+
+	return json.Marshal(temp)
+}
+
 func (c *Config) Save(path string) error {
 	configBytes, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(path, configBytes, 0600)
-}
-
-func Load(path string) (*Config, error) {
-	configBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	c := new(Config)
-	err = json.Unmarshal(configBytes, c)
-	if err != nil {
-		return nil, fmt.Errorf("parsing config: %s", err)
-	}
-	if c.BBS == nil {
-		return nil, errors.New("invalid config: missing required 'BBS' field")
-	}
-	if c.BBS.SyncInterval == 0 {
-		c.BBS.SyncInterval = DefaultBBSSyncInterval
-	}
-	if c.BBS.Disable {
-		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
-	}
-	if c.MCPConvergeInterval == 0 {
-		c.MCPConvergeInterval = durationjson.Duration(DefaultMCPConvergeInterval)
-	}
-
-	err = validator.Validate(c)
-	if err != nil {
-		return nil, fmt.Errorf("invalid config: %s", err)
-	}
-
-	return c, nil
 }
 
 func (c *Config) ServerTLSConfigForPilot() (*tls.Config, error) {
@@ -146,4 +181,35 @@ func validateCIDR(v interface{}, param string) error {
 	}
 
 	return nil
+}
+
+func Load(path string) (*Config, error) {
+	configBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	c := new(Config)
+	err = json.Unmarshal(configBytes, c)
+	if err != nil {
+		return nil, fmt.Errorf("parsing config: %s", err)
+	}
+	if c.BBS == nil {
+		return nil, errors.New("invalid config: missing required 'BBS' field")
+	}
+	if c.BBS.SyncInterval == 0 {
+		c.BBS.SyncInterval = DefaultBBSSyncInterval
+	}
+	if c.BBS.Disable {
+		c.BBS = nil // a hack to skip validating BBS fields if user explicitly disables BBS
+	}
+	if c.MCPConvergeInterval == 0 {
+		c.MCPConvergeInterval = durationjson.Duration(DefaultMCPConvergeInterval)
+	}
+
+	err = validator.Validate(c)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config: %s", err)
+	}
+
+	return c, nil
 }
