@@ -17,11 +17,13 @@ import (
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
 	"github.com/gogo/protobuf/proto"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pkg/log"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Copilot", func() {
@@ -151,6 +153,7 @@ var _ = Describe("Copilot", func() {
 			ServerKeyPath:                   copilotTLSFiles.ServerKey,
 			VIPCIDR:                         "127.128.0.0/9",
 			MCPConvergeInterval:             durationjson.Duration(10 * time.Millisecond),
+			PilotLogLevel:                   log.FatalLevel,
 			BBS: &config.BBSConfig{
 				ServerCACertPath: bbsTLSFiles.ServerCA,
 				ClientCertPath:   bbsTLSFiles.ClientCert,

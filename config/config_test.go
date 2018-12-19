@@ -12,6 +12,8 @@ import (
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
+	"istio.io/istio/pkg/log"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -35,6 +37,7 @@ var _ = Describe("Config", func() {
 			ServerKeyPath:                   "some-key-path",
 			VIPCIDR:                         "127.128.0.0/9",
 			MCPConvergeInterval:             durationjson.Duration(10 * time.Second),
+			PilotLogLevel:                   log.FatalLevel,
 			BBS: &config.BBSConfig{
 				ServerCACertPath: "some-ca-path",
 				ClientCertPath:   "some-cert-path",

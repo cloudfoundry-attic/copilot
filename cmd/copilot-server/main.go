@@ -26,7 +26,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	_ "google.golang.org/grpc/encoding/gzip" // enable GZIP compression on the server side
 	"google.golang.org/grpc/reflection"
+
 	mcp "istio.io/api/mcp/v1alpha1"
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/mcp/snapshot"
 )
@@ -98,7 +100,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger: logger,
+		Logger:                           logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
@@ -133,6 +135,12 @@ func mainWithError() error {
 			authChecker := server.NewAllowAllChecker()
 			reporter := server.NewStatsContext("copilot/")
 			mcpServer := server.New(cache, typeURLs, authChecker, reporter)
+
+			for name, scope := range log.Scopes() {
+				scope.SetOutputLevel(cfg.PilotLogLevel)
+				logger.Info("set pilot log level for scope", lager.Data{"scope-name": name})
+			}
+
 			mcp.RegisterAggregatedMeshConfigServiceServer(s, mcpServer)
 			reflection.Register(s)
 		},
