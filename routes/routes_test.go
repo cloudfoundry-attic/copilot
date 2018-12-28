@@ -5,7 +5,6 @@ import (
 	"code.cloudfoundry.org/copilot/routes"
 	"code.cloudfoundry.org/copilot/routes/fakes"
 	"code.cloudfoundry.org/lager/lagertest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -37,6 +36,196 @@ var _ = Describe("Collect", func() {
 			backendSetRepo,
 			vipProvider,
 		)
+	})
+
+	Context("when number of apps don't divide evenly into 100", func() {
+		BeforeEach(func() {
+			routeMappings.GetCalculatedWeightStub = func(rm *models.RouteMapping) int32 {
+				var percent int32
+				switch rm.CAPIProcessGUID {
+				case "capi-process-guid-a":
+					percent = int32(33)
+				case "capi-process-guid-b":
+					percent = int32(33)
+				case "capi-process-guid-c":
+					percent = int32(33)
+				case "capi-process-guid-d":
+					percent = int32(100)
+				}
+
+				return percent
+			}
+
+			routeMappings.ListReturns(map[string]*models.RouteMapping{
+				"route-guid-a-capi-process-guid-a": &models.RouteMapping{
+					RouteGUID:       "route-guid-a",
+					CAPIProcessGUID: "capi-process-guid-a",
+					RouteWeight:     1,
+				},
+				"route-guid-a-capi-process-guid-b": &models.RouteMapping{
+					RouteGUID:       "route-guid-a",
+					CAPIProcessGUID: "capi-process-guid-b",
+					RouteWeight:     1,
+				},
+				"route-guid-a-capi-process-guid-c": &models.RouteMapping{
+					RouteGUID:       "route-guid-a",
+					CAPIProcessGUID: "capi-process-guid-c",
+					RouteWeight:     1,
+				},
+				"route-guid-b-capi-process-guid-d": &models.RouteMapping{
+					RouteGUID:       "route-guid-b",
+					CAPIProcessGUID: "capi-process-guid-d",
+					RouteWeight:     1,
+				},
+			})
+
+			routesRepo.GetStub = func(guid models.RouteGUID) (*models.Route, bool) {
+				r := map[models.RouteGUID]*models.Route{
+					"route-guid-a": &models.Route{
+						GUID: "route-guid-a",
+						Host: "route-a.cfapps.com",
+						Path: "",
+					},
+					"route-guid-b": &models.Route{
+						GUID: "route-guid-b",
+						Host: "route-b.cfapps.com",
+						Path: "",
+					},
+				}
+
+				return r[guid], true
+			}
+
+			capiDiego.GetStub = func(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation {
+				cd := map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation{
+					"capi-process-guid-a": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-a",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-a",
+						},
+					},
+					"capi-process-guid-b": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-b",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-b",
+						},
+					},
+					"capi-process-guid-c": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-c",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-c",
+						},
+					},
+					"capi-process-guid-d": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-d",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-d",
+						},
+					},
+				}
+
+				return cd[*capiProcessGUID]
+			}
+
+			backendSetRepo.GetStub = func(guid models.DiegoProcessGUID) *models.BackendSet {
+				bs := map[models.DiegoProcessGUID]*models.BackendSet{
+					"diego-process-guid-a": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "1.1.1.1",
+								Port:    1111,
+							},
+						},
+					},
+					"diego-process-guid-b": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "2.2.2.2",
+								Port:    2222,
+							},
+						},
+					},
+					"diego-process-guid-c": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					"diego-process-guid-d": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "4.4.4.4",
+								Port:    4444,
+							},
+						},
+					},
+				}
+
+				return bs[guid]
+			}
+		})
+
+		It("fixes the weights so the sum is 100", func() {
+			rwb := rc.Collect()
+			Expect(rwb).To(HaveLen(4))
+
+			Expect(rwb).To(Equal([]*models.RouteWithBackends{
+				&models.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "1.1.1.1",
+								Port:    1111,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-a",
+					RouteWeight:     33,
+				},
+				&models.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "2.2.2.2",
+								Port:    2222,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-b",
+					RouteWeight:     33,
+				},
+				&models.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-c",
+					RouteWeight:     34,
+				},
+				&models.RouteWithBackends{
+					Hostname: "route-b.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "4.4.4.4",
+								Port:    4444,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-d",
+					RouteWeight:     100,
+				},
+			}))
+		})
 	})
 
 	Context("when an app is running", func() {

@@ -17,13 +17,12 @@ import (
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
 	"github.com/gogo/protobuf/proto"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/log"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Copilot", func() {
@@ -393,7 +392,7 @@ var _ = Describe("Copilot", func() {
 		_, err = ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
 			Route: &api.Route{
 				Guid: "route-guid-b",
-				Host: routeHost,
+				Host: "some-other-url",
 				Path: "/some/path",
 			}})
 		Expect(err).NotTo(HaveOccurred())
@@ -424,11 +423,6 @@ var _ = Describe("Copilot", func() {
 			"http",
 			[]Endpoint{
 				{
-					port:   61111,
-					addr:   "10.10.1.7",
-					subset: "capi-process-guid-other",
-				},
-				{
 					port:   61003,
 					addr:   "10.10.1.3",
 					subset: "capi-process-guid-a",
@@ -445,20 +439,21 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		)
-		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(ConsistOf(expectedSE, expectedInternalSE))
+		expectedOtherSE := expectedServiceEntry(
+			"some-other-url",
+			"",
+			"http",
+			[]Endpoint{
+				{
+					port:   61111,
+					addr:   "10.10.1.7",
+					subset: "capi-process-guid-other",
+				},
+			},
+		)
+		Eventually(mcpClient.GetAllServiceEntries, "1s").Should(ConsistOf(expectedSE, expectedOtherSE, expectedInternalSE))
 
 		expectedRoutes = []Route{
-			{
-				dest: generateDestination([]RouteDestination{
-					{
-						port:   8080,
-						weight: 100,
-						subset: "capi-process-guid-other",
-						host:   "some-url",
-					},
-				}),
-				match: generateMatch([]string{"/some/path"}),
-			},
 			{
 				dest: generateDestination([]RouteDestination{
 					{
@@ -476,15 +471,32 @@ var _ = Describe("Copilot", func() {
 				}),
 			},
 		}
+		expectedOtherRoutes := []Route{
+			{
+				dest: generateDestination([]RouteDestination{
+					{
+						port:   8080,
+						weight: 100,
+						subset: "capi-process-guid-other",
+						host:   "some-other-url",
+					},
+				}),
+				match: generateMatch([]string{"/some/path"}),
+			},
+		}
 		expectedVS = expectedVirtualService("some-url", "cloudfoundry-ingress", expectedRoutes)
+		expectedOtherVS := expectedVirtualService("some-other-url", "cloudfoundry-ingress", expectedOtherRoutes)
 		Eventually(mcpClient.GetAllVirtualServices, "1s").Should(ConsistOf(
 			expectedVS,
+			expectedOtherVS,
 			expectedInternalVS,
 		))
 
 		expectedDR = expectedDestinationRule("some-url",
-			[]string{"capi-process-guid-other", "capi-process-guid-a", "capi-process-guid-b"})
-		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(ConsistOf([]*v1alpha3.DestinationRule{expectedDR, expectedInternalDR}))
+			[]string{"capi-process-guid-a", "capi-process-guid-b"})
+		expectedOtherDR := expectedDestinationRule("some-other-url",
+			[]string{"capi-process-guid-other"})
+		Eventually(mcpClient.GetAllDestinationRules, "1s").Should(ConsistOf([]*v1alpha3.DestinationRule{expectedDR, expectedOtherDR, expectedInternalDR}))
 
 		expectedGW = expectedGateway(80)
 		Eventually(mcpClient.GetAllGateways, "1s").Should(Equal([]*v1alpha3.Gateway{expectedGW}))
