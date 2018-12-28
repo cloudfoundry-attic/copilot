@@ -136,8 +136,8 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 
 func fixRouteWeights(routes []*models.RouteWithBackends) []*models.RouteWithBackends {
 	type RouteInfo struct {
-		Sum   int32
-		Index int
+		Sum      int32
+		Indicies []int
 	}
 
 	if len(routes) > 0 {
@@ -145,12 +145,19 @@ func fixRouteWeights(routes []*models.RouteWithBackends) []*models.RouteWithBack
 		for i, route := range routes {
 			info := sumPerRoute[route.Hostname]
 			info.Sum += route.RouteWeight
-			info.Index = i
+			info.Indicies = append(info.Indicies, i)
 			sumPerRoute[route.Hostname] = info
 		}
 
 		for _, info := range sumPerRoute {
-			routes[info.Index].RouteWeight += 100 - info.Sum
+			leftover := 100 - info.Sum
+			for _, index := range info.Indicies {
+				if leftover == 0 {
+					break
+				}
+				routes[index].RouteWeight += 1
+				leftover -= 1
+			}
 		}
 	}
 

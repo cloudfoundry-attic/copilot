@@ -44,12 +44,18 @@ var _ = Describe("Collect", func() {
 				var percent int32
 				switch rm.CAPIProcessGUID {
 				case "capi-process-guid-a":
-					percent = int32(33)
+					percent = int32(16)
 				case "capi-process-guid-b":
-					percent = int32(33)
+					percent = int32(16)
 				case "capi-process-guid-c":
-					percent = int32(33)
+					percent = int32(16)
 				case "capi-process-guid-d":
+					percent = int32(16)
+				case "capi-process-guid-e":
+					percent = int32(16)
+				case "capi-process-guid-f":
+					percent = int32(16)
+				case "capi-process-guid-g":
 					percent = int32(100)
 				}
 
@@ -72,9 +78,24 @@ var _ = Describe("Collect", func() {
 					CAPIProcessGUID: "capi-process-guid-c",
 					RouteWeight:     1,
 				},
-				"route-guid-b-capi-process-guid-d": &models.RouteMapping{
-					RouteGUID:       "route-guid-b",
+				"route-guid-a-capi-process-guid-d": &models.RouteMapping{
+					RouteGUID:       "route-guid-a",
 					CAPIProcessGUID: "capi-process-guid-d",
+					RouteWeight:     1,
+				},
+				"route-guid-a-capi-process-guid-e": &models.RouteMapping{
+					RouteGUID:       "route-guid-a",
+					CAPIProcessGUID: "capi-process-guid-e",
+					RouteWeight:     1,
+				},
+				"route-guid-a-capi-process-guid-f": &models.RouteMapping{
+					RouteGUID:       "route-guid-a",
+					CAPIProcessGUID: "capi-process-guid-f",
+					RouteWeight:     1,
+				},
+				"route-guid-b-capi-process-guid-g": &models.RouteMapping{
+					RouteGUID:       "route-guid-b",
+					CAPIProcessGUID: "capi-process-guid-g",
 					RouteWeight:     1,
 				},
 			})
@@ -122,6 +143,24 @@ var _ = Describe("Collect", func() {
 							"diego-process-guid-d",
 						},
 					},
+					"capi-process-guid-e": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-e",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-e",
+						},
+					},
+					"capi-process-guid-f": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-f",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-f",
+						},
+					},
+					"capi-process-guid-g": &models.CAPIDiegoProcessAssociation{
+						CAPIProcessGUID: "capi-process-guid-g",
+						DiegoProcessGUIDs: []models.DiegoProcessGUID{
+							"diego-process-guid-g",
+						},
+					},
 				}
 
 				return cd[*capiProcessGUID]
@@ -156,6 +195,30 @@ var _ = Describe("Collect", func() {
 					"diego-process-guid-d": &models.BackendSet{
 						Backends: []*models.Backend{
 							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					"diego-process-guid-e": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					"diego-process-guid-f": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					"diego-process-guid-g": &models.BackendSet{
+						Backends: []*models.Backend{
+							{
 								Address: "4.4.4.4",
 								Port:    4444,
 							},
@@ -167,9 +230,8 @@ var _ = Describe("Collect", func() {
 			}
 		})
 
-		It("fixes the weights so the sum is 100", func() {
 			rwb := rc.Collect()
-			Expect(rwb).To(HaveLen(4))
+			Expect(rwb).To(HaveLen(7))
 
 			Expect(rwb).To(Equal([]*models.RouteWithBackends{
 				&models.RouteWithBackends{
@@ -183,7 +245,7 @@ var _ = Describe("Collect", func() {
 						},
 					},
 					CapiProcessGUID: "capi-process-guid-a",
-					RouteWeight:     33,
+					RouteWeight:     17,
 				},
 				&models.RouteWithBackends{
 					Hostname: "route-a.cfapps.com",
@@ -196,7 +258,7 @@ var _ = Describe("Collect", func() {
 						},
 					},
 					CapiProcessGUID: "capi-process-guid-b",
-					RouteWeight:     33,
+					RouteWeight:     17,
 				},
 				&models.RouteWithBackends{
 					Hostname: "route-a.cfapps.com",
@@ -209,7 +271,46 @@ var _ = Describe("Collect", func() {
 						},
 					},
 					CapiProcessGUID: "capi-process-guid-c",
-					RouteWeight:     34,
+					RouteWeight:     17,
+				},
+				&models.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-d",
+					RouteWeight:     17,
+				},
+				&models.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-e",
+					RouteWeight:     16,
+				},
+				&models.RouteWithBackends{
+					Hostname: "route-a.cfapps.com",
+					Backends: models.BackendSet{
+						Backends: []*models.Backend{
+							{
+								Address: "3.3.3.3",
+								Port:    3333,
+							},
+						},
+					},
+					CapiProcessGUID: "capi-process-guid-f",
+					RouteWeight:     16,
 				},
 				&models.RouteWithBackends{
 					Hostname: "route-b.cfapps.com",
@@ -221,7 +322,7 @@ var _ = Describe("Collect", func() {
 							},
 						},
 					},
-					CapiProcessGUID: "capi-process-guid-d",
+					CapiProcessGUID: "capi-process-guid-g",
 					RouteWeight:     100,
 				},
 			}))

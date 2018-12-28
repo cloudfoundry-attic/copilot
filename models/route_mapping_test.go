@@ -2,7 +2,6 @@ package models_test
 
 import (
 	"code.cloudfoundry.org/copilot/models"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -30,7 +29,34 @@ var _ = Describe("RouteMappingsRepo", func() {
 			routeMappingsRepo.Map(rmTwo)
 
 			Expect(routeMappingsRepo.GetCalculatedWeight(rmOne)).To(Equal(int32(33)))
-			Expect(routeMappingsRepo.GetCalculatedWeight(rmTwo)).To(Equal(int32(67)))
+			Expect(routeMappingsRepo.GetCalculatedWeight(rmTwo)).To(Equal(int32(66)))
+		})
+
+		It("calculates the weight of a route mapping with 3 apps", func() {
+			rmOne := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-capi-guid",
+				RouteWeight:     1,
+			}
+			routeMappingsRepo.Map(rmOne)
+
+			rmTwo := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-other-capi-guid",
+				RouteWeight:     1,
+			}
+			routeMappingsRepo.Map(rmTwo)
+
+			rmThree := &models.RouteMapping{
+				RouteGUID:       "some-route-guid",
+				CAPIProcessGUID: "some-other-other-capi-guid",
+				RouteWeight:     1,
+			}
+			routeMappingsRepo.Map(rmThree)
+
+			Expect(routeMappingsRepo.GetCalculatedWeight(rmOne)).To(Equal(int32(33)))
+			Expect(routeMappingsRepo.GetCalculatedWeight(rmTwo)).To(Equal(int32(33)))
+			Expect(routeMappingsRepo.GetCalculatedWeight(rmThree)).To(Equal(int32(33)))
 		})
 
 		Context("when a route is zero", func() {
@@ -160,7 +186,7 @@ var _ = Describe("RouteMappingsRepo", func() {
 				"some-other-route-guid-a-different-capi-guid": otherRouteMapping,
 			}))
 
-			Expect(routeMappingsRepo.GetCalculatedWeight(otherRouteMapping)).To(Equal(int32(67)))
+			Expect(routeMappingsRepo.GetCalculatedWeight(otherRouteMapping)).To(Equal(int32(66)))
 		})
 
 		It("syncs correctly after multiple times", func() {

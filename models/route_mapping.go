@@ -40,7 +40,7 @@ func (r *RouteMappingsRepo) GetCalculatedWeight(rm *RouteMapping) int32 {
 	}
 	r.Unlock()
 
-	return int32(percent + 0.5)
+	return int32(percent)
 }
 
 func (m *RouteMappingsRepo) Map(rm *RouteMapping) {
