@@ -19,6 +19,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"google.golang.org/grpc/grpclog"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/log"
 
@@ -44,6 +45,8 @@ var _ = Describe("Copilot", func() {
 	)
 
 	BeforeEach(func() {
+		grpclog.SetLoggerV2(grpclog.NewLoggerV2(GinkgoWriter, GinkgoWriter, GinkgoWriter))
+
 		mockBBS = testhelpers.NewMockBBSServer()
 		mockBBS.SetGetV1EventsResponse(&bbsmodels.ActualLRPGroup{
 			Instance: &bbsmodels.ActualLRP{
@@ -168,7 +171,7 @@ var _ = Describe("Copilot", func() {
 				},
 			},
 		}
-		fmt.Printf("%+v\n", serverConfig)
+		fmt.Fprintf(GinkgoWriter, "%+v\n", serverConfig)
 		configFilePath = testhelpers.TempFileName()
 		cleanupFuncs = append(cleanupFuncs, func() { os.Remove(configFilePath) })
 
