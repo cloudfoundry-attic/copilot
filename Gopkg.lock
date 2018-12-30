@@ -564,7 +564,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:619ebd77a04b4609f066196d620b3aa13ee2d9d92c5cf6ae3429311e0cca4e0f"
+  digest = "1:a69104bdfbed332550a25b580655951da5ee6b6f0c41ccb0591c7b32300e983a"
   name = "istio.io/api"
   packages = [
     "authentication/v1alpha1",
@@ -576,7 +576,7 @@
     "rbac/v1alpha1",
   ]
   pruneopts = ""
-  revision = "e000c2a2987a013a455c459699fdfb178f277dae"
+  revision = "73238e149e64663df5651833d16715c3b43caea2"
 
 [[projects]]
   branch = "master"
@@ -628,12 +628,15 @@
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/encoding/gzip",
+    "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
     "gopkg.in/validator.v2",
     "istio.io/api/mcp/v1alpha1",
     "istio.io/api/networking/v1alpha3",
     "istio.io/istio/pilot/pkg/model",
+    "istio.io/istio/pkg/log",
     "istio.io/istio/pkg/mcp/client",
     "istio.io/istio/pkg/mcp/server",
     "istio.io/istio/pkg/mcp/snapshot",

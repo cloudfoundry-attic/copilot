@@ -3,7 +3,6 @@
 
 import sys
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
-from google.protobuf.internal import enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -15,69 +14,19 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb2
+from mesh.v1alpha1 import proxy_pb2 as mesh_dot_v1alpha1_dot_proxy__pb2
+from networking.v1alpha3 import destination_rule_pb2 as networking_dot_v1alpha3_dot_destination__rule__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='mesh/v1alpha1/config.proto',
   package='istio.mesh.v1alpha1',
   syntax='proto3',
-  serialized_pb=_b('\n\x1amesh/v1alpha1/config.proto\x12\x13istio.mesh.v1alpha1\x1a\x1egoogle/protobuf/duration.proto\"\xfb\x01\n\x07Tracing\x12\x35\n\x06zipkin\x18\x01 \x01(\x0b\x32#.istio.mesh.v1alpha1.Tracing.ZipkinH\x00\x12;\n\tlightstep\x18\x02 \x01(\x0b\x32&.istio.mesh.v1alpha1.Tracing.LightstepH\x00\x1a\x19\n\x06Zipkin\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x1aW\n\tLightstep\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12\x14\n\x0c\x61\x63\x63\x65ss_token\x18\x02 \x01(\t\x12\x0e\n\x06secure\x18\x03 \x01(\x08\x12\x13\n\x0b\x63\x61\x63\x65rt_path\x18\x04 \x01(\tB\x08\n\x06tracer\"\xe6\x05\n\x0bProxyConfig\x12\x13\n\x0b\x63onfig_path\x18\x01 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x02 \x01(\t\x12\x17\n\x0fservice_cluster\x18\x03 \x01(\t\x12\x31\n\x0e\x64rain_duration\x18\x04 \x01(\x0b\x32\x19.google.protobuf.Duration\x12;\n\x18parent_shutdown_duration\x18\x05 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x19\n\x11\x64iscovery_address\x18\x06 \x01(\t\x12\x1a\n\x0ezipkin_address\x18\x08 \x01(\tB\x02\x18\x01\x12\x32\n\x0f\x63onnect_timeout\x18\t \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x1a\n\x12statsd_udp_address\x18\n \x01(\t\x12\x18\n\x10proxy_admin_port\x18\x0b \x01(\x05\x12L\n\x19\x63ontrol_plane_auth_policy\x18\r \x01(\x0e\x32).istio.mesh.v1alpha1.AuthenticationPolicy\x12\x1a\n\x12\x63ustom_config_file\x18\x0e \x01(\t\x12\x18\n\x10stat_name_length\x18\x0f \x01(\x05\x12\x13\n\x0b\x63oncurrency\x18\x10 \x01(\x05\x12%\n\x1dproxy_bootstrap_template_path\x18\x11 \x01(\t\x12S\n\x11interception_mode\x18\x12 \x01(\x0e\x32\x38.istio.mesh.v1alpha1.ProxyConfig.InboundInterceptionMode\x12-\n\x07tracing\x18\x13 \x01(\x0b\x32\x1c.istio.mesh.v1alpha1.Tracing\"3\n\x17InboundInterceptionMode\x12\x0c\n\x08REDIRECT\x10\x00\x12\n\n\x06TPROXY\x10\x01J\x04\x08\x07\x10\x08J\x04\x08\x0c\x10\r\"\xdc\x07\n\nMeshConfig\x12\x1a\n\x12mixer_check_server\x18\x01 \x01(\t\x12\x1b\n\x13mixer_report_server\x18\x02 \x01(\t\x12\x1d\n\x15\x64isable_policy_checks\x18\x03 \x01(\x08\x12\x19\n\x11proxy_listen_port\x18\x04 \x01(\x05\x12\x17\n\x0fproxy_http_port\x18\x05 \x01(\x05\x12\x32\n\x0f\x63onnect_timeout\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x15\n\ringress_class\x18\x07 \x01(\t\x12\x17\n\x0fingress_service\x18\x08 \x01(\t\x12V\n\x17ingress_controller_mode\x18\t \x01(\x0e\x32\x35.istio.mesh.v1alpha1.MeshConfig.IngressControllerMode\x12\x43\n\x0b\x61uth_policy\x18\n \x01(\x0e\x32*.istio.mesh.v1alpha1.MeshConfig.AuthPolicyB\x02\x18\x01\x12\x16\n\x0e\x65nable_tracing\x18\x0c \x01(\x08\x12\x17\n\x0f\x61\x63\x63\x65ss_log_file\x18\r \x01(\t\x12\x38\n\x0e\x64\x65\x66\x61ult_config\x18\x0e \x01(\x0b\x32 .istio.mesh.v1alpha1.ProxyConfig\x12V\n\x17outbound_traffic_policy\x18\x11 \x01(\x0b\x32\x35.istio.mesh.v1alpha1.MeshConfig.OutboundTrafficPolicy\x12\'\n\x1f\x65nable_client_side_policy_check\x18\x13 \x01(\x08\x12\x14\n\x0csds_uds_path\x18\x14 \x01(\t\x12\x16\n\x0egalley_address\x18\x16 \x01(\t\x1a\xa5\x01\n\x15OutboundTrafficPolicy\x12H\n\x04mode\x18\x01 \x01(\x0e\x32:.istio.mesh.v1alpha1.MeshConfig.OutboundTrafficPolicy.Mode\"B\n\x04Mode\x12\x11\n\rREGISTRY_ONLY\x10\x00\x12\r\n\tALLOW_ANY\x10\x01\x12\x18\n\x14VIRTUAL_SERVICE_ONLY\x10\x02\"9\n\x15IngressControllerMode\x12\x07\n\x03OFF\x10\x00\x12\x0b\n\x07\x44\x45\x46\x41ULT\x10\x01\x12\n\n\x06STRICT\x10\x02\"&\n\nAuthPolicy\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nMUTUAL_TLS\x10\x01J\x04\x08\x0b\x10\x0cJ\x04\x08\x0f\x10\x10J\x04\x08\x10\x10\x11J\x04\x08\x12\x10\x13J\x04\x08\x15\x10\x16*>\n\x14\x41uthenticationPolicy\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nMUTUAL_TLS\x10\x01\x12\x0c\n\x07INHERIT\x10\xe8\x07\x42\x1cZ\x1aistio.io/api/mesh/v1alpha1b\x06proto3')
+  serialized_pb=_b('\n\x1amesh/v1alpha1/config.proto\x12\x13istio.mesh.v1alpha1\x1a\x1egoogle/protobuf/duration.proto\x1a\x19mesh/v1alpha1/proxy.proto\x1a*networking/v1alpha3/destination_rule.proto\"\xf7\r\n\nMeshConfig\x12\x1a\n\x12mixer_check_server\x18\x01 \x01(\t\x12\x1b\n\x13mixer_report_server\x18\x02 \x01(\t\x12\x1d\n\x15\x64isable_policy_checks\x18\x03 \x01(\x08\x12\x1e\n\x16policy_check_fail_open\x18\x19 \x01(\x08\x12\x19\n\x11proxy_listen_port\x18\x04 \x01(\x05\x12\x17\n\x0fproxy_http_port\x18\x05 \x01(\x05\x12\x32\n\x0f\x63onnect_timeout\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x61\n\rtcp_keepalive\x18\x1c \x01(\x0b\x32J.istio.networking.v1alpha3.ConnectionPoolSettings.TCPSettings.TcpKeepalive\x12\x15\n\ringress_class\x18\x07 \x01(\t\x12\x17\n\x0fingress_service\x18\x08 \x01(\t\x12V\n\x17ingress_controller_mode\x18\t \x01(\x0e\x32\x35.istio.mesh.v1alpha1.MeshConfig.IngressControllerMode\x12\x43\n\x0b\x61uth_policy\x18\n \x01(\x0e\x32*.istio.mesh.v1alpha1.MeshConfig.AuthPolicyB\x02\x18\x01\x12\x38\n\x11rds_refresh_delay\x18\x0b \x01(\x0b\x32\x19.google.protobuf.DurationB\x02\x18\x01\x12\x16\n\x0e\x65nable_tracing\x18\x0c \x01(\x08\x12\x17\n\x0f\x61\x63\x63\x65ss_log_file\x18\r \x01(\t\x12\x19\n\x11\x61\x63\x63\x65ss_log_format\x18\x18 \x01(\t\x12N\n\x13\x61\x63\x63\x65ss_log_encoding\x18\x1b \x01(\x0e\x32\x31.istio.mesh.v1alpha1.MeshConfig.AccessLogEncoding\x12\x38\n\x0e\x64\x65\x66\x61ult_config\x18\x0e \x01(\x0b\x32 .istio.mesh.v1alpha1.ProxyConfig\x12\x19\n\rmixer_address\x18\x10 \x01(\tB\x02\x18\x01\x12Z\n\x17outbound_traffic_policy\x18\x11 \x01(\x0b\x32\x35.istio.mesh.v1alpha1.MeshConfig.OutboundTrafficPolicyB\x02\x18\x01\x12\'\n\x1f\x65nable_client_side_policy_check\x18\x13 \x01(\x08\x12\x14\n\x0csds_uds_path\x18\x14 \x01(\t\x12\x38\n\x11sds_refresh_delay\x18\x15 \x01(\x0b\x32\x19.google.protobuf.DurationB\x02\x18\x01\x12\x39\n\x0e\x63onfig_sources\x18\x16 \x03(\x0b\x32!.istio.mesh.v1alpha1.ConfigSource\x12\x1e\n\x16\x65nable_sds_token_mount\x18\x17 \x01(\x08\x12\x14\n\x0ctrust_domain\x18\x1a \x01(\t\x12\\\n\x1a\x64\x65\x66\x61ult_service_dependency\x18\x1d \x01(\x0b\x32\x38.istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency\x1a\xb5\x01\n\x15OutboundTrafficPolicy\x12L\n\x04mode\x18\x01 \x01(\x0e\x32:.istio.mesh.v1alpha1.MeshConfig.OutboundTrafficPolicy.ModeB\x02\x18\x01\"N\n\x04Mode\x12\x15\n\rREGISTRY_ONLY\x10\x00\x1a\x02\x08\x01\x12\x11\n\tALLOW_ANY\x10\x01\x1a\x02\x08\x01\x12\x1c\n\x14VIRTUAL_SERVICE_ONLY\x10\x02\x1a\x02\x08\x01\x1a\xb9\x01\n\x18\x44\x65\x66\x61ultServiceDependency\x12R\n\x0bimport_mode\x18\x01 \x01(\x0e\x32=.istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency.Mode\x12\x19\n\x11import_namespaces\x18\x02 \x03(\t\".\n\x04Mode\x12\x12\n\x0e\x41LL_NAMESPACES\x10\x00\x12\x12\n\x0eSAME_NAMESPACE\x10\x01\"9\n\x15IngressControllerMode\x12\x07\n\x03OFF\x10\x00\x12\x0b\n\x07\x44\x45\x46\x41ULT\x10\x01\x12\n\n\x06STRICT\x10\x02\"&\n\nAuthPolicy\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nMUTUAL_TLS\x10\x01\"\'\n\x11\x41\x63\x63\x65ssLogEncoding\x12\x08\n\x04TEXT\x10\x00\x12\x08\n\x04JSON\x10\x01J\x04\x08\x0f\x10\x10J\x04\x08\x12\x10\x13\"]\n\x0c\x43onfigSource\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12<\n\x0ctls_settings\x18\x02 \x01(\x0b\x32&.istio.networking.v1alpha3.TLSSettingsB\x1cZ\x1aistio.io/api/mesh/v1alpha1b\x06proto3')
   ,
-  dependencies=[google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,])
-
-_AUTHENTICATIONPOLICY = _descriptor.EnumDescriptor(
-  name='AuthenticationPolicy',
-  full_name='istio.mesh.v1alpha1.AuthenticationPolicy',
-  filename=None,
-  file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='NONE', index=0, number=0,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='MUTUAL_TLS', index=1, number=1,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='INHERIT', index=2, number=1000,
-      options=None,
-      type=None),
-  ],
-  containing_type=None,
-  options=None,
-  serialized_start=2073,
-  serialized_end=2135,
-)
-_sym_db.RegisterEnumDescriptor(_AUTHENTICATIONPOLICY)
-
-AuthenticationPolicy = enum_type_wrapper.EnumTypeWrapper(_AUTHENTICATIONPOLICY)
-NONE = 0
-MUTUAL_TLS = 1
-INHERIT = 1000
+  dependencies=[google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,mesh_dot_v1alpha1_dot_proxy__pb2.DESCRIPTOR,networking_dot_v1alpha3_dot_destination__rule__pb2.DESCRIPTOR,])
 
 
-_PROXYCONFIG_INBOUNDINTERCEPTIONMODE = _descriptor.EnumDescriptor(
-  name='InboundInterceptionMode',
-  full_name='istio.mesh.v1alpha1.ProxyConfig.InboundInterceptionMode',
-  filename=None,
-  file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='REDIRECT', index=0, number=0,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='TPROXY', index=1, number=1,
-      options=None,
-      type=None),
-  ],
-  containing_type=None,
-  options=None,
-  serialized_start=1017,
-  serialized_end=1068,
-)
-_sym_db.RegisterEnumDescriptor(_PROXYCONFIG_INBOUNDINTERCEPTIONMODE)
 
 _MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE = _descriptor.EnumDescriptor(
   name='Mode',
@@ -87,23 +36,45 @@ _MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='REGISTRY_ONLY', index=0, number=0,
-      options=None,
+      options=_descriptor._ParseOptions(descriptor_pb2.EnumValueOptions(), _b('\010\001')),
       type=None),
     _descriptor.EnumValueDescriptor(
       name='ALLOW_ANY', index=1, number=1,
-      options=None,
+      options=_descriptor._ParseOptions(descriptor_pb2.EnumValueOptions(), _b('\010\001')),
       type=None),
     _descriptor.EnumValueDescriptor(
       name='VIRTUAL_SERVICE_ONLY', index=2, number=2,
+      options=_descriptor._ParseOptions(descriptor_pb2.EnumValueOptions(), _b('\010\001')),
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=1520,
+  serialized_end=1598,
+)
+_sym_db.RegisterEnumDescriptor(_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE)
+
+_MESHCONFIG_DEFAULTSERVICEDEPENDENCY_MODE = _descriptor.EnumDescriptor(
+  name='Mode',
+  full_name='istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency.Mode',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='ALL_NAMESPACES', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SAME_NAMESPACE', index=1, number=1,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=1876,
-  serialized_end=1942,
+  serialized_start=1740,
+  serialized_end=1786,
 )
-_sym_db.RegisterEnumDescriptor(_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE)
+_sym_db.RegisterEnumDescriptor(_MESHCONFIG_DEFAULTSERVICEDEPENDENCY_MODE)
 
 _MESHCONFIG_INGRESSCONTROLLERMODE = _descriptor.EnumDescriptor(
   name='IngressControllerMode',
@@ -126,8 +97,8 @@ _MESHCONFIG_INGRESSCONTROLLERMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1944,
-  serialized_end=2001,
+  serialized_start=1788,
+  serialized_end=1845,
 )
 _sym_db.RegisterEnumDescriptor(_MESHCONFIG_INGRESSCONTROLLERMODE)
 
@@ -148,276 +119,32 @@ _MESHCONFIG_AUTHPOLICY = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2003,
-  serialized_end=2041,
+  serialized_start=1847,
+  serialized_end=1885,
 )
 _sym_db.RegisterEnumDescriptor(_MESHCONFIG_AUTHPOLICY)
 
-
-_TRACING_ZIPKIN = _descriptor.Descriptor(
-  name='Zipkin',
-  full_name='istio.mesh.v1alpha1.Tracing.Zipkin',
+_MESHCONFIG_ACCESSLOGENCODING = _descriptor.EnumDescriptor(
+  name='AccessLogEncoding',
+  full_name='istio.mesh.v1alpha1.MeshConfig.AccessLogEncoding',
   filename=None,
   file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='TEXT', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='JSON', index=1, number=1,
+      options=None,
+      type=None),
+  ],
   containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='address', full_name='istio.mesh.v1alpha1.Tracing.Zipkin.address', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
   options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=211,
-  serialized_end=236,
+  serialized_start=1887,
+  serialized_end=1926,
 )
-
-_TRACING_LIGHTSTEP = _descriptor.Descriptor(
-  name='Lightstep',
-  full_name='istio.mesh.v1alpha1.Tracing.Lightstep',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='address', full_name='istio.mesh.v1alpha1.Tracing.Lightstep.address', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='access_token', full_name='istio.mesh.v1alpha1.Tracing.Lightstep.access_token', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='secure', full_name='istio.mesh.v1alpha1.Tracing.Lightstep.secure', index=2,
-      number=3, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='cacert_path', full_name='istio.mesh.v1alpha1.Tracing.Lightstep.cacert_path', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=238,
-  serialized_end=325,
-)
-
-_TRACING = _descriptor.Descriptor(
-  name='Tracing',
-  full_name='istio.mesh.v1alpha1.Tracing',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='zipkin', full_name='istio.mesh.v1alpha1.Tracing.zipkin', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='lightstep', full_name='istio.mesh.v1alpha1.Tracing.lightstep', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[_TRACING_ZIPKIN, _TRACING_LIGHTSTEP, ],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-    _descriptor.OneofDescriptor(
-      name='tracer', full_name='istio.mesh.v1alpha1.Tracing.tracer',
-      index=0, containing_type=None, fields=[]),
-  ],
-  serialized_start=84,
-  serialized_end=335,
-)
-
-
-_PROXYCONFIG = _descriptor.Descriptor(
-  name='ProxyConfig',
-  full_name='istio.mesh.v1alpha1.ProxyConfig',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='config_path', full_name='istio.mesh.v1alpha1.ProxyConfig.config_path', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='binary_path', full_name='istio.mesh.v1alpha1.ProxyConfig.binary_path', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='service_cluster', full_name='istio.mesh.v1alpha1.ProxyConfig.service_cluster', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='drain_duration', full_name='istio.mesh.v1alpha1.ProxyConfig.drain_duration', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='parent_shutdown_duration', full_name='istio.mesh.v1alpha1.ProxyConfig.parent_shutdown_duration', index=4,
-      number=5, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='discovery_address', full_name='istio.mesh.v1alpha1.ProxyConfig.discovery_address', index=5,
-      number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='zipkin_address', full_name='istio.mesh.v1alpha1.ProxyConfig.zipkin_address', index=6,
-      number=8, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='connect_timeout', full_name='istio.mesh.v1alpha1.ProxyConfig.connect_timeout', index=7,
-      number=9, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='statsd_udp_address', full_name='istio.mesh.v1alpha1.ProxyConfig.statsd_udp_address', index=8,
-      number=10, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='proxy_admin_port', full_name='istio.mesh.v1alpha1.ProxyConfig.proxy_admin_port', index=9,
-      number=11, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='control_plane_auth_policy', full_name='istio.mesh.v1alpha1.ProxyConfig.control_plane_auth_policy', index=10,
-      number=13, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='custom_config_file', full_name='istio.mesh.v1alpha1.ProxyConfig.custom_config_file', index=11,
-      number=14, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='stat_name_length', full_name='istio.mesh.v1alpha1.ProxyConfig.stat_name_length', index=12,
-      number=15, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='concurrency', full_name='istio.mesh.v1alpha1.ProxyConfig.concurrency', index=13,
-      number=16, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='proxy_bootstrap_template_path', full_name='istio.mesh.v1alpha1.ProxyConfig.proxy_bootstrap_template_path', index=14,
-      number=17, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='interception_mode', full_name='istio.mesh.v1alpha1.ProxyConfig.interception_mode', index=15,
-      number=18, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='tracing', full_name='istio.mesh.v1alpha1.ProxyConfig.tracing', index=16,
-      number=19, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-    _PROXYCONFIG_INBOUNDINTERCEPTIONMODE,
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=338,
-  serialized_end=1080,
-)
+_sym_db.RegisterEnumDescriptor(_MESHCONFIG_ACCESSLOGENCODING)
 
 
 _MESHCONFIG_OUTBOUNDTRAFFICPOLICY = _descriptor.Descriptor(
@@ -433,7 +160,7 @@ _MESHCONFIG_OUTBOUNDTRAFFICPOLICY = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -447,8 +174,46 @@ _MESHCONFIG_OUTBOUNDTRAFFICPOLICY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1777,
-  serialized_end=1942,
+  serialized_start=1417,
+  serialized_end=1598,
+)
+
+_MESHCONFIG_DEFAULTSERVICEDEPENDENCY = _descriptor.Descriptor(
+  name='DefaultServiceDependency',
+  full_name='istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='import_mode', full_name='istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency.import_mode', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='import_namespaces', full_name='istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency.import_namespaces', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _MESHCONFIG_DEFAULTSERVICEDEPENDENCY_MODE,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1601,
+  serialized_end=1786,
 )
 
 _MESHCONFIG = _descriptor.Descriptor(
@@ -480,110 +245,181 @@ _MESHCONFIG = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='proxy_listen_port', full_name='istio.mesh.v1alpha1.MeshConfig.proxy_listen_port', index=3,
+      name='policy_check_fail_open', full_name='istio.mesh.v1alpha1.MeshConfig.policy_check_fail_open', index=3,
+      number=25, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='proxy_listen_port', full_name='istio.mesh.v1alpha1.MeshConfig.proxy_listen_port', index=4,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='proxy_http_port', full_name='istio.mesh.v1alpha1.MeshConfig.proxy_http_port', index=4,
+      name='proxy_http_port', full_name='istio.mesh.v1alpha1.MeshConfig.proxy_http_port', index=5,
       number=5, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='connect_timeout', full_name='istio.mesh.v1alpha1.MeshConfig.connect_timeout', index=5,
+      name='connect_timeout', full_name='istio.mesh.v1alpha1.MeshConfig.connect_timeout', index=6,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='ingress_class', full_name='istio.mesh.v1alpha1.MeshConfig.ingress_class', index=6,
+      name='tcp_keepalive', full_name='istio.mesh.v1alpha1.MeshConfig.tcp_keepalive', index=7,
+      number=28, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ingress_class', full_name='istio.mesh.v1alpha1.MeshConfig.ingress_class', index=8,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='ingress_service', full_name='istio.mesh.v1alpha1.MeshConfig.ingress_service', index=7,
+      name='ingress_service', full_name='istio.mesh.v1alpha1.MeshConfig.ingress_service', index=9,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='ingress_controller_mode', full_name='istio.mesh.v1alpha1.MeshConfig.ingress_controller_mode', index=8,
+      name='ingress_controller_mode', full_name='istio.mesh.v1alpha1.MeshConfig.ingress_controller_mode', index=10,
       number=9, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='auth_policy', full_name='istio.mesh.v1alpha1.MeshConfig.auth_policy', index=9,
+      name='auth_policy', full_name='istio.mesh.v1alpha1.MeshConfig.auth_policy', index=11,
       number=10, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='enable_tracing', full_name='istio.mesh.v1alpha1.MeshConfig.enable_tracing', index=10,
+      name='rds_refresh_delay', full_name='istio.mesh.v1alpha1.MeshConfig.rds_refresh_delay', index=12,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='enable_tracing', full_name='istio.mesh.v1alpha1.MeshConfig.enable_tracing', index=13,
       number=12, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='access_log_file', full_name='istio.mesh.v1alpha1.MeshConfig.access_log_file', index=11,
+      name='access_log_file', full_name='istio.mesh.v1alpha1.MeshConfig.access_log_file', index=14,
       number=13, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='default_config', full_name='istio.mesh.v1alpha1.MeshConfig.default_config', index=12,
+      name='access_log_format', full_name='istio.mesh.v1alpha1.MeshConfig.access_log_format', index=15,
+      number=24, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='access_log_encoding', full_name='istio.mesh.v1alpha1.MeshConfig.access_log_encoding', index=16,
+      number=27, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='default_config', full_name='istio.mesh.v1alpha1.MeshConfig.default_config', index=17,
       number=14, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='outbound_traffic_policy', full_name='istio.mesh.v1alpha1.MeshConfig.outbound_traffic_policy', index=13,
+      name='mixer_address', full_name='istio.mesh.v1alpha1.MeshConfig.mixer_address', index=18,
+      number=16, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='outbound_traffic_policy', full_name='istio.mesh.v1alpha1.MeshConfig.outbound_traffic_policy', index=19,
       number=17, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='enable_client_side_policy_check', full_name='istio.mesh.v1alpha1.MeshConfig.enable_client_side_policy_check', index=14,
+      name='enable_client_side_policy_check', full_name='istio.mesh.v1alpha1.MeshConfig.enable_client_side_policy_check', index=20,
       number=19, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sds_uds_path', full_name='istio.mesh.v1alpha1.MeshConfig.sds_uds_path', index=15,
+      name='sds_uds_path', full_name='istio.mesh.v1alpha1.MeshConfig.sds_uds_path', index=21,
       number=20, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='galley_address', full_name='istio.mesh.v1alpha1.MeshConfig.galley_address', index=16,
-      number=22, type=9, cpp_type=9, label=1,
+      name='sds_refresh_delay', full_name='istio.mesh.v1alpha1.MeshConfig.sds_refresh_delay', index=22,
+      number=21, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001')), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='config_sources', full_name='istio.mesh.v1alpha1.MeshConfig.config_sources', index=23,
+      number=22, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='enable_sds_token_mount', full_name='istio.mesh.v1alpha1.MeshConfig.enable_sds_token_mount', index=24,
+      number=23, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='trust_domain', full_name='istio.mesh.v1alpha1.MeshConfig.trust_domain', index=25,
+      number=26, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='default_service_dependency', full_name='istio.mesh.v1alpha1.MeshConfig.default_service_dependency', index=26,
+      number=29, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
-  nested_types=[_MESHCONFIG_OUTBOUNDTRAFFICPOLICY, ],
+  nested_types=[_MESHCONFIG_OUTBOUNDTRAFFICPOLICY, _MESHCONFIG_DEFAULTSERVICEDEPENDENCY, ],
   enum_types=[
     _MESHCONFIG_INGRESSCONTROLLERMODE,
     _MESHCONFIG_AUTHPOLICY,
+    _MESHCONFIG_ACCESSLOGENCODING,
   ],
   options=None,
   is_extendable=False,
@@ -591,72 +427,72 @@ _MESHCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1083,
-  serialized_end=2071,
+  serialized_start=155,
+  serialized_end=1938,
 )
 
-_TRACING_ZIPKIN.containing_type = _TRACING
-_TRACING_LIGHTSTEP.containing_type = _TRACING
-_TRACING.fields_by_name['zipkin'].message_type = _TRACING_ZIPKIN
-_TRACING.fields_by_name['lightstep'].message_type = _TRACING_LIGHTSTEP
-_TRACING.oneofs_by_name['tracer'].fields.append(
-  _TRACING.fields_by_name['zipkin'])
-_TRACING.fields_by_name['zipkin'].containing_oneof = _TRACING.oneofs_by_name['tracer']
-_TRACING.oneofs_by_name['tracer'].fields.append(
-  _TRACING.fields_by_name['lightstep'])
-_TRACING.fields_by_name['lightstep'].containing_oneof = _TRACING.oneofs_by_name['tracer']
-_PROXYCONFIG.fields_by_name['drain_duration'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
-_PROXYCONFIG.fields_by_name['parent_shutdown_duration'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
-_PROXYCONFIG.fields_by_name['connect_timeout'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
-_PROXYCONFIG.fields_by_name['control_plane_auth_policy'].enum_type = _AUTHENTICATIONPOLICY
-_PROXYCONFIG.fields_by_name['interception_mode'].enum_type = _PROXYCONFIG_INBOUNDINTERCEPTIONMODE
-_PROXYCONFIG.fields_by_name['tracing'].message_type = _TRACING
-_PROXYCONFIG_INBOUNDINTERCEPTIONMODE.containing_type = _PROXYCONFIG
+
+_CONFIGSOURCE = _descriptor.Descriptor(
+  name='ConfigSource',
+  full_name='istio.mesh.v1alpha1.ConfigSource',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='address', full_name='istio.mesh.v1alpha1.ConfigSource.address', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='tls_settings', full_name='istio.mesh.v1alpha1.ConfigSource.tls_settings', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1940,
+  serialized_end=2033,
+)
+
 _MESHCONFIG_OUTBOUNDTRAFFICPOLICY.fields_by_name['mode'].enum_type = _MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE
 _MESHCONFIG_OUTBOUNDTRAFFICPOLICY.containing_type = _MESHCONFIG
 _MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.containing_type = _MESHCONFIG_OUTBOUNDTRAFFICPOLICY
+_MESHCONFIG_DEFAULTSERVICEDEPENDENCY.fields_by_name['import_mode'].enum_type = _MESHCONFIG_DEFAULTSERVICEDEPENDENCY_MODE
+_MESHCONFIG_DEFAULTSERVICEDEPENDENCY.containing_type = _MESHCONFIG
+_MESHCONFIG_DEFAULTSERVICEDEPENDENCY_MODE.containing_type = _MESHCONFIG_DEFAULTSERVICEDEPENDENCY
 _MESHCONFIG.fields_by_name['connect_timeout'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
+_MESHCONFIG.fields_by_name['tcp_keepalive'].message_type = networking_dot_v1alpha3_dot_destination__rule__pb2._CONNECTIONPOOLSETTINGS_TCPSETTINGS_TCPKEEPALIVE
 _MESHCONFIG.fields_by_name['ingress_controller_mode'].enum_type = _MESHCONFIG_INGRESSCONTROLLERMODE
 _MESHCONFIG.fields_by_name['auth_policy'].enum_type = _MESHCONFIG_AUTHPOLICY
-_MESHCONFIG.fields_by_name['default_config'].message_type = _PROXYCONFIG
+_MESHCONFIG.fields_by_name['rds_refresh_delay'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
+_MESHCONFIG.fields_by_name['access_log_encoding'].enum_type = _MESHCONFIG_ACCESSLOGENCODING
+_MESHCONFIG.fields_by_name['default_config'].message_type = mesh_dot_v1alpha1_dot_proxy__pb2._PROXYCONFIG
 _MESHCONFIG.fields_by_name['outbound_traffic_policy'].message_type = _MESHCONFIG_OUTBOUNDTRAFFICPOLICY
+_MESHCONFIG.fields_by_name['sds_refresh_delay'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
+_MESHCONFIG.fields_by_name['config_sources'].message_type = _CONFIGSOURCE
+_MESHCONFIG.fields_by_name['default_service_dependency'].message_type = _MESHCONFIG_DEFAULTSERVICEDEPENDENCY
 _MESHCONFIG_INGRESSCONTROLLERMODE.containing_type = _MESHCONFIG
 _MESHCONFIG_AUTHPOLICY.containing_type = _MESHCONFIG
-DESCRIPTOR.message_types_by_name['Tracing'] = _TRACING
-DESCRIPTOR.message_types_by_name['ProxyConfig'] = _PROXYCONFIG
+_MESHCONFIG_ACCESSLOGENCODING.containing_type = _MESHCONFIG
+_CONFIGSOURCE.fields_by_name['tls_settings'].message_type = networking_dot_v1alpha3_dot_destination__rule__pb2._TLSSETTINGS
 DESCRIPTOR.message_types_by_name['MeshConfig'] = _MESHCONFIG
-DESCRIPTOR.enum_types_by_name['AuthenticationPolicy'] = _AUTHENTICATIONPOLICY
+DESCRIPTOR.message_types_by_name['ConfigSource'] = _CONFIGSOURCE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
-Tracing = _reflection.GeneratedProtocolMessageType('Tracing', (_message.Message,), dict(
-
-  Zipkin = _reflection.GeneratedProtocolMessageType('Zipkin', (_message.Message,), dict(
-    DESCRIPTOR = _TRACING_ZIPKIN,
-    __module__ = 'mesh.v1alpha1.config_pb2'
-    # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.Tracing.Zipkin)
-    ))
-  ,
-
-  Lightstep = _reflection.GeneratedProtocolMessageType('Lightstep', (_message.Message,), dict(
-    DESCRIPTOR = _TRACING_LIGHTSTEP,
-    __module__ = 'mesh.v1alpha1.config_pb2'
-    # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.Tracing.Lightstep)
-    ))
-  ,
-  DESCRIPTOR = _TRACING,
-  __module__ = 'mesh.v1alpha1.config_pb2'
-  # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.Tracing)
-  ))
-_sym_db.RegisterMessage(Tracing)
-_sym_db.RegisterMessage(Tracing.Zipkin)
-_sym_db.RegisterMessage(Tracing.Lightstep)
-
-ProxyConfig = _reflection.GeneratedProtocolMessageType('ProxyConfig', (_message.Message,), dict(
-  DESCRIPTOR = _PROXYCONFIG,
-  __module__ = 'mesh.v1alpha1.config_pb2'
-  # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.ProxyConfig)
-  ))
-_sym_db.RegisterMessage(ProxyConfig)
 
 MeshConfig = _reflection.GeneratedProtocolMessageType('MeshConfig', (_message.Message,), dict(
 
@@ -666,18 +502,47 @@ MeshConfig = _reflection.GeneratedProtocolMessageType('MeshConfig', (_message.Me
     # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.MeshConfig.OutboundTrafficPolicy)
     ))
   ,
+
+  DefaultServiceDependency = _reflection.GeneratedProtocolMessageType('DefaultServiceDependency', (_message.Message,), dict(
+    DESCRIPTOR = _MESHCONFIG_DEFAULTSERVICEDEPENDENCY,
+    __module__ = 'mesh.v1alpha1.config_pb2'
+    # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.MeshConfig.DefaultServiceDependency)
+    ))
+  ,
   DESCRIPTOR = _MESHCONFIG,
   __module__ = 'mesh.v1alpha1.config_pb2'
   # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.MeshConfig)
   ))
 _sym_db.RegisterMessage(MeshConfig)
 _sym_db.RegisterMessage(MeshConfig.OutboundTrafficPolicy)
+_sym_db.RegisterMessage(MeshConfig.DefaultServiceDependency)
+
+ConfigSource = _reflection.GeneratedProtocolMessageType('ConfigSource', (_message.Message,), dict(
+  DESCRIPTOR = _CONFIGSOURCE,
+  __module__ = 'mesh.v1alpha1.config_pb2'
+  # @@protoc_insertion_point(class_scope:istio.mesh.v1alpha1.ConfigSource)
+  ))
+_sym_db.RegisterMessage(ConfigSource)
 
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('Z\032istio.io/api/mesh/v1alpha1'))
-_PROXYCONFIG.fields_by_name['zipkin_address'].has_options = True
-_PROXYCONFIG.fields_by_name['zipkin_address']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.values_by_name["REGISTRY_ONLY"].has_options = True
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.values_by_name["REGISTRY_ONLY"]._options = _descriptor._ParseOptions(descriptor_pb2.EnumValueOptions(), _b('\010\001'))
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.values_by_name["ALLOW_ANY"].has_options = True
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.values_by_name["ALLOW_ANY"]._options = _descriptor._ParseOptions(descriptor_pb2.EnumValueOptions(), _b('\010\001'))
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.values_by_name["VIRTUAL_SERVICE_ONLY"].has_options = True
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY_MODE.values_by_name["VIRTUAL_SERVICE_ONLY"]._options = _descriptor._ParseOptions(descriptor_pb2.EnumValueOptions(), _b('\010\001'))
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY.fields_by_name['mode'].has_options = True
+_MESHCONFIG_OUTBOUNDTRAFFICPOLICY.fields_by_name['mode']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
 _MESHCONFIG.fields_by_name['auth_policy'].has_options = True
 _MESHCONFIG.fields_by_name['auth_policy']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
+_MESHCONFIG.fields_by_name['rds_refresh_delay'].has_options = True
+_MESHCONFIG.fields_by_name['rds_refresh_delay']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
+_MESHCONFIG.fields_by_name['mixer_address'].has_options = True
+_MESHCONFIG.fields_by_name['mixer_address']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
+_MESHCONFIG.fields_by_name['outbound_traffic_policy'].has_options = True
+_MESHCONFIG.fields_by_name['outbound_traffic_policy']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
+_MESHCONFIG.fields_by_name['sds_refresh_delay'].has_options = True
+_MESHCONFIG.fields_by_name['sds_refresh_delay']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\030\001'))
 # @@protoc_insertion_point(module_scope)

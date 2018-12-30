@@ -15,6 +15,7 @@
 syntax = "proto3";
 
 import "networking/v1alpha3/gateway.proto";
+import "networking/v1alpha3/service_dependency.proto";
 
 package istio.networking.v1alpha3;
 
@@ -91,7 +92,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 //   ports:
 //   - number: 443
 //     name: https
-//     protocol: HTTPS
+//     protocol: TLS
 //   resolution: DNS
 // ```
 //
@@ -264,7 +265,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 //   location: MESH_EXTERNAL
 //   ports:
 //   - number: 80
-//     name: https
+//     name: http
 //     protocol: HTTP
 //   resolution: DNS
 //   endpoints:
@@ -288,15 +289,15 @@ message ServiceEntry {
   // REQUIRED. The hosts associated with the ServiceEntry. Could be a DNS
   // name with wildcard prefix (external services only). DNS names in hosts
   // will be ignored if the application accesses the service over non-HTTP
-  // protocols such as mongo/opaque TCP/even HTTPS. In such scenarios, the
+  // protocols such as mongo/opaque TCP/HTTPS. In such scenarios, the
   // IP addresses specified in the Addresses field or the port will be used
   // to uniquely identify the destination.
   repeated string hosts = 1;
 
   // The virtual IP addresses associated with the service. Could be CIDR
-  // prefix.  For HTTP services, the addresses field will be ignored and
+  // prefix. For HTTP services, the addresses field will be ignored and
   // the destination will be identified based on the HTTP Host/Authority
-  // header. For non-HTTP protocols such as mongo/opaque TCP/even HTTPS,
+  // header. For non-HTTP protocols such as mongo/opaque TCP/HTTPS,
   // the hosts will be ignored. If one or more IP addresses are specified,
   // the incoming traffic will be identified as belonging to this service
   // if the destination IP matches the IP/CIDRs specified in the addresses
@@ -390,8 +391,48 @@ message ServiceEntry {
 
     // One or more labels associated with the endpoint.
     map<string, string> labels = 3;
+
+    // Network enables Istio to group endpoints resident in the same L3
+    // domain/network. All endpoints in the same network are assumed to be
+    // directly reachable from one another. When endpoints in different
+    // networks cannot reach each other directly, an Istio Gateway can be
+    // used to establish connectivity (usually using the
+    // AUTO_PASSTHROUGH mode in a Gateway Server). This is
+    // an advanced configuration used typically for spanning an Istio mesh
+    // over multiple clusters.
+    string network = 4;
+
+    // The locality associated with the endpoint. A locality corresponds
+    // to a failure domain (e.g., country/region/zone). Arbitrary failure
+    // domain hierarchies can be represented by separating each
+    // encapsulating failure domain by /. For example, the locality of an
+    // an endpoint in US, in US-East-1 region, within availability zone
+    // az-1, in data center rack r11 can be represented as
+    // us/us-east-1/az-1/r11. Istio will configure the sidecar to route to
+    // endpoints within the same locality as the sidecar. If none of the
+    // endpoints in the locality are available, endpoints parent locality
+    // (but within the same network ID) will be chosen. For example, if
+    // there are two endpoints in same network (networkID "n1"), say e1
+    // with locality us/us-east-1/az-1/r11 and e2 with locality
+    // us/us-east-1/az-2/r12, a sidecar from us/us-east-1/az-1/r11 locality
+    // will prefer e1 from the same locality over e2 from a different
+    // locality. Endpoint e2 could be the IP associated with a gateway
+    // (that bridges networks n1 and n2), or the IP associated with a
+    // standard service endpoint.
+    string locality = 5;
+
+    // The load balancing weight associated with the endpoint. Endpoints
+    // with higher weights will receive proportionally higher traffic.
+    uint32 weight = 6;
   };
 
   // One or more endpoints associated with the service.
   repeated Endpoint endpoints = 6;
+
+  // The visibility setting associated with this service entry. Set to
+  // PRIVATE if this service should not be visible outside the namespace
+  // where the service entry was added. The default scope is public,
+  // i.e. the service added by the service entry will be visible to
+  // workloads in the entire mesh.
+  ConfigScope config_scope = 7;
 }
