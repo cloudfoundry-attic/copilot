@@ -254,7 +254,8 @@ func createEndpoint(route *models.RouteWithBackends) []*networking.ServiceEntry_
 			Ports: map[string]uint32{
 				portType: backend.Port,
 			},
-			Labels: map[string]string{"cfapp": route.CapiProcessGUID},
+			Labels:   map[string]string{"cfapp": route.CapiProcessGUID},
+			Locality: "diego-cell-" + backend.DiegoCellID,
 		})
 	}
 	return endpoints

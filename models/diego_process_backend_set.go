@@ -29,6 +29,7 @@ type Backend struct {
 	Address       string
 	Port          uint32
 	ContainerPort uint32
+	DiegoCellID   string
 }
 
 type RouteWithBackends struct {
@@ -254,6 +255,7 @@ func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 			Address:       instance.ActualLRPNetInfo.InstanceAddress,
 			Port:          appContainerPort,
 			ContainerPort: appContainerPort,
+			DiegoCellID:   instance.ActualLRPInstanceKey.GetCellId(),
 		}
 	}
 
