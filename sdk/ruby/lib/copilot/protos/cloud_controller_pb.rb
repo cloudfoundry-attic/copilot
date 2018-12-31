@@ -43,6 +43,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :capi_process_guid, :string, 1
     optional :route_guid, :string, 2
     optional :route_weight, :int32, 3
+    optional :app_port, :int32, 4
   end
   add_message "api.MapRouteRequest" do
     optional :route_mapping, :message, 1, "api.RouteMapping"

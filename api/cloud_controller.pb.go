@@ -33,7 +33,7 @@ func (m *ListCfRoutesRequest) Reset()         { *m = ListCfRoutesRequest{} }
 func (m *ListCfRoutesRequest) String() string { return proto.CompactTextString(m) }
 func (*ListCfRoutesRequest) ProtoMessage()    {}
 func (*ListCfRoutesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{0}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{0}
 }
 func (m *ListCfRoutesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListCfRoutesRequest.Unmarshal(m, b)
@@ -56,7 +56,7 @@ var xxx_messageInfo_ListCfRoutesRequest proto.InternalMessageInfo
 type ListCfRoutesResponse struct {
 	// key is route guid
 	// value is host
-	Routes               map[string]string `protobuf:"bytes,1,rep,name=routes,proto3" json:"routes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Routes               map[string]string `protobuf:"bytes,1,rep,name=routes" json:"routes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -66,7 +66,7 @@ func (m *ListCfRoutesResponse) Reset()         { *m = ListCfRoutesResponse{} }
 func (m *ListCfRoutesResponse) String() string { return proto.CompactTextString(m) }
 func (*ListCfRoutesResponse) ProtoMessage()    {}
 func (*ListCfRoutesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{1}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{1}
 }
 func (m *ListCfRoutesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListCfRoutesResponse.Unmarshal(m, b)
@@ -103,7 +103,7 @@ func (m *ListCfRouteMappingsRequest) Reset()         { *m = ListCfRouteMappingsR
 func (m *ListCfRouteMappingsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListCfRouteMappingsRequest) ProtoMessage()    {}
 func (*ListCfRouteMappingsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{2}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{2}
 }
 func (m *ListCfRouteMappingsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListCfRouteMappingsRequest.Unmarshal(m, b)
@@ -126,7 +126,7 @@ var xxx_messageInfo_ListCfRouteMappingsRequest proto.InternalMessageInfo
 type ListCfRouteMappingsResponse struct {
 	// key is '<route guid>-<capi process guid>'
 	// value is a route_mapping
-	RouteMappings        map[string]*RouteMapping `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings,proto3" json:"route_mappings,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	RouteMappings        map[string]*RouteMapping `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings" json:"route_mappings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
@@ -136,7 +136,7 @@ func (m *ListCfRouteMappingsResponse) Reset()         { *m = ListCfRouteMappings
 func (m *ListCfRouteMappingsResponse) String() string { return proto.CompactTextString(m) }
 func (*ListCfRouteMappingsResponse) ProtoMessage()    {}
 func (*ListCfRouteMappingsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{3}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{3}
 }
 func (m *ListCfRouteMappingsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListCfRouteMappingsResponse.Unmarshal(m, b)
@@ -175,7 +175,7 @@ func (m *ListCapiDiegoProcessAssociationsRequest) Reset() {
 func (m *ListCapiDiegoProcessAssociationsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListCapiDiegoProcessAssociationsRequest) ProtoMessage()    {}
 func (*ListCapiDiegoProcessAssociationsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{4}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{4}
 }
 func (m *ListCapiDiegoProcessAssociationsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListCapiDiegoProcessAssociationsRequest.Unmarshal(m, b)
@@ -199,7 +199,7 @@ var xxx_messageInfo_ListCapiDiegoProcessAssociationsRequest proto.InternalMessag
 // since protobuf does not support list values in maps.
 // it's gross. try not to use it.
 type DiegoProcessGuids struct {
-	DiegoProcessGuids    []string `protobuf:"bytes,1,rep,name=diego_process_guids,json=diegoProcessGuids,proto3" json:"diego_process_guids,omitempty"`
+	DiegoProcessGuids    []string `protobuf:"bytes,1,rep,name=diego_process_guids,json=diegoProcessGuids" json:"diego_process_guids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -209,7 +209,7 @@ func (m *DiegoProcessGuids) Reset()         { *m = DiegoProcessGuids{} }
 func (m *DiegoProcessGuids) String() string { return proto.CompactTextString(m) }
 func (*DiegoProcessGuids) ProtoMessage()    {}
 func (*DiegoProcessGuids) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{5}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{5}
 }
 func (m *DiegoProcessGuids) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DiegoProcessGuids.Unmarshal(m, b)
@@ -239,7 +239,7 @@ func (m *DiegoProcessGuids) GetDiegoProcessGuids() []string {
 type ListCapiDiegoProcessAssociationsResponse struct {
 	// key is capi process guid
 	// value is a list of diego process guids
-	CapiDiegoProcessAssociations map[string]*DiegoProcessGuids `protobuf:"bytes,1,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations,proto3" json:"capi_diego_process_associations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	CapiDiegoProcessAssociations map[string]*DiegoProcessGuids `protobuf:"bytes,1,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations" json:"capi_diego_process_associations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	XXX_NoUnkeyedLiteral         struct{}                      `json:"-"`
 	XXX_unrecognized             []byte                        `json:"-"`
 	XXX_sizecache                int32                         `json:"-"`
@@ -251,7 +251,7 @@ func (m *ListCapiDiegoProcessAssociationsResponse) Reset() {
 func (m *ListCapiDiegoProcessAssociationsResponse) String() string { return proto.CompactTextString(m) }
 func (*ListCapiDiegoProcessAssociationsResponse) ProtoMessage()    {}
 func (*ListCapiDiegoProcessAssociationsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{6}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{6}
 }
 func (m *ListCapiDiegoProcessAssociationsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListCapiDiegoProcessAssociationsResponse.Unmarshal(m, b)
@@ -279,10 +279,10 @@ func (m *ListCapiDiegoProcessAssociationsResponse) GetCapiDiegoProcessAssociatio
 }
 
 type Route struct {
-	Guid                 string   `protobuf:"bytes,1,opt,name=guid,proto3" json:"guid,omitempty"`
-	Host                 string   `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
-	Path                 string   `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	Internal             bool     `protobuf:"varint,4,opt,name=internal,proto3" json:"internal,omitempty"`
+	Guid                 string   `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
+	Host                 string   `protobuf:"bytes,2,opt,name=host" json:"host,omitempty"`
+	Path                 string   `protobuf:"bytes,3,opt,name=path" json:"path,omitempty"`
+	Internal             bool     `protobuf:"varint,4,opt,name=internal" json:"internal,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -292,7 +292,7 @@ func (m *Route) Reset()         { *m = Route{} }
 func (m *Route) String() string { return proto.CompactTextString(m) }
 func (*Route) ProtoMessage()    {}
 func (*Route) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{7}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{7}
 }
 func (m *Route) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Route.Unmarshal(m, b)
@@ -341,7 +341,7 @@ func (m *Route) GetInternal() bool {
 }
 
 type UpsertRouteRequest struct {
-	Route                *Route   `protobuf:"bytes,1,opt,name=route,proto3" json:"route,omitempty"`
+	Route                *Route   `protobuf:"bytes,1,opt,name=route" json:"route,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -351,7 +351,7 @@ func (m *UpsertRouteRequest) Reset()         { *m = UpsertRouteRequest{} }
 func (m *UpsertRouteRequest) String() string { return proto.CompactTextString(m) }
 func (*UpsertRouteRequest) ProtoMessage()    {}
 func (*UpsertRouteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{8}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{8}
 }
 func (m *UpsertRouteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpsertRouteRequest.Unmarshal(m, b)
@@ -388,7 +388,7 @@ func (m *UpsertRouteResponse) Reset()         { *m = UpsertRouteResponse{} }
 func (m *UpsertRouteResponse) String() string { return proto.CompactTextString(m) }
 func (*UpsertRouteResponse) ProtoMessage()    {}
 func (*UpsertRouteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{9}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{9}
 }
 func (m *UpsertRouteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpsertRouteResponse.Unmarshal(m, b)
@@ -409,7 +409,7 @@ func (m *UpsertRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpsertRouteResponse proto.InternalMessageInfo
 
 type DeleteRouteRequest struct {
-	Guid                 string   `protobuf:"bytes,1,opt,name=guid,proto3" json:"guid,omitempty"`
+	Guid                 string   `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -419,7 +419,7 @@ func (m *DeleteRouteRequest) Reset()         { *m = DeleteRouteRequest{} }
 func (m *DeleteRouteRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteRouteRequest) ProtoMessage()    {}
 func (*DeleteRouteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{10}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{10}
 }
 func (m *DeleteRouteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteRouteRequest.Unmarshal(m, b)
@@ -456,7 +456,7 @@ func (m *DeleteRouteResponse) Reset()         { *m = DeleteRouteResponse{} }
 func (m *DeleteRouteResponse) String() string { return proto.CompactTextString(m) }
 func (*DeleteRouteResponse) ProtoMessage()    {}
 func (*DeleteRouteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{11}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{11}
 }
 func (m *DeleteRouteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteRouteResponse.Unmarshal(m, b)
@@ -477,9 +477,10 @@ func (m *DeleteRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_DeleteRouteResponse proto.InternalMessageInfo
 
 type RouteMapping struct {
-	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid,proto3" json:"capi_process_guid,omitempty"`
-	RouteGuid            string   `protobuf:"bytes,2,opt,name=route_guid,json=routeGuid,proto3" json:"route_guid,omitempty"`
-	RouteWeight          int32    `protobuf:"varint,3,opt,name=route_weight,json=routeWeight,proto3" json:"route_weight,omitempty"`
+	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
+	RouteGuid            string   `protobuf:"bytes,2,opt,name=route_guid,json=routeGuid" json:"route_guid,omitempty"`
+	RouteWeight          int32    `protobuf:"varint,3,opt,name=route_weight,json=routeWeight" json:"route_weight,omitempty"`
+	AppPort              int32    `protobuf:"varint,4,opt,name=app_port,json=appPort" json:"app_port,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -489,7 +490,7 @@ func (m *RouteMapping) Reset()         { *m = RouteMapping{} }
 func (m *RouteMapping) String() string { return proto.CompactTextString(m) }
 func (*RouteMapping) ProtoMessage()    {}
 func (*RouteMapping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{12}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{12}
 }
 func (m *RouteMapping) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RouteMapping.Unmarshal(m, b)
@@ -530,8 +531,15 @@ func (m *RouteMapping) GetRouteWeight() int32 {
 	return 0
 }
 
+func (m *RouteMapping) GetAppPort() int32 {
+	if m != nil {
+		return m.AppPort
+	}
+	return 0
+}
+
 type MapRouteRequest struct {
-	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping,proto3" json:"route_mapping,omitempty"`
+	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping" json:"route_mapping,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -541,7 +549,7 @@ func (m *MapRouteRequest) Reset()         { *m = MapRouteRequest{} }
 func (m *MapRouteRequest) String() string { return proto.CompactTextString(m) }
 func (*MapRouteRequest) ProtoMessage()    {}
 func (*MapRouteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{13}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{13}
 }
 func (m *MapRouteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MapRouteRequest.Unmarshal(m, b)
@@ -578,7 +586,7 @@ func (m *MapRouteResponse) Reset()         { *m = MapRouteResponse{} }
 func (m *MapRouteResponse) String() string { return proto.CompactTextString(m) }
 func (*MapRouteResponse) ProtoMessage()    {}
 func (*MapRouteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{14}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{14}
 }
 func (m *MapRouteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MapRouteResponse.Unmarshal(m, b)
@@ -599,7 +607,7 @@ func (m *MapRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MapRouteResponse proto.InternalMessageInfo
 
 type UnmapRouteRequest struct {
-	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping,proto3" json:"route_mapping,omitempty"`
+	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping" json:"route_mapping,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -609,7 +617,7 @@ func (m *UnmapRouteRequest) Reset()         { *m = UnmapRouteRequest{} }
 func (m *UnmapRouteRequest) String() string { return proto.CompactTextString(m) }
 func (*UnmapRouteRequest) ProtoMessage()    {}
 func (*UnmapRouteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{15}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{15}
 }
 func (m *UnmapRouteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UnmapRouteRequest.Unmarshal(m, b)
@@ -646,7 +654,7 @@ func (m *UnmapRouteResponse) Reset()         { *m = UnmapRouteResponse{} }
 func (m *UnmapRouteResponse) String() string { return proto.CompactTextString(m) }
 func (*UnmapRouteResponse) ProtoMessage()    {}
 func (*UnmapRouteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{16}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{16}
 }
 func (m *UnmapRouteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UnmapRouteResponse.Unmarshal(m, b)
@@ -667,8 +675,8 @@ func (m *UnmapRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UnmapRouteResponse proto.InternalMessageInfo
 
 type CapiDiegoProcessAssociation struct {
-	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid,proto3" json:"capi_process_guid,omitempty"`
-	DiegoProcessGuids    []string `protobuf:"bytes,2,rep,name=diego_process_guids,json=diegoProcessGuids,proto3" json:"diego_process_guids,omitempty"`
+	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
+	DiegoProcessGuids    []string `protobuf:"bytes,2,rep,name=diego_process_guids,json=diegoProcessGuids" json:"diego_process_guids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -678,7 +686,7 @@ func (m *CapiDiegoProcessAssociation) Reset()         { *m = CapiDiegoProcessAss
 func (m *CapiDiegoProcessAssociation) String() string { return proto.CompactTextString(m) }
 func (*CapiDiegoProcessAssociation) ProtoMessage()    {}
 func (*CapiDiegoProcessAssociation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{17}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{17}
 }
 func (m *CapiDiegoProcessAssociation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CapiDiegoProcessAssociation.Unmarshal(m, b)
@@ -713,7 +721,7 @@ func (m *CapiDiegoProcessAssociation) GetDiegoProcessGuids() []string {
 }
 
 type UpsertCapiDiegoProcessAssociationRequest struct {
-	CapiDiegoProcessAssociation *CapiDiegoProcessAssociation `protobuf:"bytes,1,opt,name=capi_diego_process_association,json=capiDiegoProcessAssociation,proto3" json:"capi_diego_process_association,omitempty"`
+	CapiDiegoProcessAssociation *CapiDiegoProcessAssociation `protobuf:"bytes,1,opt,name=capi_diego_process_association,json=capiDiegoProcessAssociation" json:"capi_diego_process_association,omitempty"`
 	XXX_NoUnkeyedLiteral        struct{}                     `json:"-"`
 	XXX_unrecognized            []byte                       `json:"-"`
 	XXX_sizecache               int32                        `json:"-"`
@@ -725,7 +733,7 @@ func (m *UpsertCapiDiegoProcessAssociationRequest) Reset() {
 func (m *UpsertCapiDiegoProcessAssociationRequest) String() string { return proto.CompactTextString(m) }
 func (*UpsertCapiDiegoProcessAssociationRequest) ProtoMessage()    {}
 func (*UpsertCapiDiegoProcessAssociationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{18}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{18}
 }
 func (m *UpsertCapiDiegoProcessAssociationRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpsertCapiDiegoProcessAssociationRequest.Unmarshal(m, b)
@@ -764,7 +772,7 @@ func (m *UpsertCapiDiegoProcessAssociationResponse) Reset() {
 func (m *UpsertCapiDiegoProcessAssociationResponse) String() string { return proto.CompactTextString(m) }
 func (*UpsertCapiDiegoProcessAssociationResponse) ProtoMessage()    {}
 func (*UpsertCapiDiegoProcessAssociationResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{19}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{19}
 }
 func (m *UpsertCapiDiegoProcessAssociationResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpsertCapiDiegoProcessAssociationResponse.Unmarshal(m, b)
@@ -785,7 +793,7 @@ func (m *UpsertCapiDiegoProcessAssociationResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpsertCapiDiegoProcessAssociationResponse proto.InternalMessageInfo
 
 type DeleteCapiDiegoProcessAssociationRequest struct {
-	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid,proto3" json:"capi_process_guid,omitempty"`
+	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -797,7 +805,7 @@ func (m *DeleteCapiDiegoProcessAssociationRequest) Reset() {
 func (m *DeleteCapiDiegoProcessAssociationRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteCapiDiegoProcessAssociationRequest) ProtoMessage()    {}
 func (*DeleteCapiDiegoProcessAssociationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{20}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{20}
 }
 func (m *DeleteCapiDiegoProcessAssociationRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteCapiDiegoProcessAssociationRequest.Unmarshal(m, b)
@@ -836,7 +844,7 @@ func (m *DeleteCapiDiegoProcessAssociationResponse) Reset() {
 func (m *DeleteCapiDiegoProcessAssociationResponse) String() string { return proto.CompactTextString(m) }
 func (*DeleteCapiDiegoProcessAssociationResponse) ProtoMessage()    {}
 func (*DeleteCapiDiegoProcessAssociationResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{21}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{21}
 }
 func (m *DeleteCapiDiegoProcessAssociationResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteCapiDiegoProcessAssociationResponse.Unmarshal(m, b)
@@ -857,9 +865,9 @@ func (m *DeleteCapiDiegoProcessAssociationResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_DeleteCapiDiegoProcessAssociationResponse proto.InternalMessageInfo
 
 type BulkSyncRequest struct {
-	RouteMappings                []*RouteMapping                `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings,proto3" json:"route_mappings,omitempty"`
-	Routes                       []*Route                       `protobuf:"bytes,2,rep,name=routes,proto3" json:"routes,omitempty"`
-	CapiDiegoProcessAssociations []*CapiDiegoProcessAssociation `protobuf:"bytes,3,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations,proto3" json:"capi_diego_process_associations,omitempty"`
+	RouteMappings                []*RouteMapping                `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings" json:"route_mappings,omitempty"`
+	Routes                       []*Route                       `protobuf:"bytes,2,rep,name=routes" json:"routes,omitempty"`
+	CapiDiegoProcessAssociations []*CapiDiegoProcessAssociation `protobuf:"bytes,3,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations" json:"capi_diego_process_associations,omitempty"`
 	XXX_NoUnkeyedLiteral         struct{}                       `json:"-"`
 	XXX_unrecognized             []byte                         `json:"-"`
 	XXX_sizecache                int32                          `json:"-"`
@@ -869,7 +877,7 @@ func (m *BulkSyncRequest) Reset()         { *m = BulkSyncRequest{} }
 func (m *BulkSyncRequest) String() string { return proto.CompactTextString(m) }
 func (*BulkSyncRequest) ProtoMessage()    {}
 func (*BulkSyncRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{22}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{22}
 }
 func (m *BulkSyncRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BulkSyncRequest.Unmarshal(m, b)
@@ -921,7 +929,7 @@ func (m *BulkSyncRequestChunk) Reset()         { *m = BulkSyncRequestChunk{} }
 func (m *BulkSyncRequestChunk) String() string { return proto.CompactTextString(m) }
 func (*BulkSyncRequestChunk) ProtoMessage()    {}
 func (*BulkSyncRequestChunk) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{23}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{23}
 }
 func (m *BulkSyncRequestChunk) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BulkSyncRequestChunk.Unmarshal(m, b)
@@ -949,7 +957,7 @@ func (m *BulkSyncRequestChunk) GetChunk() []byte {
 }
 
 type BulkSyncResponse struct {
-	TotalBytesReceived   int32    `protobuf:"varint,1,opt,name=total_bytes_received,json=totalBytesReceived,proto3" json:"total_bytes_received,omitempty"`
+	TotalBytesReceived   int32    `protobuf:"varint,1,opt,name=total_bytes_received,json=totalBytesReceived" json:"total_bytes_received,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -959,7 +967,7 @@ func (m *BulkSyncResponse) Reset()         { *m = BulkSyncResponse{} }
 func (m *BulkSyncResponse) String() string { return proto.CompactTextString(m) }
 func (*BulkSyncResponse) ProtoMessage()    {}
 func (*BulkSyncResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5f6413535ca1e72a, []int{24}
+	return fileDescriptor_cloud_controller_61301c081041a2dc, []int{24}
 }
 func (m *BulkSyncResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BulkSyncResponse.Unmarshal(m, b)
@@ -1025,9 +1033,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// CloudControllerCopilotClient is the client API for CloudControllerCopilot service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for CloudControllerCopilot service
+
 type CloudControllerCopilotClient interface {
 	ListCfRoutes(ctx context.Context, in *ListCfRoutesRequest, opts ...grpc.CallOption) (*ListCfRoutesResponse, error)
 	ListCfRouteMappings(ctx context.Context, in *ListCfRouteMappingsRequest, opts ...grpc.CallOption) (*ListCfRouteMappingsResponse, error)
@@ -1052,7 +1059,7 @@ func NewCloudControllerCopilotClient(cc *grpc.ClientConn) CloudControllerCopilot
 
 func (c *cloudControllerCopilotClient) ListCfRoutes(ctx context.Context, in *ListCfRoutesRequest, opts ...grpc.CallOption) (*ListCfRoutesResponse, error) {
 	out := new(ListCfRoutesResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRoutes", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRoutes", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1061,7 +1068,7 @@ func (c *cloudControllerCopilotClient) ListCfRoutes(ctx context.Context, in *Lis
 
 func (c *cloudControllerCopilotClient) ListCfRouteMappings(ctx context.Context, in *ListCfRouteMappingsRequest, opts ...grpc.CallOption) (*ListCfRouteMappingsResponse, error) {
 	out := new(ListCfRouteMappingsResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRouteMappings", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRouteMappings", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1070,7 +1077,7 @@ func (c *cloudControllerCopilotClient) ListCfRouteMappings(ctx context.Context, 
 
 func (c *cloudControllerCopilotClient) ListCapiDiegoProcessAssociations(ctx context.Context, in *ListCapiDiegoProcessAssociationsRequest, opts ...grpc.CallOption) (*ListCapiDiegoProcessAssociationsResponse, error) {
 	out := new(ListCapiDiegoProcessAssociationsResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/ListCapiDiegoProcessAssociations", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/ListCapiDiegoProcessAssociations", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1079,7 +1086,7 @@ func (c *cloudControllerCopilotClient) ListCapiDiegoProcessAssociations(ctx cont
 
 func (c *cloudControllerCopilotClient) UpsertRoute(ctx context.Context, in *UpsertRouteRequest, opts ...grpc.CallOption) (*UpsertRouteResponse, error) {
 	out := new(UpsertRouteResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertRoute", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertRoute", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1088,7 +1095,7 @@ func (c *cloudControllerCopilotClient) UpsertRoute(ctx context.Context, in *Upse
 
 func (c *cloudControllerCopilotClient) DeleteRoute(ctx context.Context, in *DeleteRouteRequest, opts ...grpc.CallOption) (*DeleteRouteResponse, error) {
 	out := new(DeleteRouteResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteRoute", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteRoute", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1097,7 +1104,7 @@ func (c *cloudControllerCopilotClient) DeleteRoute(ctx context.Context, in *Dele
 
 func (c *cloudControllerCopilotClient) MapRoute(ctx context.Context, in *MapRouteRequest, opts ...grpc.CallOption) (*MapRouteResponse, error) {
 	out := new(MapRouteResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/MapRoute", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/MapRoute", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1106,7 +1113,7 @@ func (c *cloudControllerCopilotClient) MapRoute(ctx context.Context, in *MapRout
 
 func (c *cloudControllerCopilotClient) UnmapRoute(ctx context.Context, in *UnmapRouteRequest, opts ...grpc.CallOption) (*UnmapRouteResponse, error) {
 	out := new(UnmapRouteResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/UnmapRoute", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UnmapRoute", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1115,7 +1122,7 @@ func (c *cloudControllerCopilotClient) UnmapRoute(ctx context.Context, in *Unmap
 
 func (c *cloudControllerCopilotClient) UpsertCapiDiegoProcessAssociation(ctx context.Context, in *UpsertCapiDiegoProcessAssociationRequest, opts ...grpc.CallOption) (*UpsertCapiDiegoProcessAssociationResponse, error) {
 	out := new(UpsertCapiDiegoProcessAssociationResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1124,7 +1131,7 @@ func (c *cloudControllerCopilotClient) UpsertCapiDiegoProcessAssociation(ctx con
 
 func (c *cloudControllerCopilotClient) DeleteCapiDiegoProcessAssociation(ctx context.Context, in *DeleteCapiDiegoProcessAssociationRequest, opts ...grpc.CallOption) (*DeleteCapiDiegoProcessAssociationResponse, error) {
 	out := new(DeleteCapiDiegoProcessAssociationResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteCapiDiegoProcessAssociation", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteCapiDiegoProcessAssociation", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1132,7 +1139,7 @@ func (c *cloudControllerCopilotClient) DeleteCapiDiegoProcessAssociation(ctx con
 }
 
 func (c *cloudControllerCopilotClient) BulkSync(ctx context.Context, opts ...grpc.CallOption) (CloudControllerCopilot_BulkSyncClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_CloudControllerCopilot_serviceDesc.Streams[0], "/api.CloudControllerCopilot/BulkSync", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_CloudControllerCopilot_serviceDesc.Streams[0], c.cc, "/api.CloudControllerCopilot/BulkSync", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1167,14 +1174,15 @@ func (x *cloudControllerCopilotBulkSyncClient) CloseAndRecv() (*BulkSyncResponse
 
 func (c *cloudControllerCopilotClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	out := new(HealthResponse)
-	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/Health", in, out, opts...)
+	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/Health", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// CloudControllerCopilotServer is the server API for CloudControllerCopilot service.
+// Server API for CloudControllerCopilot service
+
 type CloudControllerCopilotServer interface {
 	ListCfRoutes(context.Context, *ListCfRoutesRequest) (*ListCfRoutesResponse, error)
 	ListCfRouteMappings(context.Context, *ListCfRouteMappingsRequest) (*ListCfRouteMappingsResponse, error)
@@ -1454,68 +1462,71 @@ var _CloudControllerCopilot_serviceDesc = grpc.ServiceDesc{
 	Metadata: "cloud_controller.proto",
 }
 
-func init() { proto.RegisterFile("cloud_controller.proto", fileDescriptor_5f6413535ca1e72a) }
+func init() {
+	proto.RegisterFile("cloud_controller.proto", fileDescriptor_cloud_controller_61301c081041a2dc)
+}
 
-var fileDescriptor_5f6413535ca1e72a = []byte{
-	// 946 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x5f, 0x8f, 0xdb, 0x44,
-	0x10, 0x8f, 0x93, 0xe6, 0xb8, 0x9b, 0xa4, 0xdc, 0x65, 0x2e, 0xbd, 0x06, 0x5f, 0xa1, 0xb9, 0x95,
-	0x50, 0x53, 0xb8, 0x5a, 0xe8, 0x4e, 0xaa, 0x5a, 0x24, 0x04, 0x5c, 0xae, 0x02, 0x04, 0x15, 0xc8,
-	0x55, 0x41, 0xea, 0x8b, 0xe5, 0xfa, 0x96, 0xc4, 0x3a, 0xc7, 0x6b, 0xec, 0x4d, 0x51, 0x24, 0x5e,
-	0x90, 0xf8, 0x00, 0xf0, 0xc2, 0xa7, 0xe0, 0x83, 0xf0, 0xc4, 0x33, 0x1f, 0x07, 0x79, 0x77, 0xe3,
-	0xac, 0x13, 0xc7, 0xf6, 0x49, 0xbc, 0x79, 0x67, 0x66, 0x67, 0x7e, 0xfb, 0xdb, 0xf9, 0xb3, 0x86,
-	0x23, 0x2f, 0x60, 0xf3, 0x2b, 0xc7, 0x63, 0x21, 0x8f, 0x59, 0x10, 0xd0, 0xd8, 0x8a, 0x62, 0xc6,
-	0x19, 0xb6, 0xdc, 0xc8, 0x37, 0xbb, 0x1e, 0x9b, 0xcd, 0x58, 0x28, 0x45, 0xe4, 0x0e, 0x1c, 0x7e,
-	0xe3, 0x27, 0x7c, 0xfc, 0xa3, 0xcd, 0xe6, 0x9c, 0x26, 0x36, 0xfd, 0x69, 0x4e, 0x13, 0x4e, 0x7e,
-	0x37, 0xa0, 0x9f, 0x97, 0x27, 0x11, 0x0b, 0x13, 0x8a, 0x9f, 0xc0, 0x4e, 0x2c, 0x24, 0x03, 0x63,
-	0xd8, 0x1a, 0x75, 0xce, 0xde, 0xb7, 0xdc, 0xc8, 0xb7, 0x8a, 0x4c, 0x2d, 0xb9, 0x7c, 0x16, 0xf2,
-	0x78, 0x61, 0xab, 0x4d, 0xe6, 0x53, 0xe8, 0x68, 0x62, 0x3c, 0x80, 0xd6, 0x35, 0x5d, 0x0c, 0x8c,
-	0xa1, 0x31, 0xda, 0xb3, 0xd3, 0x4f, 0xec, 0x43, 0xfb, 0x8d, 0x1b, 0xcc, 0xe9, 0xa0, 0x29, 0x64,
-	0x72, 0xf1, 0x71, 0xf3, 0x89, 0x41, 0xee, 0x81, 0xa9, 0x85, 0x79, 0xee, 0x46, 0x91, 0x1f, 0x4e,
-	0x32, 0xc0, 0xff, 0x18, 0x70, 0x5c, 0xa8, 0x56, 0xb8, 0x5f, 0xc1, 0xdb, 0x02, 0x82, 0x33, 0x53,
-	0x1a, 0x85, 0xff, 0x7c, 0x1d, 0xff, 0xfa, 0x4e, 0x2b, 0x27, 0x95, 0xa7, 0xb9, 0x1d, 0xeb, 0x32,
-	0xf3, 0x05, 0xe0, 0xa6, 0x51, 0xc1, 0xd9, 0x1e, 0xe8, 0x67, 0xeb, 0x9c, 0xf5, 0x44, 0x68, 0x7d,
-	0xa7, 0x7e, 0xdc, 0x87, 0xf0, 0x40, 0xa0, 0x72, 0x23, 0xff, 0xd2, 0xa7, 0x13, 0xf6, 0x5d, 0xcc,
-	0x3c, 0x9a, 0x24, 0x9f, 0x27, 0x09, 0xf3, 0x7c, 0x97, 0xfb, 0x2c, 0xcc, 0xce, 0x3e, 0x86, 0x9e,
-	0x6e, 0xf2, 0xc5, 0xdc, 0xbf, 0x4a, 0xd0, 0x82, 0xc3, 0xab, 0x54, 0xe8, 0x44, 0x52, 0xea, 0x4c,
-	0x52, 0xb1, 0x38, 0xf5, 0x9e, 0xdd, 0xbb, 0x5a, 0xb7, 0x27, 0x7f, 0x35, 0x61, 0x54, 0x1d, 0x50,
-	0xb1, 0xf9, 0xa7, 0x01, 0xf7, 0x3d, 0x37, 0xf2, 0x9d, 0x7c, 0x08, 0x57, 0xb3, 0x55, 0xfc, 0x7e,
-	0xbb, 0xe2, 0xb7, 0x86, 0x63, 0xab, 0xcc, 0x48, 0x72, 0x7f, 0xcf, 0x2b, 0x31, 0x31, 0x27, 0x70,
-	0x52, 0xe9, 0xa2, 0xe0, 0x66, 0x4e, 0xf3, 0x37, 0x73, 0x24, 0x40, 0x6f, 0x70, 0xaa, 0x5f, 0x8f,
-	0x03, 0x6d, 0x71, 0x73, 0x88, 0x70, 0x2b, 0x65, 0x56, 0x79, 0x13, 0xdf, 0xa9, 0x6c, 0xca, 0x12,
-	0xae, 0x72, 0x58, 0x7c, 0xa7, 0xb2, 0xc8, 0xe5, 0xd3, 0x41, 0x4b, 0xca, 0xd2, 0x6f, 0x34, 0x61,
-	0xd7, 0x0f, 0x39, 0x8d, 0x43, 0x37, 0x18, 0xdc, 0x1a, 0x1a, 0xa3, 0x5d, 0x3b, 0x5b, 0x93, 0xc7,
-	0x80, 0x2f, 0xa3, 0x84, 0xc6, 0x5c, 0x84, 0x51, 0x57, 0x8d, 0x43, 0x68, 0x8b, 0xdc, 0x13, 0xe1,
-	0x3a, 0x67, 0xb0, 0x4a, 0x21, 0x5b, 0x2a, 0xd2, 0x82, 0xce, 0xed, 0x93, 0xc4, 0x92, 0x11, 0xe0,
-	0x25, 0x0d, 0x28, 0xa7, 0x39, 0x77, 0x05, 0xe0, 0x53, 0x07, 0x39, 0x4b, 0xe5, 0xe0, 0x17, 0xe8,
-	0xea, 0xa9, 0x8a, 0x1f, 0x40, 0x4f, 0x64, 0x80, 0x9e, 0x5e, 0xca, 0xcf, 0x7e, 0xaa, 0xd0, 0x88,
-	0xc3, 0x77, 0x01, 0x64, 0xf1, 0x09, 0x23, 0xc9, 0xca, 0x9e, 0x90, 0x08, 0xf5, 0x09, 0x74, 0xa5,
-	0xfa, 0x67, 0xea, 0x4f, 0xa6, 0x5c, 0x50, 0xd4, 0xb6, 0x3b, 0x42, 0xf6, 0x83, 0x10, 0x91, 0xaf,
-	0x60, 0xff, 0xb9, 0x1b, 0xe5, 0xb0, 0x3f, 0x86, 0xdb, 0xb9, 0x8a, 0x56, 0x94, 0x14, 0x54, 0x55,
-	0x57, 0x2f, 0x57, 0x82, 0x70, 0xb0, 0x72, 0xa5, 0x0e, 0xf7, 0x35, 0xf4, 0x5e, 0x86, 0xb3, 0xff,
-	0x29, 0x40, 0x1f, 0x50, 0x77, 0xa6, 0x42, 0x2c, 0xe0, 0xb8, 0x24, 0x33, 0x6f, 0x44, 0xe7, 0x96,
-	0xd2, 0x6e, 0x6e, 0x2b, 0xed, 0x3f, 0x0c, 0x18, 0xc9, 0x9c, 0x28, 0x41, 0xb0, 0x3c, 0x35, 0x85,
-	0xf7, 0xca, 0x2b, 0x5b, 0xd1, 0x30, 0x14, 0x34, 0x94, 0x39, 0x3c, 0x2e, 0xa9, 0x54, 0xf2, 0x21,
-	0x3c, 0xac, 0x01, 0x49, 0x71, 0xf7, 0x3d, 0x8c, 0x64, 0x4a, 0xd6, 0xc0, 0x7f, 0x03, 0x22, 0x53,
-	0x10, 0x35, 0xfc, 0x2a, 0x10, 0xff, 0x1a, 0xb0, 0x7f, 0x31, 0x0f, 0xae, 0x5f, 0x2c, 0x42, 0x6f,
-	0x19, 0xec, 0xc9, 0x96, 0xa9, 0x52, 0x90, 0x23, 0xf9, 0x99, 0x81, 0x24, 0x9b, 0xa3, 0x4d, 0xb1,
-	0x43, 0xaf, 0x64, 0xa5, 0xc1, 0x49, 0x75, 0x93, 0x6d, 0x89, 0xcd, 0xd5, 0x77, 0x51, 0xda, 0x35,
-	0xc9, 0x29, 0xf4, 0xd7, 0x4e, 0x36, 0x9e, 0xce, 0xc3, 0xeb, 0x74, 0x18, 0x7b, 0xe9, 0x87, 0xe0,
-	0xaf, 0x6b, 0xcb, 0x05, 0xb9, 0x84, 0x83, 0x95, 0xb5, 0x1a, 0x08, 0x1f, 0x41, 0x9f, 0x33, 0xee,
-	0x06, 0xce, 0xeb, 0x05, 0xa7, 0x89, 0x13, 0x53, 0x8f, 0xfa, 0x6f, 0xa8, 0x24, 0xbe, 0x6d, 0xa3,
-	0xd0, 0x5d, 0x2c, 0xc4, 0xeb, 0x40, 0x6a, 0xce, 0xfe, 0x7e, 0x0b, 0x8e, 0xc6, 0xe9, 0x33, 0x65,
-	0x9c, 0xbd, 0x52, 0xc6, 0x2c, 0xf2, 0x03, 0xc6, 0xf1, 0x19, 0x74, 0xf5, 0x07, 0x05, 0x0e, 0x0a,
-	0xde, 0x18, 0x02, 0xa5, 0xf9, 0xce, 0xd6, 0xd7, 0x07, 0x69, 0xe0, 0xab, 0xdc, 0xd3, 0x26, 0x63,
-	0xfe, 0xfe, 0xf6, 0x89, 0x2f, 0x9d, 0x0e, 0xab, 0x9e, 0x04, 0xa4, 0x81, 0xbf, 0x1a, 0x30, 0xac,
-	0x1a, 0x6a, 0x78, 0x5a, 0x73, 0xf6, 0xc9, 0xb0, 0x8f, 0x6e, 0x34, 0x29, 0x49, 0x03, 0x2f, 0xa0,
-	0xa3, 0x75, 0x7a, 0xbc, 0x2b, 0xf6, 0x6f, 0xce, 0x0c, 0x73, 0xb0, 0xa9, 0xd0, 0x7d, 0x68, 0xcd,
-	0x5e, 0xf9, 0xd8, 0x1c, 0x14, 0xca, 0x47, 0xd1, 0x5c, 0x68, 0xe0, 0x53, 0xd8, 0x5d, 0x36, 0x54,
-	0xec, 0x0b, 0xbb, 0xb5, 0x56, 0x6d, 0xde, 0x59, 0x93, 0x66, 0x5b, 0x3f, 0x05, 0x58, 0xb5, 0x4a,
-	0x94, 0x63, 0x77, 0xa3, 0x11, 0x9b, 0x77, 0x37, 0xe4, 0x99, 0x83, 0xdf, 0x0c, 0x38, 0xa9, 0xec,
-	0x23, 0xf8, 0x48, 0x63, 0xa0, 0xba, 0x85, 0x98, 0x56, 0x5d, 0xf3, 0x1c, 0x8c, 0xca, 0x4e, 0xa2,
-	0x60, 0xd4, 0xed, 0x64, 0x0a, 0x46, 0xfd, 0x06, 0xd5, 0xc0, 0xcf, 0x60, 0x77, 0x59, 0x99, 0x28,
-	0x4b, 0xa3, 0xa8, 0xac, 0xd5, 0x75, 0xac, 0xd7, 0x30, 0x69, 0x8c, 0x0c, 0x3c, 0x87, 0x9d, 0x2f,
-	0xa9, 0x1b, 0xf0, 0x29, 0xa2, 0x30, 0x92, 0x8b, 0x25, 0xa2, 0xc3, 0x9c, 0x6c, 0xb9, 0xed, 0xf5,
-	0x8e, 0xf8, 0x95, 0x38, 0xff, 0x2f, 0x00, 0x00, 0xff, 0xff, 0x3b, 0x54, 0x4d, 0xec, 0x77, 0x0c,
-	0x00, 0x00,
+var fileDescriptor_cloud_controller_61301c081041a2dc = []byte{
+	// 965 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xdd, 0x8e, 0xdb, 0x44,
+	0x14, 0x8e, 0x93, 0x66, 0x9b, 0x3d, 0x49, 0xd9, 0xcd, 0xd9, 0x74, 0x9b, 0x7a, 0x0b, 0xcd, 0x8e,
+	0x84, 0x9a, 0xc2, 0x36, 0x42, 0xbb, 0x52, 0xd5, 0x22, 0x21, 0x60, 0xb3, 0x15, 0x20, 0xa8, 0xa8,
+	0x5c, 0x15, 0xa4, 0xde, 0x58, 0xae, 0x77, 0x48, 0xac, 0x75, 0x3c, 0x83, 0x3d, 0x29, 0xca, 0x25,
+	0x12, 0x0f, 0x00, 0x37, 0xf0, 0x12, 0x3c, 0x08, 0x57, 0x5c, 0xf3, 0x38, 0xc8, 0x33, 0x93, 0x64,
+	0x9c, 0x38, 0xb1, 0x57, 0xea, 0x9d, 0xe7, 0x9b, 0x33, 0xe7, 0xe7, 0x9b, 0xf3, 0x33, 0x86, 0x43,
+	0x3f, 0x64, 0xd3, 0x4b, 0xd7, 0x67, 0x91, 0x88, 0x59, 0x18, 0xd2, 0x78, 0xc0, 0x63, 0x26, 0x18,
+	0xd6, 0x3c, 0x1e, 0xd8, 0x2d, 0x9f, 0x4d, 0x26, 0x2c, 0x52, 0x10, 0xb9, 0x0d, 0x07, 0xdf, 0x05,
+	0x89, 0x18, 0xfe, 0xe4, 0xb0, 0xa9, 0xa0, 0x89, 0x43, 0x7f, 0x9e, 0xd2, 0x44, 0x90, 0xdf, 0x2d,
+	0xe8, 0x64, 0xf1, 0x84, 0xb3, 0x28, 0xa1, 0xf8, 0x19, 0xec, 0xc4, 0x12, 0xe9, 0x5a, 0xbd, 0x5a,
+	0xbf, 0x79, 0xfa, 0xe1, 0xc0, 0xe3, 0xc1, 0x20, 0x4f, 0x74, 0xa0, 0x96, 0xcf, 0x22, 0x11, 0xcf,
+	0x1c, 0x7d, 0xc8, 0x7e, 0x0a, 0x4d, 0x03, 0xc6, 0x7d, 0xa8, 0x5d, 0xd1, 0x59, 0xd7, 0xea, 0x59,
+	0xfd, 0x5d, 0x27, 0xfd, 0xc4, 0x0e, 0xd4, 0xdf, 0x7a, 0xe1, 0x94, 0x76, 0xab, 0x12, 0x53, 0x8b,
+	0x4f, 0xab, 0x4f, 0x2c, 0x72, 0x0f, 0x6c, 0xc3, 0xcc, 0x73, 0x8f, 0xf3, 0x20, 0x1a, 0x2d, 0x1c,
+	0xfe, 0xd7, 0x82, 0xa3, 0xdc, 0x6d, 0xed, 0xf7, 0x6b, 0x78, 0x4f, 0xba, 0xe0, 0x4e, 0xf4, 0x8e,
+	0xf6, 0xff, 0x6c, 0xd5, 0xff, 0xd5, 0x93, 0x83, 0x0c, 0xaa, 0xa2, 0xb9, 0x15, 0x9b, 0x98, 0xfd,
+	0x12, 0x70, 0x5d, 0x28, 0x27, 0xb6, 0x07, 0x66, 0x6c, 0xcd, 0xd3, 0xb6, 0x34, 0x6d, 0x9e, 0x34,
+	0xc3, 0x7d, 0x08, 0x0f, 0xa4, 0x57, 0x1e, 0x0f, 0x2e, 0x02, 0x3a, 0x62, 0x2f, 0x62, 0xe6, 0xd3,
+	0x24, 0xf9, 0x32, 0x49, 0x98, 0x1f, 0x78, 0x22, 0x60, 0xd1, 0x22, 0xf6, 0x21, 0xb4, 0x4d, 0x91,
+	0xaf, 0xa6, 0xc1, 0x65, 0x82, 0x03, 0x38, 0xb8, 0x4c, 0x41, 0x97, 0x2b, 0xd4, 0x1d, 0xa5, 0xb0,
+	0x8c, 0x7a, 0xd7, 0x69, 0x5f, 0xae, 0xca, 0x93, 0xbf, 0xab, 0xd0, 0x2f, 0x36, 0xa8, 0xd9, 0xfc,
+	0xd3, 0x82, 0xfb, 0xbe, 0xc7, 0x03, 0x37, 0x6b, 0xc2, 0x33, 0x64, 0x35, 0xbf, 0xdf, 0x2f, 0xf9,
+	0x2d, 0xa1, 0x78, 0xb0, 0x4d, 0x48, 0x71, 0x7f, 0xcf, 0xdf, 0x22, 0x62, 0x8f, 0xe0, 0xb8, 0x50,
+	0x45, 0xce, 0xcd, 0x9c, 0x64, 0x6f, 0xe6, 0x50, 0x3a, 0xbd, 0xc6, 0xa9, 0x79, 0x3d, 0x2e, 0xd4,
+	0xe5, 0xcd, 0x21, 0xc2, 0x8d, 0x94, 0x59, 0xad, 0x4d, 0x7e, 0xa7, 0xd8, 0x98, 0x25, 0x42, 0xe7,
+	0xb0, 0xfc, 0x4e, 0x31, 0xee, 0x89, 0x71, 0xb7, 0xa6, 0xb0, 0xf4, 0x1b, 0x6d, 0x68, 0x04, 0x91,
+	0xa0, 0x71, 0xe4, 0x85, 0xdd, 0x1b, 0x3d, 0xab, 0xdf, 0x70, 0x16, 0x6b, 0xf2, 0x18, 0xf0, 0x15,
+	0x4f, 0x68, 0x2c, 0xa4, 0x19, 0x7d, 0xd5, 0xd8, 0x83, 0xba, 0xcc, 0x3d, 0x69, 0xae, 0x79, 0x0a,
+	0xcb, 0x14, 0x72, 0xd4, 0x46, 0x5a, 0xd0, 0x99, 0x73, 0x8a, 0x58, 0xd2, 0x07, 0xbc, 0xa0, 0x21,
+	0x15, 0x34, 0xa3, 0x2e, 0xc7, 0xf9, 0x54, 0x41, 0x46, 0x52, 0x2b, 0xf8, 0xcb, 0x82, 0x96, 0x99,
+	0xab, 0xf8, 0x11, 0xb4, 0x65, 0x0a, 0x98, 0xf9, 0xa5, 0x15, 0xed, 0xa5, 0x1b, 0x06, 0x73, 0xf8,
+	0x3e, 0x80, 0xaa, 0x3e, 0x29, 0xa4, 0x68, 0xd9, 0x95, 0x88, 0xdc, 0x3e, 0x86, 0x96, 0xda, 0xfe,
+	0x85, 0x06, 0xa3, 0xb1, 0x90, 0x1c, 0xd5, 0x9d, 0xa6, 0xc4, 0x7e, 0x94, 0x10, 0xde, 0x85, 0x86,
+	0xc7, 0xb9, 0xcb, 0x59, 0x2c, 0x24, 0x55, 0x75, 0xe7, 0xa6, 0xc7, 0xf9, 0x0b, 0x16, 0x0b, 0xf2,
+	0x0d, 0xec, 0x3d, 0xf7, 0x78, 0x26, 0xae, 0xc7, 0x70, 0x2b, 0x53, 0xed, 0x9a, 0xae, 0x9c, 0x8a,
+	0x6b, 0x99, 0xa5, 0x4c, 0x10, 0xf6, 0x97, 0xaa, 0x74, 0xe0, 0xdf, 0x42, 0xfb, 0x55, 0x34, 0x79,
+	0x47, 0x06, 0x3a, 0x80, 0xa6, 0x32, 0x6d, 0x62, 0x06, 0x47, 0x5b, 0xb2, 0xf6, 0x5a, 0x4c, 0x6f,
+	0x28, 0xfb, 0xea, 0xa6, 0xb2, 0xff, 0xc3, 0x82, 0xbe, 0xca, 0x97, 0x2d, 0x1e, 0xcc, 0xa3, 0xa6,
+	0xf0, 0xc1, 0xf6, 0xaa, 0xd7, 0x34, 0xf4, 0x24, 0x0d, 0xdb, 0x14, 0x1e, 0x6d, 0xa9, 0x62, 0xf2,
+	0x31, 0x3c, 0x2c, 0xe1, 0x92, 0xe6, 0xee, 0x07, 0xe8, 0xab, 0x74, 0x2d, 0xe1, 0xff, 0x35, 0x88,
+	0x4c, 0x9d, 0x28, 0xa1, 0x57, 0x3b, 0xf1, 0x9f, 0x05, 0x7b, 0xe7, 0xd3, 0xf0, 0xea, 0xe5, 0x2c,
+	0xf2, 0xe7, 0xc6, 0x9e, 0x6c, 0x98, 0x38, 0x39, 0x39, 0x92, 0x9d, 0x27, 0x48, 0x16, 0x33, 0xb6,
+	0x2a, 0x4f, 0x98, 0x55, 0xae, 0x77, 0x70, 0x54, 0xdc, 0x80, 0x6b, 0xf2, 0x70, 0xf1, 0x5d, 0x6c,
+	0xed, 0xa8, 0xe4, 0x04, 0x3a, 0x2b, 0x91, 0x0d, 0xc7, 0xd3, 0xe8, 0x2a, 0x1d, 0xd4, 0x7e, 0xfa,
+	0x21, 0xf9, 0x6b, 0x39, 0x6a, 0x41, 0x2e, 0x60, 0x7f, 0x29, 0xad, 0x87, 0xc5, 0x27, 0xd0, 0x11,
+	0x4c, 0x78, 0xa1, 0xfb, 0x66, 0x26, 0x68, 0xe2, 0xc6, 0xd4, 0xa7, 0xc1, 0x5b, 0xaa, 0x88, 0xaf,
+	0x3b, 0x28, 0xf7, 0xce, 0x67, 0xf2, 0xe5, 0xa0, 0x76, 0x4e, 0xff, 0xb9, 0x09, 0x87, 0xc3, 0xf4,
+	0x09, 0x33, 0x5c, 0xbc, 0x60, 0x86, 0x8c, 0x07, 0x21, 0x13, 0xf8, 0x0c, 0x5a, 0xe6, 0x63, 0x03,
+	0xbb, 0x39, 0xef, 0x0f, 0xe9, 0xa5, 0x7d, 0x77, 0xe3, 0xcb, 0x84, 0x54, 0xf0, 0x75, 0xe6, 0xd9,
+	0xb3, 0x60, 0xfe, 0xfe, 0xe6, 0xd7, 0x80, 0x52, 0xda, 0x2b, 0x7a, 0x2e, 0x90, 0x0a, 0xfe, 0x6a,
+	0x41, 0xaf, 0x68, 0xe0, 0xe1, 0x49, 0xc9, 0xb9, 0xa8, 0xcc, 0x3e, 0xba, 0xd6, 0x14, 0x25, 0x15,
+	0x3c, 0x87, 0xa6, 0x31, 0x05, 0xf0, 0x8e, 0x3c, 0xbf, 0x3e, 0x4f, 0xec, 0xee, 0xfa, 0x86, 0xa9,
+	0xc3, 0x18, 0x04, 0x5a, 0xc7, 0xfa, 0x10, 0xd1, 0x3a, 0xf2, 0x66, 0x46, 0x05, 0x9f, 0x42, 0x63,
+	0xde, 0x50, 0xb1, 0x23, 0xe5, 0x56, 0x5a, 0xb5, 0x7d, 0x7b, 0x05, 0x5d, 0x1c, 0xfd, 0x1c, 0x60,
+	0xd9, 0x2a, 0x51, 0x8d, 0xe4, 0xb5, 0x46, 0x6c, 0xdf, 0x59, 0xc3, 0x17, 0x0a, 0x7e, 0xb3, 0xe0,
+	0xb8, 0xb0, 0x8f, 0xe0, 0x23, 0x83, 0x81, 0xe2, 0x16, 0x62, 0x0f, 0xca, 0x8a, 0x67, 0xdc, 0x28,
+	0xec, 0x24, 0xda, 0x8d, 0xb2, 0x9d, 0x4c, 0xbb, 0x51, 0xbe, 0x41, 0x55, 0xf0, 0x0b, 0x68, 0xcc,
+	0x2b, 0x13, 0x55, 0x69, 0xe4, 0x95, 0xb5, 0xbe, 0x8e, 0xd5, 0x1a, 0x26, 0x95, 0xbe, 0x85, 0x67,
+	0xb0, 0xf3, 0x35, 0xf5, 0x42, 0x31, 0x46, 0x94, 0x42, 0x6a, 0x31, 0xf7, 0xe8, 0x20, 0x83, 0xcd,
+	0x8f, 0xbd, 0xd9, 0x91, 0xbf, 0x19, 0x67, 0xff, 0x07, 0x00, 0x00, 0xff, 0xff, 0x95, 0x26, 0xc1,
+	0x61, 0x93, 0x0c, 0x00, 0x00,
 }

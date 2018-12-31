@@ -43,7 +43,8 @@ RSpec.describe Cloudfoundry::Copilot do
     expect(@client.map_route(
       capi_process_guid: 'some-capi-process-guid',
       route_guid: 'some-route-guid',
-      route_weight: 128
+      route_weight: 128,
+      app_port: 8080
     )).to be_a(::Api::MapRouteResponse)
 
   end
@@ -52,7 +53,8 @@ RSpec.describe Cloudfoundry::Copilot do
     expect(@client.unmap_route(
              capi_process_guid: 'some-capi-process-guid-to-unmap',
              route_guid: 'some-route-guid-to-unmap',
-             route_weight: 128
+             route_weight: 128,
+             app_port: 8080
     )).to be_a(::Api::UnmapRouteResponse)
   end
 
@@ -134,7 +136,8 @@ RSpec.describe Cloudfoundry::Copilot do
           @client.map_route(
             capi_process_guid: 'some-capi-process-guid',
             route_guid: 'some-route-guid',
-            route_weight: 128
+            route_weight: 128,
+            app_port: 8080
           )
         end.to raise_error(
           Cloudfoundry::Copilot::Client::PilotError,
@@ -154,7 +157,8 @@ RSpec.describe Cloudfoundry::Copilot do
           @client.unmap_route(
             capi_process_guid: 'some-capi-process-guid',
             route_guid: 'some-route-guid',
-            route_weight: 128
+            route_weight: 128,
+            app_port: 8080
           )
         end.to raise_error(
           Cloudfoundry::Copilot::Client::PilotError,
@@ -224,7 +228,8 @@ def create_and_bulk_sync(n_messages)
     route_mappings << Api::RouteMapping.new(
       route_guid: "some-route-guid-%d" % n,
       capi_process_guid: "some-capi-process-guid-%d" % n,
-      route_weight: 128
+      route_weight: 128,
+      app_port: 8080
     )
     capi_diego_process_associations << Api::CapiDiegoProcessAssociation.new(
       capi_process_guid: "some-capi-process-guid-%d" % n,
