@@ -228,7 +228,6 @@ var _ = Describe("Collect", func() {
 
 				return bs[guid]
 			}
-		})
 
 			rwb := rc.Collect()
 			Expect(rwb).To(HaveLen(7))
