@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type HealthResponse struct {
-	Healthy              bool     `protobuf:"varint,1,opt,name=healthy" json:"healthy,omitempty"`
+	Healthy              bool     `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

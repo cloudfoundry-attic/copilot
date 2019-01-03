@@ -56,7 +56,7 @@ var xxx_messageInfo_ListCfRoutesRequest proto.InternalMessageInfo
 type ListCfRoutesResponse struct {
 	// key is route guid
 	// value is host
-	Routes               map[string]string `protobuf:"bytes,1,rep,name=routes" json:"routes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Routes               map[string]string `protobuf:"bytes,1,rep,name=routes,proto3" json:"routes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -126,7 +126,7 @@ var xxx_messageInfo_ListCfRouteMappingsRequest proto.InternalMessageInfo
 type ListCfRouteMappingsResponse struct {
 	// key is '<route guid>-<capi process guid>'
 	// value is a route_mapping
-	RouteMappings        map[string]*RouteMapping `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings" json:"route_mappings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	RouteMappings        map[string]*RouteMapping `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings,proto3" json:"route_mappings,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
@@ -199,7 +199,7 @@ var xxx_messageInfo_ListCapiDiegoProcessAssociationsRequest proto.InternalMessag
 // since protobuf does not support list values in maps.
 // it's gross. try not to use it.
 type DiegoProcessGuids struct {
-	DiegoProcessGuids    []string `protobuf:"bytes,1,rep,name=diego_process_guids,json=diegoProcessGuids" json:"diego_process_guids,omitempty"`
+	DiegoProcessGuids    []string `protobuf:"bytes,1,rep,name=diego_process_guids,json=diegoProcessGuids,proto3" json:"diego_process_guids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -239,7 +239,7 @@ func (m *DiegoProcessGuids) GetDiegoProcessGuids() []string {
 type ListCapiDiegoProcessAssociationsResponse struct {
 	// key is capi process guid
 	// value is a list of diego process guids
-	CapiDiegoProcessAssociations map[string]*DiegoProcessGuids `protobuf:"bytes,1,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations" json:"capi_diego_process_associations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	CapiDiegoProcessAssociations map[string]*DiegoProcessGuids `protobuf:"bytes,1,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations,proto3" json:"capi_diego_process_associations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral         struct{}                      `json:"-"`
 	XXX_unrecognized             []byte                        `json:"-"`
 	XXX_sizecache                int32                         `json:"-"`
@@ -279,10 +279,10 @@ func (m *ListCapiDiegoProcessAssociationsResponse) GetCapiDiegoProcessAssociatio
 }
 
 type Route struct {
-	Guid                 string   `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
-	Host                 string   `protobuf:"bytes,2,opt,name=host" json:"host,omitempty"`
-	Path                 string   `protobuf:"bytes,3,opt,name=path" json:"path,omitempty"`
-	Internal             bool     `protobuf:"varint,4,opt,name=internal" json:"internal,omitempty"`
+	Guid                 string   `protobuf:"bytes,1,opt,name=guid,proto3" json:"guid,omitempty"`
+	Host                 string   `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	Path                 string   `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	Internal             bool     `protobuf:"varint,4,opt,name=internal,proto3" json:"internal,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -341,7 +341,7 @@ func (m *Route) GetInternal() bool {
 }
 
 type UpsertRouteRequest struct {
-	Route                *Route   `protobuf:"bytes,1,opt,name=route" json:"route,omitempty"`
+	Route                *Route   `protobuf:"bytes,1,opt,name=route,proto3" json:"route,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -409,7 +409,7 @@ func (m *UpsertRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpsertRouteResponse proto.InternalMessageInfo
 
 type DeleteRouteRequest struct {
-	Guid                 string   `protobuf:"bytes,1,opt,name=guid" json:"guid,omitempty"`
+	Guid                 string   `protobuf:"bytes,1,opt,name=guid,proto3" json:"guid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -477,10 +477,10 @@ func (m *DeleteRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_DeleteRouteResponse proto.InternalMessageInfo
 
 type RouteMapping struct {
-	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
-	RouteGuid            string   `protobuf:"bytes,2,opt,name=route_guid,json=routeGuid" json:"route_guid,omitempty"`
-	RouteWeight          int32    `protobuf:"varint,3,opt,name=route_weight,json=routeWeight" json:"route_weight,omitempty"`
-	AppPort              int32    `protobuf:"varint,4,opt,name=app_port,json=appPort" json:"app_port,omitempty"`
+	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid,proto3" json:"capi_process_guid,omitempty"`
+	RouteGuid            string   `protobuf:"bytes,2,opt,name=route_guid,json=routeGuid,proto3" json:"route_guid,omitempty"`
+	RouteWeight          int32    `protobuf:"varint,3,opt,name=route_weight,json=routeWeight,proto3" json:"route_weight,omitempty"`
+	AppPort              int32    `protobuf:"varint,4,opt,name=app_port,json=appPort,proto3" json:"app_port,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -539,7 +539,7 @@ func (m *RouteMapping) GetAppPort() int32 {
 }
 
 type MapRouteRequest struct {
-	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping" json:"route_mapping,omitempty"`
+	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping,proto3" json:"route_mapping,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -607,7 +607,7 @@ func (m *MapRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MapRouteResponse proto.InternalMessageInfo
 
 type UnmapRouteRequest struct {
-	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping" json:"route_mapping,omitempty"`
+	RouteMapping         *RouteMapping `protobuf:"bytes,1,opt,name=route_mapping,json=routeMapping,proto3" json:"route_mapping,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -675,8 +675,8 @@ func (m *UnmapRouteResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UnmapRouteResponse proto.InternalMessageInfo
 
 type CapiDiegoProcessAssociation struct {
-	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
-	DiegoProcessGuids    []string `protobuf:"bytes,2,rep,name=diego_process_guids,json=diegoProcessGuids" json:"diego_process_guids,omitempty"`
+	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid,proto3" json:"capi_process_guid,omitempty"`
+	DiegoProcessGuids    []string `protobuf:"bytes,2,rep,name=diego_process_guids,json=diegoProcessGuids,proto3" json:"diego_process_guids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -721,7 +721,7 @@ func (m *CapiDiegoProcessAssociation) GetDiegoProcessGuids() []string {
 }
 
 type UpsertCapiDiegoProcessAssociationRequest struct {
-	CapiDiegoProcessAssociation *CapiDiegoProcessAssociation `protobuf:"bytes,1,opt,name=capi_diego_process_association,json=capiDiegoProcessAssociation" json:"capi_diego_process_association,omitempty"`
+	CapiDiegoProcessAssociation *CapiDiegoProcessAssociation `protobuf:"bytes,1,opt,name=capi_diego_process_association,json=capiDiegoProcessAssociation,proto3" json:"capi_diego_process_association,omitempty"`
 	XXX_NoUnkeyedLiteral        struct{}                     `json:"-"`
 	XXX_unrecognized            []byte                       `json:"-"`
 	XXX_sizecache               int32                        `json:"-"`
@@ -793,7 +793,7 @@ func (m *UpsertCapiDiegoProcessAssociationResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpsertCapiDiegoProcessAssociationResponse proto.InternalMessageInfo
 
 type DeleteCapiDiegoProcessAssociationRequest struct {
-	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid" json:"capi_process_guid,omitempty"`
+	CapiProcessGuid      string   `protobuf:"bytes,1,opt,name=capi_process_guid,json=capiProcessGuid,proto3" json:"capi_process_guid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -865,9 +865,9 @@ func (m *DeleteCapiDiegoProcessAssociationResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_DeleteCapiDiegoProcessAssociationResponse proto.InternalMessageInfo
 
 type BulkSyncRequest struct {
-	RouteMappings                []*RouteMapping                `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings" json:"route_mappings,omitempty"`
-	Routes                       []*Route                       `protobuf:"bytes,2,rep,name=routes" json:"routes,omitempty"`
-	CapiDiegoProcessAssociations []*CapiDiegoProcessAssociation `protobuf:"bytes,3,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations" json:"capi_diego_process_associations,omitempty"`
+	RouteMappings                []*RouteMapping                `protobuf:"bytes,1,rep,name=route_mappings,json=routeMappings,proto3" json:"route_mappings,omitempty"`
+	Routes                       []*Route                       `protobuf:"bytes,2,rep,name=routes,proto3" json:"routes,omitempty"`
+	CapiDiegoProcessAssociations []*CapiDiegoProcessAssociation `protobuf:"bytes,3,rep,name=capi_diego_process_associations,json=capiDiegoProcessAssociations,proto3" json:"capi_diego_process_associations,omitempty"`
 	XXX_NoUnkeyedLiteral         struct{}                       `json:"-"`
 	XXX_unrecognized             []byte                         `json:"-"`
 	XXX_sizecache                int32                          `json:"-"`
@@ -957,7 +957,7 @@ func (m *BulkSyncRequestChunk) GetChunk() []byte {
 }
 
 type BulkSyncResponse struct {
-	TotalBytesReceived   int32    `protobuf:"varint,1,opt,name=total_bytes_received,json=totalBytesReceived" json:"total_bytes_received,omitempty"`
+	TotalBytesReceived   int32    `protobuf:"varint,1,opt,name=total_bytes_received,json=totalBytesReceived,proto3" json:"total_bytes_received,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1033,8 +1033,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for CloudControllerCopilot service
-
+// CloudControllerCopilotClient is the client API for CloudControllerCopilot service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type CloudControllerCopilotClient interface {
 	ListCfRoutes(ctx context.Context, in *ListCfRoutesRequest, opts ...grpc.CallOption) (*ListCfRoutesResponse, error)
 	ListCfRouteMappings(ctx context.Context, in *ListCfRouteMappingsRequest, opts ...grpc.CallOption) (*ListCfRouteMappingsResponse, error)
@@ -1059,7 +1060,7 @@ func NewCloudControllerCopilotClient(cc *grpc.ClientConn) CloudControllerCopilot
 
 func (c *cloudControllerCopilotClient) ListCfRoutes(ctx context.Context, in *ListCfRoutesRequest, opts ...grpc.CallOption) (*ListCfRoutesResponse, error) {
 	out := new(ListCfRoutesResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRoutes", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRoutes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1068,7 +1069,7 @@ func (c *cloudControllerCopilotClient) ListCfRoutes(ctx context.Context, in *Lis
 
 func (c *cloudControllerCopilotClient) ListCfRouteMappings(ctx context.Context, in *ListCfRouteMappingsRequest, opts ...grpc.CallOption) (*ListCfRouteMappingsResponse, error) {
 	out := new(ListCfRouteMappingsResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRouteMappings", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/ListCfRouteMappings", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1077,7 +1078,7 @@ func (c *cloudControllerCopilotClient) ListCfRouteMappings(ctx context.Context, 
 
 func (c *cloudControllerCopilotClient) ListCapiDiegoProcessAssociations(ctx context.Context, in *ListCapiDiegoProcessAssociationsRequest, opts ...grpc.CallOption) (*ListCapiDiegoProcessAssociationsResponse, error) {
 	out := new(ListCapiDiegoProcessAssociationsResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/ListCapiDiegoProcessAssociations", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/ListCapiDiegoProcessAssociations", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1086,7 +1087,7 @@ func (c *cloudControllerCopilotClient) ListCapiDiegoProcessAssociations(ctx cont
 
 func (c *cloudControllerCopilotClient) UpsertRoute(ctx context.Context, in *UpsertRouteRequest, opts ...grpc.CallOption) (*UpsertRouteResponse, error) {
 	out := new(UpsertRouteResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertRoute", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertRoute", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1095,7 +1096,7 @@ func (c *cloudControllerCopilotClient) UpsertRoute(ctx context.Context, in *Upse
 
 func (c *cloudControllerCopilotClient) DeleteRoute(ctx context.Context, in *DeleteRouteRequest, opts ...grpc.CallOption) (*DeleteRouteResponse, error) {
 	out := new(DeleteRouteResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteRoute", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteRoute", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1104,7 +1105,7 @@ func (c *cloudControllerCopilotClient) DeleteRoute(ctx context.Context, in *Dele
 
 func (c *cloudControllerCopilotClient) MapRoute(ctx context.Context, in *MapRouteRequest, opts ...grpc.CallOption) (*MapRouteResponse, error) {
 	out := new(MapRouteResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/MapRoute", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/MapRoute", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1113,7 +1114,7 @@ func (c *cloudControllerCopilotClient) MapRoute(ctx context.Context, in *MapRout
 
 func (c *cloudControllerCopilotClient) UnmapRoute(ctx context.Context, in *UnmapRouteRequest, opts ...grpc.CallOption) (*UnmapRouteResponse, error) {
 	out := new(UnmapRouteResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UnmapRoute", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/UnmapRoute", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1122,7 +1123,7 @@ func (c *cloudControllerCopilotClient) UnmapRoute(ctx context.Context, in *Unmap
 
 func (c *cloudControllerCopilotClient) UpsertCapiDiegoProcessAssociation(ctx context.Context, in *UpsertCapiDiegoProcessAssociationRequest, opts ...grpc.CallOption) (*UpsertCapiDiegoProcessAssociationResponse, error) {
 	out := new(UpsertCapiDiegoProcessAssociationResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/UpsertCapiDiegoProcessAssociation", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1131,7 +1132,7 @@ func (c *cloudControllerCopilotClient) UpsertCapiDiegoProcessAssociation(ctx con
 
 func (c *cloudControllerCopilotClient) DeleteCapiDiegoProcessAssociation(ctx context.Context, in *DeleteCapiDiegoProcessAssociationRequest, opts ...grpc.CallOption) (*DeleteCapiDiegoProcessAssociationResponse, error) {
 	out := new(DeleteCapiDiegoProcessAssociationResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteCapiDiegoProcessAssociation", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/DeleteCapiDiegoProcessAssociation", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1139,7 +1140,7 @@ func (c *cloudControllerCopilotClient) DeleteCapiDiegoProcessAssociation(ctx con
 }
 
 func (c *cloudControllerCopilotClient) BulkSync(ctx context.Context, opts ...grpc.CallOption) (CloudControllerCopilot_BulkSyncClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_CloudControllerCopilot_serviceDesc.Streams[0], c.cc, "/api.CloudControllerCopilot/BulkSync", opts...)
+	stream, err := c.cc.NewStream(ctx, &_CloudControllerCopilot_serviceDesc.Streams[0], "/api.CloudControllerCopilot/BulkSync", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1174,15 +1175,14 @@ func (x *cloudControllerCopilotBulkSyncClient) CloseAndRecv() (*BulkSyncResponse
 
 func (c *cloudControllerCopilotClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	out := new(HealthResponse)
-	err := grpc.Invoke(ctx, "/api.CloudControllerCopilot/Health", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.CloudControllerCopilot/Health", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for CloudControllerCopilot service
-
+// CloudControllerCopilotServer is the server API for CloudControllerCopilot service.
 type CloudControllerCopilotServer interface {
 	ListCfRoutes(context.Context, *ListCfRoutesRequest) (*ListCfRoutesResponse, error)
 	ListCfRouteMappings(context.Context, *ListCfRouteMappingsRequest) (*ListCfRouteMappingsResponse, error)

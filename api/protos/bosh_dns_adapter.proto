@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package api;
+
+message GetVIPByNameRequest {
+  string fqdn = 1;
+}
+
+message GetVIPByNameResponse {
+  string ip = 1;
+}
+
+service BoshDNSAdapterCopilot {
+  rpc GetVIPByName(GetVIPByNameRequest) returns (GetVIPByNameResponse) {}
+}

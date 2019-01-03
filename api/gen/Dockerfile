@@ -8,7 +8,7 @@ RUN mv bin/protoc /usr/local/bin
 
 # Install protoc-gen-go
 RUN go get github.com/golang/protobuf/protoc-gen-go
-RUN git -C /go/src/github.com/golang/protobuf/ checkout v1.1.0
+RUN git -C /go/src/github.com/golang/protobuf/protoc-gen-go checkout v1.2.0
 RUN go install github.com/golang/protobuf/protoc-gen-go
 
 COPY ./bin/generate-protos /tmp/build/generate-protos
