@@ -1,103 +1,107 @@
-load(":go_proto_library.bzl", "go_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "proto_gen", "cc_proto_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@io_bazel_rules_go//proto:compiler.bzl", "go_proto_compiler")
+load(":protobuf.bzl", "cc_proto_gen_validate", "java_proto_gen_validate")
 
-def pgv_go_proto_library(name, srcs = None, deps = [], **kwargs):
-    go_proto_library(name,
-                     srcs,
-                     deps = ["//validate:go_default_library"] + deps,
-                     protoc = "@com_google_protobuf//:protoc",
-                     visibility = ["//visibility:public"],
-                     validate = 1,
-                     **kwargs)
+def pgv_go_proto_library(name, proto = None, deps = [], **kwargs):
+    go_proto_compiler(
+        name = "pgv_plugin_go",
+        suffix = ".pb.validate.go",
+        valid_archive = False,
+        plugin = "//:protoc-gen-validate",
+        options = ["lang=go"],
+    )
 
-def _CcValidateHdrs(srcs):
-    ret = [s[:-len(".proto")] + ".pb.validate.h" for s in srcs]
-    return ret
+    go_proto_library(
+        name = name,
+        proto = proto,
+        deps = ["//validate:go_default_library"] + deps,
+        compilers = ["@io_bazel_rules_go//proto:go_proto", "pgv_plugin_go"],
+        visibility = ["//visibility:public"],
+        **kwargs
+    )
 
-def _CcValidateSrcs(srcs):
-    ret = [s[:-len(".proto")] + ".pb.validate.cc" for s in srcs]
-    return ret
+def pgv_gogo_proto_library(name, proto = None, deps = [], **kwargs):
+    go_proto_compiler(
+        name = "pgv_plugin_gogo",
+        suffix = ".pb.validate.go",
+        valid_archive = False,
+        plugin = "//:protoc-gen-validate",
+        options = ["lang=gogo"],
+    )
+
+    go_proto_library(
+        name = name,
+        proto = proto,
+        deps = ["//validate:go_default_library"] + deps,
+        compilers = ["@io_bazel_rules_go//proto:gogo_proto", "pgv_plugin_gogo"],
+        visibility = ["//visibility:public"],
+        **kwargs
+    )
 
 def pgv_cc_proto_library(
         name,
-        srcs=[],
-        deps=[],
-        external_deps=[],
-        cc_libs=[],
-        include=None,
-        protoc="@com_google_protobuf//:protoc",
-        protoc_gen_validate = "@com_lyft_protoc_gen_validate//:protoc-gen-validate",
-        internal_bootstrap_hack=False,
-        use_grpc_plugin=False,
-        default_runtime="@com_google_protobuf//:protobuf",
+        deps = [],
+        cc_deps = [],
+        copts = [],
         **kargs):
-  """Bazel rule to create a C++ protobuf validation library from proto source files
+    """Bazel rule to create a C++ protobuf validation library from proto source files
+    Args:
+      name: the name of the pgv_cc_proto_library.
+      deps: proto_library rules that contains the necessary .proto files.
+      cc_deps: C++ dependencies of the protos being compiled. Likely cc_proto_library or pgv_cc_proto_library
+      **kargs: other keyword arguments that are passed to cc_library.
+    """
 
-  Args:
-    name: the name of the pgv_cc_proto_library.
-    srcs: the .proto files of the pgv_cc_proto_library.
-    deps: a list of PGV dependency labels; must be pgv_cc_proto_library.
-    external_deps: a list of dependency labels; must be cc_proto_library.
-    include: a string indicating the include path of the .proto files.
-    protoc: the label of the protocol compiler to generate the sources.
-    protoc_gen_validate: override the default version of protoc_gen_validate.
-                   Most users won't need this.
-    default_runtime: the implicitly default runtime which will be depended on by
-        the generated cc_library target.
-    **kargs: other keyword arguments that are passed to cc_library.
+    cc_proto_gen_validate(
+        name = name + "_validate",
+        deps = deps,
+    )
 
-  """
+    native.cc_library(
+        name = name,
+        hdrs = [":" + name + "_validate"],
+        srcs = [":" + name + "_validate"],
+        deps = cc_deps + [
+            "@com_lyft_protoc_gen_validate//validate:cc_validate",
+            "@com_lyft_protoc_gen_validate//validate:validate_cc",
+            "@com_google_protobuf//:protobuf",
+        ],
+        copts = copts + select({
+            "@com_lyft_protoc_gen_validate//bazel:windows_x86_64": ["-DWIN32"],
+            "//conditions:default": [],
+        }),
+        alwayslink = 1,
+        **kargs
+    )
 
-  # Generate the C++ protos
-  cc_proto_library(
-      name=name + "_proto",
-      srcs=srcs,
-      deps=[d + "_proto" for d in deps] + [
-          "@com_lyft_protoc_gen_validate//validate:validate_cc",
-      ] + external_deps,
-      cc_libs=cc_libs,
-      incude=include,
-      protoc=protoc,
-      internal_bootstrap_hack=internal_bootstrap_hack,
-      use_grpc_plugin=use_grpc_plugin,
-      default_runtime=default_runtime,
-      **kargs)
+def pgv_java_proto_library(
+        name,
+        deps = [],
+        java_deps = [],
+        **kwargs):
+    """Bazel rule to create a Java protobuf validation library from proto sources files.
 
-  includes = []
-  if include != None:
-    includes = [include]
+    Args:
+      name: the name of the pgv_java_proto_library
+      deps: proto_library rules that contain the necessary .proto files
+      java_deps: Java dependencies of the protos being compiled. Likely java_proto_library or pgv_java_proto_library.
+    """
 
-  gen_hdrs = _CcValidateHdrs(srcs)
-  gen_srcs = _CcValidateSrcs(srcs)
+    java_proto_gen_validate(
+        name = name + "_validate",
+        deps = deps,
+    )
 
-  proto_gen(
-      name=name + "_validate",
-      srcs=srcs,
-      # This is a hack to work around the fact that all the deps must have an
-      # import_flags field, which is only set on the proto_gen rules, so depend
-      # on the cc rule
-      deps=[d + "_validate" for d in deps] + [
-          "@com_lyft_protoc_gen_validate//validate:validate_cc_genproto"
-      ] + [d + "_genproto" for d in external_deps],
-      includes=includes,
-      protoc=protoc,
-      plugin=protoc_gen_validate,
-      plugin_options=["lang=cc"],
-      outs=gen_hdrs + gen_srcs,
-      visibility=["//visibility:public"],
-  )
-
-  if default_runtime and not default_runtime in cc_libs:
-    cc_libs = cc_libs + [default_runtime]
-
-  native.cc_library(
-      name=name,
-      hdrs=gen_hdrs,
-      srcs=gen_srcs,
-      deps=cc_libs + deps + [
-          ":" + name + "_proto",
-          "@com_lyft_protoc_gen_validate//validate:cc_validate",
-      ],
-      includes=includes,
-      alwayslink=1,
-      **kargs)
+    native.java_library(
+        name = name,
+        srcs = [name + "_validate"],
+        deps = java_deps + [
+            "//validate:validate_java",
+            "@com_google_re2j//jar",
+            "@com_google_protobuf//:protobuf_java",
+            "@com_google_protobuf//:protobuf_java_util",
+            "//java/pgv-java-stub/src/main/java/com/lyft/pgv",
+            "//java/pgv-java-validation/src/main/java/com/lyft/pgv",
+        ],
+        **kwargs
+    )

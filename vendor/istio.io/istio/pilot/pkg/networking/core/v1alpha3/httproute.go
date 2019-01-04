@@ -21,12 +21,12 @@ import (
 
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
 
 	"istio.io/istio/pilot/pkg/model"
 	istio_route "istio.io/istio/pilot/pkg/networking/core/v1alpha3/route"
 	"istio.io/istio/pilot/pkg/networking/plugin"
 	"istio.io/istio/pilot/pkg/networking/util"
+	"istio.io/istio/pkg/proto"
 )
 
 // BuildHTTPRoutes produces a list of routes for the proxy
@@ -38,10 +38,10 @@ func (configgen *ConfigGeneratorImpl) BuildHTTPRoutes(env *model.Environment, no
 		return nil, err
 	}
 
-	services := push.Services
+	services := push.Services(node)
 
 	switch node.Type {
-	case model.Sidecar:
+	case model.SidecarProxy:
 		return configgen.buildSidecarOutboundHTTPRouteConfig(env, node, push, proxyInstances, services, routeName), nil
 	case model.Router, model.Ingress:
 		return configgen.buildGatewayHTTPRouteConfig(env, node, push, proxyInstances, services, routeName)
@@ -57,7 +57,7 @@ func (configgen *ConfigGeneratorImpl) buildSidecarInboundHTTPRouteConfig(env *mo
 	clusterName := model.BuildSubsetKey(model.TrafficDirectionInbound, "",
 		instance.Service.Hostname, instance.Endpoint.ServicePort.Port)
 	traceOperation := fmt.Sprintf("%s:%d/*", instance.Service.Hostname, instance.Endpoint.ServicePort.Port)
-	defaultRoute := istio_route.BuildDefaultHTTPRoute(node, clusterName, traceOperation)
+	defaultRoute := istio_route.BuildDefaultHTTPRoute(clusterName, traceOperation)
 
 	inboundVHost := route.VirtualHost{
 		Name:    fmt.Sprintf("%s|http|%d", model.TrafficDirectionInbound, instance.Endpoint.ServicePort.Port),
@@ -68,7 +68,7 @@ func (configgen *ConfigGeneratorImpl) buildSidecarInboundHTTPRouteConfig(env *mo
 	r := &xdsapi.RouteConfiguration{
 		Name:             clusterName,
 		VirtualHosts:     []route.VirtualHost{inboundVHost},
-		ValidateClusters: &types.BoolValue{Value: false},
+		ValidateClusters: proto.BoolFalse,
 	}
 
 	for _, p := range configgen.Plugins {
@@ -99,17 +99,41 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 			return nil
 		}
 	}
+	meshGateway := map[string]bool{model.IstioMeshGateway: true}
+	sidecarScope := push.GetSidecarScope(node, proxyInstances)
+	importedServices := services
+	virtualServices := push.VirtualServices(node, meshGateway)
+	importedVirtualServices := virtualServices
+	if listenerPort != 0 { // not http proxy
+		// This should never be nil since we set the RDS ports based on the egress listeners
+		egressListener := sidecarScope.GetEgressListenerForPort(listenerPort)
+		importedServices = egressListener.SelectServices(services)
+		importedVirtualServices = egressListener.SelectVirtualServices(virtualServices)
+	}
+
+	// TODO: handle RDS for UDS listeners
+	// TODO: handle destination rule selection
+	// TODO: handle RDS for http proxy created via Sidecar - need to resolve the vhost conflict
+	// for multiport services
 
 	nameToServiceMap := make(map[model.Hostname]*model.Service)
-	for _, svc := range services {
+	for _, svc := range importedServices {
 		if listenerPort == 0 {
 			nameToServiceMap[svc.Hostname] = svc
 		} else {
 			if svcPort, exists := svc.Ports.GetByPort(listenerPort); exists {
+
+				svc.Mutex.RLock()
+				clusterVIPs := make(map[string]string, len(svc.ClusterVIPs))
+				for k, v := range svc.ClusterVIPs {
+					clusterVIPs[k] = v
+				}
+				svc.Mutex.RUnlock()
+
 				nameToServiceMap[svc.Hostname] = &model.Service{
 					Hostname:     svc.Hostname,
 					Address:      svc.Address,
-					ClusterVIPs:  svc.ClusterVIPs,
+					ClusterVIPs:  clusterVIPs,
 					MeshExternal: svc.MeshExternal,
 					Ports:        []*model.Port{svcPort},
 				}
@@ -124,7 +148,7 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 	}
 
 	// Get list of virtual services bound to the mesh gateway
-	virtualHostWrappers := istio_route.BuildVirtualHostsFromConfigAndRegistry(node, push, nameToServiceMap, proxyLabels)
+	virtualHostWrappers := istio_route.BuildVirtualHostsFromConfigAndRegistry(node, push, nameToServiceMap, importedVirtualServices, proxyLabels)
 	vHostPortMap := make(map[int][]route.VirtualHost)
 
 	for _, virtualHostWrapper := range virtualHostWrappers {
@@ -164,7 +188,7 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 	out := &xdsapi.RouteConfiguration{
 		Name:             routeName,
 		VirtualHosts:     virtualHosts,
-		ValidateClusters: &types.BoolValue{Value: false},
+		ValidateClusters: proto.BoolFalse,
 	}
 
 	// call plugins
@@ -185,7 +209,7 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 // a proxy node
 func generateVirtualHostDomains(service *model.Service, port int, node *model.Proxy) []string {
 	domains := []string{string(service.Hostname), fmt.Sprintf("%s:%d", service.Hostname, port)}
-	domains = append(domains, generateAltVirtualHosts(string(service.Hostname), port, node.Domain)...)
+	domains = append(domains, generateAltVirtualHosts(string(service.Hostname), port, node.DNSDomain)...)
 
 	if len(service.Address) > 0 && service.Address != model.UnspecifiedIP {
 		svcAddr := service.GetServiceAddressForProxy(node)

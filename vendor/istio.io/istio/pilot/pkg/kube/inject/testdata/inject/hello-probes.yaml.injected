@@ -20,19 +20,28 @@ spec:
       - image: fake.docker.io/google-samples/hello-go-gke:1.0
         livenessProbe:
           httpGet:
-            port: http
+            httpHeaders:
+            - name: istio-app-probe-port
+              value: "80"
+            port: 15020
         name: hello
         ports:
         - containerPort: 80
           name: http
         readinessProbe:
           httpGet:
-            port: 3333
+            httpHeaders:
+            - name: istio-app-probe-port
+              value: "3333"
+            port: 15020
         resources: {}
       - image: fake.docker.io/google-samples/hello-go-gke:1.0
         livenessProbe:
           httpGet:
-            port: http
+            httpHeaders:
+            - name: istio-app-probe-port
+              value: "90"
+            port: 15020
         name: world
         ports:
         - containerPort: 90
@@ -58,8 +67,6 @@ spec:
         - 3s
         - --discoveryAddress
         - istio-pilot:15007
-        - --zipkinAddress
-        - ""
         - --connectTimeout
         - 1s
         - --statsdUdpAddress
@@ -94,6 +101,10 @@ spec:
         image: docker.io/istio/proxyv2:unittest
         imagePullPolicy: IfNotPresent
         name: istio-proxy
+        ports:
+        - containerPort: 15090
+          name: http-envoy-prom
+          protocol: TCP
         readinessProbe:
           failureThreshold: 30
           httpGet:
@@ -105,9 +116,7 @@ spec:
           requests:
             cpu: 10m
         securityContext:
-          privileged: false
           readOnlyRootFilesystem: true
-          runAsUser: 1337
         volumeMounts:
         - mountPath: /etc/istio/proxy
           name: istio-envoy

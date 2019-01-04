@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 
@@ -121,11 +120,6 @@ func makeSnapshot(version string) *fakeSnapshot {
 var _ Snapshot = &fakeSnapshot{}
 
 var (
-	node = &core.Node{
-		Id:      "test-id",
-		Cluster: "test-cluster",
-	}
-
 	fakeEnvelope0 *mcp.Envelope
 	fakeEnvelope1 *mcp.Envelope
 	fakeEnvelope2 *mcp.Envelope
@@ -148,7 +142,7 @@ func nextStrVersion(version *int64) string {
 
 }
 
-func createTestWatch(c *Cache, typeURL, version string, responseC chan *server.WatchResponse, wantResponse, wantCancel bool) (*server.WatchResponse, server.CancelWatchFunc, error) { // nolint: lll
+func createTestWatch(c server.Watcher, typeURL, version string, responseC chan *server.WatchResponse, wantResponse, wantCancel bool) (*server.WatchResponse, server.CancelWatchFunc, error) { // nolint: lll
 	req := &mcp.MeshConfigRequest{
 		TypeUrl:     typeURL,
 		VersionInfo: version,
@@ -156,16 +150,28 @@ func createTestWatch(c *Cache, typeURL, version string, responseC chan *server.W
 			Id: DefaultGroup,
 		},
 	}
-	got, cancel := c.Watch(req, responseC)
+
+	cancel := c.Watch(req, func(response *server.WatchResponse) {
+		responseC <- response
+	})
+
 	if wantResponse {
-		if got == nil {
+		select {
+		case got := <-responseC:
+			return got, nil, nil
+		default:
 			return nil, nil, errors.New("wanted response, got none")
 		}
 	} else {
-		if got != nil {
-			return nil, nil, fmt.Errorf("wanted no response, got %v", got)
+		select {
+		case got := <-responseC:
+			if got != nil {
+				return nil, nil, fmt.Errorf("wanted no response, got %v", got)
+			}
+		default:
 		}
 	}
+
 	if wantCancel {
 		if cancel == nil {
 			return nil, nil, errors.New("wanted cancel() function, got none")
@@ -175,7 +181,8 @@ func createTestWatch(c *Cache, typeURL, version string, responseC chan *server.W
 			return nil, nil, fmt.Errorf("wanted no cancel() function, got %v", cancel)
 		}
 	}
-	return got, cancel, nil
+
+	return nil, cancel, nil
 }
 
 func getAsyncResponse(responseC chan *server.WatchResponse) (*server.WatchResponse, bool) {

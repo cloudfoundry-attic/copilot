@@ -1,4 +1,4 @@
-package tpl
+package cc
 
 const repTpl = `
 	{{ $f := .Field }}{{ $r := .Rules }}{{ $typ := inType $f nil }}
@@ -33,9 +33,9 @@ const repTpl = `
 
 	// Implement hashing for wrapped reference types
 	struct hash {
-		std::hash<{{ $typ }}> hash;
+		std::hash<{{ $typ }}> hash_fn;
 		bool operator() (const std::reference_wrapper<{{ $typ }}> ref) const {
-			return hash(ref.get());
+			return hash_fn(ref.get());
 		}
 	};
 

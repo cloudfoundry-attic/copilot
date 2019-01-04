@@ -20,12 +20,14 @@ import (
 	"strconv"
 	"strings"
 
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	networking "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/features/pilot"
 )
 
 const (
@@ -55,7 +57,7 @@ func convertLabels(obj meta_v1.ObjectMeta) model.Labels {
 	return out
 }
 
-func convertPort(port v1.ServicePort, obj meta_v1.ObjectMeta) *model.Port {
+func convertPort(port v1.ServicePort) *model.Port {
 	return &model.Port{
 		Name:     port.Name,
 		Port:     int(port.Port),
@@ -74,7 +76,7 @@ func convertService(svc v1.Service, domainSuffix string) *model.Service {
 
 	if svc.Spec.Type == v1.ServiceTypeExternalName && svc.Spec.ExternalName != "" {
 		external = svc.Spec.ExternalName
-		resolution = model.Passthrough
+		resolution = model.DNSLB
 		meshExternal = true
 	}
 
@@ -84,9 +86,10 @@ func convertService(svc v1.Service, domainSuffix string) *model.Service {
 
 	ports := make([]*model.Port, 0, len(svc.Spec.Ports))
 	for _, port := range svc.Spec.Ports {
-		ports = append(ports, convertPort(port, svc.ObjectMeta))
+		ports = append(ports, convertPort(port))
 	}
 
+	configScope := networking.ConfigScope_PUBLIC
 	serviceaccounts := make([]string, 0)
 	if svc.Annotations != nil {
 		if svc.Annotations[CanonicalServiceAccountsAnnotation] != "" {
@@ -98,6 +101,9 @@ func convertService(svc v1.Service, domainSuffix string) *model.Service {
 			for _, ksa := range strings.Split(svc.Annotations[KubeServiceAccountsOnVMAnnotation], ",") {
 				serviceaccounts = append(serviceaccounts, kubeToIstioServiceAccount(ksa, svc.Namespace, domainSuffix))
 			}
+		}
+		if svc.Labels[pilot.ServiceConfigScopeAnnotation] == networking.ConfigScope_name[int32(networking.ConfigScope_PRIVATE)] {
+			configScope = networking.ConfigScope_PRIVATE
 		}
 	}
 	sort.Sort(sort.StringSlice(serviceaccounts))
@@ -111,11 +117,31 @@ func convertService(svc v1.Service, domainSuffix string) *model.Service {
 		Resolution:      resolution,
 		CreationTime:    svc.CreationTimestamp.Time,
 		Attributes: model.ServiceAttributes{
-			Name:      svc.Name,
-			Namespace: svc.Namespace,
-			UID:       fmt.Sprintf("istio://%s/services/%s", svc.Namespace, svc.Name),
+			Name:        svc.Name,
+			Namespace:   svc.Namespace,
+			UID:         fmt.Sprintf("istio://%s/services/%s", svc.Namespace, svc.Name),
+			ConfigScope: configScope,
 		},
 	}
+}
+
+func externalNameServiceInstances(k8sSvc v1.Service, svc *model.Service) []*model.ServiceInstance {
+	if k8sSvc.Spec.Type != v1.ServiceTypeExternalName || k8sSvc.Spec.ExternalName == "" {
+		return nil
+	}
+	var out []*model.ServiceInstance
+	for _, portEntry := range svc.Ports {
+		out = append(out, &model.ServiceInstance{
+			Endpoint: model.NetworkEndpoint{
+				Address:     k8sSvc.Spec.ExternalName,
+				Port:        portEntry.Port,
+				ServicePort: portEntry,
+			},
+			Service: svc,
+			Labels:  k8sSvc.Labels,
+		})
+	}
+	return out
 }
 
 // serviceHostname produces FQDN for a k8s service
@@ -157,6 +183,10 @@ func ConvertProtocol(name string, proto v1.Protocol) model.Protocol {
 		out = model.ProtocolUDP
 	case v1.ProtocolTCP:
 		prefix := name
+		if strings.HasPrefix(strings.ToLower(prefix), strings.ToLower(string(model.ProtocolGRPCWeb))) {
+			out = model.ProtocolGRPCWeb
+			break
+		}
 		i := strings.Index(name, "-")
 		if i >= 0 {
 			prefix = name[:i]
@@ -169,7 +199,7 @@ func ConvertProtocol(name string, proto v1.Protocol) model.Protocol {
 	return out
 }
 
-func convertProbePort(c v1.Container, handler *v1.Handler) (*model.Port, error) {
+func convertProbePort(c *v1.Container, handler *v1.Handler) (*model.Port, error) {
 	if handler == nil {
 		return nil, nil
 	}
@@ -225,7 +255,7 @@ func convertProbesToPorts(t *v1.PodSpec) (model.PortList, error) {
 				continue
 			}
 
-			p, err := convertProbePort(container, &probe.Handler)
+			p, err := convertProbePort(&container, &probe.Handler)
 			if err != nil {
 				errs = multierror.Append(errs, err)
 			} else if p != nil && set[p.Name] == nil {

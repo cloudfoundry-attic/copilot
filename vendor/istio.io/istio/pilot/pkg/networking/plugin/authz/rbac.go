@@ -76,6 +76,7 @@ const (
 	attrDestName      = "destination.name"      // short service name, e.g. "productpage".
 	attrDestNamespace = "destination.namespace" // e.g. "default".
 	attrDestUser      = "destination.user"      // service account, e.g. "bookinfo-productpage".
+	attrConnSNI       = "connection.sni"        // server name indication, e.g. "www.example.com".
 
 	methodHeader = ":method"
 	pathHeader   = ":path"
@@ -165,9 +166,9 @@ func (service serviceMetadata) match(rule *rbacproto.AccessRule) bool {
 	return true
 }
 
-// attributesEnforcedInDynamicMetadataMatcher returns true if the given attribute should be enforced
-// via dynamic metadata matcher. This means these attributes are depending on the output of authn filter.
-func attributesEnforcedInDynamicMetadataMatcher(k string) bool {
+// attributesFromAuthN returns true if the given attribute is generated from AuthN filter. This implies
+// the attribute should be enforced by dynamic metadata.
+func attributesFromAuthN(k string) bool {
 	switch k {
 	case attrSrcNamespace, attrSrcUser, attrSrcPrincipal, attrRequestPrincipal, attrRequestAudiences,
 		attrRequestPresenter:
@@ -176,16 +177,12 @@ func attributesEnforcedInDynamicMetadataMatcher(k string) bool {
 	return strings.HasPrefix(k, attrRequestClaims)
 }
 
-func generateMetadataStringMatcher(keys []string, v *metadata.StringMatcher) *metadata.MetadataMatcher {
-	paths := make([]*metadata.MetadataMatcher_PathSegment, 0)
-	for _, k := range keys {
-		paths = append(paths, &metadata.MetadataMatcher_PathSegment{
-			Segment: &metadata.MetadataMatcher_PathSegment_Key{Key: k},
-		})
-	}
+func generateMetadataStringMatcher(key string, v *metadata.StringMatcher, filterName string) *metadata.MetadataMatcher {
 	return &metadata.MetadataMatcher{
-		Filter: authn.AuthnFilterName,
-		Path:   paths,
+		Filter: filterName,
+		Path: []*metadata.MetadataMatcher_PathSegment{
+			{Segment: &metadata.MetadataMatcher_PathSegment_Key{Key: key}},
+		},
 		Value: &metadata.ValueMatcher{
 			MatchPattern: &metadata.ValueMatcher_StringMatch{
 				StringMatch: v,
@@ -222,27 +219,6 @@ func generateMetadataListMatcher(keys []string, v string) *metadata.MetadataMatc
 			},
 		},
 	}
-}
-
-// generateMetaKeys generates keys for metadata paths.
-func generateMetaKeys(k string) ([]string, error) {
-	var keys []string
-
-	if k == attrSrcNamespace {
-		// Proxy doesn't have attrSrcNamespace directly, but the information is encoded in attrSrcPrincipal
-		// with format: cluster.local/ns/{NAMESPACE}/sa/{SERVICE-ACCOUNT}, so we change the key to
-		// attrSrcPrincipal.
-		keys = []string{attrSrcPrincipal}
-	} else if strings.HasPrefix(k, attrRequestClaims) {
-		claim, err := extractNameInBrackets(strings.TrimPrefix(k, attrRequestClaims))
-		if err != nil {
-			return nil, err
-		}
-		keys = []string{attrRequestClaims, claim}
-	} else {
-		keys = []string{k}
-	}
-	return keys, nil
 }
 
 func createStringMatcher(v string, forceRegexPattern, forTCPFilter bool) *metadata.StringMatcher {
@@ -282,29 +258,34 @@ func createStringMatcher(v string, forceRegexPattern, forTCPFilter bool) *metada
 }
 
 // createDynamicMetadataMatcher creates a MetadataMatcher for the given key, value pair.
-func createDynamicMetadataMatcher(k, v string) *metadata.MetadataMatcher {
-	keys, err := generateMetaKeys(k)
-	if err != nil {
-		rbacLog.Errorf("failed to generate meta matcher key %s, err: %v", k, err)
-		return nil
-	}
-	forceRegexPattern := false
+func createDynamicMetadataMatcher(k, v string, forTCPFilter bool) *metadata.MetadataMatcher {
+	filterName := authn.AuthnFilterName
 	if k == attrSrcNamespace {
-		// Change the value to a regular expression to match the namespace part.
+		// Proxy doesn't have attrSrcNamespace directly, but the information is encoded in attrSrcPrincipal
+		// with format: cluster.local/ns/{NAMESPACE}/sa/{SERVICE-ACCOUNT}.
 		v = fmt.Sprintf(`*/ns/%s/*`, v)
-		forceRegexPattern = true
-	}
-
-	// Handle the claims under attrRequestClaims
-	if len(keys) == 2 && keys[0] == attrRequestClaims {
+		stringMatcher := createStringMatcher(v, true /* forceRegexPattern */, false /* forTCPFilter */)
+		return generateMetadataStringMatcher(attrSrcPrincipal, stringMatcher, filterName)
+	} else if strings.HasPrefix(k, attrRequestClaims) {
+		claim, err := extractNameInBrackets(strings.TrimPrefix(k, attrRequestClaims))
+		if err != nil {
+			return nil
+		}
 		// Generate a metadata list matcher for the given path keys and value.
 		// On proxy side, the value should be of list type.
-		return generateMetadataListMatcher(keys, v)
+		return generateMetadataListMatcher([]string{attrRequestClaims, claim}, v)
 	}
 
-	stringMatcher := createStringMatcher(v, forceRegexPattern, false /* forTCPFilter */)
-
-	return generateMetadataStringMatcher(keys, stringMatcher)
+	stringMatcher := createStringMatcher(v, false /* forceRegexPattern */, false /* forTCPFilter */)
+	if !attributesFromAuthN(k) {
+		rbacLog.Debugf("generated dynamic metadata matcher for custom property: %s", k)
+		if forTCPFilter {
+			filterName = rbacTCPFilterName
+		} else {
+			filterName = rbacHTTPFilterName
+		}
+	}
+	return generateMetadataStringMatcher(k, stringMatcher, filterName)
 }
 
 // Plugin implements Istio RBAC authz
@@ -331,7 +312,7 @@ func (Plugin) OnInboundFilterChains(in *plugin.InputParams) []plugin.FilterChain
 // on the inbound path
 func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableObjects) error {
 	// Only supports sidecar proxy for now.
-	if in.Node.Type != model.Sidecar {
+	if in.Node.Type != model.SidecarProxy {
 		return nil
 	}
 
@@ -374,8 +355,7 @@ func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableO
 }
 
 // OnInboundCluster implements the Plugin interface method.
-func (Plugin) OnInboundCluster(env *model.Environment, node *model.Proxy, push *model.PushContext, service *model.Service,
-	servicePort *model.Port, cluster *xdsapi.Cluster) {
+func (Plugin) OnInboundCluster(in *plugin.InputParams, cluster *xdsapi.Cluster) {
 }
 
 // OnOutboundRouteConfiguration implements the Plugin interface method.
@@ -387,8 +367,7 @@ func (Plugin) OnInboundRouteConfiguration(in *plugin.InputParams, route *xdsapi.
 }
 
 // OnOutboundCluster implements the Plugin interface method.
-func (Plugin) OnOutboundCluster(env *model.Environment, push *model.PushContext, service *model.Service,
-	servicePort *model.Port, cluster *xdsapi.Cluster) {
+func (Plugin) OnOutboundCluster(in *plugin.InputParams, cluster *xdsapi.Cluster) {
 }
 
 // isServiceInList checks if a given service or namespace is found in the RbacConfig target list.
@@ -442,11 +421,13 @@ func buildTCPFilter(service *serviceMetadata, option rbacOption) *listener.Filte
 	config := convertRbacRulesToFilterConfig(service, option)
 	tcpConfig := listener.Filter{
 		Name: rbacTCPFilterName,
-		Config: util.MessageToStruct(&network_config.RBAC{
-			Rules:       config.Rules,
-			ShadowRules: config.ShadowRules,
-			StatPrefix:  rbacTCPFilterStatPrefix,
-		}),
+		ConfigType: &listener.Filter_Config{
+			Config: util.MessageToStruct(&network_config.RBAC{
+				Rules:       config.Rules,
+				ShadowRules: config.ShadowRules,
+				StatPrefix:  rbacTCPFilterStatPrefix,
+			}),
+		},
 	}
 	rbacLog.Debugf("generated tcp filter config: %v", tcpConfig)
 	return &tcpConfig
@@ -459,8 +440,8 @@ func buildHTTPFilter(service *serviceMetadata, option rbacOption) *http_conn.Htt
 	config := convertRbacRulesToFilterConfig(service, option)
 	rbacLog.Debugf("generated http filter config: %v", *config)
 	return &http_conn.HttpFilter{
-		Name:   rbacHTTPFilterName,
-		Config: util.MessageToStruct(config),
+		Name:       rbacHTTPFilterName,
+		ConfigType: &http_conn.HttpFilter_Config{Config: util.MessageToStruct(config)},
 	}
 }
 
@@ -553,7 +534,13 @@ func convertRbacRulesToFilterConfig(service *serviceMetadata, option rbacOption)
 			ShadowRules: permissiveRbac}
 	}
 
-	return &http_config.RBAC{Rules: rbac, ShadowRules: permissiveRbac}
+	// If RBAC permissive mode is only set on policy level, set ShadowRules only when there is policy in permissive mode.
+	// Otherwise, non-empty shadow_rules causes permissive attributes are sent to mixer when permissive mode isn't set.
+	if len(permissiveRbac.Policies) > 0 {
+		return &http_config.RBAC{Rules: rbac, ShadowRules: permissiveRbac}
+	}
+
+	return &http_config.RBAC{Rules: rbac}
 }
 
 // convertToPermission converts a single AccessRule to a Permission.
@@ -746,6 +733,14 @@ func permissionForKeyValues(key string, values []string) *policyproto.Permission
 				},
 			}, nil
 		}
+	case key == attrConnSNI:
+		converter = func(v string) (*policyproto.Permission, error) {
+			return &policyproto.Permission{
+				Rule: &policyproto.Permission_RequestedServerName{
+					RequestedServerName: createStringMatcher(v, false /* forceRegexPattern */, false /* forTCPFilter */),
+				},
+			}, nil
+		}
 	default:
 		if !attributesEnforcedInPlugin(key) {
 			// The attribute is neither matched here nor in previous stage, this means it's something we
@@ -806,18 +801,15 @@ func principalForKeyValue(key, value string, forTCPFilter bool) *policyproto.Pri
 				Header: convertToHeaderMatcher(header, value),
 			},
 		}
-	case attributesEnforcedInDynamicMetadataMatcher(key):
-		if matcher := createDynamicMetadataMatcher(key, value); matcher != nil {
+	default:
+		if matcher := createDynamicMetadataMatcher(key, value, forTCPFilter); matcher != nil {
 			return &policyproto.Principal{
 				Identifier: &policyproto.Principal_Metadata{
 					Metadata: matcher,
 				},
 			}
 		}
-		rbacLog.Errorf("ignored invalid dynamic metadata: %s", key)
-		return nil
-	default:
-		rbacLog.Errorf("ignored unsupported property key: %s", key)
+		rbacLog.Errorf("failed to generated dynamic metadata matcher for key: %s", key)
 		return nil
 	}
 }

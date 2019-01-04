@@ -20,6 +20,7 @@ const (
 	GatewayTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Gateway"
 	ServiceEntryTypeURL       = "type.googleapis.com/istio.networking.v1alpha3.ServiceEntry"
 	EnvoyFilterTypeURL        = "type.googleapis.com/istio.networking.v1alpha3.EnvoyFilter"
+	SidecarTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Sidecar"
 	HTTPAPISpecTypeURL        = "type.googleapis.com/istio.mixer.v1.config.client.HTTPAPISpec"
 	HTTPAPISpecBindingTypeURL = "type.googleapis.com/istio.mixer.v1.config.client.HTTPAPISpecBinding"
 	QuotaSpecTypeURL          = "type.googleapis.com/istio.mixer.v1.config.client.QuotaSpec"
@@ -89,11 +90,13 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			virtualServices := s.config.CreateVirtualServiceEnvelopes(routes, newVersion)
 			destinationRules := s.config.CreateDestinationRuleEnvelopes(routes, newVersion)
 			serviceEntries := s.config.CreateServiceEntryEnvelopes(routes, newVersion)
+			sidecars := s.config.CreateSidecarEnvelopes(routes, newVersion)
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
+			s.builder.Set(SidecarTypeURL, newVersion, sidecars)
 
 			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)

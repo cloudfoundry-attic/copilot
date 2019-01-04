@@ -1,4 +1,4 @@
-package tpl
+package cc
 
 const declTpl = `
 extern bool Validate(const {{ class . }}& m, pgv::ValidationMsg* err);
@@ -26,6 +26,26 @@ const msgTpl = `
 				{{ inKey $f . }},
 			{{- end }}
 		};
+	{{ end }}{{ end }}
+
+	{{ if has .Rules "Items"}}{{ if .Rules.Items }}
+	{{ if has .Rules.Items.GetString_ "In" }} {{ if .Rules.Items.GetString_.In }}
+	const std::set<string> {{ lookup .Field "InLookup" }} = {
+			{{- range .Rules.Items.GetString_.In }}
+				{{ inKey $f . }},
+			{{- end }}
+		};
+	{{ end }}{{ end }}
+	{{ end }}{{ end }}
+
+	{{ if has .Rules "Items"}}{{ if .Rules.Items }}
+	{{ if has .Rules.Items.GetString_ "NotIn" }} {{ if .Rules.Items.GetString_.NotIn }}
+	const std::set<string> {{ lookup .Field "NotInLookup" }} = {
+			{{- range .Rules.Items.GetString_.NotIn }}
+				{{ inKey $f . }},
+			{{- end }}
+		};
+	{{ end }}{{ end }}
 	{{ end }}{{ end }}
 
 	{{ if has .Rules "Pattern"}}{{ if .Rules.Pattern }}

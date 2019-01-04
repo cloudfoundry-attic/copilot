@@ -16,7 +16,6 @@ package route
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -28,12 +27,12 @@ import (
 	xdstype "github.com/envoyproxy/go-control-plane/envoy/type"
 	xdsutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
-	"github.com/prometheus/client_golang/prometheus"
 
 	networking "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/networking/util"
 	"istio.io/istio/pkg/log"
+	"istio.io/istio/pkg/proto"
 )
 
 // Headers with special meaning in Envoy
@@ -42,24 +41,6 @@ const (
 	HeaderAuthority = ":authority"
 	HeaderScheme    = ":scheme"
 )
-
-var (
-	// experiment on getting some monitoring on config errors.
-	noClusterMissingPort = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "pilot_route_cluster_no_port",
-		Help: "Routes with no clusters due to missing port.",
-	}, []string{"service", "rule"})
-
-	noClusterMissingService = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "pilot_route_nocluster_no_service",
-		Help: "Routes with no clusters due to missing service",
-	}, []string{"service", "rule"})
-)
-
-func init() {
-	prometheus.MustRegister(noClusterMissingPort)
-	prometheus.MustRegister(noClusterMissingService)
-}
 
 // VirtualHostWrapper is a context-dependent virtual host entry with guarded routes.
 // Note: Currently we are not fully utilizing this structure. We could invoke this logic
@@ -90,12 +71,13 @@ func BuildVirtualHostsFromConfigAndRegistry(
 	node *model.Proxy,
 	push *model.PushContext,
 	serviceRegistry map[model.Hostname]*model.Service,
+	virtualServices []model.Config,
 	proxyLabels model.LabelsCollection) []VirtualHostWrapper {
 
 	out := make([]VirtualHostWrapper, 0)
 
 	meshGateway := map[string]bool{model.IstioMeshGateway: true}
-	virtualServices := push.VirtualServices(meshGateway)
+
 	// translate all virtual service configs into virtual hosts
 	for _, virtualService := range virtualServices {
 		wrappers := buildVirtualHostsForVirtualService(node, push, virtualService, serviceRegistry, proxyLabels, meshGateway)
@@ -127,7 +109,7 @@ func BuildVirtualHostsFromConfigAndRegistry(
 				out = append(out, VirtualHostWrapper{
 					Port:     port.Port,
 					Services: []*model.Service{svc},
-					Routes:   []route.Route{*BuildDefaultHTTPRoute(node, cluster, traceOperation)},
+					Routes:   []route.Route{*BuildDefaultHTTPRoute(cluster, traceOperation)},
 				})
 			}
 		}
@@ -375,24 +357,23 @@ func translateRoute(push *model.PushContext, node *model.Proxy, in *networking.H
 			}
 		}
 
-		if len(in.AppendHeaders) > 0 {
-			action.RequestHeadersToAdd = make([]*core.HeaderValueOption, 0)
-			for key, value := range in.AppendHeaders {
-				action.RequestHeadersToAdd = append(action.RequestHeadersToAdd, &core.HeaderValueOption{
-					Header: &core.HeaderValue{
-						Key:   key,
-						Value: value,
-					},
-				})
-			}
-		}
-
-		if len(in.RemoveResponseHeaders) > 0 {
-			action.ResponseHeadersToRemove = make([]string, 0)
-			for _, value := range in.RemoveResponseHeaders {
-				action.ResponseHeadersToRemove = append(action.ResponseHeadersToRemove, value)
-			}
-		}
+		requestHeadersToAdd := translateAppendHeaders(in.Headers.GetRequest().GetSet(), false)
+		requestHeadersToAdd = append(requestHeadersToAdd, translateAppendHeaders(in.Headers.GetRequest().GetAdd(), true)...)
+		requestHeadersToAdd = append(requestHeadersToAdd, translateAppendHeaders(in.AppendRequestHeaders, true)...)
+		requestHeadersToAdd = append(requestHeadersToAdd, translateAppendHeaders(in.AppendHeaders, true)...)
+		out.RequestHeadersToAdd = requestHeadersToAdd
+		responseHeadersToAdd := translateAppendHeaders(in.Headers.GetResponse().GetSet(), false)
+		responseHeadersToAdd = append(responseHeadersToAdd, translateAppendHeaders(in.Headers.GetResponse().GetAdd(), true)...)
+		responseHeadersToAdd = append(responseHeadersToAdd, translateAppendHeaders(in.AppendResponseHeaders, true)...)
+		out.ResponseHeadersToAdd = responseHeadersToAdd
+		requestHeadersToRemove := make([]string, 0)
+		requestHeadersToRemove = append(requestHeadersToRemove, in.Headers.GetRequest().GetRemove()...)
+		requestHeadersToRemove = append(requestHeadersToRemove, in.RemoveRequestHeaders...)
+		out.RequestHeadersToRemove = requestHeadersToRemove
+		responseHeadersToRemove := make([]string, 0)
+		responseHeadersToRemove = append(responseHeadersToRemove, in.Headers.GetResponse().GetRemove()...)
+		responseHeadersToRemove = append(responseHeadersToRemove, in.RemoveResponseHeaders...)
+		out.ResponseHeadersToRemove = responseHeadersToRemove
 
 		if in.Mirror != nil {
 			n := GetDestinationCluster(in.Mirror, serviceRegistry[model.Hostname(in.Mirror.Host)], port)
@@ -413,14 +394,34 @@ func translateRoute(push *model.PushContext, node *model.Proxy, in *networking.H
 				}
 			}
 
+			requestHeadersToAdd := translateAppendHeaders(dst.Headers.GetRequest().GetSet(), false)
+			requestHeadersToAdd = append(requestHeadersToAdd, translateAppendHeaders(dst.Headers.GetRequest().GetAdd(), true)...)
+			requestHeadersToAdd = append(requestHeadersToAdd, translateAppendHeaders(dst.AppendRequestHeaders, true)...)
+			responseHeadersToAdd := translateAppendHeaders(dst.Headers.GetResponse().GetSet(), false)
+			responseHeadersToAdd = append(responseHeadersToAdd, translateAppendHeaders(dst.Headers.GetResponse().GetAdd(), true)...)
+			responseHeadersToAdd = append(responseHeadersToAdd, translateAppendHeaders(dst.AppendResponseHeaders, true)...)
+			requestHeadersToRemove := make([]string, 0)
+			requestHeadersToRemove = append(requestHeadersToRemove, dst.Headers.GetRequest().GetRemove()...)
+			requestHeadersToRemove = append(requestHeadersToRemove, dst.RemoveRequestHeaders...)
+			responseHeadersToRemove := make([]string, 0)
+			responseHeadersToRemove = append(responseHeadersToRemove, dst.Headers.GetResponse().GetRemove()...)
+			responseHeadersToRemove = append(responseHeadersToRemove, dst.RemoveResponseHeaders...)
+
 			hostname := model.Hostname(dst.GetDestination().GetHost())
 			n := GetDestinationCluster(dst.Destination, serviceRegistry[hostname], port)
-			weighted = append(weighted, &route.WeightedCluster_ClusterWeight{
-				Name:   n,
-				Weight: weight,
-			})
 
-			hashPolicy := getHashPolicy(push, dst)
+			clusterWeight := &route.WeightedCluster_ClusterWeight{
+				Name:                    n,
+				Weight:                  weight,
+				RequestHeadersToAdd:     requestHeadersToAdd,
+				RequestHeadersToRemove:  requestHeadersToRemove,
+				ResponseHeadersToAdd:    responseHeadersToAdd,
+				ResponseHeadersToRemove: responseHeadersToRemove,
+			}
+
+			weighted = append(weighted, clusterWeight)
+
+			hashPolicy := getHashPolicy(push, node, dst)
 			if hashPolicy != nil {
 				action.HashPolicy = append(action.HashPolicy, hashPolicy)
 			}
@@ -429,6 +430,10 @@ func translateRoute(push *model.PushContext, node *model.Proxy, in *networking.H
 		// rewrite to a single cluster if there is only weighted cluster
 		if len(weighted) == 1 {
 			action.ClusterSpecifier = &route.RouteAction_Cluster{Cluster: weighted[0].Name}
+			out.RequestHeadersToAdd = append(out.RequestHeadersToAdd, weighted[0].RequestHeadersToAdd...)
+			out.RequestHeadersToRemove = append(out.RequestHeadersToRemove, weighted[0].RequestHeadersToRemove...)
+			out.ResponseHeadersToAdd = append(out.ResponseHeadersToAdd, weighted[0].ResponseHeadersToAdd...)
+			out.ResponseHeadersToRemove = append(out.ResponseHeadersToRemove, weighted[0].ResponseHeadersToRemove...)
 		} else {
 			action.ClusterSpecifier = &route.RouteAction_WeightedClusters{
 				WeightedClusters: &route.WeightedCluster{
@@ -448,6 +453,46 @@ func translateRoute(push *model.PushContext, node *model.Proxy, in *networking.H
 	return out
 }
 
+// SortHeaderValueOption type and the functions below (Len, Less and Swap) are for sort.Stable for type HeaderValueOption
+type SortHeaderValueOption []*core.HeaderValueOption
+
+// Len is i the sort.Interface for SortHeaderValueOption
+func (b SortHeaderValueOption) Len() int {
+	return len(b)
+}
+
+// Less is in the sort.Interface for SortHeaderValueOption
+func (b SortHeaderValueOption) Less(i, j int) bool {
+	if b[i] == nil || b[i].Header == nil {
+		return false
+	} else if b[j] == nil || b[j].Header == nil {
+		return true
+	}
+	return strings.Compare(b[i].Header.Key, b[j].Header.Key) < 0
+}
+
+// Swap is in the sort.Interface for SortHeaderValueOption
+func (b SortHeaderValueOption) Swap(i, j int) {
+	b[i], b[j] = b[j], b[i]
+}
+
+// translateAppendHeaders translates headers
+func translateAppendHeaders(headers map[string]string, appendFlag bool) []*core.HeaderValueOption {
+	headerValueOptionList := make([]*core.HeaderValueOption, 0, len(headers))
+	appendValue := &types.BoolValue{Value: appendFlag}
+	for key, value := range headers {
+		headerValueOptionList = append(headerValueOptionList, &core.HeaderValueOption{
+			Header: &core.HeaderValue{
+				Key:   key,
+				Value: value,
+			},
+			Append: appendValue,
+		})
+	}
+	sort.Stable(SortHeaderValueOption(headerValueOptionList))
+	return headerValueOptionList
+}
+
 // translateRouteMatch translates match condition
 func translateRouteMatch(in *networking.HTTPMatchRequest) route.RouteMatch {
 	out := route.RouteMatch{PathSpecifier: &route.RouteMatch_Prefix{Prefix: "/"}}
@@ -462,14 +507,6 @@ func translateRouteMatch(in *networking.HTTPMatchRequest) route.RouteMatch {
 
 	// guarantee ordering of headers
 	sort.Slice(out.Headers, func(i, j int) bool {
-		if out.Headers[i].Name == out.Headers[j].Name {
-			if reflect.TypeOf(out.Headers[i].HeaderMatchSpecifier) == reflect.TypeOf(out.Headers[j].HeaderMatchSpecifier) {
-				var bi, bj []byte
-				out.Headers[i].HeaderMatchSpecifier.MarshalTo(bi)
-				out.Headers[j].HeaderMatchSpecifier.MarshalTo(bj)
-				return string(bi) < string(bj)
-			}
-		}
 		return out.Headers[i].Name < out.Headers[j].Name
 	})
 
@@ -526,10 +563,23 @@ func translateHeaderMatch(name string, in *networking.StringMatch) route.HeaderM
 func translateRetryPolicy(in *networking.HTTPRetry) *route.RouteAction_RetryPolicy {
 	if in != nil && in.Attempts > 0 {
 		d := util.GogoDurationToDuration(in.PerTryTimeout)
+		// default retry on condition
+		retryOn := "gateway-error,connect-failure,refused-stream,unavailable,cancelled,resource-exhausted"
+		if in.RetryOn != "" {
+			retryOn = in.RetryOn
+		}
 		return &route.RouteAction_RetryPolicy{
 			NumRetries:    &types.UInt32Value{Value: uint32(in.GetAttempts())},
-			RetryOn:       "5xx,connect-failure,refused-stream",
+			RetryOn:       retryOn,
 			PerTryTimeout: &d,
+			RetryHostPredicate: []*route.RouteAction_RetryPolicy_RetryHostPredicate{
+				{
+					// to configure retries to prefer hosts that haven’t been attempted already,
+					// the builtin `envoy.retry_host_predicates.previous_hosts` predicate can be used.
+					Name: "envoy.retry_host_predicates.previous_hosts",
+				},
+			},
+			HostSelectionRetryMaxAttempts: 3,
 		}
 	}
 	return nil
@@ -543,7 +593,7 @@ func translateCORSPolicy(in *networking.CorsPolicy) *route.CorsPolicy {
 
 	out := route.CorsPolicy{
 		AllowOrigin: in.AllowOrigin,
-		Enabled:     &types.BoolValue{Value: true},
+		Enabled:     proto.BoolTrue,
 	}
 	out.AllowCredentials = in.AllowCredentials
 	out.AllowHeaders = strings.Join(in.AllowHeaders, ",")
@@ -583,10 +633,10 @@ func getRouteOperation(in *route.Route, vsName string, port int) string {
 }
 
 // BuildDefaultHTTPRoute builds a default route.
-func BuildDefaultHTTPRoute(node *model.Proxy, clusterName string, operation string) *route.Route {
+func BuildDefaultHTTPRoute(clusterName string, operation string) *route.Route {
 	notimeout := 0 * time.Second
 
-	defaultRoute := &route.Route{
+	return &route.Route{
 		Match: translateRouteMatch(nil),
 		Decorator: &route.Decorator{
 			Operation: operation,
@@ -595,18 +645,10 @@ func BuildDefaultHTTPRoute(node *model.Proxy, clusterName string, operation stri
 			Route: &route.RouteAction{
 				ClusterSpecifier: &route.RouteAction_Cluster{Cluster: clusterName},
 				Timeout:          &notimeout,
+				MaxGrpcTimeout:   &notimeout,
 			},
 		},
 	}
-
-	defaultRoute.Action = &route.Route_Route{
-		Route: &route.RouteAction{
-			ClusterSpecifier: &route.RouteAction_Cluster{Cluster: clusterName},
-			Timeout:          &notimeout,
-			MaxGrpcTimeout:   &notimeout,
-		},
-	}
-	return defaultRoute
 }
 
 // translatePercentToFractionalPercent translates an v1alpha3 Percent instance
@@ -644,9 +686,9 @@ func translateFault(node *model.Proxy, in *networking.HTTPFaultInjection) *xdsht
 			}
 		} else {
 			if in.Delay.Percentage != nil {
-				out.Delay.Percent = uint32(in.Delay.Percentage.Value)
+				out.Delay.Percentage = translatePercentToFractionalPercent(in.Delay.Percentage)
 			} else {
-				out.Delay.Percent = uint32(in.Delay.Percent)
+				out.Delay.Percentage = translateIntegerToFractionalPercent(in.Delay.Percent)
 			}
 		}
 		switch d := in.Delay.HttpDelayType.(type) {
@@ -671,9 +713,9 @@ func translateFault(node *model.Proxy, in *networking.HTTPFaultInjection) *xdsht
 			}
 		} else {
 			if in.Abort.Percentage != nil {
-				out.Abort.Percent = uint32(in.Abort.Percentage.Value)
+				out.Abort.Percentage = translatePercentToFractionalPercent(in.Abort.Percentage)
 			} else {
-				out.Abort.Percent = uint32(in.Abort.Percent)
+				out.Abort.Percentage = translateIntegerToFractionalPercent(in.Abort.Percent)
 			}
 		}
 		switch a := in.Abort.ErrorType.(type) {
@@ -714,13 +756,13 @@ func portLevelSettingsConsistentHash(dst *networking.Destination,
 	return nil
 }
 
-func getHashPolicy(push *model.PushContext, dst *networking.HTTPRouteDestination) *route.RouteAction_HashPolicy {
+func getHashPolicy(push *model.PushContext, node *model.Proxy, dst *networking.HTTPRouteDestination) *route.RouteAction_HashPolicy {
 	if push == nil {
 		return nil
 	}
 
 	destination := dst.GetDestination()
-	destinationRule := push.DestinationRule(model.Hostname(destination.GetHost()))
+	destinationRule := push.DestinationRule(node, model.Hostname(destination.GetHost()))
 	if destinationRule == nil {
 		return nil
 	}

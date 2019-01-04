@@ -1,22 +1,37 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"runtime"
 	"sync"
 
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/lyft/protoc-gen-validate/tests/harness"
+	harness "github.com/lyft/protoc-gen-validate/tests/harness/go"
 	"golang.org/x/net/context"
 )
 
-var Harnesses = []Harness{
-	InitHarness("tests/harness/go/go-harness"),
-	InitHarness("tests/harness/cc/cc-harness"),
+func Harnesses(goFlag bool, gogoFlag bool, ccFlag bool, javaFlag bool) []Harness {
+	harnesses := make([]Harness, 0)
+	if goFlag {
+		harnesses = append(harnesses, InitHarness("tests/harness/go/main/go-harness"))
+	}
+	if gogoFlag {
+		harnesses = append(harnesses, InitHarness("tests/harness/gogo/main/go-harness"))
+	}
+	if ccFlag {
+		harnesses = append(harnesses, InitHarness("tests/harness/cc/cc-harness"))
+	}
+	if javaFlag {
+		harnesses = append(harnesses, InitHarness("tests/harness/java/java-harness"))
+	}
+	return harnesses
 }
 
 type Harness struct {
@@ -25,6 +40,27 @@ type Harness struct {
 }
 
 func InitHarness(cmd string, args ...string) Harness {
+	if runtime.GOOS == "windows" {
+		// Bazel runfiles are not symlinked in on windows,
+		// so we have to use the manifest instead. If the manifest
+		// doesn't exist, assume we're running in a non-Bazel context
+		f, err := os.Open("MANIFEST")
+		if err == nil {
+			defer f.Close()
+
+			s := bufio.NewScanner(f)
+			manifest := map[string]string{}
+			for s.Scan() {
+				values := strings.Split(s.Text(), " ")
+				manifest[values[0]] = values[1]
+			}
+			for k, v := range manifest {
+				if strings.Contains(k, cmd) {
+					cmd = v
+				}
+			}
+		}
+	}
 
 	return Harness{
 		Name: cmd,

@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	mcp "istio.io/api/mcp/v1alpha1"
+	"istio.io/istio/pkg/mcp/testing/monitoring"
 )
 
 type testStream struct {
@@ -277,7 +278,7 @@ func makeResponse(typeURL, version, nonce string, envelopes ...*mcp.Envelope) *m
 func TestSingleTypeCases(t *testing.T) {
 	ts := newTestStream()
 
-	c := New(ts, supportedTypeUrls, ts, key, metadata)
+	c := New(ts, supportedTypeUrls, ts, key, metadata, mcptestmon.NewInMemoryClientStatsContext())
 	ctx, cancelClient := context.WithCancel(context.Background())
 
 	var wg sync.WaitGroup
@@ -475,7 +476,7 @@ func TestSingleTypeCases(t *testing.T) {
 func TestReconnect(t *testing.T) {
 	ts := newTestStream()
 
-	c := New(ts, []string{fakeType0TypeURL}, ts, key, metadata)
+	c := New(ts, []string{fakeType0TypeURL}, ts, key, metadata, mcptestmon.NewInMemoryClientStatsContext())
 	ctx, cancelClient := context.WithCancel(context.Background())
 
 	var wg sync.WaitGroup
@@ -621,5 +622,41 @@ func TestReconnect(t *testing.T) {
 		if err := ts.wantRequest(step.wantRequest); err != nil {
 			t.Fatalf("%v: failed to receive correct request: %v", step.name, err)
 		}
+	}
+}
+
+func TestInMemoryUpdater(t *testing.T) {
+	u := NewInMemoryUpdater()
+
+	o := u.Get("foo")
+	if len(o) != 0 {
+		t.Fatalf("Unexpected items in updater: %v", o)
+	}
+
+	c := Change{
+		TypeURL: "foo",
+		Objects: []*Object{
+			{
+				TypeURL: "foo",
+				Metadata: &mcp.Metadata{
+					Name: "bar",
+				},
+				Resource: &types.Empty{},
+			},
+		},
+	}
+
+	err := u.Apply(&c)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	o = u.Get("foo")
+	if len(o) != 1 {
+		t.Fatalf("expected item not found: %v", o)
+	}
+
+	if o[0].Metadata.Name != "bar" {
+		t.Fatalf("expected name not found on object: %v", o)
 	}
 }

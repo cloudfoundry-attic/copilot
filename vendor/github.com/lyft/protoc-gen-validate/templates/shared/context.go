@@ -7,12 +7,14 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/lyft/protoc-gen-star"
+	"github.com/lyft/protoc-gen-validate/gogoproto"
 	"github.com/lyft/protoc-gen-validate/validate"
 )
 
 type RuleContext struct {
 	Field pgs.Field
 	Rules proto.Message
+	Gogo  Gogo
 
 	Typ        string
 	WrapperTyp string
@@ -22,8 +24,19 @@ type RuleContext struct {
 	AccessorOverride string
 }
 
+type Gogo struct {
+	Nullable    bool
+	StdDuration bool
+	StdTime     bool
+}
+
 func rulesContext(f pgs.Field) (out RuleContext, err error) {
 	out.Field = f
+
+	out.Gogo.Nullable = true
+	f.Extension(gogoproto.E_Nullable, &out.Gogo.Nullable)
+	f.Extension(gogoproto.E_Stdduration, &out.Gogo.StdDuration)
+	f.Extension(gogoproto.E_Stdtime, &out.Gogo.StdTime)
 
 	var rules validate.FieldRules
 	if _, err = f.Extension(validate.E_Rules, &rules); err != nil {
@@ -114,12 +127,7 @@ func Render(tpl *template.Template) func(ctx RuleContext) (string, error) {
 	}
 }
 
-type ruleTarget interface {
-	IsEmbed() bool
-	Name() pgs.TypeName
-}
-
-func resolveRules(typ ruleTarget, rules *validate.FieldRules) (string, proto.Message, bool) {
+func resolveRules(typ interface{ IsEmbed() bool }, rules *validate.FieldRules) (ruleType string, rule proto.Message, wrapped bool) {
 	switch r := rules.GetType().(type) {
 	case *validate.FieldRules_Float:
 		return "float", r.Float, typ.IsEmbed()

@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"istio.io/istio/pkg/test/framework/scopes"
 	"istio.io/istio/pkg/test/kube"
+	"istio.io/istio/pkg/test/scopes"
 	"istio.io/istio/pkg/test/shell"
 )
 
@@ -39,11 +39,10 @@ metadata:
 
 // HelmConfig configuration for a Helm-based deployment.
 type HelmConfig struct {
-	Accessor   *kube.Accessor
-	KubeConfig string
-	Namespace  string
-	WorkDir    string
-	ChartDir   string
+	Accessor  *kube.Accessor
+	Namespace string
+	WorkDir   string
+	ChartDir  string
 
 	// Can be either a file name under ChartDir or an absolute file path.
 	ValuesFile string
@@ -52,16 +51,11 @@ type HelmConfig struct {
 
 // NewHelmDeployment creates a new Helm-based deployment instance.
 func NewHelmDeployment(c HelmConfig) (*Instance, error) {
-	instance := &Instance{}
-
-	instance.kubeConfig = c.KubeConfig
-	instance.namespace = c.Namespace
-
 	// Define a deployment name for Helm.
 	deploymentName := fmt.Sprintf("%s-%v", c.Namespace, time.Now().UnixNano())
 	scopes.CI.Infof("Generated Helm Instance name: %s", deploymentName)
 
-	instance.yamlFilePath = path.Join(c.WorkDir, deploymentName+".yaml")
+	yamlFilePath := path.Join(c.WorkDir, deploymentName+".yaml")
 
 	// Convert the valuesFile to an absolute file path.
 	valuesFile := c.ValuesFile
@@ -78,6 +72,7 @@ func NewHelmDeployment(c HelmConfig) (*Instance, error) {
 		deploymentName,
 		c.Namespace,
 		c.ChartDir,
+		c.WorkDir,
 		valuesFile,
 		c.Values); err != nil {
 		return nil, fmt.Errorf("chart generation failed: %v", err)
@@ -89,44 +84,60 @@ func NewHelmDeployment(c HelmConfig) (*Instance, error) {
 
 	generatedYaml = namespaceData + generatedYaml
 
-	if err = ioutil.WriteFile(instance.yamlFilePath, []byte(generatedYaml), os.ModePerm); err != nil {
+	if err = ioutil.WriteFile(yamlFilePath, []byte(generatedYaml), os.ModePerm); err != nil {
 		return nil, fmt.Errorf("unable to write helm generated yaml: %v", err)
 	}
 
-	scopes.CI.Infof("Applying Helm generated Yaml file: %s", instance.yamlFilePath)
-	if err = kube.Apply(c.KubeConfig, c.Namespace, instance.yamlFilePath); err != nil {
-		return nil, fmt.Errorf("kube apply of generated yaml filed: %v", err)
-	}
-
-	if err = instance.wait(c.Namespace, c.Accessor); err != nil {
-		return nil, err
-	}
-
-	return instance, nil
+	scopes.CI.Infof("Created Helm-generated Yaml file: %s", yamlFilePath)
+	return NewYamlDeployment(c.Namespace, yamlFilePath), nil
 }
 
 // HelmTemplate calls "helm template".
-func HelmTemplate(deploymentName, namespace, chartDir, valuesFile string, values map[string]string) (string, error) {
-	valuesString := ""
-
+func HelmTemplate(deploymentName, namespace, chartDir, workDir, valuesFile string, values map[string]string) (string, error) {
 	// Apply the overrides for the values file.
-	if values != nil {
-		for k, v := range values {
-			valuesString += fmt.Sprintf(" --set %s=%s", k, v)
-		}
+	valuesString := ""
+	for k, v := range values {
+		valuesString += fmt.Sprintf(" --set %s=%s", k, v)
 	}
 
 	valuesFileString := ""
 	if valuesFile != "" {
-		valuesFileString = fmt.Sprintf(" --values %s", valuesFile)
+		valuesFileString = fmt.Sprintf("--values %s", valuesFile)
 	}
 
-	str, err := shell.Execute(
-		"helm template %s --name %s --namespace %s%s%s",
-		chartDir, deploymentName, namespace, valuesFileString, valuesString)
-	if err == nil {
-		return str, nil
+	helmRepoDir := filepath.Join(workDir, "helmrepo")
+	chartBuildDir := filepath.Join(workDir, "charts")
+	if err := os.MkdirAll(helmRepoDir, os.ModePerm); err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(chartBuildDir, os.ModePerm); err != nil {
+		return "", err
 	}
 
-	return "", fmt.Errorf("%v: %s", err, str)
+	// Initialize the helm (but do not install tiller).
+	if _, err := exec(fmt.Sprintf("helm --home %s init --client-only", helmRepoDir)); err != nil {
+		return "", err
+	}
+
+	// Adding cni dependency as a workaround for now.
+	if _, err := exec(fmt.Sprintf("helm --home %s repo add istio.io %s",
+		helmRepoDir, "https://storage.googleapis.com/istio-prerelease/daily-build/master-latest-daily/charts")); err != nil {
+		return "", err
+	}
+
+	// Package the chart dir.
+	if _, err := exec(fmt.Sprintf("helm --home %s package -u %s -d %s", helmRepoDir, chartDir, chartBuildDir)); err != nil {
+		return "", err
+	}
+	return exec(fmt.Sprintf("helm --home %s template %s --name %s --namespace %s %s %s",
+		helmRepoDir, chartDir, deploymentName, namespace, valuesFileString, valuesString))
+}
+
+func exec(cmd string) (string, error) {
+	scopes.CI.Infof("executing: %s", cmd)
+	str, err := shell.Execute(cmd)
+	if err != nil {
+		scopes.CI.Errorf("failed executing command (%s): %v: %s", cmd, err, str)
+	}
+	return str, err
 }

@@ -16,7 +16,6 @@ package pilot
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -45,7 +44,6 @@ import (
 const (
 	pilotDebugPort = 5555
 	pilotGrpcPort  = 15010
-	mcpServerAddr  = "127.0.0.1:15014"
 )
 
 var fakeCreateTime *types.Timestamp
@@ -62,8 +60,8 @@ func TestPilotMCPClient(t *testing.T) {
 	g.Expect(err).NotTo(gomega.HaveOccurred())
 	defer mcpServer.Close()
 
-	pilot := initLocalPilotTestEnv(t, mcpServerAddr, pilotGrpcPort, pilotDebugPort)
-	defer pilot.Close()
+	tearDown := initLocalPilotTestEnv(t, mcpServer.Port, pilotGrpcPort, pilotDebugPort)
+	defer tearDown()
 
 	g.Eventually(func() (string, error) {
 		return curlPilot(fmt.Sprintf("http://127.0.0.1:%d/debug/configz", pilotDebugPort))
@@ -136,7 +134,7 @@ func runMcpServer() (*mockmcp.Server, error) {
 		supportedTypes[i] = fmt.Sprintf("type.googleapis.com/%s", m.MessageName)
 	}
 
-	server, err := mockmcp.NewServer(mcpServerAddr, supportedTypes, mcpServerResponse)
+	server, err := mockmcp.NewServer(supportedTypes, mcpServerResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -174,17 +172,17 @@ func runEnvoy(t *testing.T, grpcPort, debugPort uint16) *mixerEnv.TestSetup {
 	return gateway
 }
 
-func initLocalPilotTestEnv(t *testing.T, mcpAddr string, grpcPort, debugPort int) io.Closer {
+func initLocalPilotTestEnv(t *testing.T, mcpPort, grpcPort, debugPort int) util.TearDownFunc {
 	mixerEnv.NewTestSetup(mixerEnv.PilotMCPTest, t)
 	debugAddr := fmt.Sprintf("127.0.0.1:%d", debugPort)
 	grpcAddr := fmt.Sprintf("127.0.0.1:%d", grpcPort)
-	_, cancel := util.EnsureTestServer(addMcpAddrs(mcpAddr), setupPilotDiscoveryHTTPAddr(debugAddr), setupPilotDiscoveryGrpcAddr(grpcAddr))
-	return cancel
+	_, tearDown := util.EnsureTestServer(addMcpAddrs(mcpPort), setupPilotDiscoveryHTTPAddr(debugAddr), setupPilotDiscoveryGrpcAddr(grpcAddr))
+	return tearDown
 }
 
-func addMcpAddrs(mcpServerAddr string) func(*bootstrap.PilotArgs) {
+func addMcpAddrs(mcpServerPort int) func(*bootstrap.PilotArgs) {
 	return func(arg *bootstrap.PilotArgs) {
-		arg.MCPServerAddrs = []string{"mcp://" + mcpServerAddr}
+		arg.MCPServerAddrs = []string{fmt.Sprintf("mcp://127.0.0.1:%d", mcpServerPort)}
 	}
 }
 

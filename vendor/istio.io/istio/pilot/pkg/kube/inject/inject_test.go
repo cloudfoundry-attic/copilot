@@ -16,16 +16,14 @@ package inject
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/gogo/protobuf/types"
-
-	"fmt"
-
-	"regexp"
 
 	meshconfig "istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
@@ -72,6 +70,7 @@ func TestIntoResourceFile(t *testing.T) {
 		imagePullPolicy              string
 		enableCoreDump               bool
 		debugMode                    bool
+		privileged                   bool
 		duration                     time.Duration
 		includeIPRanges              string
 		excludeIPRanges              string
@@ -83,6 +82,7 @@ func TestIntoResourceFile(t *testing.T) {
 		readinessPeriodSeconds       uint32
 		readinessFailureThreshold    uint32
 		tproxy                       bool
+		rewriteAppHTTPProbe          bool
 	}{
 		// "testdata/hello.yaml" is tested in http_test.go (with debug)
 		{
@@ -131,6 +131,16 @@ func TestIntoResourceFile(t *testing.T) {
 		},
 		{
 			in:                           "hello-probes.yaml",
+			want:                         "hello-probes.yaml.no-rewrite.injected",
+			includeIPRanges:              DefaultIncludeIPRanges,
+			includeInboundPorts:          DefaultIncludeInboundPorts,
+			statusPort:                   DefaultStatusPort,
+			readinessInitialDelaySeconds: DefaultReadinessInitialDelaySeconds,
+			readinessPeriodSeconds:       DefaultReadinessPeriodSeconds,
+			readinessFailureThreshold:    DefaultReadinessFailureThreshold,
+		},
+		{
+			in:                           "hello-probes.yaml",
 			want:                         "hello-probes.yaml.injected",
 			includeIPRanges:              DefaultIncludeIPRanges,
 			includeInboundPorts:          DefaultIncludeInboundPorts,
@@ -138,6 +148,7 @@ func TestIntoResourceFile(t *testing.T) {
 			readinessInitialDelaySeconds: DefaultReadinessInitialDelaySeconds,
 			readinessPeriodSeconds:       DefaultReadinessPeriodSeconds,
 			readinessFailureThreshold:    DefaultReadinessFailureThreshold,
+			rewriteAppHTTPProbe:          true,
 		},
 		{
 			in:                           "hello.yaml",
@@ -210,6 +221,28 @@ func TestIntoResourceFile(t *testing.T) {
 			readinessInitialDelaySeconds: DefaultReadinessInitialDelaySeconds,
 			readinessPeriodSeconds:       DefaultReadinessPeriodSeconds,
 			readinessFailureThreshold:    DefaultReadinessFailureThreshold,
+		},
+		{
+			in:                           "hello-readiness.yaml",
+			want:                         "hello-readiness.yaml.injected",
+			includeIPRanges:              DefaultIncludeIPRanges,
+			includeInboundPorts:          DefaultIncludeInboundPorts,
+			statusPort:                   DefaultStatusPort,
+			readinessInitialDelaySeconds: DefaultReadinessInitialDelaySeconds,
+			readinessPeriodSeconds:       DefaultReadinessPeriodSeconds,
+			readinessFailureThreshold:    DefaultReadinessFailureThreshold,
+			rewriteAppHTTPProbe:          true,
+		},
+		{
+			in:                           "hello-readiness-multi.yaml",
+			want:                         "hello-readiness-multi.yaml.injected",
+			includeIPRanges:              DefaultIncludeIPRanges,
+			includeInboundPorts:          DefaultIncludeInboundPorts,
+			statusPort:                   DefaultStatusPort,
+			readinessInitialDelaySeconds: DefaultReadinessInitialDelaySeconds,
+			readinessPeriodSeconds:       DefaultReadinessPeriodSeconds,
+			readinessFailureThreshold:    DefaultReadinessFailureThreshold,
+			rewriteAppHTTPProbe:          true,
 		},
 		{
 			in:                           "multi-init.yaml",
@@ -388,7 +421,7 @@ func TestIntoResourceFile(t *testing.T) {
 		{
 			in:                           "format-duration.yaml",
 			want:                         "format-duration.yaml.injected",
-			duration:                     time.Duration(42 * time.Second),
+			duration:                     42 * time.Second,
 			includeIPRanges:              DefaultIncludeIPRanges,
 			includeInboundPorts:          DefaultIncludeInboundPorts,
 			statusPort:                   DefaultStatusPort,
@@ -479,9 +512,6 @@ func TestIntoResourceFile(t *testing.T) {
 		testName := fmt.Sprintf("[%02d] %s", i, c.want)
 		t.Run(testName, func(t *testing.T) {
 			mesh := model.DefaultMeshConfig()
-			if c.enableAuth {
-				mesh.AuthPolicy = meshconfig.MeshConfig_MUTUAL_TLS
-			}
 			if c.duration != 0 {
 				mesh.DefaultConfig.DrainDuration = types.DurationProto(c.duration)
 				mesh.DefaultConfig.ParentShutdownDuration = types.DurationProto(c.duration)
@@ -498,10 +528,12 @@ func TestIntoResourceFile(t *testing.T) {
 				ProxyImage:                   ProxyImageName(unitTestHub, unitTestTag, c.debugMode),
 				ImagePullPolicy:              "IfNotPresent",
 				SDSEnabled:                   false,
+				EnableSdsTokenMount:          false,
 				Verbosity:                    DefaultVerbosity,
 				SidecarProxyUID:              DefaultSidecarProxyUID,
 				Version:                      "12345678",
 				EnableCoreDump:               c.enableCoreDump,
+				Privileged:                   c.privileged,
 				Mesh:                         &mesh,
 				DebugMode:                    c.debugMode,
 				IncludeIPRanges:              c.includeIPRanges,
@@ -512,6 +544,7 @@ func TestIntoResourceFile(t *testing.T) {
 				ReadinessInitialDelaySeconds: c.readinessInitialDelaySeconds,
 				ReadinessPeriodSeconds:       c.readinessPeriodSeconds,
 				ReadinessFailureThreshold:    c.readinessFailureThreshold,
+				RewriteAppHTTPProbe:          c.rewriteAppHTTPProbe,
 			}
 			if c.imagePullPolicy != "" {
 				params.ImagePullPolicy = c.imagePullPolicy
@@ -533,10 +566,16 @@ func TestIntoResourceFile(t *testing.T) {
 			}
 
 			// The version string is a maintenance pain for this test. Strip the version string before comparing.
-			wantBytes := stripVersion(util.ReadFile(wantFilePath, t))
-			gotBytes := stripVersion(got.Bytes())
+			gotBytes := got.Bytes()
+			wantedBytes := util.ReadGoldenFile(gotBytes, wantFilePath, t)
+
+			wantBytes := stripVersion(wantedBytes)
+			gotBytes = stripVersion(gotBytes)
+
+			//ioutil.WriteFile(wantFilePath, gotBytes, 0644)
 
 			util.CompareBytes(gotBytes, wantBytes, wantFilePath, t)
+
 		})
 	}
 }

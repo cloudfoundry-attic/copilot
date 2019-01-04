@@ -40,10 +40,10 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "redisquota",
-		ListKind:  "redisquotaList",
-		Singular:  "redisquota",
-		Plural:    "redisquotas",
+		Kind:      "noop",
+		ListKind:  "noopList",
+		Singular:  "noop",
+		Plural:    "noops",
 		Version:   "v1alpha2",
 		Group:     "config.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
@@ -84,6 +84,17 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
+		Kind:      "reportnothing",
+		ListKind:  "reportnothingList",
+		Singular:  "reportnothing",
+		Plural:    "reportnothings",
+		Version:   "v1alpha2",
+		Group:     "config.istio.io",
+		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
+		Converter: converter.Get("legacy-mixer-resource"),
+	})
+
+	b.Add(kube.ResourceSpec{
 		Kind:      "listentry",
 		ListKind:  "listentryList",
 		Singular:  "listentry",
@@ -117,28 +128,6 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "reportnothing",
-		ListKind:  "reportnothingList",
-		Singular:  "reportnothing",
-		Plural:    "reportnothings",
-		Version:   "v1alpha2",
-		Group:     "config.istio.io",
-		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
-		Converter: converter.Get("legacy-mixer-resource"),
-	})
-
-	b.Add(kube.ResourceSpec{
-		Kind:      "servicecontrolreport",
-		ListKind:  "servicecontrolreportList",
-		Singular:  "servicecontrolreport",
-		Plural:    "servicecontrolreports",
-		Version:   "v1alpha2",
-		Group:     "config.istio.io",
-		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
-		Converter: converter.Get("legacy-mixer-resource"),
-	})
-
-	b.Add(kube.ResourceSpec{
 		Kind:      "authorization",
 		ListKind:  "authorizationList",
 		Singular:  "authorization",
@@ -165,6 +154,17 @@ func init() {
 		ListKind:  "stdioList",
 		Singular:  "stdio",
 		Plural:    "stdios",
+		Version:   "v1alpha2",
+		Group:     "config.istio.io",
+		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
+		Converter: converter.Get("legacy-mixer-resource"),
+	})
+
+	b.Add(kube.ResourceSpec{
+		Kind:      "servicecontrolreport",
+		ListKind:  "servicecontrolreportList",
+		Singular:  "servicecontrolreport",
+		Plural:    "servicecontrolreports",
 		Version:   "v1alpha2",
 		Group:     "config.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
@@ -216,10 +216,43 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "fluentd",
-		ListKind:  "fluentdList",
-		Singular:  "fluentd",
-		Plural:    "fluentds",
+		Kind:      "servicecontrol",
+		ListKind:  "servicecontrolList",
+		Singular:  "servicecontrol",
+		Plural:    "servicecontrols",
+		Version:   "v1alpha2",
+		Group:     "config.istio.io",
+		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
+		Converter: converter.Get("legacy-mixer-resource"),
+	})
+
+	b.Add(kube.ResourceSpec{
+		Kind:      "redisquota",
+		ListKind:  "redisquotaList",
+		Singular:  "redisquota",
+		Plural:    "redisquotas",
+		Version:   "v1alpha2",
+		Group:     "config.istio.io",
+		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
+		Converter: converter.Get("legacy-mixer-resource"),
+	})
+
+	b.Add(kube.ResourceSpec{
+		Kind:      "denier",
+		ListKind:  "denierList",
+		Singular:  "denier",
+		Plural:    "deniers",
+		Version:   "v1alpha2",
+		Group:     "config.istio.io",
+		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
+		Converter: converter.Get("legacy-mixer-resource"),
+	})
+
+	b.Add(kube.ResourceSpec{
+		Kind:      "prometheus",
+		ListKind:  "prometheusList",
+		Singular:  "prometheus",
+		Plural:    "prometheuses",
 		Version:   "v1alpha2",
 		Group:     "config.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
@@ -271,10 +304,10 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "denier",
-		ListKind:  "denierList",
-		Singular:  "denier",
-		Plural:    "deniers",
+		Kind:      "opa",
+		ListKind:  "opaList",
+		Singular:  "opa",
+		Plural:    "opas",
 		Version:   "v1alpha2",
 		Group:     "config.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
@@ -282,10 +315,10 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "prometheus",
-		ListKind:  "prometheusList",
-		Singular:  "prometheus",
-		Plural:    "prometheuses",
+		Kind:      "fluentd",
+		ListKind:  "fluentdList",
+		Singular:  "fluentd",
+		Plural:    "fluentds",
 		Version:   "v1alpha2",
 		Group:     "config.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
@@ -319,39 +352,6 @@ func init() {
 		ListKind:  "memquotaList",
 		Singular:  "memquota",
 		Plural:    "memquotas",
-		Version:   "v1alpha2",
-		Group:     "config.istio.io",
-		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
-		Converter: converter.Get("legacy-mixer-resource"),
-	})
-
-	b.Add(kube.ResourceSpec{
-		Kind:      "noop",
-		ListKind:  "noopList",
-		Singular:  "noop",
-		Plural:    "noops",
-		Version:   "v1alpha2",
-		Group:     "config.istio.io",
-		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
-		Converter: converter.Get("legacy-mixer-resource"),
-	})
-
-	b.Add(kube.ResourceSpec{
-		Kind:      "opa",
-		ListKind:  "opaList",
-		Singular:  "opa",
-		Plural:    "opas",
-		Version:   "v1alpha2",
-		Group:     "config.istio.io",
-		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
-		Converter: converter.Get("legacy-mixer-resource"),
-	})
-
-	b.Add(kube.ResourceSpec{
-		Kind:      "servicecontrol",
-		ListKind:  "servicecontrolList",
-		Singular:  "servicecontrol",
-		Plural:    "servicecontrols",
 		Version:   "v1alpha2",
 		Group:     "config.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.mcp.v1alpha1.extensions.LegacyMixerResource"),
@@ -458,6 +458,17 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
+		Kind:      "Sidecar",
+		ListKind:  "SidecarList",
+		Singular:  "sidecar",
+		Plural:    "sidecars",
+		Version:   "v1alpha3",
+		Group:     "networking.istio.io",
+		Target:    metadata.Types.Get("type.googleapis.com/istio.networking.v1alpha3.Sidecar"),
+		Converter: converter.Get("identity"),
+	})
+
+	b.Add(kube.ResourceSpec{
 		Kind:      "VirtualService",
 		ListKind:  "VirtualServiceList",
 		Singular:  "virtualservice",
@@ -513,10 +524,10 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "RbacConfig",
-		ListKind:  "RbacConfigList",
-		Singular:  "rbacconfig",
-		Plural:    "rbacconfigs",
+		Kind:      "ClusterRbacConfig",
+		ListKind:  "ClusterRbacConfigList",
+		Singular:  "clusterrbacconfig",
+		Plural:    "clusterrbacconfigs",
 		Version:   "v1alpha1",
 		Group:     "rbac.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"),
@@ -524,10 +535,10 @@ func init() {
 	})
 
 	b.Add(kube.ResourceSpec{
-		Kind:      "ClusterRbacConfig",
-		ListKind:  "ClusterRbacConfigList",
-		Singular:  "clusterrbacconfig",
-		Plural:    "clusterrbacconfigs",
+		Kind:      "RbacConfig",
+		ListKind:  "RbacConfigList",
+		Singular:  "rbacconfig",
+		Plural:    "rbacconfigs",
 		Version:   "v1alpha1",
 		Group:     "rbac.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"),
@@ -554,6 +565,28 @@ func init() {
 		Group:     "rbac.istio.io",
 		Target:    metadata.Types.Get("type.googleapis.com/istio.rbac.v1alpha1.ServiceRoleBinding"),
 		Converter: converter.Get("identity"),
+	})
+
+	b.Add(kube.ResourceSpec{
+		Kind:      "Service",
+		ListKind:  "ServiceList",
+		Singular:  "service",
+		Plural:    "services",
+		Version:   "v1",
+		Group:     "",
+		Target:    metadata.Types.Get("type.googleapis.com/k8s.io.api.core.v1.ServiceSpec"),
+		Converter: converter.Get("kube-service-resource"),
+	})
+
+	b.Add(kube.ResourceSpec{
+		Kind:      "Ingress",
+		ListKind:  "IngressList",
+		Singular:  "ingress",
+		Plural:    "ingresses",
+		Version:   "v1beta1",
+		Group:     "extensions",
+		Target:    metadata.Types.Get("type.googleapis.com/k8s.io.api.extensions.v1beta1.IngressSpec"),
+		Converter: converter.Get("kube-ingress-resource"),
 	})
 
 	Types = b.Build()

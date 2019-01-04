@@ -18,10 +18,14 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/gogo/protobuf/types"
 	multierror "github.com/hashicorp/go-multierror"
 
+	"istio.io/api/policy/v1beta1"
+	"istio.io/istio/mixer/pkg/attribute"
 	"istio.io/istio/mixer/pkg/protobuf/yaml/wire"
 )
 
@@ -57,41 +61,46 @@ func NewDecoder(resolver Resolver, msgName string, fieldMask map[string]bool) *D
 
 // Decode function parses wire-encoded bytes to attribute values. The keys are field names
 // in the message specified by the field mask.
-func (d *Decoder) Decode(b []byte) (map[string]interface{}, error) {
+// Attribute prefix is appended to the field names in the output attribute bag.
+func (d *Decoder) Decode(b []byte, out *attribute.MutableBag, attrPrefix string) error {
 	visitor := &decodeVisitor{
-		decoder: d,
-		out:     make(map[string]interface{}),
+		decoder:    d,
+		out:        out,
+		attrPrefix: attrPrefix,
 	}
 
 	for len(b) > 0 {
 		_, _, n := wire.ConsumeField(visitor, b)
 		if n < 0 {
-			return visitor.out, wire.ParseError(n)
+			return wire.ParseError(n)
 		}
 		b = b[n:]
 	}
 
-	return visitor.out, visitor.err
+	return visitor.err
 }
 
 type decodeVisitor struct {
-	decoder *Decoder
-	out     map[string]interface{}
-	err     error
+	decoder    *Decoder
+	out        *attribute.MutableBag
+	attrPrefix string
+	err        error
 }
 
 func (dv *decodeVisitor) setValue(f *descriptor.FieldDescriptorProto, val interface{}) {
+	name := dv.attrPrefix + f.GetName()
 	if f.IsRepeated() {
-		var arr []interface{}
-		old, ok := dv.out[f.GetName()]
+		var arr *attribute.List
+		old, ok := dv.out.Get(name)
 		if !ok {
-			arr = make([]interface{}, 0, 1)
+			arr = attribute.NewList(name)
+			dv.out.Set(name, arr)
 		} else {
-			arr = old.([]interface{})
+			arr = old.(*attribute.List)
 		}
-		dv.out[f.GetName()] = append(arr, val)
+		arr.Append(val)
 	} else {
-		dv.out[f.GetName()] = val
+		dv.out.Set(name, val)
 	}
 }
 
@@ -112,7 +121,7 @@ func (dv *decodeVisitor) Varint(n wire.Number, v uint64) {
 		val = int64(v)
 	case descriptor.FieldDescriptorProto_TYPE_SINT32,
 		descriptor.FieldDescriptorProto_TYPE_SINT64:
-		val = int64(wire.DecodeZigZag(v))
+		val = wire.DecodeZigZag(v)
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		val = int64(v)
 	default:
@@ -134,7 +143,7 @@ func (dv *decodeVisitor) Fixed32(n wire.Number, v uint32) {
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
 		val = int64(v)
 	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		val = math.Float32frombits(v)
+		val = float64(math.Float32frombits(v))
 	default:
 		dv.err = multierror.Append(dv.err, fmt.Errorf("unexpected field type %q for fixed32 encoding", f.GetType()))
 		return
@@ -193,6 +202,7 @@ func (dv *decodeVisitor) Bytes(n wire.Number, v []byte) {
 		dv.setValue(f, v)
 		return
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		name := dv.attrPrefix + f.GetName()
 		if isMap(dv.decoder.resolver, f) {
 			// validate proto type to be map<string, string>
 			mapType := dv.decoder.resolver.ResolveMessage(f.GetTypeName())
@@ -209,8 +219,12 @@ func (dv *decodeVisitor) Bytes(n wire.Number, v []byte) {
 			}
 
 			// translate map<X, Y> proto3 field type to record Mixer type (map[string]string)
-			if _, ok := dv.out[f.GetName()]; !ok {
-				dv.out[f.GetName()] = make(map[string]string)
+			var m attribute.StringMap
+			val, ok := dv.out.Get(name)
+			if !ok {
+				m = attribute.NewStringMap(name)
+			} else {
+				m = val.(attribute.StringMap)
 			}
 
 			visitor := &mapVisitor{desc: mapType}
@@ -223,10 +237,55 @@ func (dv *decodeVisitor) Bytes(n wire.Number, v []byte) {
 				v = v[m:]
 			}
 
-			dv.out[f.GetName()].(map[string]string)[visitor.key] = visitor.value
+			m.Set(visitor.key, visitor.value)
+			dv.out.Set(name, m)
 			return
 		}
-		// TODO(kuat): implement sub-message decoding
+
+		// parse the entirety of the message recursively for value types
+		if _, ok := valueResolver.descriptors[f.GetTypeName()]; ok && !f.IsRepeated() {
+			decoder := NewDecoder(valueResolver, f.GetTypeName(), nil)
+			inner := attribute.GetMutableBag(nil)
+			defer inner.Done()
+			if err := decoder.Decode(v, inner, ""); err != nil {
+				dv.err = multierror.Append(dv.err, fmt.Errorf("failed to decode field %q: %v", f.GetName(), err))
+				return
+			}
+
+			switch f.GetTypeName() {
+			case ".istio.policy.v1beta1.Value":
+				// pop oneof inner value from the bag to the field value
+				names := inner.Names()
+				if len(names) == 1 {
+					if val, ok := inner.Get(names[0]); ok {
+						dv.out.Set(name, val)
+					}
+				}
+			case ".istio.policy.v1beta1.IPAddress",
+				".istio.policy.v1beta1.Duration",
+				".istio.policy.v1beta1.DNSName":
+				if value, ok := inner.Get("value"); ok {
+					dv.out.Set(name, value)
+				}
+			case ".google.protobuf.Duration":
+				seconds, secondsOk := inner.Get("seconds")
+				nanos, nanosOk := inner.Get("nanos")
+				if secondsOk || nanosOk {
+					// must default to int64 for casting to work
+					if seconds == nil {
+						seconds = int64(0)
+					}
+					if nanos == nil {
+						nanos = int64(0)
+					}
+					dv.out.Set(name, time.Duration(seconds.(int64))*time.Second+time.Duration(nanos.(int64)))
+				}
+			}
+
+			return
+		}
+
+		// TODO: implement sub-message decoding
 		return
 	}
 
@@ -283,4 +342,106 @@ func (dv *decodeVisitor) Bytes(n wire.Number, v []byte) {
 	}
 
 	dv.err = multierror.Append(dv.err, fmt.Errorf("unexpected field type %q for bytes encoding", f.GetType()))
+}
+
+type valueTypeResolver struct {
+	descriptors map[string]*descriptor.DescriptorProto
+}
+
+func getDescriptorProto(msg descriptor.Message) *descriptor.DescriptorProto {
+	_, desc := descriptor.ForMessage(msg)
+	return desc
+}
+
+func newValueTypeResolver() *valueTypeResolver {
+	out := &valueTypeResolver{
+		descriptors: map[string]*descriptor.DescriptorProto{
+			".istio.policy.v1beta1.Value":     getDescriptorProto(&v1beta1.Value{}),
+			".istio.policy.v1beta1.IPAddress": getDescriptorProto(&v1beta1.IPAddress{}),
+			".istio.policy.v1beta1.Duration":  getDescriptorProto(&v1beta1.Duration{}),
+			".istio.policy.v1beta1.TimeStamp": getDescriptorProto(&v1beta1.TimeStamp{}),
+			".istio.policy.v1beta1.DNSName":   getDescriptorProto(&v1beta1.DNSName{}),
+			".google.protobuf.Duration":       getDescriptorProto(&types.Duration{}),
+			".google.protobuf.Timestamp":      getDescriptorProto(&types.Timestamp{}),
+		},
+	}
+
+	return out
+}
+
+func (vtr *valueTypeResolver) ResolveMessage(msg string) *descriptor.DescriptorProto {
+	return vtr.descriptors[msg]
+}
+
+func (vtr *valueTypeResolver) ResolveEnum(string) *descriptor.EnumDescriptorProto {
+	return nil
+}
+
+func (vtr *valueTypeResolver) ResolveService(string) (*descriptor.ServiceDescriptorProto, string) {
+	return nil, ""
+}
+
+var (
+	valueResolver = newValueTypeResolver()
+)
+
+// DecodeType converts protobuf types to mixer's IL types.
+// Note that due to absence of corresponding types for a variety of concrete values produced by the decoder,
+// the returned value may be an unspecified type.
+func DecodeType(resolver Resolver, desc *descriptor.FieldDescriptorProto) v1beta1.ValueType {
+	if desc.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		fieldType := resolver.ResolveMessage(desc.GetTypeName())
+
+		if fieldType != nil && len(fieldType.Field) == 2 &&
+			fieldType.GetOptions().GetMapEntry() &&
+			fieldType.Field[0].GetType() == descriptor.FieldDescriptorProto_TYPE_STRING &&
+			fieldType.Field[1].GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
+			return v1beta1.STRING_MAP
+		}
+
+		if desc.IsRepeated() {
+			return v1beta1.VALUE_TYPE_UNSPECIFIED
+		}
+
+		switch desc.GetTypeName() {
+		case ".istio.policy.v1beta1.Value":
+			return v1beta1.VALUE_TYPE_UNSPECIFIED
+		case ".istio.policy.v1beta1.IPAddress":
+			return v1beta1.IP_ADDRESS
+		case ".istio.policy.v1beta1.Duration", ".google.protobuf.Duration":
+			return v1beta1.DURATION
+		case ".istio.policy.v1beta1.TimeStamp", ".google.protobuf.Timestamp":
+			return v1beta1.TIMESTAMP
+		case ".istio.policy.v1beta1.DNSName":
+			return v1beta1.DNS_NAME
+		}
+	}
+
+	// array types are missing
+	if desc.IsRepeated() {
+		return v1beta1.VALUE_TYPE_UNSPECIFIED
+	}
+
+	switch desc.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return v1beta1.BOOL
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_ENUM,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return v1beta1.INT64
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return v1beta1.DOUBLE
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return v1beta1.STRING
+	}
+	return v1beta1.VALUE_TYPE_UNSPECIFIED
 }

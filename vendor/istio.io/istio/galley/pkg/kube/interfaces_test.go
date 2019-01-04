@@ -17,39 +17,19 @@ package kube
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 )
-
-func TestAddTypesToScheme(t *testing.T) {
-	gv := schema.GroupVersion{Group: "group", Version: "version"}
-	s := runtime.NewScheme()
-
-	err := addTypeToScheme(s, gv, "kind", "listkind")
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	_, err = s.New(schema.GroupVersionKind{Group: "group", Version: "version", Kind: "kind"})
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-}
 
 func TestCreateConfig(t *testing.T) {
 	k := kube{
 		cfg: &rest.Config{},
 	}
-	gv := schema.GroupVersion{Group: "group", Version: "version"}
 
-	cfg, err := k.createConfig(gv, "kind", "listkind")
-	if err != nil {
+	if _, err := k.DynamicInterface(); err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-
-	if *cfg.GroupVersion != gv {
-		t.Fatalf("GroupVersion mismatch:\nActual:\n%v\nExpected:\n%v\n", *cfg.GroupVersion, gv)
+	if _, err := k.APIExtensionsClientset(); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 

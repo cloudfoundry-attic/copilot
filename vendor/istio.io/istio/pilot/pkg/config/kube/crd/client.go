@@ -28,11 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	// import GKE cluster authentication plugin
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// import OIDC cluster authentication plugin, e.g. for Tectonic
+	"k8s.io/apimachinery/pkg/util/wait"             // import GKE cluster authentication plugin
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // import OIDC cluster authentication plugin, e.g. for Tectonic
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/rest"
 
@@ -102,8 +99,8 @@ func newClientSet(descriptor model.ConfigDescriptor) (map[string]*restClient, er
 			// create a new client if one doesn't already exist
 			rc = &restClient{
 				apiVersion: schema.GroupVersion{
-					ResourceGroup(&typ),
-					typ.Version,
+					Group:   ResourceGroup(&typ),
+					Version: typ.Version,
 				},
 			}
 			cs[apiVersion(&typ)] = rc

@@ -16,7 +16,6 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -45,44 +44,85 @@ type PushContext struct {
 	// Mutex is used to protect the below store.
 	// All data is set when the PushContext object is populated in `InitContext`,
 	// data should not be changed by plugins.
-	Mutex sync.Mutex `json:"-,omitempty"`
+	Mutex sync.Mutex `json:"-"`
 
-	// Services list all services in the system at the time push started.
-	Services []*Service `json:"-,omitempty"`
+	// privateServices are reachable within the same namespace.
+	privateServicesByNamespace map[string][]*Service
+	// publicServices are services reachable within the mesh.
+	publicServices []*Service
+
+	privateVirtualServicesByNamespace map[string][]Config
+	publicVirtualServices             []Config
+
+	privateDestRuleHostsByNamespace  map[string][]Hostname
+	privateDestRuleByHostByNamespace map[string]map[Hostname]*combinedDestinationRule
+	publicDestRuleHosts              []Hostname
+	publicDestRuleByHost             map[Hostname]*combinedDestinationRule
+
+	// sidecars for each namespace
+	sidecarsByNamespace map[string][]*SidecarScope
+	////////// END ////////
+
+	// The following data is either a global index or used in the inbound path.
+	// Namespace specific views do not apply here.
 
 	// ServiceByHostname has all services, indexed by hostname.
-	ServiceByHostname map[Hostname]*Service `json:"-,omitempty"`
-
-	//
-	//ConfigsByType map[string][]*Config
-
-	// TODO: add the remaining O(n**2) model, deprecate/remove all remaining
-	// uses of model:
-
-	//Endpoints map[string][]*ServiceInstance
-	//ServicesForProxy map[string][]*ServiceInstance
-	//ManagementPorts map[string]*PortList
-	//WorkloadHealthCheck map[string]*ProbeList
-
-	// ServiceAccounts represents the list of service accounts
-	// for a service.
-	//	ServiceAccounts map[string][]string
-	// Temp: the code in alpha3 should use VirtualService directly
-	VirtualServiceConfigs []Config `json:"-,omitempty"`
-
-	destinationRuleHosts   []Hostname
-	destinationRuleByHosts map[Hostname]*combinedDestinationRule
-
-	//TODO: gateways              []*networking.Gateway
+	ServiceByHostname map[Hostname]*Service `json:"-"`
 
 	// AuthzPolicies stores the existing authorization policies in the cluster. Could be nil if there
 	// are no authorization policies in the cluster.
-	AuthzPolicies *AuthorizationPolicies
+	AuthzPolicies *AuthorizationPolicies `json:"-"`
 
 	// Env has a pointer to the shared environment used to create the snapshot.
-	Env *Environment `json:"-,omitempty"`
+	Env *Environment `json:"-"`
+
+	// ServicePort2Name is used to keep track of service name and port mapping.
+	// This is needed because ADS names use port numbers, while endpoints use
+	// port names. The key is the service name. If a service or port are not found,
+	// the endpoint needs to be re-evaluated later (eventual consistency)
+	ServicePort2Name map[string]PortList `json:"-"`
 
 	initDone bool
+}
+
+// XDSUpdater is used for direct updates of the xDS model and incremental push.
+// Pilot uses multiple registries - for example each K8S cluster is a registry instance,
+// as well as consul and future EDS or MCP sources. Each registry is responsible for
+// tracking a set of endpoints associated with mesh services, and calling the EDSUpdate
+// on changes. A registry may group endpoints for a service in smaller subsets - for
+// example by deployment, or to deal with very large number of endpoints for a service.
+// We want to avoid passing around large objects - like full list of endpoints for a registry,
+// or the full list of endpoints for a service across registries, since it limits scalability.
+//
+// Future optimizations will include grouping the endpoints by labels, gateway or region to
+// reduce the time when subsetting or split-horizon is used. This design assumes pilot
+// tracks all endpoints in the mesh and they fit in RAM - so limit is few M endpoints.
+// It is possible to split the endpoint tracking in future.
+type XDSUpdater interface {
+
+	// EDSUpdate is called when the list of endpoints or labels in a ServiceEntry is
+	// changed. For each cluster and hostname, the full list of active endpoints (including empty list)
+	// must be sent. The shard name is used as a key - current implementation is using the registry
+	// name.
+	EDSUpdate(shard, hostname string, entry []*IstioEndpoint) error
+
+	// SvcUpdate is called when a service port mapping definition is updated.
+	// This interface is WIP - labels, annotations and other changes to service may be
+	// updated to force a EDS and CDS recomputation and incremental push, as it doesn't affect
+	// LDS/RDS.
+	SvcUpdate(shard, hostname string, ports map[string]uint32, rports map[uint32]string)
+
+	// WorkloadUpdate is called by a registry when the labels or annotations on a workload have changed.
+	// The 'id' is the IP address of the pod for k8s if the pod is in the main/default network.
+	// In future it will include the 'network id' for pods in a different network, behind a zvpn gate.
+	// The IP is used because K8S Endpoints object associated with a Service only include the IP.
+	// We use Endpoints to track the membership to a service and readiness.
+	WorkloadUpdate(id string, labels map[string]string, annotations map[string]string)
+
+	// ConfigUpdate is called to notify the XDS server of config updates and request a push.
+	// The requests may be collapsed and throttled.
+	// This replaces the 'cache invalidation' model.
+	ConfigUpdate(full bool)
 }
 
 // ProxyPushStatus represents an event captured during config push to proxies.
@@ -99,7 +139,7 @@ type PushMetric struct {
 }
 
 type combinedDestinationRule struct {
-	subsets map[string]bool // list of subsets seen so far
+	subsets map[string]struct{} // list of subsets seen so far
 	// We are not doing ports
 	config *Config
 }
@@ -139,6 +179,15 @@ func (ps *PushContext) Add(metric *PushMetric, key string, proxy *Proxy, msg str
 }
 
 var (
+
+	// EndpointNoPod tracks endpoints without an associated pod. This is an error condition, since
+	// we can't figure out the labels. It may be a transient problem, if endpoint is processed before
+	// pod.
+	EndpointNoPod = newPushMetric(
+		"endpoint_no_pod",
+		"Endpoints without an associated pod.",
+	)
+
 	// ProxyStatusNoService represents proxies not selected by any service
 	// This can be normal - for workloads that act only as client, or are not covered by a Service.
 	// It can also be an error, for example in cases the Endpoint list of a service was not updated by the time
@@ -213,6 +262,8 @@ var (
 	// It can be used by debugging tools to inspect the push event. It will be reset after each push with the
 	// new version.
 	LastPushStatus *PushContext
+	// LastPushMutex will protect the LastPushStatus
+	LastPushMutex sync.Mutex
 
 	// All metrics we registered.
 	metrics []*PushMetric
@@ -222,8 +273,19 @@ var (
 func NewPushContext() *PushContext {
 	// TODO: detect push in progress, don't update status if set
 	return &PushContext{
+		publicServices:                    []*Service{},
+		privateServicesByNamespace:        map[string][]*Service{},
+		publicVirtualServices:             []Config{},
+		privateVirtualServicesByNamespace: map[string][]Config{},
+		publicDestRuleByHost:              map[Hostname]*combinedDestinationRule{},
+		publicDestRuleHosts:               []Hostname{},
+		privateDestRuleByHostByNamespace:  map[string]map[Hostname]*combinedDestinationRule{},
+		privateDestRuleHostsByNamespace:   map[string][]Hostname{},
+		sidecarsByNamespace:               map[string][]*SidecarScope{},
+
 		ServiceByHostname: map[Hostname]*Service{},
 		ProxyStatus:       map[string]map[string]ProxyPushStatus{},
+		ServicePort2Name:  map[string]PortList{},
 		Start:             time.Now(),
 	}
 }
@@ -240,7 +302,9 @@ func (ps *PushContext) JSON() ([]byte, error) {
 
 // OnConfigChange is called when a config change is detected.
 func (ps *PushContext) OnConfigChange() {
+	LastPushMutex.Lock()
 	LastPushStatus = ps
+	LastPushMutex.Unlock()
 	ps.UpdateMetrics()
 }
 
@@ -260,11 +324,43 @@ func (ps *PushContext) UpdateMetrics() {
 	}
 }
 
+// Services returns the list of services that are visible to a Proxy in a given config namespace
+func (ps *PushContext) Services(proxy *Proxy) []*Service {
+	out := []*Service{}
+
+	// First add private services
+	if proxy == nil {
+		for _, privateServices := range ps.privateServicesByNamespace {
+			out = append(out, privateServices...)
+		}
+	} else {
+		out = append(out, ps.privateServicesByNamespace[proxy.ConfigNamespace]...)
+	}
+
+	// Second add public services
+	out = append(out, ps.publicServices...)
+
+	return out
+}
+
 // VirtualServices lists all virtual services bound to the specified gateways
 // This replaces store.VirtualServices
-func (ps *PushContext) VirtualServices(gateways map[string]bool) []Config {
-	configs := ps.VirtualServiceConfigs
+func (ps *PushContext) VirtualServices(proxy *Proxy, gateways map[string]bool) []Config {
+	configs := make([]Config, 0)
 	out := make([]Config, 0)
+
+	// filter out virtual services not reachable
+	// First private virtual service
+	if proxy == nil {
+		for _, virtualSvcs := range ps.privateVirtualServicesByNamespace {
+			configs = append(configs, virtualSvcs...)
+		}
+	} else {
+		configs = append(configs, ps.privateVirtualServicesByNamespace[proxy.ConfigNamespace]...)
+	}
+	// Second public virtual service
+	configs = append(configs, ps.publicVirtualServices...)
+
 	for _, config := range configs {
 		rule := config.Spec.(*networking.VirtualService)
 		if len(rule.Gateways) == 0 {
@@ -290,6 +386,87 @@ func (ps *PushContext) VirtualServices(gateways map[string]bool) []Config {
 	return out
 }
 
+// GetSidecarScope returns a sidecar rule applicable to the config
+// namespace associated with the proxy
+func (ps *PushContext) GetSidecarScope(proxy *Proxy, proxyInstances []*ServiceInstance) *SidecarScope {
+	if proxy == nil {
+		return DefaultSidecarScope()
+	}
+
+	var workloadLabels LabelsCollection
+	for _, w := range proxyInstances {
+		workloadLabels = append(workloadLabels, w.Labels)
+	}
+
+	if sidecars, ok := ps.sidecarsByNamespace[proxy.ConfigNamespace]; ok {
+		// TODO: logic to merge multiple sidecar resources
+		// Currently we assume that there will be only one sidecar config for a namespace.
+		for _, wrapper := range sidecars {
+			sidecar := wrapper.Config.Spec.(*networking.Sidecar)
+			// if there is no workload selector, the config applies to all workloads
+			// if there is a workload selector, check for matching workload labels
+			if sidecar.GetWorkloadSelector() != nil {
+				workloadSelector := Labels(sidecar.GetWorkloadSelector().GetLabels())
+				if !workloadLabels.IsSupersetOf(workloadSelector) {
+					continue
+				}
+				return wrapper
+			}
+			return wrapper
+		}
+	}
+
+	return DefaultSidecarScope()
+}
+
+// DestinationRule returns a destination rule for a service name in a given domain.
+func (ps *PushContext) DestinationRule(proxy *Proxy, hostname Hostname) *Config {
+	if proxy == nil {
+		for ns, privateDestHosts := range ps.privateDestRuleHostsByNamespace {
+			if host, ok := MostSpecificHostMatch(hostname, privateDestHosts); ok {
+				return ps.privateDestRuleByHostByNamespace[ns][host].config
+			}
+		}
+		if host, ok := MostSpecificHostMatch(hostname, ps.publicDestRuleHosts); ok {
+			return ps.publicDestRuleByHost[host].config
+		}
+		return nil
+	}
+	// take private DestinationRule in same namespace first
+	if host, ok := MostSpecificHostMatch(hostname, ps.privateDestRuleHostsByNamespace[proxy.ConfigNamespace]); ok {
+		return ps.privateDestRuleByHostByNamespace[proxy.ConfigNamespace][host].config
+	}
+
+	// if no private rule matched, then match public rule
+	if host, ok := MostSpecificHostMatch(hostname, ps.publicDestRuleHosts); ok {
+		return ps.publicDestRuleByHost[host].config
+	}
+
+	return nil
+}
+
+// SubsetToLabels returns the labels associated with a subset of a given service.
+func (ps *PushContext) SubsetToLabels(subsetName string, hostname Hostname) LabelsCollection {
+	// empty subset
+	if subsetName == "" {
+		return nil
+	}
+
+	config := ps.DestinationRule(nil, hostname)
+	if config == nil {
+		return nil
+	}
+
+	rule := config.Spec.(*networking.DestinationRule)
+	for _, subset := range rule.Subsets {
+		if subset.Name == subsetName {
+			return []Labels{subset.Labels}
+		}
+	}
+
+	return nil
+}
+
 // InitContext will initialize the data structures used for code generation.
 // This should be called before starting the push, from the thread creating
 // the push context.
@@ -301,7 +478,12 @@ func (ps *PushContext) InitContext(env *Environment) error {
 	}
 	ps.Env = env
 	var err error
+
 	if err = ps.initServiceRegistry(env); err != nil {
+		return err
+	}
+
+	if err = ps.initSidecarScopes(env); err != nil {
 		return err
 	}
 
@@ -332,9 +514,17 @@ func (ps *PushContext) initServiceRegistry(env *Environment) error {
 		return err
 	}
 	// Sort the services in order of creation.
-	ps.Services = sortServicesByCreationTime(services)
-	for _, s := range services {
+	allServices := sortServicesByCreationTime(services)
+	for _, s := range allServices {
+		ns := s.Attributes.Namespace
+		switch s.Attributes.ConfigScope {
+		case networking.ConfigScope_PRIVATE:
+			ps.privateServicesByNamespace[ns] = append(ps.privateServicesByNamespace[ns], s)
+		default:
+			ps.publicServices = append(ps.publicServices, s)
+		}
 		ps.ServiceByHostname[s.Hostname] = s
+		ps.ServicePort2Name[string(s.Hostname)] = s.Ports
 	}
 	return nil
 }
@@ -355,9 +545,9 @@ func (ps *PushContext) initVirtualServices(env *Environment) error {
 	}
 
 	sortConfigByCreationTime(vservices)
-	ps.VirtualServiceConfigs = vservices
+
 	// convert all shortnames in virtual services into FQDNs
-	for _, r := range ps.VirtualServiceConfigs {
+	for _, r := range vservices {
 		rule := r.Spec.(*networking.VirtualService)
 		// resolve top level hosts
 		for i, h := range rule.Hosts {
@@ -412,6 +602,35 @@ func (ps *PushContext) initVirtualServices(env *Environment) error {
 			}
 		}
 	}
+
+	for _, virtualService := range vservices {
+		ns := virtualService.Namespace
+		rule := virtualService.Spec.(*networking.VirtualService)
+		switch rule.ConfigScope {
+		case networking.ConfigScope_PRIVATE:
+			ps.privateVirtualServicesByNamespace[ns] = append(ps.privateVirtualServicesByNamespace[ns], virtualService)
+		default:
+			ps.publicVirtualServices = append(ps.publicVirtualServices, virtualService)
+		}
+	}
+
+	return nil
+}
+
+// Caches list of Sidecar resources
+func (ps *PushContext) initSidecarScopes(env *Environment) error {
+	sidecarConfigs, err := env.List(Sidecar.Type, NamespaceAll)
+	if err != nil {
+		return err
+	}
+
+	sortConfigByCreationTime(sidecarConfigs)
+
+	for _, sidecarConfig := range sidecarConfigs {
+		// TODO: add entries with workloadSelectors first before adding namespace-wide entries
+		ps.sidecarsByNamespace[sidecarConfig.Namespace] = append(ps.sidecarsByNamespace[sidecarConfig.Namespace], ConvertToSidecarScope(&sidecarConfig))
+	}
+
 	return nil
 }
 
@@ -432,79 +651,39 @@ func (ps *PushContext) SetDestinationRules(configs []Config) {
 	// Sort by time first. So if two destination rule have top level traffic policies
 	// we take the first one.
 	sortConfigByCreationTime(configs)
-	hosts := make([]Hostname, 0)
-	combinedDestinationRuleMap := make(map[Hostname]*combinedDestinationRule, len(configs))
+	privateHostsByNamespace := make(map[string][]Hostname, 0)
+	privateCombinedDestRuleMap := make(map[string]map[Hostname]*combinedDestinationRule, 0)
+	publicHosts := make([]Hostname, 0)
+	publicCombinedDestRuleMap := make(map[Hostname]*combinedDestinationRule, 0)
 
 	for i := range configs {
 		rule := configs[i].Spec.(*networking.DestinationRule)
-		resolvedHost := ResolveShortnameToFQDN(rule.Host, configs[i].ConfigMeta)
-		if mdr, exists := combinedDestinationRuleMap[resolvedHost]; exists {
-			combinedRule := mdr.config.Spec.(*networking.DestinationRule)
-			// we have an another destination rule for same host.
-			// concatenate both of them -- essentially add subsets from one to other.
-			for _, subset := range rule.Subsets {
-				if _, subsetExists := mdr.subsets[subset.Name]; !subsetExists {
-					mdr.subsets[subset.Name] = true
-					combinedRule.Subsets = append(combinedRule.Subsets, subset)
-				} else {
-					ps.Add(DuplicatedSubsets, string(resolvedHost), nil,
-						fmt.Sprintf("Duplicate subset %s found while merging destination rules for %s",
-							subset.Name, string(resolvedHost)))
-				}
-
-				// If there is no top level policy and the incoming rule has top level
-				// traffic policy, use the one from the incoming rule.
-				if combinedRule.TrafficPolicy == nil && rule.TrafficPolicy != nil {
-					combinedRule.TrafficPolicy = rule.TrafficPolicy
-				}
+		if rule.ConfigScope == networking.ConfigScope_PRIVATE {
+			if _, exist := privateCombinedDestRuleMap[configs[i].Namespace]; !exist {
+				privateCombinedDestRuleMap[configs[i].Namespace] = map[Hostname]*combinedDestinationRule{}
 			}
-			continue
-		}
+			privateHostsByNamespace[configs[i].Namespace], _ = ps.combineSingleDestinationRule(
+				privateHostsByNamespace[configs[i].Namespace],
+				privateCombinedDestRuleMap[configs[i].Namespace],
+				configs[i])
 
-		combinedDestinationRuleMap[resolvedHost] = &combinedDestinationRule{
-			subsets: make(map[string]bool),
-			config:  &configs[i],
+		} else {
+			publicHosts, _ = ps.combineSingleDestinationRule(
+				publicHosts,
+				publicCombinedDestRuleMap,
+				configs[i])
 		}
-		for _, subset := range rule.Subsets {
-			combinedDestinationRuleMap[resolvedHost].subsets[subset.Name] = true
-		}
-		hosts = append(hosts, resolvedHost)
 	}
 
 	// presort it so that we don't sort it for each DestinationRule call.
-	sort.Sort(Hostnames(hosts))
-	ps.destinationRuleHosts = hosts
-	ps.destinationRuleByHosts = combinedDestinationRuleMap
-}
-
-// DestinationRule returns a destination rule for a service name in a given domain.
-func (ps *PushContext) DestinationRule(hostname Hostname) *Config {
-	if c, ok := MostSpecificHostMatch(hostname, ps.destinationRuleHosts); ok {
-		return ps.destinationRuleByHosts[c].config
+	for ns := range privateHostsByNamespace {
+		sort.Sort(Hostnames(privateHostsByNamespace[ns]))
 	}
-	return nil
-}
-
-// SubsetToLabels returns the labels associated with a subset of a given service.
-func (ps *PushContext) SubsetToLabels(subsetName string, hostname Hostname) LabelsCollection {
-	// empty subset
-	if subsetName == "" {
-		return nil
-	}
-
-	config := ps.DestinationRule(hostname)
-	if config == nil {
-		return nil
-	}
-
-	rule := config.Spec.(*networking.DestinationRule)
-	for _, subset := range rule.Subsets {
-		if subset.Name == subsetName {
-			return []Labels{subset.Labels}
-		}
-	}
-
-	return nil
+	ps.privateDestRuleHostsByNamespace = privateHostsByNamespace
+	ps.privateDestRuleByHostByNamespace = privateCombinedDestRuleMap
+	sort.Sort(Hostnames(publicHosts))
+	ps.publicDestRuleHosts = publicHosts
+	ps.publicDestRuleByHost = publicCombinedDestRuleMap
 }
 
 func (ps *PushContext) initAuthorizationPolicies(env *Environment) error {

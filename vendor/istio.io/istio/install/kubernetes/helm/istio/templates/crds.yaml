@@ -1,4 +1,4 @@
-# {{ if or .Values.global.crds (semverCompare ">=2.10.0-0" .Capabilities.TillerVersion.SemVer) }}
+# {{- if or .Values.global.crds (semverCompare ">=2.10.0-0" .Capabilities.TillerVersion.SemVer) }}
 # these CRDs only make sense when pilot is enabled
 # {{- if or .Values.pilot.enabled .Values.global.useMCP }}
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -9,6 +9,9 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: networking.istio.io
   names:
@@ -30,6 +33,9 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: networking.istio.io
   names:
@@ -51,6 +57,9 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: networking.istio.io
   names:
@@ -73,6 +82,9 @@ metadata:
     "helm.sh/hook-weight": "-5"
   labels:
     app: istio-pilot
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: networking.istio.io
   names:
@@ -83,7 +95,31 @@ spec:
     - istio-io
     - networking-istio-io
   scope: Namespaced
-  version: v1alpha3
+  version: v1alpha3 
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: sidecars.networking.istio.io
+  annotations:
+    "helm.sh/hook": crd-install
+    "helm.sh/hook-weight": "-5"
+  labels:
+    app: istio-pilot
+    chart: istio
+    heritage: Tiller
+    release: istio
+spec:
+  group: networking.istio.io
+  names:
+    kind: Sidecar
+    plural: sidecars
+    singular: sidecar
+    categories:
+    - istio-io
+    - networking-istio-io
+  scope: Namespaced
+  version: v1alpha3 
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -93,6 +129,9 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: networking.istio.io
   names:
@@ -114,6 +153,8 @@ metadata:
   labels:
     app: istio-pilot
     istio: rbac
+    heritage: Tiller
+    release: istio
 spec:
   group: rbac.istio.io
   names:
@@ -133,9 +174,14 @@ spec:
 kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
+  name: policies.authentication.istio.io
   annotations:
     "helm.sh/hook": crd-install
-  name: policies.authentication.istio.io
+  labels:
+    app: istio-citadel
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: authentication.istio.io
   names:
@@ -151,9 +197,14 @@ spec:
 kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
+  name: meshpolicies.authentication.istio.io
   annotations:
     "helm.sh/hook": crd-install
-  name: meshpolicies.authentication.istio.io
+  labels:
+    app: istio-citadel
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: authentication.istio.io
   names:
@@ -169,13 +220,18 @@ spec:
 ---
 # {{- end }}
 
-# {{- if or .Values.mixer.enabled .Values.global.useMCP }}
+# {{- if or .Values.mixer.policy.enabled .Values.mixer.telemetry.enabled .Values.global.useMCP }}
 kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
+  name: httpapispecbindings.config.istio.io
   annotations:
     "helm.sh/hook": crd-install
-  name: httpapispecbindings.config.istio.io
+  labels:
+    app: istio-mixer
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -191,9 +247,14 @@ spec:
 kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
+  name: httpapispecs.config.istio.io
   annotations:
     "helm.sh/hook": crd-install
-  name: httpapispecs.config.istio.io
+  labels:
+    app: istio-mixer
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -209,9 +270,14 @@ spec:
 kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
+  name: quotaspecbindings.config.istio.io
   annotations:
     "helm.sh/hook": crd-install
-  name: quotaspecbindings.config.istio.io
+  labels:
+    app: istio-mixer
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -227,9 +293,14 @@ spec:
 kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
+  name: quotaspecs.config.istio.io
   annotations:
     "helm.sh/hook": crd-install
-  name: quotaspecs.config.istio.io
+  labels:
+    app: istio-mixer
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -254,6 +325,9 @@ metadata:
     app: mixer
     package: istio.io.mixer
     istio: core
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -277,6 +351,9 @@ metadata:
     app: mixer
     package: istio.io.mixer
     istio: core
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -300,6 +377,9 @@ metadata:
     app: mixer
     package: bypass
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -323,6 +403,9 @@ metadata:
     app: mixer
     package: circonus
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -346,6 +429,9 @@ metadata:
     app: mixer
     package: denier
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -369,6 +455,9 @@ metadata:
     app: mixer
     package: fluentd
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -392,6 +481,9 @@ metadata:
     app: mixer
     package: kubernetesenv
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -415,6 +507,9 @@ metadata:
     app: mixer
     package: listchecker
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -438,6 +533,9 @@ metadata:
     app: mixer
     package: memquota
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -461,6 +559,9 @@ metadata:
     app: mixer
     package: noop
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -484,6 +585,9 @@ metadata:
     app: mixer
     package: opa
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -507,6 +611,9 @@ metadata:
     app: mixer
     package: prometheus
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -530,6 +637,9 @@ metadata:
     app: mixer
     package: rbac
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -550,8 +660,12 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
+    app: mixer
     package: redisquota
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -572,6 +686,9 @@ metadata:
     app: mixer
     package: servicecontrol
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -596,6 +713,9 @@ metadata:
     app: mixer
     package: signalfx
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -619,6 +739,9 @@ metadata:
     app: mixer
     package: solarwinds
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -642,12 +765,61 @@ metadata:
     app: mixer
     package: stackdriver
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
     kind: stackdriver
     plural: stackdrivers
     singular: stackdriver
+    categories:
+    - istio-io
+    - policy-istio-io
+  scope: Namespaced
+  version: v1alpha2
+---
+
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: cloudwatches.config.istio.io
+  annotations:
+    "helm.sh/hook": crd-install
+  labels:
+    app: mixer
+    package: cloudwatch
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: cloudwatch
+    plural: cloudwatches
+    singular: cloudwatch
+    categories:
+    - istio-io
+    - policy-istio-io
+  scope: Namespaced
+  version: v1alpha2
+---
+
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: dogstatsds.config.istio.io
+  annotations:
+    "helm.sh/hook": crd-install
+  labels:
+    app: mixer
+    package: dogstatsd
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: dogstatsd
+    plural: dogstatsds
+    singular: dogstatsd
     categories:
     - istio-io
     - policy-istio-io
@@ -665,6 +837,9 @@ metadata:
     app: mixer
     package: statsd
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -688,6 +863,9 @@ metadata:
     app: mixer
     package: stdio
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -711,6 +889,9 @@ metadata:
     app: mixer
     package: apikey
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -734,6 +915,9 @@ metadata:
     app: mixer
     package: authorization
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -757,6 +941,9 @@ metadata:
     app: mixer
     package: checknothing
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -780,6 +967,9 @@ metadata:
     app: mixer
     package: adapter.template.kubernetes
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -803,6 +993,9 @@ metadata:
     app: mixer
     package: listentry
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -826,6 +1019,9 @@ metadata:
     app: mixer
     package: logentry
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -849,6 +1045,9 @@ metadata:
     app: mixer
     package: edge
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -872,6 +1071,9 @@ metadata:
     app: mixer
     package: metric
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -895,6 +1097,9 @@ metadata:
     app: mixer
     package: quota
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -918,6 +1123,9 @@ metadata:
     app: mixer
     package: reportnothing
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -941,6 +1149,9 @@ metadata:
     app: mixer
     package: servicecontrolreport
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -964,6 +1175,9 @@ metadata:
     app: mixer
     package: tracespan
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -987,6 +1201,9 @@ metadata:
     app: mixer
     package: istio.io.mixer
     istio: rbac
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: rbac.istio.io
   names:
@@ -1010,6 +1227,9 @@ metadata:
     app: mixer
     package: istio.io.mixer
     istio: rbac
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: rbac.istio.io
   names:
@@ -1033,6 +1253,9 @@ metadata:
     app: mixer
     package: istio.io.mixer
     istio: rbac
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: rbac.istio.io
   names:
@@ -1055,6 +1278,9 @@ metadata:
     app: mixer
     package: adapter
     istio: mixer-adapter
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -1077,6 +1303,9 @@ metadata:
     app: mixer
     package: instance
     istio: mixer-instance
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -1099,6 +1328,9 @@ metadata:
     app: mixer
     package: template
     istio: mixer-template
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -1121,6 +1353,9 @@ metadata:
     app: mixer
     package: handler
     istio: mixer-handler
+    chart: istio
+    heritage: Tiller
+    release: istio
 spec:
   group: config.istio.io
   names:
@@ -1134,4 +1369,4 @@ spec:
   version: v1alpha2
 ---
 # {{- end }}
-# {{ end }}
+# {{- end }}

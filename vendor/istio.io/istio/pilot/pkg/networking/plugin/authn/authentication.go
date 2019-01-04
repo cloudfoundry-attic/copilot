@@ -33,6 +33,7 @@ import (
 	"istio.io/istio/pilot/pkg/networking/plugin"
 	"istio.io/istio/pilot/pkg/networking/util"
 	"istio.io/istio/pkg/log"
+	protovalue "istio.io/istio/pkg/proto"
 )
 
 const (
@@ -86,7 +87,7 @@ func GetMutualTLS(policy *authn.Policy) *authn.MutualTls {
 }
 
 // setupFilterChains sets up filter chains based on authentication policy.
-func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.FilterChain {
+func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string, sdsUseTrustworthyJwt, sdsUseNormalJwt bool) []plugin.FilterChain {
 	if authnPolicy == nil || len(authnPolicy.Peers) == 0 {
 		return nil
 	}
@@ -99,13 +100,9 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.Fi
 			// Currently it works: when server is in permissive mode, client sidecar can send tls traffic.
 			AlpnProtocols: util.ALPNHttp,
 		},
-		RequireClientCertificate: &types.BoolValue{
-			Value: true,
-		},
+		RequireClientCertificate: protovalue.BoolTrue,
 	}
 	if sdsUdsPath == "" {
-		log.Debuga("SDS isn't enabled")
-
 		tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.AuthCertsPath+model.RootCertFilename, []string{} /*subjectAltNames*/)
 		tls.CommonTlsContext.TlsCertificates = []*auth.TlsCertificate{
 			{
@@ -122,12 +119,15 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.Fi
 			},
 		}
 	} else {
-		tls.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
-			ValidationContextSdsSecretConfig: model.ConstructSdsSecretConfig(model.SDSRootResourceName, sdsUdsPath),
+		tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
+			model.ConstructSdsSecretConfig(model.SDSDefaultResourceName, sdsUdsPath, sdsUseTrustworthyJwt, sdsUseNormalJwt),
 		}
 
-		tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
-			model.ConstructSdsSecretConfig(model.SDSDefaultResourceName, sdsUdsPath),
+		tls.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_CombinedValidationContext{
+			CombinedValidationContext: &auth.CommonTlsContext_CombinedCertificateValidationContext{
+				DefaultValidationContext:         &auth.CertificateValidationContext{VerifySubjectAltName: []string{} /*subjectAltNames*/},
+				ValidationContextSdsSecretConfig: model.ConstructSdsSecretConfig(model.SDSRootResourceName, sdsUdsPath, sdsUseTrustworthyJwt, sdsUseNormalJwt),
+			},
 		}
 	}
 	mtls := GetMutualTLS(authnPolicy)
@@ -147,10 +147,10 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.Fi
 			{
 				FilterChainMatch: alpnIstioMatch,
 				TLSContext:       tls,
-				RequiredListenerFilters: []ldsv2.ListenerFilter{
+				ListenerFilters: []ldsv2.ListenerFilter{
 					{
-						Name:   EnvoyTLSInspectorFilterName,
-						Config: &types.Struct{},
+						Name:       EnvoyTLSInspectorFilterName,
+						ConfigType: &ldsv2.ListenerFilter_Config{Config: &types.Struct{}},
 					},
 				},
 			},
@@ -166,7 +166,7 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.Fi
 func (Plugin) OnInboundFilterChains(in *plugin.InputParams) []plugin.FilterChain {
 	port := in.ServiceInstance.Endpoint.ServicePort
 	authnPolicy := model.GetConsolidateAuthenticationPolicy(in.Env.IstioConfigStore, in.ServiceInstance.Service, port)
-	return setupFilterChains(authnPolicy, in.Env.Mesh.SdsUdsPath)
+	return setupFilterChains(authnPolicy, in.Env.Mesh.SdsUdsPath, in.Env.Mesh.EnableSdsTokenMount, in.Env.Mesh.SdsUseK8SSaJwt)
 }
 
 // CollectJwtSpecs returns a list of all JWT specs (pointers) defined the policy. This
@@ -253,9 +253,9 @@ func ConvertPolicyToAuthNFilterConfig(policy *authn.Policy, proxyType model.Node
 		switch peer.GetParams().(type) {
 		case *authn.PeerAuthenticationMethod_Mtls:
 			// Only enable mTLS for sidecar, not Ingress/Router for now.
-			if proxyType == model.Sidecar {
+			if proxyType == model.SidecarProxy {
 				if peer.GetMtls() == nil {
-					peer.Params = &authn.PeerAuthenticationMethod_Mtls{&authn.MutualTls{}}
+					peer.Params = &authn.PeerAuthenticationMethod_Mtls{Mtls: &authn.MutualTls{}}
 				}
 				usedPeers = append(usedPeers, peer)
 			}
@@ -294,8 +294,8 @@ func BuildJwtFilter(policy *authn.Policy) *http_conn.HttpFilter {
 		return nil
 	}
 	return &http_conn.HttpFilter{
-		Name:   JwtFilterName,
-		Config: util.MessageToStruct(filterConfigProto),
+		Name:       JwtFilterName,
+		ConfigType: &http_conn.HttpFilter_Config{Config: util.MessageToStruct(filterConfigProto)},
 	}
 }
 
@@ -306,8 +306,8 @@ func BuildAuthNFilter(policy *authn.Policy, proxyType model.NodeType) *http_conn
 		return nil
 	}
 	return &http_conn.HttpFilter{
-		Name:   AuthnFilterName,
-		Config: util.MessageToStruct(filterConfigProto),
+		Name:       AuthnFilterName,
+		ConfigType: &http_conn.HttpFilter_Config{Config: util.MessageToStruct(filterConfigProto)},
 	}
 }
 
@@ -330,7 +330,7 @@ func (Plugin) OnOutboundListener(in *plugin.InputParams, mutable *plugin.Mutable
 // Can be used to add additional filters (e.g., mixer filter) or add more stuff to the HTTP connection manager
 // on the inbound path
 func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableObjects) error {
-	if in.Node.Type != model.Sidecar {
+	if in.Node.Type != model.SidecarProxy {
 		// Only care about sidecar.
 		return nil
 	}
@@ -361,8 +361,7 @@ func buildFilter(in *plugin.InputParams, mutable *plugin.MutableObjects) error {
 }
 
 // OnInboundCluster implements the Plugin interface method.
-func (Plugin) OnInboundCluster(env *model.Environment, node *model.Proxy, push *model.PushContext, service *model.Service,
-	servicePort *model.Port, cluster *xdsapi.Cluster) {
+func (Plugin) OnInboundCluster(in *plugin.InputParams, cluster *xdsapi.Cluster) {
 }
 
 // OnOutboundRouteConfiguration implements the Plugin interface method.
@@ -374,6 +373,5 @@ func (Plugin) OnInboundRouteConfiguration(in *plugin.InputParams, route *xdsapi.
 }
 
 // OnOutboundCluster implements the Plugin interface method.
-func (Plugin) OnOutboundCluster(env *model.Environment, push *model.PushContext, service *model.Service,
-	servicePort *model.Port, cluster *xdsapi.Cluster) {
+func (Plugin) OnOutboundCluster(in *plugin.InputParams, cluster *xdsapi.Cluster) {
 }

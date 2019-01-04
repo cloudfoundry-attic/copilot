@@ -1,30 +1,56 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
 # gazelle:exclude harness.pb.go
 
-load("//bazel:go_proto_library.bzl", "go_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 
-go_proto_library(
-    name = "go_default_library",
+proto_library(
+    name = "harness_proto",
     srcs = ["harness.proto"],
-    importpath = "github.com/lyft/protoc-gen-validate/tests/harness",
-    protoc = "@com_google_protobuf//:protoc",
-    rules_go_repo_only_for_internal_use = "",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_golang_protobuf//protoc-gen-go/descriptor:go_default_library",
+        "@com_google_protobuf//:any_proto",
+    ],
+)
+
+go_proto_library(
+    name = "harness_go_proto",
+    importpath = "github.com/lyft/protoc-gen-validate/tests/harness/go",
+    proto = ":harness_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "harness_gogo_proto",
+    compilers = ["@io_bazel_rules_go//proto:gogo_proto"],
+    importpath = "github.com/lyft/protoc-gen-validate/tests/harness/gogo",
+    proto = ":harness_proto",
+    visibility = ["//visibility:public"],
+    deps = [
         "@com_github_golang_protobuf//ptypes/any:go_default_library",
         "@com_github_golang_protobuf//ptypes/timestamp:go_default_library",
         "@com_github_golang_protobuf//ptypes/wrappers:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
     ],
 )
 
 cc_proto_library(
-    name = "harness_proto",
-    srcs = ["harness.proto"],
-    default_runtime = "@com_google_protobuf//:protobuf",
-    protoc = "@com_google_protobuf//:protoc",
+    name = "harness_cc_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_protobuf//:cc_wkt_protos",
+        ":harness_proto",
     ],
+)
+
+java_proto_library(
+    name = "harness_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":harness_proto"],
+)
+
+go_library(
+    name = "go_default_library",
+    embed = [":harness_go_proto"],
+    importpath = "github.com/lyft/protoc-gen-validate/tests/harness",
+    visibility = ["//visibility:public"],
 )

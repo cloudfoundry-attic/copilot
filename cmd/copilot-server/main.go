@@ -100,7 +100,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		Logger:                           logger,
+		Logger: logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
@@ -118,6 +118,7 @@ func mainWithError() error {
 		copilotsnapshot.DestinationRuleTypeURL,
 		copilotsnapshot.ServiceEntryTypeURL,
 		copilotsnapshot.EnvoyFilterTypeURL,
+		copilotsnapshot.SidecarTypeURL,
 		copilotsnapshot.HTTPAPISpecTypeURL,
 		copilotsnapshot.HTTPAPISpecBindingTypeURL,
 		copilotsnapshot.QuotaSpecTypeURL,

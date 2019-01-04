@@ -38,8 +38,6 @@ spec:
         - 3s
         - --discoveryAddress
         - istio-pilot:15007
-        - --zipkinAddress
-        - ""
         - --connectTimeout
         - 1s
         - --statsdUdpAddress
@@ -74,6 +72,10 @@ spec:
         image: docker.io/istio/proxy_debug:unittest
         imagePullPolicy: IfNotPresent
         name: istio-proxy
+        ports:
+        - containerPort: 15090
+          name: http-envoy-prom
+          protocol: TCP
         readinessProbe:
           failureThreshold: 30
           httpGet:
@@ -87,7 +89,6 @@ spec:
         securityContext:
           privileged: true
           readOnlyRootFilesystem: false
-          runAsUser: 1337
         volumeMounts:
         - mountPath: /etc/istio/proxy
           name: istio-envoy

@@ -39,6 +39,7 @@ import (
 	"istio.io/istio/mixer/pkg/config"
 	"istio.io/istio/mixer/pkg/config/crd"
 	"istio.io/istio/mixer/pkg/config/store"
+	"istio.io/istio/mixer/pkg/loadshedding"
 	"istio.io/istio/mixer/pkg/pool"
 	"istio.io/istio/mixer/pkg/runtime"
 	runtimeconfig "istio.io/istio/mixer/pkg/runtime/config"
@@ -179,7 +180,7 @@ func newServer(a *Args, p *patchTable) (*Server, error) {
 
 		reg := store.NewRegistry(config.StoreInventory()...)
 		groupVersion := &schema.GroupVersion{Group: crd.ConfigAPIGroup, Version: crd.ConfigAPIVersion}
-		if st, err = reg.NewStore(configStoreURL, groupVersion, a.CredentialOptions); err != nil {
+		if st, err = reg.NewStore(configStoreURL, groupVersion, a.CredentialOptions, runtimeconfig.CriticalKinds()); err != nil {
 			_ = s.Close()
 			return nil, fmt.Errorf("unable to connect to the configuration server: %v", err)
 		}
@@ -222,6 +223,9 @@ func newServer(a *Args, p *patchTable) (*Server, error) {
 
 	s.dispatcher = rt.Dispatcher()
 
+	// see issue https://github.com/istio/istio/issues/9596
+	a.NumCheckCacheEntries = 0
+
 	if a.NumCheckCacheEntries > 0 {
 		s.checkCache = checkcache.New(a.NumCheckCacheEntries)
 	}
@@ -242,10 +246,15 @@ func newServer(a *Args, p *patchTable) (*Server, error) {
 		return nil, fmt.Errorf("could not register default server views: %v", err)
 	}
 
-	grpcOptions = append(grpcOptions, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
+	throttler := loadshedding.NewThrottler(a.LoadSheddingOptions)
+	if eval := throttler.Evaluator(loadshedding.GRPCLatencyEvaluatorName); eval != nil {
+		grpcOptions = append(grpcOptions, grpc.StatsHandler(newMultiStatsHandler(&ocgrpc.ServerHandler{}, eval.(*loadshedding.GRPCLatencyEvaluator))))
+	} else {
+		grpcOptions = append(grpcOptions, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
+	}
 
 	s.server = grpc.NewServer(grpcOptions...)
-	mixerpb.RegisterMixerServer(s.server, api.NewGRPCServer(s.dispatcher, s.gp, s.checkCache))
+	mixerpb.RegisterMixerServer(s.server, api.NewGRPCServer(s.dispatcher, s.gp, s.checkCache, throttler))
 
 	if a.LivenessProbeOptions.IsValid() {
 		s.livenessProbe = probe.NewFileController(a.LivenessProbeOptions)

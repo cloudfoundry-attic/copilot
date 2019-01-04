@@ -24,14 +24,16 @@ import (
 
 // TestLDS is running LDSv2 tests.
 func TestLDS(t *testing.T) {
-	initLocalPilotTestEnv(t)
+	_, tearDown := initLocalPilotTestEnv(t)
+	defer tearDown()
 
 	t.Run("sidecar", func(t *testing.T) {
-		ldsr, err := connectADS(util.MockPilotGrpcAddr)
+		ldsr, cancel, err := connectADS(util.MockPilotGrpcAddr)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = sendLDSReq(sidecarId(app3Ip, "app3"), ldsr)
+		defer cancel()
+		err = sendLDSReq(sidecarID(app3Ip, "app3"), ldsr)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -52,11 +54,12 @@ func TestLDS(t *testing.T) {
 
 	// 'router' or 'gateway' type of listener
 	t.Run("gateway", func(t *testing.T) {
-		ldsr, err := connectADS(util.MockPilotGrpcAddr)
+		ldsr, cancel, err := connectADS(util.MockPilotGrpcAddr)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = sendLDSReq(gatewayId(gatewayIP), ldsr)
+		defer cancel()
+		err = sendLDSReq(gatewayID(gatewayIP), ldsr)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -76,12 +79,13 @@ func TestLDS(t *testing.T) {
 	})
 
 	t.Run("ingress", func(t *testing.T) {
-		ldsr, err := connectADS(util.MockPilotGrpcAddr)
+		ldsr, cancel, err := connectADS(util.MockPilotGrpcAddr)
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer cancel()
 
-		err = sendLDSReq(ingressId(ingressIP), ldsr)
+		err = sendLDSReq(ingressID(ingressIP), ldsr)
 		if err != nil {
 			t.Fatal(err)
 		}

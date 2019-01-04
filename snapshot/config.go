@@ -18,6 +18,7 @@ type config interface {
 	CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
 	CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
 	CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
+	CreateSidecarEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
 }
 
 type Config struct {
@@ -242,6 +243,32 @@ func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends,
 	}
 
 	return envelopes
+}
+
+func (c *Config) CreateSidecarEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Envelope) {
+	sidecarResource, err := types.MarshalAny(&networking.Sidecar{
+		Egress: []*networking.IstioListener{
+			&networking.IstioListener{
+				Name: "cang",
+				Hosts: []string{
+					"internal/cang.istio.apps.internal",
+				},
+			},
+		},
+	})
+	if err != nil {
+		c.logger.Error("marshaling service entry", err)
+	}
+
+	return []*mcp.Envelope{
+		&mcp.Envelope{
+			Metadata: &mcp.Metadata{
+				Name:    "mesh",
+				Version: version,
+			},
+			Resource: sidecarResource,
+		},
+	}
 }
 
 func createEndpoint(route *models.RouteWithBackends) []*networking.ServiceEntry_Endpoint {

@@ -21,8 +21,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -30,24 +28,21 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
 	mixerEnv "istio.io/istio/mixer/test/client/env"
+	"istio.io/istio/pilot/pkg/bootstrap"
 	"istio.io/istio/pilot/pkg/model"
 	mcpserver "istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/test/env"
 	mockmcp "istio.io/istio/tests/e2e/tests/pilot/mock/mcp"
+	"istio.io/istio/tests/util"
 )
 
 const (
 	pilotDebugPort     = 5555
 	pilotGrpcPort      = 15010
-	copilotPort        = 5556
-	copilotMCPPort     = 5557
-	edgeServicePort    = 8080
 	sidecarServicePort = 15022
 
 	cfRouteOne      = "public.example.com"
@@ -90,13 +85,8 @@ func TestWildcardHostEdgeRouterWithMockCopilot(t *testing.T) {
 	g.Expect(err).NotTo(gomega.HaveOccurred())
 	defer copilotMCPServer.Close()
 
-	t.Log("building pilot...")
-	pilotSession, err := runPilot(pilotGrpcPort, pilotDebugPort)
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer pilotSession.Terminate()
-
-	t.Log("checking if pilot ready")
-	g.Eventually(pilotSession.Out, "10s").Should(gbytes.Say(`READY`))
+	tearDown := initLocalPilotTestEnv(t, copilotMCPServer.Port, pilotGrpcPort, pilotDebugPort)
+	defer tearDown()
 
 	t.Log("checking if pilot received routes from copilot")
 	g.Eventually(func() (string, error) {
@@ -176,13 +166,8 @@ func TestWildcardHostSidecarRouterWithMockCopilot(t *testing.T) {
 	g.Expect(err).NotTo(gomega.HaveOccurred())
 	defer copilotMCPServer.Close()
 
-	t.Log("building pilot...")
-	pilotSession, err := runPilot(pilotGrpcPort, pilotDebugPort)
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer pilotSession.Terminate()
-
-	t.Log("checking if pilot ready")
-	g.Eventually(pilotSession.Out, "10s").Should(gbytes.Say(`READY`))
+	tearDown := initLocalPilotTestEnv(t, copilotMCPServer.Port, pilotGrpcPort, pilotDebugPort)
+	defer tearDown()
 
 	g.Eventually(func() (string, error) {
 		// this really should be json but the endpoint cannot
@@ -226,7 +211,7 @@ func startMCPCopilot(serverResponse func(req *mcp.MeshConfigRequest) (*mcpserver
 		supportedTypes[i] = fmt.Sprintf("type.googleapis.com/%s", m.MessageName)
 	}
 
-	server, err := mockmcp.NewServer(fmt.Sprintf("127.0.0.1:%d", copilotMCPPort), supportedTypes, serverResponse)
+	server, err := mockmcp.NewServer(supportedTypes, serverResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -246,25 +231,33 @@ func runFakeApp(port int) {
 	go http.ListenAndServe(fmt.Sprintf(":%d", port), fakeAppHandler) // nolint: errcheck
 }
 
-func runPilot(grpcPort, debugPort int) (*gexec.Session, error) {
-	path, err := gexec.Build("istio.io/istio/pilot/cmd/pilot-discovery")
-	if err != nil {
-		return nil, err
+func addMcpAddrs(mcpServerPort int) func(*bootstrap.PilotArgs) {
+	return func(arg *bootstrap.PilotArgs) {
+		arg.MCPServerAddrs = []string{fmt.Sprintf("mcp://127.0.0.1:%d", mcpServerPort)}
 	}
-
-	pilotCmd := exec.Command(path, "discovery",
-		"--configDir", "/dev/null",
-		"--registries", "MCP",
-		"--meshConfig", "/dev/null",
-		"--grpcAddr", fmt.Sprintf(":%d", grpcPort),
-		"--port", fmt.Sprintf("%d", debugPort),
-		"--mcpServerAddrs", fmt.Sprintf("mcp://127.0.0.1:%d", copilotMCPPort),
-	)
-
-	return gexec.Start(pilotCmd, os.Stdout, os.Stderr) // change these to os.Stdout when debugging
 }
 
-func runEnvoy(t *testing.T, nodeId string, grpcPort, debugPort uint16) *mixerEnv.TestSetup {
+func setupPilotDiscoveryHTTPAddr(http string) func(*bootstrap.PilotArgs) {
+	return func(arg *bootstrap.PilotArgs) {
+		arg.DiscoveryOptions.HTTPAddr = http
+	}
+}
+
+func setupPilotDiscoveryGrpcAddr(grpc string) func(*bootstrap.PilotArgs) {
+	return func(arg *bootstrap.PilotArgs) {
+		arg.DiscoveryOptions.GrpcAddr = grpc
+	}
+}
+
+func initLocalPilotTestEnv(t *testing.T, mcpPort, grpcPort, debugPort int) util.TearDownFunc {
+	mixerEnv.NewTestSetup(mixerEnv.PilotMCPTest, t)
+	debugAddr := fmt.Sprintf("127.0.0.1:%d", debugPort)
+	grpcAddr := fmt.Sprintf("127.0.0.1:%d", grpcPort)
+	_, tearDown := util.EnsureTestServer(addMcpAddrs(mcpPort), setupPilotDiscoveryHTTPAddr(debugAddr), setupPilotDiscoveryGrpcAddr(grpcAddr))
+	return tearDown
+}
+
+func runEnvoy(t *testing.T, nodeID string, grpcPort, debugPort uint16) *mixerEnv.TestSetup {
 	t.Log("create a new envoy test environment")
 	tmpl, err := ioutil.ReadFile(env.IstioSrc + "/tests/testdata/cf_bootstrap_tmpl.json")
 	if err != nil {
@@ -280,11 +273,11 @@ func runEnvoy(t *testing.T, nodeId string, grpcPort, debugPort uint16) *mixerEnv
 	gateway.Ports().PilotGrpcPort = grpcPort
 	gateway.Ports().PilotHTTPPort = debugPort
 	gateway.EnvoyConfigOpt = map[string]interface{}{
-		"NodeID": nodeId,
+		"NodeID": nodeID,
 	}
 	gateway.EnvoyTemplate = string(tmpl)
 	gateway.EnvoyParams = []string{
-		"--service-node", nodeId,
+		"--service-node", nodeID,
 		"--service-cluster", "x",
 	}
 	if err := gateway.SetUp(); err != nil {
@@ -326,7 +319,7 @@ func curlApp(endpoint, hostRoute url.URL) (string, error) {
 	return string(respBytes), nil
 }
 
-var gateway_test_allConfig = map[string]map[string]proto.Message{
+var gatewayTestAllConfig = map[string]map[string]proto.Message{
 	fmt.Sprintf("type.googleapis.com/%s", model.Gateway.MessageName): map[string]proto.Message{
 		"cloudfoundry-ingress": gateway,
 	},
@@ -347,7 +340,7 @@ var gateway_test_allConfig = map[string]map[string]proto.Message{
 	},
 }
 
-var sidecar_test_allConfig = map[string]map[string]proto.Message{
+var sidecarTestAllConfig = map[string]map[string]proto.Message{
 	fmt.Sprintf("type.googleapis.com/%s", model.ServiceEntry.MessageName): map[string]proto.Message{
 		"se-1": serviceEntry(sidecarServicePort, app3ListenPort, []string{"127.1.1.1"}, cfInternalRoute, subsetOne),
 	},
@@ -359,7 +352,7 @@ func mcpSidecarServerResponse(req *mcp.MeshConfigRequest) (*mcpserver.WatchRespo
 		log.Printf("watch canceled for %s\n", req.GetTypeUrl())
 	}
 
-	namedMsgs, ok := sidecar_test_allConfig[req.GetTypeUrl()]
+	namedMsgs, ok := sidecarTestAllConfig[req.GetTypeUrl()]
 	if ok {
 		return buildWatchResp(req, namedMsgs), cancelFunc
 	}
@@ -377,7 +370,7 @@ func mcpServerResponse(req *mcp.MeshConfigRequest) (*mcpserver.WatchResponse, mc
 		log.Printf("watch canceled for %s\n", req.GetTypeUrl())
 	}
 
-	namedMsgs, ok := gateway_test_allConfig[req.GetTypeUrl()]
+	namedMsgs, ok := gatewayTestAllConfig[req.GetTypeUrl()]
 	if ok {
 		return buildWatchResp(req, namedMsgs), cancelFunc
 	}

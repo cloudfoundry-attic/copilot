@@ -69,5 +69,11 @@
   version = "1.1.1"
 
 [[constraint]]
-  branch = "master"
+  branch = "sidecars"
   name = "istio.io/api"
+  source = "github.com/rshriram/api"
+
+[[constraint]]
+  branch = "sidecar_api"
+  name = "istio.io/istio"
+  source = "github.com/rshriram/istio"
