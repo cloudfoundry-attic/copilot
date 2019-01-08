@@ -94,6 +94,9 @@ func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBacken
 	for _, route := range routes {
 		var destinationRule *networking.DestinationRule
 		destinationRuleName := fmt.Sprintf("copilot-rule-for-%s", route.Hostname)
+		if route.Internal {
+			destinationRuleName = fmt.Sprintf("internal/copilot-rule-for-%s", route.Hostname)
+		}
 
 		if config, ok := destinationRules[destinationRuleName]; ok {
 			destinationRule = config.Spec.(*networking.DestinationRule)
@@ -141,6 +144,9 @@ func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackend
 	for _, route := range routes {
 		var vs *networking.VirtualService
 		virtualServiceName := fmt.Sprintf("copilot-service-for-%s", route.Hostname)
+		if route.Internal {
+			virtualServiceName = fmt.Sprintf("internal/copilot-service-for-%s", route.Hostname)
+		}
 
 		if config, ok := virtualServices[virtualServiceName]; ok {
 			vs = config.Spec.(*networking.VirtualService)
@@ -208,6 +214,9 @@ func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends,
 
 	for _, route := range routes {
 		serviceEntryName := fmt.Sprintf("copilot-service-entry-for-%s", route.Hostname)
+		if route.Internal {
+			serviceEntryName = fmt.Sprintf("internal/copilot-service-entry-for-%s", route.Hostname)
+		}
 
 		if route.Backends.Backends != nil || len(route.Backends.Backends) != 0 {
 			var se *networking.ServiceEntry
@@ -251,7 +260,7 @@ func (c *Config) CreateSidecarEnvelopes(routes []*models.RouteWithBackends, vers
 			&networking.IstioListener{
 				Name: "cang",
 				Hosts: []string{
-					"internal/cang.istio.apps.internal",
+					"internal/*",
 				},
 			},
 		},
