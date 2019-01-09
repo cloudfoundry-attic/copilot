@@ -9,7 +9,7 @@ type CAPIProcessGUID string
 type RouteMapping struct {
 	RouteGUID       RouteGUID
 	CAPIProcessGUID CAPIProcessGUID
-	RouteWeight     int32
+	RouteWeight     uint32
 }
 
 func (r *RouteMapping) Key() string {
@@ -18,14 +18,14 @@ func (r *RouteMapping) Key() string {
 
 type RouteMappingsRepo struct {
 	repo              map[string]*RouteMapping
-	weightDenominator map[RouteGUID]int32
+	weightDenominator map[RouteGUID]uint32
 	sync.Mutex
 }
 
 func NewRouteMappingsRepo() *RouteMappingsRepo {
 	return &RouteMappingsRepo{
 		repo:              make(map[string]*RouteMapping),
-		weightDenominator: make(map[RouteGUID]int32),
+		weightDenominator: make(map[RouteGUID]uint32),
 	}
 }
 
@@ -59,17 +59,17 @@ func (m *RouteMappingsRepo) Unmap(rm *RouteMapping) {
 
 func (m *RouteMappingsRepo) Sync(routeMappings []*RouteMapping) {
 	repo := make(map[string]*RouteMapping)
-	weightDenominator := make(map[RouteGUID]int32)
+	weightDenominator := make(map[RouteGUID]uint32)
 
 	for _, rm := range routeMappings {
 		repo[rm.Key()] = rm
 		weightDenominator[rm.RouteGUID] += rm.RouteWeight
 	}
 
-	m.Lock()
+	m.Lock() // TODO: move this to the beginning for the function
 	m.repo = repo
 	m.weightDenominator = weightDenominator
-	m.Unlock()
+	m.Unlock() // TODO: defer this
 }
 
 func (m *RouteMappingsRepo) List() map[string]*RouteMapping {
