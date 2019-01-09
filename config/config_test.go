@@ -30,7 +30,7 @@ var _ = Describe("Config", func() {
 		expectedCfg = &config.Config{
 			ListenAddressForCloudController: "127.0.0.1:1235",
 			ListenAddressForMCP:             "127.0.0.1:1236",
-			ListenAddressForVIPResolution:   "127.0.0.1:1237",
+			ListenAddressForVIPResolver:     "127.0.0.1:1237",
 			PilotClientCAPath:               "some-pilot-ca-path",
 			CloudControllerClientCAPath:     "some-cloud-controller-ca-path",
 			ServerCertPath:                  "some-cert-path",

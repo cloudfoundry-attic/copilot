@@ -187,7 +187,7 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   api.CloudControllerCopilot/BulkSync
 ```
 
-### As BOSH DNS Adapter, get a VIP for a route
+### As VIP Resolver Client, get a VIP for a route
 
 (running from `/var/vcap/jobs/pilot-discovery/config/certs`)
 ```sh
@@ -196,7 +196,7 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   -cert ./client.crt \
   -d '{"fqdn":"meow.istio.apps.internal"}' \
   copilot.service.cf.internal:9002 \
-  api.BoshDNSAdapterCopilot/GetVIPByName
+  api.VIPResolverCopilot/GetVIPByName
 ```
 
 ## The following endpoints are only used for debugging. They expose Copilot's internal state

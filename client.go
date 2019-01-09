@@ -36,17 +36,17 @@ func NewCloudControllerClient(serverAddress string, tlsConfig *tls.Config) (Clou
 	}, nil
 }
 
-type BoshDNSAdapterCopilotClient interface {
-	api.BoshDNSAdapterCopilotClient
+type VIPResolverCopilotClient interface {
+	api.VIPResolverCopilotClient
 	io.Closer
 }
 
-type boshDNSAdapterCopilotClient struct {
-	api.BoshDNSAdapterCopilotClient
+type vipResolverCopilotClient struct {
+	api.VIPResolverCopilotClient
 	*grpc.ClientConn
 }
 
-func NewBoshDNSAdapterCopilotClient(serverAddress string, tlsConfig *tls.Config) (BoshDNSAdapterCopilotClient, error) {
+func NewVIPResolverCopilotClient(serverAddress string, tlsConfig *tls.Config) (VIPResolverCopilotClient, error) {
 	conn, err := grpc.Dial(serverAddress,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
 		grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)),
@@ -55,8 +55,8 @@ func NewBoshDNSAdapterCopilotClient(serverAddress string, tlsConfig *tls.Config)
 		return nil, fmt.Errorf("grpc dial: %s", err)
 	}
 
-	return &boshDNSAdapterCopilotClient{
-		BoshDNSAdapterCopilotClient: api.NewBoshDNSAdapterCopilotClient(conn),
-		ClientConn:                  conn,
+	return &vipResolverCopilotClient{
+		VIPResolverCopilotClient: api.NewVIPResolverCopilotClient(conn),
+		ClientConn:               conn,
 	}, nil
 }

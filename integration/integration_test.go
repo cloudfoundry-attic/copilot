@@ -28,17 +28,17 @@ import (
 
 var _ = Describe("Copilot", func() {
 	var (
-		session                              *gexec.Session
-		serverConfig                         *config.Config
-		pilotClientTLSConfig                 *tls.Config
-		cloudControllerClientTLSConfig       *tls.Config
-		boshDNSAdapterCopilotClientTLSConfig *tls.Config
-		configFilePath                       string
+		session                           *gexec.Session
+		serverConfig                      *config.Config
+		pilotClientTLSConfig              *tls.Config
+		cloudControllerClientTLSConfig    *tls.Config
+		vipResolverCopilotClientTLSConfig *tls.Config
+		configFilePath                    string
 
-		mcpClient            *testhelpers.MockPilotMCPClient
-		ccClient             copilot.CloudControllerClient
-		boshDNSAdapterClient copilot.BoshDNSAdapterCopilotClient
-		mockBBS              *testhelpers.MockBBSServer
+		mcpClient         *testhelpers.MockPilotMCPClient
+		ccClient          copilot.CloudControllerClient
+		vipResolverClient copilot.VIPResolverCopilotClient
+		mockBBS           *testhelpers.MockBBSServer
 
 		cleanupFuncs      []func()
 		routeHost         string
@@ -140,7 +140,7 @@ var _ = Describe("Copilot", func() {
 		copilotCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
 		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
-		listenAddrForVIPResolution := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForVIPResolver := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 		bbsCreds := testhelpers.GenerateMTLS()
@@ -149,7 +149,7 @@ var _ = Describe("Copilot", func() {
 
 		serverConfig = &config.Config{
 			ListenAddressForCloudController: listenAddrForCloudController,
-			ListenAddressForVIPResolution:   listenAddrForVIPResolution,
+			ListenAddressForVIPResolver:     listenAddrForVIPResolver,
 			ListenAddressForMCP:             listenAddrForMCP,
 			PilotClientCAPath:               copilotTLSFiles.ClientCA,
 			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
@@ -187,11 +187,11 @@ var _ = Describe("Copilot", func() {
 
 		pilotClientTLSConfig = copilotCreds.ClientTLSConfig()
 		cloudControllerClientTLSConfig = copilotCreds.OtherClientTLSConfig()
-		boshDNSAdapterCopilotClientTLSConfig = copilotCreds.OtherClientTLSConfig()
+		vipResolverCopilotClientTLSConfig = copilotCreds.OtherClientTLSConfig()
 
 		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, cloudControllerClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
-		boshDNSAdapterClient, err = copilot.NewBoshDNSAdapterCopilotClient(serverConfig.ListenAddressForVIPResolution, boshDNSAdapterCopilotClientTLSConfig)
+		vipResolverClient, err = copilot.NewVIPResolverCopilotClient(serverConfig.ListenAddressForVIPResolver, vipResolverCopilotClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
 		mcpClient, err = testhelpers.NewMockPilotMCPClient(pilotClientTLSConfig, serverConfig.ListenAddressForMCP)
 		Expect(err).NotTo(HaveOccurred())
@@ -236,10 +236,10 @@ var _ = Describe("Copilot", func() {
 		})
 	})
 
-	Context("BOSH DNS Adapter queries a route's vip", func() {
+	Context("vip resolver client queries a route's vip", func() {
 		BeforeEach(func() {
 			WaitForHealthy(ccClient)
-			WaitForHealthy(boshDNSAdapterClient)
+			WaitForHealthy(vipResolverClient)
 
 			routeHost = "amelia.apps.internal"
 			_, err := ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
@@ -251,7 +251,7 @@ var _ = Describe("Copilot", func() {
 		})
 
 		It("returns the route's vip", func() {
-			resp, err := boshDNSAdapterClient.GetVIPByName(
+			resp, err := vipResolverClient.GetVIPByName(
 				context.Background(),
 				&api.GetVIPByNameRequest{
 					Fqdn: "amelia.apps.internal",

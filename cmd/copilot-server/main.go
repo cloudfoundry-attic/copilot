@@ -111,13 +111,13 @@ func mainWithError() error {
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
 	)
 
-	boshDNSAdapterHandler := &handlers.BoshDNSAdapter{
+	vipResolverHandler := &handlers.VIPResolver{
 		RoutesRepo: routesRepo,
 		Logger:     logger,
 	}
-	grpcServerForBoshDNSAdapter := grpcrunner.New(logger, cfg.ListenAddressForVIPResolution,
+	grpcServerForVIPResolver := grpcrunner.New(logger, cfg.ListenAddressForVIPResolver,
 		func(s *grpc.Server) {
-			api.RegisterBoshDNSAdapterCopilotServer(s, boshDNSAdapterHandler)
+			api.RegisterVIPResolverCopilotServer(s, vipResolverHandler)
 			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
@@ -169,7 +169,7 @@ func mainWithError() error {
 
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
-		grouper.Member{Name: "grpc-server-for-bosh-dns-adapter", Runner: grpcServerForBoshDNSAdapter},
+		grouper.Member{Name: "grpc-server-for-vip-resolver", Runner: grpcServerForVIPResolver},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 		grouper.Member{Name: "mcp-snapshot", Runner: mcpSnapshot},
 		grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo},

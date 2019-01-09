@@ -13,19 +13,19 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Bosh DNS Adapter Handlers", func() {
+var _ = Describe("VIP Resolver Handlers", func() {
 	var (
-		handler        *handlers.BoshDNSAdapter
+		handler        *handlers.VIPResolver
 		logger         lager.Logger
-		fakeRoutesRepo *fakes.RoutesRepoBoshDNSAdapterInterface
+		fakeRoutesRepo *fakes.RoutesRepoVIPResolverInterface
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
-		fakeRoutesRepo = &fakes.RoutesRepoBoshDNSAdapterInterface{}
+		fakeRoutesRepo = &fakes.RoutesRepoVIPResolverInterface{}
 		fakeRoutesRepo.GetVIPByNameReturns("1.2.3.4", true)
 
-		handler = &handlers.BoshDNSAdapter{
+		handler = &handlers.VIPResolver{
 			Logger:     logger,
 			RoutesRepo: fakeRoutesRepo,
 		}
