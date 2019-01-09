@@ -121,6 +121,18 @@ var _ = Describe("Capi Handlers", func() {
 				CapiProcessGuid: "some-process-guid",
 			}})
 			Expect(err.Error()).To(ContainSubstring("required"))
+			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{RouteMapping: &api.RouteMapping{
+				RouteWeight:     0,
+				CapiProcessGuid: "some-process-guid",
+				RouteGuid:       "some-route-guid",
+			}})
+			Expect(err.Error()).To(ContainSubstring("RouteWeight must be between"))
+			_, err = handler.MapRoute(ctx, &api.MapRouteRequest{RouteMapping: &api.RouteMapping{
+				RouteWeight:     129,
+				CapiProcessGuid: "some-process-guid",
+				RouteGuid:       "some-route-guid",
+			}})
+			Expect(err.Error()).To(ContainSubstring("RouteWeight must be between"))
 		})
 
 		It("maps the route", func() {
@@ -150,6 +162,18 @@ var _ = Describe("Capi Handlers", func() {
 			Expect(err.Error()).To(ContainSubstring("required"))
 			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{CapiProcessGuid: "some-process-guid"}})
 			Expect(err.Error()).To(ContainSubstring("required"))
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{
+				RouteWeight:     0,
+				CapiProcessGuid: "some-process-guid",
+				RouteGuid:       "some-route-guid",
+			}})
+			Expect(err.Error()).To(ContainSubstring("RouteWeight must be between"))
+			_, err = handler.UnmapRoute(ctx, &api.UnmapRouteRequest{RouteMapping: &api.RouteMapping{
+				RouteWeight:     129,
+				CapiProcessGuid: "some-process-guid",
+				RouteGuid:       "some-route-guid",
+			}})
+			Expect(err.Error()).To(ContainSubstring("RouteWeight must be between"))
 		})
 
 		It("unmaps the routes", func() {

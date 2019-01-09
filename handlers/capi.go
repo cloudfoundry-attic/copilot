@@ -266,6 +266,9 @@ func validateMapRouteRequest(r *api.MapRouteRequest) error {
 	if rm.RouteGuid == "" || rm.CapiProcessGuid == "" {
 		return errors.New("RouteGUID and CapiProcessGUID are required")
 	}
+	if rm.RouteWeight == 0 || rm.RouteWeight > 128 {
+		return errors.New("RouteWeight must be between 1 and 128")
+	}
 	return nil
 }
 
@@ -276,6 +279,9 @@ func validateUnmapRouteRequest(r *api.UnmapRouteRequest) error {
 	}
 	if rm.RouteGuid == "" || rm.CapiProcessGuid == "" {
 		return errors.New("RouteGuid and CapiProcessGuid are required")
+	}
+	if rm.RouteWeight == 0 || rm.RouteWeight > 128 {
+		return errors.New("RouteWeight must be between 1 and 128")
 	}
 	return nil
 }

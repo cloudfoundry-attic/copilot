@@ -58,20 +58,6 @@ var _ = Describe("RouteMappingsRepo", func() {
 			Expect(routeMappingsRepo.GetCalculatedWeight(rmTwo)).To(Equal(int32(33)))
 			Expect(routeMappingsRepo.GetCalculatedWeight(rmThree)).To(Equal(int32(33)))
 		})
-
-		Context("when a route is zero", func() {
-			It("it just returns 100", func() {
-				// this really should never ever happen
-				rmOne := &models.RouteMapping{
-					RouteGUID:       "some-route-guid",
-					CAPIProcessGUID: "some-capi-guid",
-					RouteWeight:     0,
-				}
-				routeMappingsRepo.Map(rmOne)
-
-				Expect(routeMappingsRepo.GetCalculatedWeight(rmOne)).To(Equal(int32(100)))
-			})
-		})
 	})
 
 	Describe("Key", func() {
