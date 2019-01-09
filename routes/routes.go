@@ -141,7 +141,7 @@ func fixRouteWeights(routes []*models.RouteWithBackends) []*models.RouteWithBack
 	}
 
 	if len(routes) > 0 {
-		sumPerRoute := make(map[string]RouteInfo, 10)
+		sumPerRoute := make(map[string]RouteInfo)
 		for i, route := range routes {
 			info := sumPerRoute[route.Hostname]
 			info.Sum += route.RouteWeight
