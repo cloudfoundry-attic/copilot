@@ -12,6 +12,7 @@ type Route struct {
 	Host     string
 	Path     string
 	Internal bool
+	VIP      string
 }
 
 func (r *Route) Hostname() string {
@@ -23,19 +24,22 @@ func (r *Route) GetPath() string {
 }
 
 type RoutesRepo struct {
-	repo map[RouteGUID]*Route
+	repo           map[RouteGUID]*Route
+	repoByHostname map[string]RouteGUID
 	sync.Mutex
 }
 
 func NewRoutesRepo() *RoutesRepo {
 	return &RoutesRepo{
-		repo: make(map[RouteGUID]*Route),
+		repo:           make(map[RouteGUID]*Route),
+		repoByHostname: make(map[string]RouteGUID),
 	}
 }
 
 func (r *RoutesRepo) Upsert(route *Route) {
 	r.Lock()
 	r.repo[route.GUID] = route
+	r.repoByHostname[route.Host] = route.GUID
 	r.Unlock()
 }
 
@@ -47,11 +51,14 @@ func (r *RoutesRepo) Delete(guid RouteGUID) {
 
 func (r *RoutesRepo) Sync(routes []*Route) {
 	repo := make(map[RouteGUID]*Route)
+	repoByHostname := make(map[string]RouteGUID)
 	for _, route := range routes {
 		repo[route.GUID] = route
+		repoByHostname[route.Host] = route.GUID
 	}
 	r.Lock()
 	r.repo = repo
+	r.repoByHostname = repoByHostname
 	r.Unlock()
 }
 
@@ -60,6 +67,16 @@ func (r *RoutesRepo) Get(guid RouteGUID) (*Route, bool) {
 	route, ok := r.repo[guid]
 	r.Unlock()
 	return route, ok
+}
+
+func (r *RoutesRepo) GetVIPByName(hostname string) (string, bool) {
+	guid, _ := r.getGUIDByHostname(hostname)
+	route, ok := r.Get(guid)
+	if !ok {
+		return "", ok
+	}
+
+	return route.VIP, true
 }
 
 // TODO: probably remove or clean this up, currently using for debugging
@@ -73,4 +90,11 @@ func (r *RoutesRepo) List() map[string]string {
 	r.Unlock()
 
 	return list
+}
+
+func (r *RoutesRepo) getGUIDByHostname(hostname string) (RouteGUID, bool) {
+	r.Lock()
+	guid, ok := r.repoByHostname[hostname]
+	r.Unlock()
+	return guid, ok
 }

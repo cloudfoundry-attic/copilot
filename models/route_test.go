@@ -8,7 +8,9 @@ import (
 )
 
 var _ = Describe("RoutesRepo", func() {
-	var routesRepo *models.RoutesRepo
+	var (
+		routesRepo *models.RoutesRepo
+	)
 
 	BeforeEach(func() {
 		routesRepo = models.NewRoutesRepo()
@@ -104,6 +106,42 @@ var _ = Describe("RoutesRepo", func() {
 			Expect(routesRepo.List()).To(Equal(map[string]string{
 				string(newRoute.GUID): newRoute.Host,
 			}))
+		})
+	})
+
+	Describe("GetVIPByName", func() {
+		BeforeEach(func() {
+			route := &models.Route{
+				Host: "host.example.com",
+				GUID: "some-route-guid",
+				VIP:  "4.5.7.8",
+			}
+
+			routesRepo.Sync([]*models.Route{route})
+
+			otherRoute := &models.Route{
+				Host: "other.example.com",
+				GUID: "some-other-route-guid",
+				VIP:  "4.5.7.9",
+			}
+			routesRepo.Upsert(otherRoute)
+		})
+
+		It("returns the VIP for a route", func() {
+			vip, ok := routesRepo.GetVIPByName("host.example.com")
+			Expect(vip).To(Equal("4.5.7.8"))
+			Expect(ok).To(BeTrue())
+
+			vip, ok = routesRepo.GetVIPByName("other.example.com")
+			Expect(vip).To(Equal("4.5.7.9"))
+			Expect(ok).To(BeTrue())
+		})
+
+		It("returns not ok if the route doesn't exist", func() {
+			routesRepo.Delete("some-route-guid")
+
+			_, ok := routesRepo.GetVIPByName("host.example.com")
+			Expect(ok).To(BeFalse())
 		})
 	})
 })

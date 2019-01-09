@@ -100,11 +100,24 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
+		VIPProvider:                      vipProvider,
 		Logger:                           logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
 		func(s *grpc.Server) {
 			api.RegisterCloudControllerCopilotServer(s, capiHandler)
+			reflection.Register(s)
+		},
+		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
+	)
+
+	boshDNSAdapterHandler := &handlers.BoshDNSAdapter{
+		RoutesRepo: routesRepo,
+		Logger:     logger,
+	}
+	grpcServerForBoshDNSAdapter := grpcrunner.New(logger, cfg.ListenAddressForBoshDNSAdapter,
+		func(s *grpc.Server) {
+			api.RegisterBoshDNSAdapterCopilotServer(s, boshDNSAdapterHandler)
 			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
@@ -156,6 +169,7 @@ func mainWithError() error {
 
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
+		grouper.Member{Name: "grpc-server-for-bosh-dns-adapter", Runner: grpcServerForBoshDNSAdapter},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 		grouper.Member{Name: "mcp-snapshot", Runner: mcpSnapshot},
 		grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo},

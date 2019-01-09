@@ -187,6 +187,18 @@ export CAPI_ROUTE_GUID=$(cf curl /v2/routes | jq -r '.resources[] | select(.enti
   api.CloudControllerCopilot/BulkSync
 ```
 
+### As BOSH DNS Adapter, get a VIP for a route
+
+(running from `/var/vcap/jobs/pilot-discovery/config/certs`)
+```sh
+/var/vcap/packages/grpcurl/bin/grpcurl -cacert ./ca.crt \
+  -key ./client.key \
+  -cert ./client.crt \
+  -d '{"fqdn":"meow.istio.apps.internal"}' \
+  copilot.service.cf.internal:9002 \
+  api.BoshDNSAdapterCopilot/GetVIPByName
+```
+
 ## The following endpoints are only used for debugging. They expose Copilot's internal state
 
 ### List the CF Routes that Copilot knows about

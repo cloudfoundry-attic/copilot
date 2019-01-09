@@ -35,3 +35,28 @@ func NewCloudControllerClient(serverAddress string, tlsConfig *tls.Config) (Clou
 		ClientConn:                   conn,
 	}, nil
 }
+
+type BoshDNSAdapterCopilotClient interface {
+	api.BoshDNSAdapterCopilotClient
+	io.Closer
+}
+
+type boshDNSAdapterCopilotClient struct {
+	api.BoshDNSAdapterCopilotClient
+	*grpc.ClientConn
+}
+
+func NewBoshDNSAdapterCopilotClient(serverAddress string, tlsConfig *tls.Config) (BoshDNSAdapterCopilotClient, error) {
+	conn, err := grpc.Dial(serverAddress,
+		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("grpc dial: %s", err)
+	}
+
+	return &boshDNSAdapterCopilotClient{
+		BoshDNSAdapterCopilotClient: api.NewBoshDNSAdapterCopilotClient(conn),
+		ClientConn:                  conn,
+	}, nil
+}
