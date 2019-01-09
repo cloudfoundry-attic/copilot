@@ -115,7 +115,7 @@ func mainWithError() error {
 		RoutesRepo: routesRepo,
 		Logger:     logger,
 	}
-	grpcServerForBoshDNSAdapter := grpcrunner.New(logger, cfg.ListenAddressForBoshDNSAdapter,
+	grpcServerForBoshDNSAdapter := grpcrunner.New(logger, cfg.ListenAddressForVIPResolution,
 		func(s *grpc.Server) {
 			api.RegisterBoshDNSAdapterCopilotServer(s, boshDNSAdapterHandler)
 			reflection.Register(s)

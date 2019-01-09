@@ -54,7 +54,7 @@ const DefaultMCPConvergeInterval = durationjson.Duration(30 * time.Second)
 
 type Config struct {
 	ListenAddressForCloudController string `validate:"nonzero"`
-	ListenAddressForBoshDNSAdapter  string `validate:"nonzero"`
+	ListenAddressForVIPResolution   string `validate:"nonzero"`
 	ListenAddressForMCP             string `validate:"nonzero"`
 	PilotClientCAPath               string `validate:"nonzero"`
 	CloudControllerClientCAPath     string `validate:"nonzero"`

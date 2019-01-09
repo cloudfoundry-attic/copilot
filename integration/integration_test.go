@@ -140,7 +140,7 @@ var _ = Describe("Copilot", func() {
 		copilotCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
 		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
-		listenAddrForBoshDNSAdapter := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForVIPResolution := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 		bbsCreds := testhelpers.GenerateMTLS()
@@ -149,7 +149,7 @@ var _ = Describe("Copilot", func() {
 
 		serverConfig = &config.Config{
 			ListenAddressForCloudController: listenAddrForCloudController,
-			ListenAddressForBoshDNSAdapter:  listenAddrForBoshDNSAdapter,
+			ListenAddressForVIPResolution:   listenAddrForVIPResolution,
 			ListenAddressForMCP:             listenAddrForMCP,
 			PilotClientCAPath:               copilotTLSFiles.ClientCA,
 			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
@@ -191,7 +191,7 @@ var _ = Describe("Copilot", func() {
 
 		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, cloudControllerClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
-		boshDNSAdapterClient, err = copilot.NewBoshDNSAdapterCopilotClient(serverConfig.ListenAddressForBoshDNSAdapter, boshDNSAdapterCopilotClientTLSConfig)
+		boshDNSAdapterClient, err = copilot.NewBoshDNSAdapterCopilotClient(serverConfig.ListenAddressForVIPResolution, boshDNSAdapterCopilotClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
 		mcpClient, err = testhelpers.NewMockPilotMCPClient(pilotClientTLSConfig, serverConfig.ListenAddressForMCP)
 		Expect(err).NotTo(HaveOccurred())
