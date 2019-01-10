@@ -270,6 +270,7 @@ var _ = Describe("Copilot", func() {
 			RouteMapping: &api.RouteMapping{
 				RouteGuid:       "internal-route-guid-a",
 				CapiProcessGuid: "capi-process-guid-a",
+				RouteWeight:     1,
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
