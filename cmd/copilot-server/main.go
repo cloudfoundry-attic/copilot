@@ -118,6 +118,7 @@ func mainWithError() error {
 		copilotsnapshot.DestinationRuleTypeURL,
 		copilotsnapshot.ServiceEntryTypeURL,
 		copilotsnapshot.EnvoyFilterTypeURL,
+		copilotsnapshot.SidecarTypeURL,
 		copilotsnapshot.HTTPAPISpecTypeURL,
 		copilotsnapshot.HTTPAPISpecBindingTypeURL,
 		copilotsnapshot.QuotaSpecTypeURL,

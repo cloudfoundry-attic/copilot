@@ -20,6 +20,7 @@ const (
 	GatewayTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Gateway"
 	ServiceEntryTypeURL       = "type.googleapis.com/istio.networking.v1alpha3.ServiceEntry"
 	EnvoyFilterTypeURL        = "type.googleapis.com/istio.networking.v1alpha3.EnvoyFilter"
+	SidecarTypeURL            = "type.googleapis.com/istio.networking.v1alpha3.Sidecar"
 	HTTPAPISpecTypeURL        = "type.googleapis.com/istio.mixer.v1.config.client.HTTPAPISpec"
 	HTTPAPISpecBindingTypeURL = "type.googleapis.com/istio.mixer.v1.config.client.HTTPAPISpecBinding"
 	QuotaSpecTypeURL          = "type.googleapis.com/istio.mixer.v1.config.client.QuotaSpec"
