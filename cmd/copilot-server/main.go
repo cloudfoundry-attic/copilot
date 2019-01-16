@@ -54,9 +54,21 @@ func mainWithError() error {
 		return err
 	}
 	logger := lager.NewLogger("copilot-server")
+
+	var copilotLogLevel lager.LogLevel
+	switch cfg.LogLevel {
+	case "debug":
+		copilotLogLevel = lager.DEBUG
+	case "info":
+		copilotLogLevel = lager.INFO
+	case "error":
+		copilotLogLevel = lager.ERROR
+	case "fatal":
+		copilotLogLevel = lager.FATAL
+	}
 	reconfigurableSink := lager.NewReconfigurableSink(
 		lager.NewWriterSink(os.Stdout, lager.DEBUG),
-		lager.INFO)
+		copilotLogLevel)
 	logger.RegisterSink(reconfigurableSink)
 
 	debugserver.Run("127.0.0.1:33333", reconfigurableSink)
@@ -137,8 +149,19 @@ func mainWithError() error {
 			reporter := server.NewStatsContext("copilot/")
 			mcpServer := server.New(cache, typeURLs, authChecker, reporter)
 
+			var pilotLogLevel log.Level
+			switch cfg.LogLevel {
+			case "debug":
+				pilotLogLevel = log.DebugLevel
+			case "info":
+				pilotLogLevel = log.InfoLevel
+			case "error":
+				pilotLogLevel = log.ErrorLevel
+			case "fatal":
+				pilotLogLevel = log.FatalLevel
+			}
 			for name, scope := range log.Scopes() {
-				scope.SetOutputLevel(cfg.PilotLogLevel)
+				scope.SetOutputLevel(pilotLogLevel)
 				logger.Info("set pilot log level for scope", lager.Data{"scope-name": name})
 			}
 

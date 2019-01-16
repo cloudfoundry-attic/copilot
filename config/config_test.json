@@ -7,7 +7,7 @@
   "ServerKeyPath":                   "some-key-path",
   "VIPCIDR":                         "127.128.0.0/9",
   "MCPConvergeInterval":             "10s",
-  "LogLevel":                   "fatal",
+  "LogLevel":                   "info",
   "BBS": {
     "ServerCACertPath": "some-ca-path",
     "ClientCertPath":   "some-cert-path",

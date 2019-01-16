@@ -14,29 +14,7 @@ import (
 	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/durationjson"
 	validator "gopkg.in/validator.v2"
-	"istio.io/istio/pkg/log"
 )
-
-// copied from istio log pkg above
-// this type should be public so that
-// it is not duplicated
-var stringToLevel = map[string]log.Level{
-	"debug": log.DebugLevel,
-	"info":  log.InfoLevel,
-	"warn":  log.WarnLevel,
-	"error": log.ErrorLevel,
-	"fatal": log.FatalLevel,
-	"none":  log.NoneLevel,
-}
-
-var levelToString = map[log.Level]string{
-	log.DebugLevel: "debug",
-	log.InfoLevel:  "info",
-	log.WarnLevel:  "warn",
-	log.ErrorLevel: "error",
-	log.FatalLevel: "fatal",
-	log.NoneLevel:  "none",
-}
 
 type BBSConfig struct {
 	ServerCACertPath       string `validate:"nonzero"`
@@ -61,17 +39,10 @@ type Config struct {
 	ServerKeyPath                   string `validate:"nonzero"`
 	VIPCIDR                         string `validate:"cidr"`
 	MCPConvergeInterval             durationjson.Duration
-	PilotLogLevel                   log.Level
+	LogLevel                        string
 
 	BBS     *BBSConfig
 	TLSPems []certs.CertChainKeyPair
-}
-
-type CopyOfConfig Config
-
-type ConfigWithStringForLogLevel struct {
-	LogLevel     string `json:"LogLevel"`
-	CopyOfConfig        // go template substitution
 }
 
 func init() {
@@ -79,12 +50,7 @@ func init() {
 }
 
 func (c *Config) Save(path string) error {
-	convertedLevel := levelToString[c.PilotLogLevel]
-	configTemp := &ConfigWithStringForLogLevel{}
-	configTemp.LogLevel = convertedLevel
-	configTemp.CopyOfConfig = CopyOfConfig(*c)
-
-	configBytes, err := json.Marshal(configTemp)
+	configBytes, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
@@ -157,13 +123,11 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctemp := new(ConfigWithStringForLogLevel)
-	err = json.Unmarshal(configBytes, ctemp)
+	c := new(Config)
+	err = json.Unmarshal(configBytes, c)
 	if err != nil {
 		return nil, fmt.Errorf("parsing config: %s", err)
 	}
-
-	c, err := ConvertToConfig(ctemp)
 
 	if c.BBS == nil {
 		return nil, errors.New("invalid config: missing required 'BBS' field")
@@ -184,15 +148,4 @@ func Load(path string) (*Config, error) {
 	}
 
 	return c, nil
-}
-
-func ConvertToConfig(c *ConfigWithStringForLogLevel) (*Config, error) {
-	pilotLevel, ok := stringToLevel[c.LogLevel]
-	if !ok {
-		return nil, fmt.Errorf("Invalid log level: %s", c.LogLevel)
-	}
-	config := Config(c.CopyOfConfig)
-	config.PilotLogLevel = pilotLevel
-
-	return &config, nil
 }
