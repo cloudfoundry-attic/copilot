@@ -67,55 +67,24 @@ type Config struct {
 	TLSPems []certs.CertChainKeyPair
 }
 
+type CopyOfConfig Config
+
+type ConfigWithStringForLogLevel struct {
+	PilotLogLevel string `json:"PilotLogLevel"`
+	CopyOfConfig         // go template substitution
+}
+
 func init() {
 	validator.SetValidationFunc("cidr", validateCIDR)
 }
 
-func (c *Config) UnmarshalJSON(b []byte) error {
-	type OtherConfig Config
-
-	var temp struct {
-		PilotLogLevel string `json:"PilotLogLevel"`
-		OtherConfig
-	}
-
-	err := json.Unmarshal(b, &temp)
-	if err != nil {
-		return err
-	}
-
-	*c = Config(temp.OtherConfig)
-
-	if l, ok := stringToLevel[temp.PilotLogLevel]; !ok {
-		return errors.New("invalid log level")
-	} else {
-		c.PilotLogLevel = l
-	}
-
-	return nil
-}
-
-func (c *Config) MarshalJSON() ([]byte, error) {
-	type OtherConfig Config
-
-	var temp struct {
-		PilotLogLevel string `json:"PilotLogLevel"`
-		OtherConfig
-	}
-
-	temp.OtherConfig = OtherConfig(*c)
-
-	if l, ok := levelToString[c.PilotLogLevel]; !ok {
-		return nil, errors.New("invalid log level")
-	} else {
-		temp.PilotLogLevel = l
-	}
-
-	return json.Marshal(temp)
-}
-
 func (c *Config) Save(path string) error {
-	configBytes, err := json.Marshal(c)
+	convertedLevel := levelToString[c.PilotLogLevel]
+	configTemp := &ConfigWithStringForLogLevel{}
+	configTemp.PilotLogLevel = convertedLevel
+	configTemp.CopyOfConfig = CopyOfConfig(*c)
+
+	configBytes, err := json.Marshal(configTemp)
 	if err != nil {
 		return err
 	}
@@ -188,11 +157,14 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := new(Config)
-	err = json.Unmarshal(configBytes, c)
+	ctemp := new(ConfigWithStringForLogLevel)
+	err = json.Unmarshal(configBytes, ctemp)
 	if err != nil {
 		return nil, fmt.Errorf("parsing config: %s", err)
 	}
+
+	c, err := ConvertToConfig(ctemp)
+
 	if c.BBS == nil {
 		return nil, errors.New("invalid config: missing required 'BBS' field")
 	}
@@ -212,4 +184,15 @@ func Load(path string) (*Config, error) {
 	}
 
 	return c, nil
+}
+
+func ConvertToConfig(c *ConfigWithStringForLogLevel) (*Config, error) {
+	pilotLevel, ok := stringToLevel[c.PilotLogLevel]
+	if !ok {
+		return nil, fmt.Errorf("Invalid log level: %s", c.PilotLogLevel)
+	}
+	config := Config(c.CopyOfConfig)
+	config.PilotLogLevel = pilotLevel
+
+	return &config, nil
 }
