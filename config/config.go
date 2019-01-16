@@ -70,8 +70,8 @@ type Config struct {
 type CopyOfConfig Config
 
 type ConfigWithStringForLogLevel struct {
-	PilotLogLevel string `json:"PilotLogLevel"`
-	CopyOfConfig         // go template substitution
+	LogLevel     string `json:"LogLevel"`
+	CopyOfConfig        // go template substitution
 }
 
 func init() {
@@ -81,7 +81,7 @@ func init() {
 func (c *Config) Save(path string) error {
 	convertedLevel := levelToString[c.PilotLogLevel]
 	configTemp := &ConfigWithStringForLogLevel{}
-	configTemp.PilotLogLevel = convertedLevel
+	configTemp.LogLevel = convertedLevel
 	configTemp.CopyOfConfig = CopyOfConfig(*c)
 
 	configBytes, err := json.Marshal(configTemp)
@@ -187,9 +187,9 @@ func Load(path string) (*Config, error) {
 }
 
 func ConvertToConfig(c *ConfigWithStringForLogLevel) (*Config, error) {
-	pilotLevel, ok := stringToLevel[c.PilotLogLevel]
+	pilotLevel, ok := stringToLevel[c.LogLevel]
 	if !ok {
-		return nil, fmt.Errorf("Invalid log level: %s", c.PilotLogLevel)
+		return nil, fmt.Errorf("Invalid log level: %s", c.LogLevel)
 	}
 	config := Config(c.CopyOfConfig)
 	config.PilotLogLevel = pilotLevel
