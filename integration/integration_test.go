@@ -324,9 +324,9 @@ var _ = Describe("Copilot", func() {
 		))
 
 		Eventually(mcpClient.GetAllObjectNames, "1s").Should(Equal(map[string][]string{
-			"istio/networking/v1alpha3/destinationrules": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost), fmt.Sprintf("copilot-rule-for-%s", internalRouteHost)},
-			"istio/networking/v1alpha3/virtualservices":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("copilot-service-for-%s", internalRouteHost)},
-			"istio/networking/v1alpha3/serviceentries":   []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("copilot-service-entry-for-%s", internalRouteHost)},
+			"istio/networking/v1alpha3/destinationrules": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost), fmt.Sprintf("internal/copilot-rule-for-%s", internalRouteHost)},
+			"istio/networking/v1alpha3/virtualservices":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("internal/copilot-service-for-%s", internalRouteHost)},
+			"istio/networking/v1alpha3/serviceentries":   []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("internal/copilot-service-entry-for-%s", internalRouteHost)},
 			"istio/networking/v1alpha3/gateways":         []string{copilotsnapshot.DefaultGatewayName},
 			"istio/networking/v1alpha3/sidecars":         []string{copilotsnapshot.DefaultSidecarName},
 		}))

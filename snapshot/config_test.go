@@ -258,6 +258,9 @@ var _ = Describe("Config", func() {
 				virtualServices := config.CreateVirtualServiceResources(internalRoutesWithBackends(), "1")
 				var vs networking.VirtualService
 
+				Expect(virtualServices).To(HaveLen(1))
+				Expect(virtualServices[0].Metadata.Name).To(Equal("internal/copilot-service-for-foo.bar.internal"))
+
 				err := types.UnmarshalAny(virtualServices[0].Body, &vs)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -322,7 +325,7 @@ var _ = Describe("Config", func() {
 				var dr networking.DestinationRule
 
 				Expect(destinationRules).To(HaveLen(1))
-				Expect(destinationRules[0].Metadata.Name).To(Equal("copilot-rule-for-foo.bar.internal"))
+				Expect(destinationRules[0].Metadata.Name).To(Equal("internal/copilot-rule-for-foo.bar.internal"))
 
 				err := types.UnmarshalAny(destinationRules[0].Body, &dr)
 				Expect(err).NotTo(HaveOccurred())
@@ -391,7 +394,7 @@ var _ = Describe("Config", func() {
 				var se networking.ServiceEntry
 
 				Expect(serviceEntries).To(HaveLen(1))
-				Expect(serviceEntries[0].Metadata.Name).To(Equal("copilot-service-entry-for-foo.bar.internal"))
+				Expect(serviceEntries[0].Metadata.Name).To(Equal("internal/copilot-service-entry-for-foo.bar.internal"))
 
 				err := types.UnmarshalAny(serviceEntries[0].Body, &se)
 				Expect(err).NotTo(HaveOccurred())
