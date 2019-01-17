@@ -2,7 +2,7 @@ require 'json'
 require 'tempfile'
 
 class RealCopilotServer
-  attr_reader :port, :host
+  attr_reader :resolver_port, :port, :host
 
   def fixture(name)
     File.expand_path("#{File.dirname(__FILE__)}/../fixtures/#{name}")
@@ -10,10 +10,12 @@ class RealCopilotServer
 
   def initialize
     @port = 51_002
+    @resolver_port = 52_003
     @host = '127.0.0.1'
 
     config = {
       'ListenAddressForCloudController' => "#{host}:#{port}",
+      'ListenAddressForVIPResolver' => "#{host}:#{resolver_port}",
       'ListenAddressForMCP' => "#{host}:51003",
       'PilotClientCAPath' => fixture('fakeCA.crt'),
       'CloudControllerClientCAPath' => fixture('fakeCA.crt'),
