@@ -21,7 +21,7 @@ class RealCopilotServer
       'ServerKeyPath' => fixture('copilot-server.key'),
       'VIPCIDR' => "127.128.0.0/9",
       'BBS' => { 'Disable' => true },
-      'PilotLogLevel' => 'fatal',
+      'LogLevel' => 'fatal',
     }
 
     config_file = Tempfile.new('copilot-config')
