@@ -15,10 +15,6 @@
 #
 ################################################################################
 
-set -o errexit
-set -o pipefail
-set -x
-
 # This script primarily exists for Cloud Builder.  This script
 # reads artifacts from a specified directory, generates tar files
 # based on those artifacts, and then stores the tar files
@@ -29,6 +25,13 @@ BASE_DIR="$TEMP_DIR"
 ISTIOCTL_SUBDIR=istioctl
 OUTPUT_PATH=""
 VER_STRING=""
+
+function cleanup() {
+  rm -rf "$TEMP_DIR"
+}
+
+# do cleanup before the script exits
+trap cleanup EXIT
 
 function usage() {
   echo "$0
@@ -45,6 +48,11 @@ function error_exit() {
   exit "${2:-1}"
 }
 
+# since there are 2 required options, should show usage and exit with no args specified
+if (($# == 0)); then
+  usage
+fi
+
 while getopts d:i:o:v: arg ; do
   case "${arg}" in
     d) BASE_DIR="${OPTARG}";;
@@ -54,6 +62,10 @@ while getopts d:i:o:v: arg ; do
     *) usage;;
   esac
 done
+
+set -o errexit
+set -o pipefail
+set -x
 
 [[ -z "${BASE_DIR}"    ]] && usage
 [[ -z "${OUTPUT_PATH}" ]] && usage
@@ -75,7 +87,7 @@ function create_linux_archive() {
   ${CP} "${OUTPUT_PATH}/${ISTIOCTL_SUBDIR}/istioctl-linux" "${istioctl_path}"
   chmod 755 "${istioctl_path}"
 
-  ${TAR} --owner releng --group releng -czvf \
+  ${TAR} --owner releng --group releng -czf \
     "${OUTPUT_PATH}/istio-${VER_STRING}-linux.tar.gz" "istio-${VER_STRING}" \
     || error_exit 'Could not create linux archive'
   rm "${istioctl_path}"
@@ -87,7 +99,7 @@ function create_osx_archive() {
   ${CP} "${OUTPUT_PATH}/${ISTIOCTL_SUBDIR}/istioctl-osx" "${istioctl_path}"
   chmod 755 "${istioctl_path}"
 
-  ${TAR} --owner releng --group releng -czvf \
+  ${TAR} --owner releng --group releng -czf \
     "${OUTPUT_PATH}/istio-${VER_STRING}-osx.tar.gz" "istio-${VER_STRING}" \
     || error_exit 'Could not create osx archive'
   rm "${istioctl_path}"
@@ -98,7 +110,7 @@ function create_windows_archive() {
 
   ${CP} "${OUTPUT_PATH}/${ISTIOCTL_SUBDIR}/istioctl-win.exe" "${istioctl_path}"
 
-  zip -r "${OUTPUT_PATH}/istio-${VER_STRING}-win.zip" "istio-${VER_STRING}" \
+  zip -r -q "${OUTPUT_PATH}/istio-${VER_STRING}-win.zip" "istio-${VER_STRING}" \
     || error_exit 'Could not create windows archive'
   rm "${istioctl_path}"
 }
@@ -116,6 +128,7 @@ find samples install -type f \( \
   -o -name "*.conf" \
   -o -name "*.pem" \
   -o -name "*.tpl" \
+  -o -name "*.txt" \
   -o -name "kubeconfig" \
   -o -name "*.jinja*" \
   -o -name "webhook-create-signed-cert.sh" \
@@ -140,6 +153,17 @@ done
 
 ls -l  "${COMMON_FILES_DIR}/install/kubernetes/"
 
+
+for unwanted_values_yaml in \
+    values-istio.yaml \
+    values-istio-one-namespace.yaml \
+    values-istio-one-namespace-auth.yaml \
+    values-istio-auth.yaml; do
+  rm -f "${COMMON_FILES_DIR}/install/kubernetes/helm/istio/${unwanted_values_yaml}"
+done
+
+ls -l  "${COMMON_FILES_DIR}/install/kubernetes/helm/istio"
+
 # Changing dir such that tar and zip files are
 # created with right hiereachy
 pushd "${COMMON_FILES_DIR}/.."
@@ -148,4 +172,3 @@ create_osx_archive
 create_windows_archive
 popd
 
-rm -rf "$TEMP_DIR"

@@ -31,7 +31,7 @@ var _ = Describe("Config", func() {
 			Expect(gateways).To(HaveLen(1))
 			Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
 
-			err := types.UnmarshalAny(gateways[0].Resource, &ga)
+			err := types.UnmarshalAny(gateways[0].Body, &ga)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(ga).To(Equal(networking.Gateway{
@@ -65,7 +65,7 @@ var _ = Describe("Config", func() {
 				Expect(gateways).To(HaveLen(1))
 				Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
 
-				err := types.UnmarshalAny(gateways[0].Resource, &ga)
+				err := types.UnmarshalAny(gateways[0].Body, &ga)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(ga).To(Equal(networking.Gateway{
@@ -116,7 +116,7 @@ var _ = Describe("Config", func() {
 				Expect(gateways).To(HaveLen(1))
 				Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
 
-				err := types.UnmarshalAny(gateways[0].Resource, &ga)
+				err := types.UnmarshalAny(gateways[0].Body, &ga)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(ga).To(Equal(networking.Gateway{
@@ -169,7 +169,7 @@ var _ = Describe("Config", func() {
 			Expect(virtualServices).To(HaveLen(1))
 			Expect(virtualServices[0].Metadata.Name).To(Equal("copilot-service-for-foo.example.com"))
 
-			err := types.UnmarshalAny(virtualServices[0].Resource, &vs)
+			err := types.UnmarshalAny(virtualServices[0].Body, &vs)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(vs.Hosts).To(Equal([]string{"foo.example.com"}))
@@ -236,7 +236,7 @@ var _ = Describe("Config", func() {
 				virtualServices := config.CreateVirtualServiceEnvelopes(internalRoutesWithBackends(), "1")
 				var vs networking.VirtualService
 
-				err := types.UnmarshalAny(virtualServices[0].Resource, &vs)
+				err := types.UnmarshalAny(virtualServices[0].Body, &vs)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(vs.Hosts).To(Equal([]string{"foo.bar.internal"}))
@@ -274,7 +274,7 @@ var _ = Describe("Config", func() {
 			Expect(destinationRules).To(HaveLen(1))
 			Expect(destinationRules[0].Metadata.Name).To(Equal("copilot-rule-for-foo.example.com"))
 
-			err := types.UnmarshalAny(destinationRules[0].Resource, &dr)
+			err := types.UnmarshalAny(destinationRules[0].Body, &dr)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(dr.Host).To(Equal("foo.example.com"))
@@ -302,7 +302,7 @@ var _ = Describe("Config", func() {
 				Expect(destinationRules).To(HaveLen(1))
 				Expect(destinationRules[0].Metadata.Name).To(Equal("copilot-rule-for-foo.bar.internal"))
 
-				err := types.UnmarshalAny(destinationRules[0].Resource, &dr)
+				err := types.UnmarshalAny(destinationRules[0].Body, &dr)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(dr.Host).To(Equal("foo.bar.internal"))
@@ -324,7 +324,7 @@ var _ = Describe("Config", func() {
 			Expect(serviceEntries).To(HaveLen(1))
 			Expect(serviceEntries[0].Metadata.Name).To(Equal("copilot-service-entry-for-foo.example.com"))
 
-			err := types.UnmarshalAny(serviceEntries[0].Resource, &se)
+			err := types.UnmarshalAny(serviceEntries[0].Body, &se)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(se.Hosts).To(Equal([]string{"foo.example.com"}))
@@ -371,7 +371,7 @@ var _ = Describe("Config", func() {
 				Expect(serviceEntries).To(HaveLen(1))
 				Expect(serviceEntries[0].Metadata.Name).To(Equal("copilot-service-entry-for-foo.bar.internal"))
 
-				err := types.UnmarshalAny(serviceEntries[0].Resource, &se)
+				err := types.UnmarshalAny(serviceEntries[0].Body, &se)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(se.Hosts).To(Equal([]string{"foo.bar.internal"}))

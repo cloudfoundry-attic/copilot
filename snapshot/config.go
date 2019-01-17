@@ -14,10 +14,10 @@ import (
 
 //go:generate counterfeiter -o fakes/config.go --fake-name Config . config
 type config interface {
-	CreateGatewayEnvelopes() []*mcp.Envelope
-	CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
-	CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
-	CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Envelope
+	CreateGatewayEnvelopes() []*mcp.Resource
+	CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 }
 
 type Config struct {
@@ -32,7 +32,7 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 	}
 }
 
-func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Envelope) {
+func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Resource) {
 	gateway := &networking.Gateway{
 		Servers: []*networking.Server{
 			{
@@ -74,20 +74,20 @@ func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Envelope) {
 		c.logger.Error("marshaling gateway", err)
 	}
 
-	envelopes = []*mcp.Envelope{
+	envelopes = []*mcp.Resource{
 		{
 			Metadata: &mcp.Metadata{
 				Name:    DefaultGatewayName,
 				Version: "1",
 			},
-			Resource: gaResource,
+			Body: gaResource,
 		},
 	}
 
 	return envelopes
 }
 
-func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Envelope) {
+func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Resource) {
 	destinationRules := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
@@ -121,19 +121,19 @@ func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBacken
 			c.logger.Error("marshaling destination rule", err)
 		}
 
-		envelopes = append(envelopes, &mcp.Envelope{
+		envelopes = append(envelopes, &mcp.Resource{
 			Metadata: &mcp.Metadata{
 				Name:    destinationRuleName,
 				Version: version,
 			},
-			Resource: drResource,
+			Body: drResource,
 		})
 	}
 
 	return envelopes
 }
 
-func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Envelope) {
+func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Resource) {
 	virtualServices := make(map[string]*model.Config, len(routes))
 	httpRoutes := make(map[string]*networking.HTTPRoute)
 
@@ -190,19 +190,19 @@ func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackend
 			c.logger.Error("marshaling virtual service", err)
 		}
 
-		envelopes = append(envelopes, &mcp.Envelope{
+		envelopes = append(envelopes, &mcp.Resource{
 			Metadata: &mcp.Metadata{
 				Name:    virtualServiceName,
 				Version: version,
 			},
-			Resource: vsResource,
+			Body: vsResource,
 		})
 	}
 
 	return envelopes
 }
 
-func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Envelope) {
+func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Resource) {
 	serviceEntries := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
@@ -232,12 +232,12 @@ func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends,
 			c.logger.Error("marshaling service entry", err)
 		}
 
-		envelopes = append(envelopes, &mcp.Envelope{
+		envelopes = append(envelopes, &mcp.Resource{
 			Metadata: &mcp.Metadata{
 				Name:    serviceEntryName,
 				Version: version,
 			},
-			Resource: seResource,
+			Body: seResource,
 		})
 	}
 

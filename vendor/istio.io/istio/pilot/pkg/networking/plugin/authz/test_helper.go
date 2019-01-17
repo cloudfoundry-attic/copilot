@@ -22,6 +22,7 @@ import (
 	"github.com/gogo/protobuf/types"
 
 	rbacproto "istio.io/api/rbac/v1alpha1"
+	"istio.io/istio/pilot/pkg/networking/plugin/authn"
 )
 
 // nolint:deadcode
@@ -52,7 +53,7 @@ func generateServiceBinding(subject, serviceRoleRef string, mode rbacproto.Enfor
 	}
 }
 
-// nolint:deadcode
+// nolint:deadcode,unparam
 func generatePermission(headerName, matchSpecifier string) *policy.Permission {
 	return &policy.Permission{
 		Rule: &policy.Permission_AndRules{
@@ -133,8 +134,8 @@ func generatePrincipal(principalName string) *policy.Principal {
 					{
 						Identifier: &policy.Principal_Metadata{
 							Metadata: generateMetadataStringMatcher(
-								[]string{"source.principal"}, &metadata.StringMatcher{
-									MatchPattern: &metadata.StringMatcher_Exact{Exact: principalName}}),
+								"source.principal", &metadata.StringMatcher{
+									MatchPattern: &metadata.StringMatcher_Exact{Exact: principalName}}, authn.AuthnFilterName),
 						},
 					},
 				},

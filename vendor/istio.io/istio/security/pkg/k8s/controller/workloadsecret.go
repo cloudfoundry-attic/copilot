@@ -21,7 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/api/core/v1"
+	"istio.io/istio/pkg/spiffe"
+
+	v1 "k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -48,9 +51,6 @@ const (
 	RootCertID = "root-cert.pem"
 	// The key to specify corresponding service account in the annotation of K8s secrets.
 	ServiceAccountNameAnnotationKey = "istio.io/service-account.name"
-
-	// The default SPIFFE URL value for identity domain
-	DefaultIdentityDomain = "cluster.local"
 
 	secretNamePrefix   = "istio."
 	secretResyncPeriod = time.Minute
@@ -84,7 +84,6 @@ type DNSNameEntry struct {
 type SecretController struct {
 	ca             ca.CertificateAuthority
 	certTTL        time.Duration
-	identityDomain string
 	core           corev1.CoreV1Interface
 	minGracePeriod time.Duration
 	// Length of the grace period for the certificate rotation.
@@ -111,7 +110,7 @@ type SecretController struct {
 }
 
 // NewSecretController returns a pointer to a newly constructed SecretController instance.
-func NewSecretController(ca ca.CertificateAuthority, certTTL time.Duration, identityDomain string,
+func NewSecretController(ca ca.CertificateAuthority, certTTL time.Duration,
 	gracePeriodRatio float32, minGracePeriod time.Duration, dualUse bool,
 	core corev1.CoreV1Interface, forCA bool, namespace string, dnsNames map[string]DNSNameEntry) (*SecretController, error) {
 
@@ -123,14 +122,9 @@ func NewSecretController(ca ca.CertificateAuthority, certTTL time.Duration, iden
 			gracePeriodRatio, recommendedMinGracePeriodRatio, recommendedMaxGracePeriodRatio)
 	}
 
-	if identityDomain == "" {
-		identityDomain = DefaultIdentityDomain
-	}
-
 	c := &SecretController{
 		ca:               ca,
 		certTTL:          certTTL,
-		identityDomain:   identityDomain,
 		gracePeriodRatio: gracePeriodRatio,
 		minGracePeriod:   minGracePeriod,
 		dualUse:          dualUse,
@@ -178,6 +172,11 @@ func NewSecretController(ca ca.CertificateAuthority, certTTL time.Duration, iden
 // Run starts the SecretController until a value is sent to stopCh.
 func (sc *SecretController) Run(stopCh chan struct{}) {
 	go sc.scrtController.Run(stopCh)
+
+	// saAdded calls upsertSecret to update and insert secret
+	// it throws error if the secret cache is not synchronized, but the secret exists in the system
+	cache.WaitForCacheSync(stopCh, sc.scrtController.HasSynced)
+
 	go sc.saController.Run(stopCh)
 }
 
@@ -255,7 +254,10 @@ func (sc *SecretController) upsertSecret(saName, saNamespace string) {
 	// We retry several times when create secret to mitigate transient network failures.
 	for i := 0; i < secretCreationRetry; i++ {
 		_, err = sc.core.Secrets(saNamespace).Create(secret)
-		if err == nil {
+		if err == nil || errors.IsAlreadyExists(err) {
+			if errors.IsAlreadyExists(err) {
+				log.Infof("Istio secret for service account \"%s\" in namespace \"%s\" already exists", saName, saNamespace)
+			}
 			break
 		} else {
 			log.Errorf("Failed to create secret in attempt %v/%v, (error: %s)", i+1, secretCreationRetry, err)
@@ -263,7 +265,7 @@ func (sc *SecretController) upsertSecret(saName, saNamespace string) {
 		time.Sleep(time.Second)
 	}
 
-	if err != nil {
+	if err != nil && !errors.IsAlreadyExists(err) {
 		log.Errorf("Failed to create secret for service account \"%s\"  (error: %s), retries %v times",
 			saName, err, secretCreationRetry)
 		return
@@ -292,15 +294,15 @@ func (sc *SecretController) scrtDeleted(obj interface{}) {
 	}
 
 	saName := scrt.Annotations[ServiceAccountNameAnnotationKey]
-	if sa, _ := sc.core.ServiceAccounts(scrt.GetNamespace()).Get(saName, metav1.GetOptions{}); sa != nil {
-		log.Errorf("Re-create deleted Istio secret for existing service account.")
+	if _, error := sc.core.ServiceAccounts(scrt.GetNamespace()).Get(saName, metav1.GetOptions{}); error == nil {
+		log.Errorf("Re-create deleted Istio secret for existing service account %s.", saName)
 		sc.upsertSecret(saName, scrt.GetNamespace())
 		sc.monitoring.SecretDeletion.Inc()
 	}
 }
 
 func (sc *SecretController) generateKeyAndCert(saName string, saNamespace string) ([]byte, []byte, error) {
-	id := fmt.Sprintf("%s://%s/ns/%s/sa/%s", util.URIScheme, sc.identityDomain, saNamespace, saName)
+	id := spiffe.MustGenSpiffeURI(saNamespace, saName)
 	if sc.dnsNames != nil {
 		// Control plane components in same namespace.
 		if e, ok := sc.dnsNames[saName]; ok {
@@ -348,13 +350,18 @@ func (sc *SecretController) scrtUpdated(oldObj, newObj interface{}) {
 		log.Warnf("Failed to convert to secret object: %v", newObj)
 		return
 	}
+	namespace := scrt.GetNamespace()
+	name := scrt.GetName()
 
 	certBytes := scrt.Data[CertChainID]
 	cert, err := util.ParsePemEncodedCertificate(certBytes)
 	if err != nil {
-		// TODO: we should refresh secret in this case since the secret contains an
-		// invalid cert.
-		log.Errora(err)
+		log.Warnf("Failed to parse certificates in secret %s/%s (error: %v), refreshing the secret.",
+			namespace, name, err)
+		if err = sc.refreshSecret(scrt); err != nil {
+			log.Errora(err)
+		}
+
 		return
 	}
 
@@ -375,28 +382,29 @@ func (sc *SecretController) scrtUpdated(oldObj, newObj interface{}) {
 	// one held by the ca (this may happen when the CA is restarted and
 	// a new self-signed CA cert is generated).
 	if certLifeTimeLeft < gracePeriod || !bytes.Equal(rootCertificate, scrt.Data[RootCertID]) {
-		namespace := scrt.GetNamespace()
-		name := scrt.GetName()
-
 		log.Infof("Refreshing secret %s/%s, either the leaf certificate is about to expire "+
 			"or the root certificate is outdated", namespace, name)
 
-		saName := scrt.Annotations[ServiceAccountNameAnnotationKey]
-
-		chain, key, err := sc.generateKeyAndCert(saName, namespace)
-		if err != nil {
-			log.Errorf("Failed to generate key and certificate for service account %q in namespace %q (error %v)",
-				saName, namespace, err)
-
-			return
-		}
-
-		scrt.Data[CertChainID] = chain
-		scrt.Data[PrivateKeyID] = key
-		scrt.Data[RootCertID] = rootCertificate
-
-		if _, err = sc.core.Secrets(namespace).Update(scrt); err != nil {
+		if err = sc.refreshSecret(scrt); err != nil {
 			log.Errorf("Failed to update secret %s/%s (error: %s)", namespace, name, err)
 		}
 	}
+}
+
+// refreshSecret is an inner func to refresh cert secrets when necessary
+func (sc *SecretController) refreshSecret(scrt *v1.Secret) error {
+	namespace := scrt.GetNamespace()
+	saName := scrt.Annotations[ServiceAccountNameAnnotationKey]
+
+	chain, key, err := sc.generateKeyAndCert(saName, namespace)
+	if err != nil {
+		return err
+	}
+
+	scrt.Data[CertChainID] = chain
+	scrt.Data[PrivateKeyID] = key
+	scrt.Data[RootCertID] = sc.ca.GetCAKeyCertBundle().GetRootCertPem()
+
+	_, err = sc.core.Secrets(namespace).Update(scrt)
+	return err
 }

@@ -21,7 +21,6 @@ import (
 
 // scenario is a common struct used by many tests in this context.
 type scenario struct {
-	name          string
 	wrapFunc      func(*WebhookParameters)
 	expectedError string
 }
@@ -33,12 +32,28 @@ func TestValidate(t *testing.T) {
 			expectedError: "",
 		},
 		"invalid deployment namespace": {
-			wrapFunc:      func(args *WebhookParameters) { args.DeploymentNamespace = "_/invalid" },
-			expectedError: "invalid deployment namespace: \"_/invalid\"",
+			wrapFunc:      func(args *WebhookParameters) { args.DeploymentAndServiceNamespace = "_/invalid" },
+			expectedError: `invalid deployment namespace: "_/invalid"`,
 		},
 		"invalid deployment name": {
 			wrapFunc:      func(args *WebhookParameters) { args.DeploymentName = "_/invalid" },
-			expectedError: "invalid deployment name: \"_/invalid\"",
+			expectedError: `invalid deployment name: "_/invalid"`,
+		},
+		"invalid service name": {
+			wrapFunc:      func(args *WebhookParameters) { args.ServiceName = "_/invalid" },
+			expectedError: `invalid service name: "_/invalid"`,
+		},
+		"missing deployment namespace": {
+			wrapFunc:      func(args *WebhookParameters) { args.DeploymentAndServiceNamespace = "" },
+			expectedError: `invalid deployment namespace: ""`,
+		},
+		"missing deployment name": {
+			wrapFunc:      func(args *WebhookParameters) { args.DeploymentName = "" },
+			expectedError: `invalid deployment name: ""`,
+		},
+		"missing service name": {
+			wrapFunc:      func(args *WebhookParameters) { args.ServiceName = "" },
+			expectedError: `invalid service name: ""`,
 		},
 		"webhook unset": {
 			wrapFunc:      func(args *WebhookParameters) { args.WebhookConfigFile = "" },

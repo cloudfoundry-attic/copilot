@@ -29,15 +29,14 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -806,9 +805,6 @@ func apiResources(config *rest.Config, configs []crd.IstioKind) (map[string]meta
 }
 
 func restClientForOthers(config *rest.Config) (*rest.RESTClient, error) {
-	configCopied := *config
-	configCopied.ContentConfig = dynamic.ContentConfig()
-	configCopied.GroupVersion = &legacyIstioAPIGroupVersion
 	return rest.RESTClientFor(config)
 }
 
@@ -870,7 +866,7 @@ func renderTimestamp(ts time.Time) string {
 	} else if hours < 365*24 {
 		return fmt.Sprintf("%dd", hours/24)
 	}
-	return fmt.Sprintf("%dy", int((hours/24)/365))
+	return fmt.Sprintf("%dy", hours/24/365)
 }
 
 func init() {

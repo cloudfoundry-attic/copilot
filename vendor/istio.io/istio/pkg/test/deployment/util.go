@@ -20,24 +20,40 @@ import (
 	"os"
 	"path"
 
-	"gopkg.in/yaml.v2"
+	"github.com/gogo/protobuf/jsonpb"
 
-	"istio.io/istio/pkg/test/framework/scopes"
+	yaml "gopkg.in/yaml.v2"
+
 	"istio.io/istio/pkg/test/kube"
+	"istio.io/istio/pkg/test/scopes"
 )
 
 // DumpPodState logs the current pod state.
-func DumpPodState(kubeConfig, namespace string) {
-	s, err := kube.GetPods(kubeConfig, namespace)
+func DumpPodState(namespace string, accessor *kube.Accessor) {
+	pods, err := accessor.GetPods(namespace)
 	if err != nil {
 		scopes.CI.Errorf("Error getting pods list via kubectl: %v", err)
 		return
 	}
-	scopes.CI.Infof("Pods (from Kubectl):\n%s", s)
+
+	marshaler := jsonpb.Marshaler{
+		Indent: "  ",
+	}
+
+	output := ""
+	for _, pod := range pods {
+		output += fmt.Sprintf("Pod: %s/%s\n", pod.Namespace, pod.Name)
+		if str, err := marshaler.MarshalToString(&pod); err != nil {
+			output += fmt.Sprintf("Error converting to pod to JSON: %v\n", err.Error())
+		} else {
+			output += str + "\n"
+		}
+	}
+	scopes.CI.Infof("Pods (from Kubectl):\n%s", output)
 }
 
 // DumpPodData copies pod logs from Kubernetes to the specified workDir.
-func DumpPodData(kubeConfig, workDir, namespace string, accessor *kube.Accessor) {
+func DumpPodData(workDir, namespace string, accessor *kube.Accessor) {
 	pods, err := accessor.GetPods(namespace)
 
 	if err != nil {
@@ -49,7 +65,7 @@ func DumpPodData(kubeConfig, workDir, namespace string, accessor *kube.Accessor)
 
 	for _, pod := range pods {
 		for _, cs := range pod.Status.ContainerStatuses {
-			logs, err := kube.Logs(kubeConfig, namespace, pod.Name, cs.Name)
+			logs, err := accessor.Logs(namespace, pod.Name, cs.Name)
 			if err != nil {
 				scopes.CI.Infof("Error getting logs from pod/container %s/%s: %v", pod.Name, cs.Name, err)
 				continue
@@ -72,7 +88,7 @@ func DumpPodData(kubeConfig, workDir, namespace string, accessor *kube.Accessor)
 
 		outPath := path.Join(workDir, fmt.Sprintf("%s_%s.yaml", namespace, pod.Name))
 
-		if err := ioutil.WriteFile(outPath, []byte(by), os.ModePerm); err != nil {
+		if err := ioutil.WriteFile(outPath, by, os.ModePerm); err != nil {
 			scopes.CI.Infof("Error writing out pod yaml to file: %v", err)
 		}
 	}

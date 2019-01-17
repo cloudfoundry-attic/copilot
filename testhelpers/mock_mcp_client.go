@@ -8,6 +8,7 @@ import (
 
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/api/networking/v1alpha3"
@@ -22,7 +23,7 @@ type MockMCPUpdater struct {
 func (m *MockMCPUpdater) Apply(c *mcpclient.Change) error {
 	m.changesMux.Lock()
 	defer m.changesMux.Unlock()
-	m.objects[c.TypeURL] = c.Objects
+	m.objects[c.Collection] = c.Objects
 	return nil
 }
 
@@ -43,7 +44,7 @@ func (m *MockMCPUpdater) GetAllVirtualServices() []*v1alpha3.VirtualService {
 	defer m.changesMux.Unlock()
 	allVirtualServices := []*v1alpha3.VirtualService{}
 	for _, vs := range m.objects[copilotsnapshot.VirtualServiceTypeURL] {
-		r := vs.Resource.(interface{}).(*v1alpha3.VirtualService)
+		r := vs.Body.(interface{}).(*v1alpha3.VirtualService)
 		allVirtualServices = append(allVirtualServices, r)
 	}
 
@@ -55,7 +56,7 @@ func (m *MockMCPUpdater) GetAllDestinationRules() []*v1alpha3.DestinationRule {
 	defer m.changesMux.Unlock()
 	allDestinationRules := []*v1alpha3.DestinationRule{}
 	for _, o := range m.objects[copilotsnapshot.DestinationRuleTypeURL] {
-		r := o.Resource.(interface{}).(*v1alpha3.DestinationRule)
+		r := o.Body.(interface{}).(*v1alpha3.DestinationRule)
 		allDestinationRules = append(allDestinationRules, r)
 	}
 
@@ -67,7 +68,7 @@ func (m *MockMCPUpdater) GetAllGateways() []*v1alpha3.Gateway {
 	defer m.changesMux.Unlock()
 	allGateways := []*v1alpha3.Gateway{}
 	for _, o := range m.objects[copilotsnapshot.GatewayTypeURL] {
-		r := o.Resource.(interface{}).(*v1alpha3.Gateway)
+		r := o.Body.(interface{}).(*v1alpha3.Gateway)
 		allGateways = append(allGateways, r)
 	}
 
@@ -79,7 +80,7 @@ func (m *MockMCPUpdater) GetAllServiceEntries() []*v1alpha3.ServiceEntry {
 	defer m.changesMux.Unlock()
 	allServiceEntries := []*v1alpha3.ServiceEntry{}
 	for _, o := range m.objects[copilotsnapshot.ServiceEntryTypeURL] {
-		r := o.Resource.(interface{}).(*v1alpha3.ServiceEntry)
+		r := o.Body.(interface{}).(*v1alpha3.ServiceEntry)
 		allServiceEntries = append(allServiceEntries, r)
 	}
 
@@ -95,6 +96,15 @@ func (m *MockMCPUpdater) GetAllMessageNames() []string {
 	}
 	return typeURLs
 }
+
+// MetricReporter is used to report metrics for an MCP client.
+type MockMetricReporter struct{}
+
+func (m *MockMetricReporter) RecordSendError(err error, code codes.Code)     {}
+func (m *MockMetricReporter) RecordRecvError(err error, code codes.Code)     {}
+func (m *MockMetricReporter) RecordRequestAck(collection string)             {}
+func (m *MockMetricReporter) RecordRequestNack(collection string, err error) {}
+func (m *MockMetricReporter) RecordStreamCreateSuccess()                     {}
 
 type MockPilotMCPClient struct {
 	ctx        context.Context
@@ -124,6 +134,7 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 
 	svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
 	mockUpdater := &MockMCPUpdater{objects: make(map[string][]*mcpclient.Object)}
+	mockReporter := &MockMetricReporter{}
 
 	typeURLs := []string{
 		copilotsnapshot.GatewayTypeURL,
@@ -141,7 +152,7 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 		copilotsnapshot.ServiceRoleBindingTypeURL,
 		copilotsnapshot.RbacConfigTypeURL,
 	}
-	cl := mcpclient.New(svcClient, typeURLs, mockUpdater, "", nil)
+	cl := mcpclient.New(svcClient, typeURLs, mockUpdater, "", nil, mockReporter)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	go cl.Run(ctx)
 

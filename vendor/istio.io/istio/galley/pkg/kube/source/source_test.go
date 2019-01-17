@@ -15,13 +15,12 @@
 package source
 
 import (
-	errs "errors"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -29,8 +28,9 @@ import (
 	dtesting "k8s.io/client-go/testing"
 
 	"istio.io/istio/galley/pkg/kube"
-
 	"istio.io/istio/galley/pkg/kube/converter"
+	"istio.io/istio/galley/pkg/meshconfig"
+	kube_meta "istio.io/istio/galley/pkg/metadata/kube"
 	"istio.io/istio/galley/pkg/runtime/resource"
 	"istio.io/istio/galley/pkg/testing/mock"
 )
@@ -39,21 +39,30 @@ var emptyInfo resource.Info
 
 func init() {
 	b := resource.NewSchemaBuilder()
-	b.Register("type.googleapis.com/google.protobuf.Empty")
+	b.Register("empty", "type.googleapis.com/google.protobuf.Empty")
 	schema := b.Build()
-	emptyInfo, _ = schema.Lookup("type.googleapis.com/google.protobuf.Empty")
+	emptyInfo, _ = schema.Lookup("empty")
+}
+
+func schemaWithSpecs(specs []kube.ResourceSpec) *kube.Schema {
+	sb := kube.NewSchemaBuilder()
+	for _, s := range specs {
+		sb.Add(s)
+	}
+	return sb.Build()
 }
 
 func TestNewSource(t *testing.T) {
 	k := &mock.Kube{}
 	for i := 0; i < 100; i++ {
-		cl := &fake.FakeClient{
-			Fake: &dtesting.Fake{},
-		}
+		cl := fake.NewSimpleDynamicClient(runtime.NewScheme())
 		k.AddResponse(cl, nil)
 	}
 
-	p, err := New(k, 0)
+	cfg := converter.Config{
+		Mesh: meshconfig.NewInMemory(),
+	}
+	p, err := New(k, 0, kube_meta.Types, &cfg)
 	if err != nil {
 		t.Fatalf("Unexpected error found: %v", err)
 	}
@@ -65,9 +74,12 @@ func TestNewSource(t *testing.T) {
 
 func TestNewSource_Error(t *testing.T) {
 	k := &mock.Kube{}
-	k.AddResponse(nil, errs.New("newDynamicClient error"))
+	k.AddResponse(nil, errors.New("newDynamicClient error"))
 
-	_, err := New(k, 0)
+	cfg := converter.Config{
+		Mesh: meshconfig.NewInMemory(),
+	}
+	_, err := New(k, 0, kube_meta.Types, &cfg)
 	if err == nil || err.Error() != "newDynamicClient error" {
 		t.Fatalf("Expected error not found: %v", err)
 	}
@@ -75,15 +87,15 @@ func TestNewSource_Error(t *testing.T) {
 
 func TestSource_BasicEvents(t *testing.T) {
 	k := &mock.Kube{}
-	cl := &fake.FakeClient{
-		Fake: &dtesting.Fake{},
-	}
+	cl := fake.NewSimpleDynamicClient(runtime.NewScheme())
+
 	k.AddResponse(cl, nil)
 
 	i1 := unstructured.Unstructured{
 		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "List",
 			"metadata": map[string]interface{}{
-				"kind":            "foo",
 				"name":            "f1",
 				"namespace":       "ns",
 				"resourceVersion": "rv1",
@@ -92,24 +104,28 @@ func TestSource_BasicEvents(t *testing.T) {
 		},
 	}
 
-	cl.AddReactor("*", "foos", func(action dtesting.Action) (handled bool, ret runtime.Object, err error) {
+	cl.PrependReactor("*", "foos", func(action dtesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &unstructured.UnstructuredList{Items: []unstructured.Unstructured{i1}}, nil
 	})
-	cl.AddWatchReactor("foos", func(action dtesting.Action) (handled bool, ret watch.Interface, err error) {
-		return true, mock.NewWatch(), nil
+	w := mock.NewWatch()
+	cl.PrependWatchReactor("foos", func(action dtesting.Action) (handled bool, ret watch.Interface, err error) {
+		return true, w, nil
 	})
 
-	entries := []kube.ResourceSpec{
+	schema := schemaWithSpecs([]kube.ResourceSpec{
 		{
-			Kind:      "foo",
-			Singular:  "foo",
+			Kind:      "List",
+			Singular:  "List",
 			Plural:    "foos",
 			Target:    emptyInfo,
 			Converter: converter.Get("identity"),
 		},
-	}
+	})
 
-	s, err := newSource(k, 0, entries)
+	cfg := converter.Config{
+		Mesh: meshconfig.NewInMemory(),
+	}
+	s, err := New(k, 0, schema, &cfg)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -125,8 +141,82 @@ func TestSource_BasicEvents(t *testing.T) {
 
 	log := logChannelOutput(ch, 2)
 	expected := strings.TrimSpace(`
-[Event](Added: [VKey](type.googleapis.com/google.protobuf.Empty:ns/f1 @rv1))
-[Event](FullSync: [VKey](: @))
+[Event](Added: [VKey](empty:ns/f1 @rv1))
+[Event](FullSync)
+`)
+	if log != expected {
+		t.Fatalf("Event mismatch:\nActual:\n%s\nExpected:\n%s\n", log, expected)
+	}
+
+	w.Send(watch.Event{Type: watch.Deleted, Object: &i1})
+	log = logChannelOutput(ch, 1)
+	expected = strings.TrimSpace(`
+[Event](Deleted: [VKey](empty:ns/f1 @rv1))
+		`)
+	if log != expected {
+		t.Fatalf("Event mismatch:\nActual:\n%s\nExpected:\n%s\n", log, expected)
+	}
+
+	s.Stop()
+}
+
+func TestSource_BasicEvents_NoConversion(t *testing.T) {
+
+	k := &mock.Kube{}
+	cl := fake.NewSimpleDynamicClient(runtime.NewScheme())
+
+	k.AddResponse(cl, nil)
+
+	i1 := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "List",
+			"metadata": map[string]interface{}{
+				"name":            "f1",
+				"namespace":       "ns",
+				"resourceVersion": "rv1",
+			},
+			"spec": map[string]interface{}{},
+		},
+	}
+
+	cl.PrependReactor("*", "foos", func(action dtesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &unstructured.UnstructuredList{Items: []unstructured.Unstructured{i1}}, nil
+	})
+	cl.PrependWatchReactor("foos", func(action dtesting.Action) (handled bool, ret watch.Interface, err error) {
+		return true, mock.NewWatch(), nil
+	})
+
+	schema := schemaWithSpecs([]kube.ResourceSpec{
+		{
+			Kind:      "List",
+			Singular:  "List",
+			Plural:    "foos",
+			Target:    emptyInfo,
+			Converter: converter.Get("nil"),
+		},
+	})
+
+	cfg := converter.Config{
+		Mesh: meshconfig.NewInMemory(),
+	}
+	s, err := New(k, 0, schema, &cfg)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if s == nil {
+		t.Fatal("Expected non nil source")
+	}
+
+	ch, err := s.Start()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	log := logChannelOutput(ch, 1)
+	expected := strings.TrimSpace(`
+[Event](FullSync)
 `)
 	if log != expected {
 		t.Fatalf("Event mismatch:\nActual:\n%s\nExpected:\n%s\n", log, expected)
@@ -137,15 +227,12 @@ func TestSource_BasicEvents(t *testing.T) {
 
 func TestSource_ProtoConversionError(t *testing.T) {
 	k := &mock.Kube{}
-	cl := &fake.FakeClient{
-		Fake: &dtesting.Fake{},
-	}
+	cl := fake.NewSimpleDynamicClient(runtime.NewScheme())
 	k.AddResponse(cl, nil)
 
 	i1 := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"metadata": map[string]interface{}{
-				"kind":            "foo",
 				"name":            "f1",
 				"namespace":       "ns",
 				"resourceVersion": "rv1",
@@ -156,26 +243,29 @@ func TestSource_ProtoConversionError(t *testing.T) {
 		},
 	}
 
-	cl.AddReactor("*", "foos", func(action dtesting.Action) (handled bool, ret runtime.Object, err error) {
+	cl.PrependReactor("*", "foos", func(action dtesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &unstructured.UnstructuredList{Items: []unstructured.Unstructured{i1}}, nil
 	})
-	cl.AddWatchReactor("foos", func(action dtesting.Action) (handled bool, ret watch.Interface, err error) {
+	cl.PrependWatchReactor("foos", func(action dtesting.Action) (handled bool, ret watch.Interface, err error) {
 		return true, mock.NewWatch(), nil
 	})
 
-	entries := []kube.ResourceSpec{
+	schema := schemaWithSpecs([]kube.ResourceSpec{
 		{
 			Kind:     "foo",
 			Singular: "foo",
 			Plural:   "foos",
 			Target:   emptyInfo,
-			Converter: func(info resource.Info, name string, u *unstructured.Unstructured) (string, time.Time, proto.Message, error) {
-				return "", time.Time{}, nil, fmt.Errorf("cant convert")
+			Converter: func(_ *converter.Config, info resource.Info, name resource.FullName, kind string, u *unstructured.Unstructured) ([]converter.Entry, error) {
+				return nil, fmt.Errorf("cant convert")
 			},
 		},
-	}
+	})
 
-	s, err := newSource(k, 0, entries)
+	cfg := converter.Config{
+		Mesh: meshconfig.NewInMemory(),
+	}
+	s, err := New(k, 0, schema, &cfg)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -192,7 +282,78 @@ func TestSource_ProtoConversionError(t *testing.T) {
 	// The add event should not appear.
 	log := logChannelOutput(ch, 1)
 	expected := strings.TrimSpace(`
-[Event](FullSync: [VKey](: @))
+[Event](FullSync)
+`)
+	if log != expected {
+		t.Fatalf("Event mismatch:\nActual:\n%s\nExpected:\n%s\n", log, expected)
+	}
+
+	s.Stop()
+}
+
+func TestSource_MangledNames(t *testing.T) {
+	k := &mock.Kube{}
+	cl := fake.NewSimpleDynamicClient(runtime.NewScheme())
+	k.AddResponse(cl, nil)
+
+	i1 := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name":            "f1",
+				"namespace":       "ns",
+				"resourceVersion": "rv1",
+			},
+			"spec": map[string]interface{}{
+				"zoo": "zar",
+			},
+		},
+	}
+
+	cl.PrependReactor("*", "foos", func(action dtesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &unstructured.UnstructuredList{Items: []unstructured.Unstructured{i1}}, nil
+	})
+	cl.PrependWatchReactor("foos", func(action dtesting.Action) (handled bool, ret watch.Interface, err error) {
+		return true, mock.NewWatch(), nil
+	})
+
+	schema := schemaWithSpecs([]kube.ResourceSpec{
+		{
+			Kind:     "foo",
+			Singular: "foo",
+			Plural:   "foos",
+			Target:   emptyInfo,
+			Converter: func(_ *converter.Config, info resource.Info, name resource.FullName, kind string, u *unstructured.Unstructured) ([]converter.Entry, error) {
+				e := converter.Entry{
+					Key:      resource.FullNameFromNamespaceAndName("foo", name.String()),
+					Resource: &types.Struct{},
+				}
+
+				return []converter.Entry{e}, nil
+			},
+		},
+	})
+
+	cfg := converter.Config{
+		Mesh: meshconfig.NewInMemory(),
+	}
+	s, err := New(k, 0, schema, &cfg)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if s == nil {
+		t.Fatal("Expected non nil source")
+	}
+
+	ch, err := s.Start()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// The mangled name foo/ns/f1 should appear.
+	log := logChannelOutput(ch, 1)
+	expected := strings.TrimSpace(`
+[Event](Added: [VKey](empty:foo/ns/f1 @rv1))
 `)
 	if log != expected {
 		t.Fatalf("Event mismatch:\nActual:\n%s\nExpected:\n%s\n", log, expected)

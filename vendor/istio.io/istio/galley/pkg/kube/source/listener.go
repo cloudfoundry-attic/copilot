@@ -15,6 +15,7 @@
 package source
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -28,13 +29,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"istio.io/istio/galley/pkg/kube"
-
 	"istio.io/istio/galley/pkg/runtime/resource"
 )
 
 // processorFn is a callback function that will receive change events back from listener.
 type processorFn func(
-	l *listener, eventKind resource.EventKind, key, version string, u *unstructured.Unstructured)
+	l *listener, eventKind resource.EventKind, key resource.FullName, version string, u *unstructured.Unstructured)
 
 // listener is a simplified client interface for listening/getting Kubernetes resources in an unstructured way.
 type listener struct {
@@ -46,7 +46,7 @@ type listener struct {
 	resyncPeriod time.Duration
 
 	// The dynamic resource interface for accessing custom resources dynamically.
-	iface dynamic.ResourceInterface
+	resourceClient dynamic.ResourceInterface
 
 	// stopCh is used to quiesce the background activity during shutdown
 	stopCh chan struct{}
@@ -60,25 +60,25 @@ type listener struct {
 
 // newListener returns a new instance of an listener.
 func newListener(
-	ifaces kube.Interfaces, resyncPeriod time.Duration, spec kube.ResourceSpec, processor processorFn) (*listener, error) {
+	kubeInterface kube.Interfaces, resyncPeriod time.Duration, spec kube.ResourceSpec, processor processorFn) (*listener, error) {
 
 	if scope.DebugEnabled() {
 		scope.Debugf("Creating a new resource listener for: name='%s', gv:'%v'", spec.Singular, spec.GroupVersion())
 	}
 
-	client, err := ifaces.DynamicInterface(spec.GroupVersion(), spec.Kind, spec.ListKind)
+	client, err := kubeInterface.DynamicInterface()
 	if err != nil {
 		scope.Debugf("Error creating dynamic interface: %s: %v", spec.CanonicalResourceName(), err)
 		return nil, err
 	}
 
-	iface := client.Resource(spec.APIResource(), "")
+	resourceClient := client.Resource(spec.GroupVersion().WithResource(spec.Plural))
 
 	return &listener{
-		spec:         spec,
-		resyncPeriod: resyncPeriod,
-		iface:        iface,
-		processor:    processor,
+		spec:           spec,
+		resyncPeriod:   resyncPeriod,
+		resourceClient: resourceClient,
+		processor:      processor,
 	}, nil
 }
 
@@ -99,11 +99,11 @@ func (l *listener) start() {
 	l.informer = cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return l.iface.List(options)
+				return l.resourceClient.List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				options.Watch = true
-				return l.iface.Watch(options)
+				return l.resourceClient.Watch(options)
 			},
 		},
 		&unstructured.Unstructured{},
@@ -153,21 +153,21 @@ func (l *listener) handleEvent(c resource.EventKind, obj interface{}) {
 	if !ok {
 		var tombstone cache.DeletedFinalStateUnknown
 		if tombstone, ok = obj.(cache.DeletedFinalStateUnknown); !ok {
-			scope.Errorf("error decoding object, invalid type: %v", reflect.TypeOf(obj))
+			msg := fmt.Sprintf("error decoding object, invalid type: %v", reflect.TypeOf(obj))
+			scope.Error(msg)
+			recordHandleEventError(msg)
 			return
 		}
 		if object, ok = tombstone.Obj.(metav1.Object); !ok {
-			scope.Errorf("error decoding object tombstone, invalid type: %v", reflect.TypeOf(tombstone.Obj))
+			msg := fmt.Sprintf("error decoding object tombstone, invalid type: %v", reflect.TypeOf(tombstone.Obj))
+			scope.Error(msg)
+			recordHandleEventError(msg)
 			return
 		}
 		scope.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
 	}
 
-	key, err := cache.MetaNamespaceKeyFunc(object)
-	if err != nil {
-		scope.Errorf("Error creating MetaNamespaceKey from object: %v", object)
-		return
-	}
+	key := resource.FullNameFromNamespaceAndName(object.GetNamespace(), object.GetName())
 
 	var u *unstructured.Unstructured
 
@@ -188,4 +188,5 @@ func (l *listener) handleEvent(c resource.EventKind, obj interface{}) {
 		scope.Debugf("Sending event: [%v] from: %s", c, l.spec.CanonicalResourceName())
 	}
 	l.processor(l, c, key, object.GetResourceVersion(), u)
+	recordHandleEventSuccess()
 }

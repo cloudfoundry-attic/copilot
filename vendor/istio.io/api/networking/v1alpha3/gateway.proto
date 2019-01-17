@@ -36,9 +36,10 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // kind: Gateway
 // metadata:
 //   name: my-gateway
+//   namespace: some-config-namespace
 // spec:
 //   selector:
-//     app: my-gatweway-controller
+//     app: my-gateway-controller
 //   servers:
 //   - port:
 //       number: 80
@@ -93,13 +94,14 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-rule
+//   namespace: bookinfo-namespace
 // spec:
 //   hosts:
 //   - reviews.prod.svc.cluster.local
 //   - uk.bookinfo.com
 //   - eu.bookinfo.com
 //   gateways:
-//   - my-gateway
+//   - some-config-namespace/my-gateway
 //   - mesh # applies to all the sidecars in the mesh
 //   http:
 //   - match:
@@ -135,11 +137,13 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-Mongo
+//   namespace: bookinfo-namespace
 // spec:
 //   hosts:
 //   - mongosvr.prod.svc.cluster.local #name of internal Mongo service
 //   gateways:
-//   - my-gateway
+//   - some-config-namespace/my-gateway # can omit the namespace if gateway is in same
+//                                        namespace as virtual service.
 //   tcp:
 //   - match:
 //     - port: 27017
@@ -154,10 +158,10 @@ message Gateway {
   repeated Server servers = 1;
 
   // REQUIRED: One or more labels that indicate a specific set of pods/VMs
-  // on which this gateway configuration should be applied.
-  // The scope of label search is platform dependent.
-  // On Kubernetes, for example, the scope includes pods running in
-  // all reachable namespaces.
+  // on which this gateway configuration should be applied. The scope of
+  // label search is restricted to the configuration namespace in which the
+  // the resource is present. In other words, the Gateway resource must
+  // reside in the same namespace as the gateway workload.
   map<string, string> selector = 2;
 }
 
@@ -224,8 +228,15 @@ message Gateway {
 // ```
 message Server {
   // REQUIRED: The Port on which the proxy should listen for incoming
-  // connections
+  // connections. If using unix domain socket, use 0 as the port number,
+  // with a valid protocol and port name, along with the bind parameter.
   Port port = 1;
+
+  // $hide_from_docs
+  // The ip or the unix domain socket to which the listener should be bound
+  // to. Format: x.x.x.x or unix:///path/to/uds or unix://@foobar (Linux
+  // abstract namespace).
+  string bind = 4;
 
   // REQUIRED. A list of hosts exposed by this gateway. At least one
   // host is required. While typically applicable to
@@ -250,8 +261,9 @@ message Server {
 
     // TLS modes enforced by the proxy
     enum TLSmode {
-      // Forward the connection to the upstream server selected based on
-      // the SNI string presented by the client.
+      // The SNI string presented by the client will be used as the match
+      // criterion in a VirtualService TLS route to determine the
+      // destination service from the service registry.
       PASSTHROUGH = 0;
 
       // Secure connections with standard TLS semantics.
@@ -260,6 +272,18 @@ message Server {
       // Secure connections to the upstream using mutual TLS by presenting
       // client certificates for authentication.
       MUTUAL = 2;
+
+      // Similar to the passthrough mode, except servers with this TLS mode
+      // do not require an associated VirtualService to map from the SNI
+      // value to service in the registry. The destination details such as
+      // the service/subset/port are encoded in the SNI value. The proxy
+      // will forward to the upstream (Envoy) cluster (a group of
+      // endpoints) specified by the SNI value. This server is typically
+      // used to provide connectivity between services in disparate L3
+      // networks that otherwise do not have direct connectivity between
+      // their respective endpoints. Use of this mode assumes that both the
+      // source and the destination are using Istio mTLS to secure traffic.
+      AUTO_PASSTHROUGH = 3;
     };
 
     // Optional: Indicates whether connections to this port should be
@@ -290,16 +314,16 @@ message Server {
       TLS_AUTO = 0;
 
       // TLS version 1.0
-      TLSv1_0 = 1;
+      TLSV1_0 = 1;
 
       // TLS version 1.1
-      TLSv1_1 = 2;
+      TLSV1_1 = 2;
 
       // TLS version 1.2
-      TLSv1_2 = 3;
+      TLSV1_2 = 3;
 
       // TLS version 1.3
-      TLSv1_3 = 4;
+      TLSV1_3 = 4;
     }
 
     // Optional: Minimum TLS protocol version.
@@ -317,6 +341,11 @@ message Server {
   // these options to control if all http requests should be redirected to
   // https, and the TLS modes to use.
   TLSOptions tls = 3;
+
+  // The loopback IP endpoint or unix domain socket to which traffic should
+  // be forwarded to by default. Format should be 127.0.0.1:PORT or
+  // unix:///path/to/socket or unix://@foobar (Linux abstract namespace).
+  string default_endpoint = 5;
 }
 
 // Port describes the properties of a specific port of a service.
@@ -326,7 +355,8 @@ message Port {
 
   // REQUIRED: The protocol exposed on the port.
   // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
-  // TLS is used to indicate secure connections to non HTTP services.
+  // TLS implies the connection will be routed based on the SNI header to
+  // the destination without terminating the TLS connection.
   string protocol = 2;
 
   // Label assigned to the port.
