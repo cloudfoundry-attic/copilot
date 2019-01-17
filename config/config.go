@@ -45,6 +45,13 @@ type Config struct {
 	TLSPems []certs.CertChainKeyPair
 }
 
+var ValidLogLevels = []string{
+	"debug",
+	"info",
+	"error",
+	"fatal",
+}
+
 func init() {
 	validator.SetValidationFunc("cidr", validateCIDR)
 }
@@ -129,6 +136,10 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("parsing config: %s", err)
 	}
 
+	if err = validateLogLevel(c.LogLevel); err != nil {
+		return nil, err
+	}
+
 	if c.BBS == nil {
 		return nil, errors.New("invalid config: missing required 'BBS' field")
 	}
@@ -148,4 +159,13 @@ func Load(path string) (*Config, error) {
 	}
 
 	return c, nil
+}
+
+func validateLogLevel(logLevel string) error {
+	for _, level := range ValidLogLevels {
+		if logLevel == level {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid log level provided: %s", logLevel)
 }

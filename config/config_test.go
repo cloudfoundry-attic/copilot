@@ -149,6 +149,20 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("optional fields", func() {
+		Context("when an invalid log level is provided", func() {
+			BeforeEach(func() {
+				expectedCfg.LogLevel = "banana"
+			})
+
+			It("returns a helpful error messge", func() {
+				err := expectedCfg.Save(configFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = config.Load(configFile)
+				Expect(err).To(MatchError("invalid log level provided: banana"))
+			})
+		})
+
 		Context("when MCPConvergeInterval is provided in the config", func() {
 			BeforeEach(func() {
 				expectedCfg.MCPConvergeInterval = durationjson.Duration(7 * time.Second)
