@@ -320,6 +320,7 @@ var _ = Describe("Copilot", func() {
 			"istio/networking/v1alpha3/virtualservices",
 			"istio/networking/v1alpha3/serviceentries",
 			"istio/networking/v1alpha3/gateways",
+			"istio/networking/v1alpha3/sidecars",
 		))
 
 		Eventually(mcpClient.GetAllObjectNames, "1s").Should(Equal(map[string][]string{
@@ -327,6 +328,7 @@ var _ = Describe("Copilot", func() {
 			"istio/networking/v1alpha3/virtualservices":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("copilot-service-for-%s", internalRouteHost)},
 			"istio/networking/v1alpha3/serviceentries":   []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("copilot-service-entry-for-%s", internalRouteHost)},
 			"istio/networking/v1alpha3/gateways":         []string{copilotsnapshot.DefaultGatewayName},
+			"istio/networking/v1alpha3/sidecars":         []string{copilotsnapshot.DefaultSidecarName},
 		}))
 
 		expectedRoutes := []Route{
@@ -363,6 +365,9 @@ var _ = Describe("Copilot", func() {
 
 		expectedGW := expectedGateway(80)
 		Eventually(mcpClient.GetAllGateways, "1s").Should(Equal([]*v1alpha3.Gateway{expectedGW}))
+
+		expectedSidecar := expectedSidecarResource()
+		Eventually(mcpClient.GetAllSidecars, "1s").Should(Equal([]*v1alpha3.Sidecar{expectedSidecar}))
 
 		expectedSE := expectedServiceEntry(
 			"some-url",
@@ -792,6 +797,18 @@ func expectedDestinationRule(host string, subsets []string) *v1alpha3.Destinatio
 		Host:          host,
 		TrafficPolicy: nil,
 		Subsets:       sets,
+	}
+}
+
+func expectedSidecarResource() *v1alpha3.Sidecar {
+	return &v1alpha3.Sidecar{
+		Egress: []*v1alpha3.IstioEgressListener{
+			&v1alpha3.IstioEgressListener{
+				Hosts: []string{
+					"internal/*",
+				},
+			},
+		},
 	}
 }
 

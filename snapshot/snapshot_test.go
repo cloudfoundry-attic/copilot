@@ -50,6 +50,7 @@ var _ = Describe("Snapshot", func() {
 			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateSidecarResourcesCallCount).Should(Equal(1))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 			node, shot := setter.SetSnapshotArgsForCall(0)
@@ -62,6 +63,7 @@ var _ = Describe("Snapshot", func() {
 			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateSidecarResourcesCallCount).Should(Equal(1))
 
 			Consistently(setter.SetSnapshotCallCount).Should(Equal(1))
 
@@ -82,6 +84,7 @@ var _ = Describe("Snapshot", func() {
 			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 			node, shot := setter.SetSnapshotArgsForCall(0)
@@ -94,6 +97,7 @@ var _ = Describe("Snapshot", func() {
 			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(2))
 			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(2))
 			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(2))
+			Eventually(config.CreateSidecarResourcesCallCount).Should(Equal(2))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(2))
 			_, shot = setter.SetSnapshotArgsForCall(1)
@@ -132,4 +136,7 @@ func checkVersion(shot snap.Snapshot, version string) {
 
 	seVersion := shot.Version(snapshot.ServiceEntryTypeURL)
 	Expect(seVersion).To(Equal(version))
+
+	scVersion := shot.Version(snapshot.SidecarTypeURL)
+	Expect(scVersion).To(Equal("1"))
 }

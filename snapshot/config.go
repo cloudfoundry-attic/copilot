@@ -15,6 +15,7 @@ import (
 //go:generate counterfeiter -o fakes/config.go --fake-name Config . config
 type config interface {
 	CreateGatewayResources() []*mcp.Resource
+	CreateSidecarResources() []*mcp.Resource
 	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
@@ -29,6 +30,34 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 	return &Config{
 		librarian: librarian,
 		logger:    logger,
+	}
+}
+
+func (c *Config) CreateSidecarResources() []*mcp.Resource {
+	sidecar := &networking.Sidecar{
+		Egress: []*networking.IstioEgressListener{
+			&networking.IstioEgressListener{
+				Hosts: []string{
+					"internal/*",
+				},
+			},
+		},
+	}
+
+	scResource, err := types.MarshalAny(sidecar)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling gateway", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    DefaultSidecarName,
+				Version: "1",
+			},
+			Body: scResource,
+		},
 	}
 }
 

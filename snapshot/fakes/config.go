@@ -43,6 +43,16 @@ type Config struct {
 	createServiceEntryResourcesReturnsOnCall map[int]struct {
 		result1 []*v1alpha1.Resource
 	}
+	CreateSidecarResourcesStub        func() []*v1alpha1.Resource
+	createSidecarResourcesMutex       sync.RWMutex
+	createSidecarResourcesArgsForCall []struct {
+	}
+	createSidecarResourcesReturns struct {
+		result1 []*v1alpha1.Resource
+	}
+	createSidecarResourcesReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
+	}
 	CreateVirtualServiceResourcesStub        func([]*models.RouteWithBackends, string) []*v1alpha1.Resource
 	createVirtualServiceResourcesMutex       sync.RWMutex
 	createVirtualServiceResourcesArgsForCall []struct {
@@ -243,6 +253,58 @@ func (fake *Config) CreateServiceEntryResourcesReturnsOnCall(i int, result1 []*v
 	}{result1}
 }
 
+func (fake *Config) CreateSidecarResources() []*v1alpha1.Resource {
+	fake.createSidecarResourcesMutex.Lock()
+	ret, specificReturn := fake.createSidecarResourcesReturnsOnCall[len(fake.createSidecarResourcesArgsForCall)]
+	fake.createSidecarResourcesArgsForCall = append(fake.createSidecarResourcesArgsForCall, struct {
+	}{})
+	fake.recordInvocation("CreateSidecarResources", []interface{}{})
+	fake.createSidecarResourcesMutex.Unlock()
+	if fake.CreateSidecarResourcesStub != nil {
+		return fake.CreateSidecarResourcesStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.createSidecarResourcesReturns
+	return fakeReturns.result1
+}
+
+func (fake *Config) CreateSidecarResourcesCallCount() int {
+	fake.createSidecarResourcesMutex.RLock()
+	defer fake.createSidecarResourcesMutex.RUnlock()
+	return len(fake.createSidecarResourcesArgsForCall)
+}
+
+func (fake *Config) CreateSidecarResourcesCalls(stub func() []*v1alpha1.Resource) {
+	fake.createSidecarResourcesMutex.Lock()
+	defer fake.createSidecarResourcesMutex.Unlock()
+	fake.CreateSidecarResourcesStub = stub
+}
+
+func (fake *Config) CreateSidecarResourcesReturns(result1 []*v1alpha1.Resource) {
+	fake.createSidecarResourcesMutex.Lock()
+	defer fake.createSidecarResourcesMutex.Unlock()
+	fake.CreateSidecarResourcesStub = nil
+	fake.createSidecarResourcesReturns = struct {
+		result1 []*v1alpha1.Resource
+	}{result1}
+}
+
+func (fake *Config) CreateSidecarResourcesReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.createSidecarResourcesMutex.Lock()
+	defer fake.createSidecarResourcesMutex.Unlock()
+	fake.CreateSidecarResourcesStub = nil
+	if fake.createSidecarResourcesReturnsOnCall == nil {
+		fake.createSidecarResourcesReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
+		})
+	}
+	fake.createSidecarResourcesReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
+	}{result1}
+}
+
 func (fake *Config) CreateVirtualServiceResources(arg1 []*models.RouteWithBackends, arg2 string) []*v1alpha1.Resource {
 	var arg1Copy []*models.RouteWithBackends
 	if arg1 != nil {
@@ -318,6 +380,8 @@ func (fake *Config) Invocations() map[string][][]interface{} {
 	defer fake.createGatewayResourcesMutex.RUnlock()
 	fake.createServiceEntryResourcesMutex.RLock()
 	defer fake.createServiceEntryResourcesMutex.RUnlock()
+	fake.createSidecarResourcesMutex.RLock()
+	defer fake.createSidecarResourcesMutex.RUnlock()
 	fake.createVirtualServiceResourcesMutex.RLock()
 	defer fake.createVirtualServiceResourcesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

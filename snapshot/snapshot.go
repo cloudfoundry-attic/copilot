@@ -37,6 +37,7 @@ var (
 
 const (
 	DefaultGatewayName = "cloudfoundry-ingress"
+	DefaultSidecarName = "cloudfoundry-sidecar"
 
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
@@ -94,11 +95,13 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			s.cachedRoutes = routes
 
 			gateways := s.config.CreateGatewayResources()
+			sidecars := s.config.CreateSidecarResources()
 			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
 			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
 			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
+			s.builder.Set(SidecarTypeURL, "1", sidecars)
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)

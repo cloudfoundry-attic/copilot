@@ -75,6 +75,18 @@ func (m *MockMCPUpdater) GetAllGateways() []*v1alpha3.Gateway {
 	return allGateways
 }
 
+func (m *MockMCPUpdater) GetAllSidecars() []*v1alpha3.Sidecar {
+	m.changesMux.Lock()
+	defer m.changesMux.Unlock()
+	allSidecars := []*v1alpha3.Sidecar{}
+	for _, o := range m.objects[copilotsnapshot.SidecarTypeURL] {
+		r := o.Body.(interface{}).(*v1alpha3.Sidecar)
+		allSidecars = append(allSidecars, r)
+	}
+
+	return allSidecars
+}
+
 func (m *MockMCPUpdater) GetAllServiceEntries() []*v1alpha3.ServiceEntry {
 	m.changesMux.Lock()
 	defer m.changesMux.Unlock()
@@ -146,6 +158,7 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 		copilotsnapshot.VirtualServiceTypeURL,
 		copilotsnapshot.DestinationRuleTypeURL,
 		copilotsnapshot.ServiceEntryTypeURL,
+		copilotsnapshot.SidecarTypeURL,
 		copilotsnapshot.EnvoyFilterTypeURL,
 		copilotsnapshot.HTTPAPISpecTypeURL,
 		copilotsnapshot.HTTPAPISpecBindingTypeURL,

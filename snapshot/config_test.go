@@ -23,6 +23,27 @@ var _ = Describe("Config", func() {
 		config = snapshot.NewConfig(fakeLocator, lagertest.NewTestLogger("config"))
 	})
 
+	Describe("CreateSidecarResources", func() {
+		It("creates a sidecar resources", func() {
+			sidecars := config.CreateSidecarResources()
+
+			Expect(sidecars).To(HaveLen(1))
+			Expect(sidecars[0].Metadata.Name).To(Equal("cloudfoundry-sidecar"))
+
+			sc := networking.Sidecar{}
+			err := types.UnmarshalAny(sidecars[0].Body, &sc)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(sc).To(Equal(networking.Sidecar{
+				Egress: []*networking.IstioEgressListener{
+					&networking.IstioEgressListener{
+						Hosts: []string{"internal/*"},
+					},
+				},
+			}))
+		})
+	})
+
 	Describe("CreateGatewayResources", func() {
 		It("creates gateway resources", func() {
 			gateways := config.CreateGatewayResources()
@@ -30,6 +51,7 @@ var _ = Describe("Config", func() {
 
 			Expect(gateways).To(HaveLen(1))
 			Expect(gateways[0].Metadata.Name).To(Equal("cloudfoundry-ingress"))
+			Expect(gateways[0].Metadata.Version).To(Equal("1"))
 
 			err := types.UnmarshalAny(gateways[0].Body, &ga)
 			Expect(err).NotTo(HaveOccurred())
