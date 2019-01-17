@@ -189,7 +189,7 @@ var _ = Describe("Copilot", func() {
 
 		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, cloudControllerClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
-		vipResolverClient, err = copilot.NewVIPResolverCopilotClient(serverConfig.ListenAddressForVIPResolver, nil)
+		vipResolverClient, err = copilot.NewVIPResolverCopilotClient(serverConfig.ListenAddressForVIPResolver, grpc.WithInsecure())
 		Expect(err).NotTo(HaveOccurred())
 		mcpClient, err = testhelpers.NewMockPilotMCPClient(pilotClientTLSConfig, serverConfig.ListenAddressForMCP)
 		Expect(err).NotTo(HaveOccurred())
