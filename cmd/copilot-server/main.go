@@ -120,7 +120,6 @@ func mainWithError() error {
 			api.RegisterVIPResolverCopilotServer(s, vipResolverHandler)
 			reflection.Register(s)
 		},
-		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
 	)
 
 	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)

@@ -47,8 +47,14 @@ type vipResolverCopilotClient struct {
 }
 
 func NewVIPResolverCopilotClient(serverAddress string, tlsConfig *tls.Config) (VIPResolverCopilotClient, error) {
+	var securityDialOption grpc.DialOption
+	if tlsConfig == nil {
+		securityDialOption = grpc.WithInsecure()
+	} else {
+		securityDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
+	}
 	conn, err := grpc.Dial(serverAddress,
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		securityDialOption,
 		grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)),
 	)
 	if err != nil {

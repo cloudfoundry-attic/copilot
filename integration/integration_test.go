@@ -28,12 +28,11 @@ import (
 
 var _ = Describe("Copilot", func() {
 	var (
-		session                           *gexec.Session
-		serverConfig                      *config.Config
-		pilotClientTLSConfig              *tls.Config
-		cloudControllerClientTLSConfig    *tls.Config
-		vipResolverCopilotClientTLSConfig *tls.Config
-		configFilePath                    string
+		session                        *gexec.Session
+		serverConfig                   *config.Config
+		pilotClientTLSConfig           *tls.Config
+		cloudControllerClientTLSConfig *tls.Config
+		configFilePath                 string
 
 		mcpClient         *testhelpers.MockPilotMCPClient
 		ccClient          copilot.CloudControllerClient
@@ -187,11 +186,10 @@ var _ = Describe("Copilot", func() {
 
 		pilotClientTLSConfig = copilotCreds.ClientTLSConfig()
 		cloudControllerClientTLSConfig = copilotCreds.OtherClientTLSConfig()
-		vipResolverCopilotClientTLSConfig = copilotCreds.OtherClientTLSConfig()
 
 		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, cloudControllerClientTLSConfig)
 		Expect(err).NotTo(HaveOccurred())
-		vipResolverClient, err = copilot.NewVIPResolverCopilotClient(serverConfig.ListenAddressForVIPResolver, vipResolverCopilotClientTLSConfig)
+		vipResolverClient, err = copilot.NewVIPResolverCopilotClient(serverConfig.ListenAddressForVIPResolver, nil)
 		Expect(err).NotTo(HaveOccurred())
 		mcpClient, err = testhelpers.NewMockPilotMCPClient(pilotClientTLSConfig, serverConfig.ListenAddressForMCP)
 		Expect(err).NotTo(HaveOccurred())

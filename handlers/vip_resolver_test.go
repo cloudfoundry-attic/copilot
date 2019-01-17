@@ -51,6 +51,15 @@ var _ = Describe("VIP Resolver Handlers", func() {
 			Expect(name).To(Equal("meow.istio.apps.internal"))
 		})
 
+		It("strips the trailing dot on request fqdns because the store hostnames omit them", func() {
+			ctx := context.Background()
+			_, err := handler.GetVIPByName(ctx, &api.GetVIPByNameRequest{Fqdn: "meow.istio.apps.internal."})
+			Expect(err).NotTo(HaveOccurred())
+
+			name := fakeRoutesRepo.GetVIPByNameArgsForCall(0)
+			Expect(name).To(Equal("meow.istio.apps.internal"))
+		})
+
 		Context("when the route doesn't exist", func() {
 			BeforeEach(func() {
 				fakeRoutesRepo.GetVIPByNameReturns("", false)

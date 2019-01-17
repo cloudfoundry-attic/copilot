@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"code.cloudfoundry.org/copilot/api"
 	"code.cloudfoundry.org/lager"
@@ -24,7 +25,7 @@ func (b *VIPResolver) Health(context.Context, *api.HealthRequest) (*api.HealthRe
 }
 
 func (b *VIPResolver) GetVIPByName(ctx context.Context, request *api.GetVIPByNameRequest) (*api.GetVIPByNameResponse, error) {
-	ip, ok := b.RoutesRepo.GetVIPByName(request.Fqdn)
+	ip, ok := b.RoutesRepo.GetVIPByName(strings.TrimRight(request.Fqdn, "."))
 	if !ok {
 		return nil, fmt.Errorf("route doesn't exist: %s", request.Fqdn)
 	}
