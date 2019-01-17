@@ -84,7 +84,7 @@ var _ = Describe("Snapshot", func() {
 			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
 			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
-			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateSidecarResourcesCallCount).Should(Equal(1))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 			node, shot := setter.SetSnapshotArgsForCall(0)

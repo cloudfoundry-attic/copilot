@@ -24,7 +24,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("CreateSidecarResources", func() {
-		It("creates a sidecar resources", func() {
+		It("creates a sidecar resource", func() {
 			sidecars := config.CreateSidecarResources()
 
 			Expect(sidecars).To(HaveLen(1))
