@@ -12,7 +12,6 @@ import (
 	"code.cloudfoundry.org/copilot/config"
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -30,6 +29,7 @@ var _ = Describe("Config", func() {
 		expectedCfg = &config.Config{
 			ListenAddressForCloudController: "127.0.0.1:1235",
 			ListenAddressForMCP:             "127.0.0.1:1236",
+			ListenAddressForVIPResolver:     "127.0.0.1:1237",
 			PilotClientCAPath:               "some-pilot-ca-path",
 			CloudControllerClientCAPath:     "some-cloud-controller-ca-path",
 			ServerCertPath:                  "some-cert-path",

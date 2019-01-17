@@ -112,6 +112,7 @@ func mainWithError() error {
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
+		VIPProvider:                      vipProvider,
 		Logger:                           logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,
@@ -120,6 +121,17 @@ func mainWithError() error {
 			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(cloudControllerFacingTLSConfig)),
+	)
+
+	vipResolverHandler := &handlers.VIPResolver{
+		RoutesRepo: routesRepo,
+		Logger:     logger,
+	}
+	grpcServerForVIPResolver := grpcrunner.New(logger, cfg.ListenAddressForVIPResolver,
+		func(s *grpc.Server) {
+			api.RegisterVIPResolverCopilotServer(s, vipResolverHandler)
+			reflection.Register(s)
+		},
 	)
 
 	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
@@ -180,6 +192,7 @@ func mainWithError() error {
 
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},
+		grouper.Member{Name: "grpc-server-for-vip-resolver", Runner: grpcServerForVIPResolver},
 		grouper.Member{Name: "grpc-server-for-mcp", Runner: grpcServerForMcp},
 		grouper.Member{Name: "mcp-snapshot", Runner: mcpSnapshot},
 		grouper.Member{Name: "diego-backend-set-updater", Runner: backendSetRepo},

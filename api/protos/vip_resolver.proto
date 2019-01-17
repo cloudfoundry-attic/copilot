@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "common.proto";
+
 package api;
 
 message GetVIPByNameRequest {
@@ -10,6 +12,7 @@ message GetVIPByNameResponse {
   string ip = 1;
 }
 
-service BoshDNSAdapterCopilot {
+service VIPResolverCopilot {
   rpc GetVIPByName(GetVIPByNameRequest) returns (GetVIPByNameResponse) {}
+  rpc Health(HealthRequest) returns (HealthResponse) {}
 }

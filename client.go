@@ -35,3 +35,25 @@ func NewCloudControllerClient(serverAddress string, tlsConfig *tls.Config) (Clou
 		ClientConn:                   conn,
 	}, nil
 }
+
+type VIPResolverCopilotClient interface {
+	api.VIPResolverCopilotClient
+	io.Closer
+}
+
+type vipResolverCopilotClient struct {
+	api.VIPResolverCopilotClient
+	*grpc.ClientConn
+}
+
+func NewVIPResolverCopilotClient(serverAddress string, dialOpts ...grpc.DialOption) (VIPResolverCopilotClient, error) {
+	conn, err := grpc.Dial(serverAddress, dialOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("grpc dial: %s", err)
+	}
+
+	return &vipResolverCopilotClient{
+		VIPResolverCopilotClient: api.NewVIPResolverCopilotClient(conn),
+		ClientConn:               conn,
+	}, nil
+}

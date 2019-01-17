@@ -17,6 +17,12 @@ type CAPI struct {
 	RoutesRepo                       routesRepoInterface
 	RouteMappingsRepo                routeMappingsRepoInterface
 	CAPIDiegoProcessAssociationsRepo capiDiegoProcessAssociationsRepoInterface
+	VIPProvider                      vipProvider
+}
+
+//go:generate counterfeiter -o fakes/vip_provider.go --fake-name VIPProvider . vipProvider
+type vipProvider interface {
+	Get(hostname string) string
 }
 
 //go:generate counterfeiter -o fakes/routes_repo.go --fake-name RoutesRepo . routesRepoInterface
@@ -96,6 +102,7 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 		Host:     request.Route.Host,
 		Path:     request.Route.Path,
 		Internal: request.Route.Internal,
+		VIP:      c.VIPProvider.Get(request.Route.Host),
 	}
 	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil
@@ -219,6 +226,7 @@ func (c *CAPI) syncRequest(request *api.BulkSyncRequest) {
 			Host:     route.GetHost(),
 			Path:     route.GetPath(),
 			Internal: route.GetInternal(),
+			VIP:      c.VIPProvider.Get(route.GetHost()),
 		}
 	}
 

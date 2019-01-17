@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"google.golang.org/grpc"
 	"istio.io/api/networking/v1alpha3"
 )
 
@@ -32,9 +33,10 @@ var _ = Describe("Copilot", func() {
 		cloudControllerClientTLSConfig *tls.Config
 		configFilePath                 string
 
-		mcpClient *testhelpers.MockPilotMCPClient
-		ccClient  copilot.CloudControllerClient
-		mockBBS   *testhelpers.MockBBSServer
+		mcpClient         *testhelpers.MockPilotMCPClient
+		ccClient          copilot.CloudControllerClient
+		vipResolverClient copilot.VIPResolverCopilotClient
+		mockBBS           *testhelpers.MockBBSServer
 
 		cleanupFuncs      []func()
 		routeHost         string
@@ -136,6 +138,7 @@ var _ = Describe("Copilot", func() {
 		copilotCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
 		listenAddrForCloudController := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
+		listenAddrForVIPResolver := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		listenAddrForMCP := fmt.Sprintf("127.0.0.1:%d", testhelpers.PickAPort())
 		copilotTLSFiles := copilotCreds.CreateServerTLSFiles()
 		bbsCreds := testhelpers.GenerateMTLS()
@@ -144,6 +147,7 @@ var _ = Describe("Copilot", func() {
 
 		serverConfig = &config.Config{
 			ListenAddressForCloudController: listenAddrForCloudController,
+			ListenAddressForVIPResolver:     listenAddrForVIPResolver,
 			ListenAddressForMCP:             listenAddrForMCP,
 			PilotClientCAPath:               copilotTLSFiles.ClientCA,
 			CloudControllerClientCAPath:     copilotTLSFiles.OtherClientCA,
@@ -174,6 +178,7 @@ var _ = Describe("Copilot", func() {
 
 		cmd := exec.Command(binaryPath, "-config", configFilePath)
 		var err error
+		fmt.Printf("meow: %v", cmd)
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session.Out).Should(gbytes.Say(`started`))
@@ -182,6 +187,8 @@ var _ = Describe("Copilot", func() {
 		cloudControllerClientTLSConfig = copilotCreds.OtherClientTLSConfig()
 
 		ccClient, err = copilot.NewCloudControllerClient(serverConfig.ListenAddressForCloudController, cloudControllerClientTLSConfig)
+		Expect(err).NotTo(HaveOccurred())
+		vipResolverClient, err = copilot.NewVIPResolverCopilotClient(serverConfig.ListenAddressForVIPResolver, grpc.WithInsecure())
 		Expect(err).NotTo(HaveOccurred())
 		mcpClient, err = testhelpers.NewMockPilotMCPClient(pilotClientTLSConfig, serverConfig.ListenAddressForMCP)
 		Expect(err).NotTo(HaveOccurred())
@@ -223,6 +230,32 @@ var _ = Describe("Copilot", func() {
 			Expect(err).NotTo(HaveOccurred())
 			totalSent := len(data) + len(data2)
 			Expect(resp.TotalBytesReceived).To(Equal(int32(totalSent)))
+		})
+	})
+
+	Context("vip resolver client queries a route's vip", func() {
+		BeforeEach(func() {
+			WaitForHealthy(ccClient)
+			WaitForHealthy(vipResolverClient)
+
+			routeHost = "amelia.apps.internal"
+			_, err := ccClient.UpsertRoute(context.Background(), &api.UpsertRouteRequest{
+				Route: &api.Route{
+					Guid: "route-guid-a",
+					Host: routeHost,
+				}})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the route's vip", func() {
+			resp, err := vipResolverClient.GetVIPByName(
+				context.Background(),
+				&api.GetVIPByNameRequest{
+					Fqdn: "amelia.apps.internal",
+				},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.Ip).To(Equal("127.167.11.82"))
 		})
 	})
 
@@ -601,12 +634,16 @@ var _ = Describe("Copilot", func() {
 	})
 })
 
-func WaitForHealthy(ccClient copilot.CloudControllerClient) {
+type healthable interface {
+	Health(ctx context.Context, in *api.HealthRequest, opts ...grpc.CallOption) (*api.HealthResponse, error)
+}
+
+func WaitForHealthy(client healthable) {
 	By("waiting for the server to become healthy")
 	serverForCloudControllerIsHealthy := func() error {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancelFunc()
-		_, err := ccClient.Health(ctx, new(api.HealthRequest))
+		_, err := client.Health(ctx, new(api.HealthRequest))
 		return err
 	}
 	Eventually(serverForCloudControllerIsHealthy, 2*time.Second).Should(Succeed())

@@ -2,21 +2,40 @@
 package fakes
 
 import (
-	sync "sync"
+	"sync"
 
-	models "code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/copilot/models"
 )
 
 type CAPIDiegoProcessAssociationsRepo struct {
-	DeleteStub        func(*models.CAPIProcessGUID)
+	UpsertStub        func(capiDiegoProcessAssociation *models.CAPIDiegoProcessAssociation)
+	upsertMutex       sync.RWMutex
+	upsertArgsForCall []struct {
+		capiDiegoProcessAssociation *models.CAPIDiegoProcessAssociation
+	}
+	DeleteStub        func(capiProcessGUID *models.CAPIProcessGUID)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		arg1 *models.CAPIProcessGUID
+		capiProcessGUID *models.CAPIProcessGUID
 	}
-	GetStub        func(*models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
+	SyncStub        func(capiDiegoProcessAssociations []*models.CAPIDiegoProcessAssociation)
+	syncMutex       sync.RWMutex
+	syncArgsForCall []struct {
+		capiDiegoProcessAssociations []*models.CAPIDiegoProcessAssociation
+	}
+	ListStub        func() map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
+	listMutex       sync.RWMutex
+	listArgsForCall []struct{}
+	listReturns     struct {
+		result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
+	}
+	listReturnsOnCall map[int]struct {
+		result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
+	}
+	GetStub        func(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 *models.CAPIProcessGUID
+		capiProcessGUID *models.CAPIProcessGUID
 	}
 	getReturns struct {
 		result1 *models.CAPIDiegoProcessAssociation
@@ -24,39 +43,43 @@ type CAPIDiegoProcessAssociationsRepo struct {
 	getReturnsOnCall map[int]struct {
 		result1 *models.CAPIDiegoProcessAssociation
 	}
-	ListStub        func() map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
-	listMutex       sync.RWMutex
-	listArgsForCall []struct {
-	}
-	listReturns struct {
-		result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
-	}
-	listReturnsOnCall map[int]struct {
-		result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
-	}
-	SyncStub        func([]*models.CAPIDiegoProcessAssociation)
-	syncMutex       sync.RWMutex
-	syncArgsForCall []struct {
-		arg1 []*models.CAPIDiegoProcessAssociation
-	}
-	UpsertStub        func(*models.CAPIDiegoProcessAssociation)
-	upsertMutex       sync.RWMutex
-	upsertArgsForCall []struct {
-		arg1 *models.CAPIDiegoProcessAssociation
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) Delete(arg1 *models.CAPIProcessGUID) {
+func (fake *CAPIDiegoProcessAssociationsRepo) Upsert(capiDiegoProcessAssociation *models.CAPIDiegoProcessAssociation) {
+	fake.upsertMutex.Lock()
+	fake.upsertArgsForCall = append(fake.upsertArgsForCall, struct {
+		capiDiegoProcessAssociation *models.CAPIDiegoProcessAssociation
+	}{capiDiegoProcessAssociation})
+	fake.recordInvocation("Upsert", []interface{}{capiDiegoProcessAssociation})
+	fake.upsertMutex.Unlock()
+	if fake.UpsertStub != nil {
+		fake.UpsertStub(capiDiegoProcessAssociation)
+	}
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) UpsertCallCount() int {
+	fake.upsertMutex.RLock()
+	defer fake.upsertMutex.RUnlock()
+	return len(fake.upsertArgsForCall)
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) UpsertArgsForCall(i int) *models.CAPIDiegoProcessAssociation {
+	fake.upsertMutex.RLock()
+	defer fake.upsertMutex.RUnlock()
+	return fake.upsertArgsForCall[i].capiDiegoProcessAssociation
+}
+
+func (fake *CAPIDiegoProcessAssociationsRepo) Delete(capiProcessGUID *models.CAPIProcessGUID) {
 	fake.deleteMutex.Lock()
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		arg1 *models.CAPIProcessGUID
-	}{arg1})
-	fake.recordInvocation("Delete", []interface{}{arg1})
+		capiProcessGUID *models.CAPIProcessGUID
+	}{capiProcessGUID})
+	fake.recordInvocation("Delete", []interface{}{capiProcessGUID})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		fake.DeleteStub(arg1)
+		fake.DeleteStub(capiProcessGUID)
 	}
 }
 
@@ -66,84 +89,45 @@ func (fake *CAPIDiegoProcessAssociationsRepo) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) DeleteCalls(stub func(*models.CAPIProcessGUID)) {
-	fake.deleteMutex.Lock()
-	defer fake.deleteMutex.Unlock()
-	fake.DeleteStub = stub
-}
-
 func (fake *CAPIDiegoProcessAssociationsRepo) DeleteArgsForCall(i int) *models.CAPIProcessGUID {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
-	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1
+	return fake.deleteArgsForCall[i].capiProcessGUID
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) Get(arg1 *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation {
-	fake.getMutex.Lock()
-	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
-	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 *models.CAPIProcessGUID
-	}{arg1})
-	fake.recordInvocation("Get", []interface{}{arg1})
-	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1)
+func (fake *CAPIDiegoProcessAssociationsRepo) Sync(capiDiegoProcessAssociations []*models.CAPIDiegoProcessAssociation) {
+	var capiDiegoProcessAssociationsCopy []*models.CAPIDiegoProcessAssociation
+	if capiDiegoProcessAssociations != nil {
+		capiDiegoProcessAssociationsCopy = make([]*models.CAPIDiegoProcessAssociation, len(capiDiegoProcessAssociations))
+		copy(capiDiegoProcessAssociationsCopy, capiDiegoProcessAssociations)
 	}
-	if specificReturn {
-		return ret.result1
+	fake.syncMutex.Lock()
+	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
+		capiDiegoProcessAssociations []*models.CAPIDiegoProcessAssociation
+	}{capiDiegoProcessAssociationsCopy})
+	fake.recordInvocation("Sync", []interface{}{capiDiegoProcessAssociationsCopy})
+	fake.syncMutex.Unlock()
+	if fake.SyncStub != nil {
+		fake.SyncStub(capiDiegoProcessAssociations)
 	}
-	fakeReturns := fake.getReturns
-	return fakeReturns.result1
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) GetCallCount() int {
-	fake.getMutex.RLock()
-	defer fake.getMutex.RUnlock()
-	return len(fake.getArgsForCall)
+func (fake *CAPIDiegoProcessAssociationsRepo) SyncCallCount() int {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return len(fake.syncArgsForCall)
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) GetCalls(stub func(*models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation) {
-	fake.getMutex.Lock()
-	defer fake.getMutex.Unlock()
-	fake.GetStub = stub
-}
-
-func (fake *CAPIDiegoProcessAssociationsRepo) GetArgsForCall(i int) *models.CAPIProcessGUID {
-	fake.getMutex.RLock()
-	defer fake.getMutex.RUnlock()
-	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *CAPIDiegoProcessAssociationsRepo) GetReturns(result1 *models.CAPIDiegoProcessAssociation) {
-	fake.getMutex.Lock()
-	defer fake.getMutex.Unlock()
-	fake.GetStub = nil
-	fake.getReturns = struct {
-		result1 *models.CAPIDiegoProcessAssociation
-	}{result1}
-}
-
-func (fake *CAPIDiegoProcessAssociationsRepo) GetReturnsOnCall(i int, result1 *models.CAPIDiegoProcessAssociation) {
-	fake.getMutex.Lock()
-	defer fake.getMutex.Unlock()
-	fake.GetStub = nil
-	if fake.getReturnsOnCall == nil {
-		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *models.CAPIDiegoProcessAssociation
-		})
-	}
-	fake.getReturnsOnCall[i] = struct {
-		result1 *models.CAPIDiegoProcessAssociation
-	}{result1}
+func (fake *CAPIDiegoProcessAssociationsRepo) SyncArgsForCall(i int) []*models.CAPIDiegoProcessAssociation {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return fake.syncArgsForCall[i].capiDiegoProcessAssociations
 }
 
 func (fake *CAPIDiegoProcessAssociationsRepo) List() map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-	}{})
+	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
 	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
@@ -152,8 +136,7 @@ func (fake *CAPIDiegoProcessAssociationsRepo) List() map[models.CAPIProcessGUID]
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.listReturns
-	return fakeReturns.result1
+	return fake.listReturns.result1
 }
 
 func (fake *CAPIDiegoProcessAssociationsRepo) ListCallCount() int {
@@ -162,15 +145,7 @@ func (fake *CAPIDiegoProcessAssociationsRepo) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) ListCalls(stub func() map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = stub
-}
-
 func (fake *CAPIDiegoProcessAssociationsRepo) ListReturns(result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
 		result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs
@@ -178,8 +153,6 @@ func (fake *CAPIDiegoProcessAssociationsRepo) ListReturns(result1 map[models.CAP
 }
 
 func (fake *CAPIDiegoProcessAssociationsRepo) ListReturnsOnCall(i int, result1 map[models.CAPIProcessGUID]*models.DiegoProcessGUIDs) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
@@ -191,91 +164,68 @@ func (fake *CAPIDiegoProcessAssociationsRepo) ListReturnsOnCall(i int, result1 m
 	}{result1}
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) Sync(arg1 []*models.CAPIDiegoProcessAssociation) {
-	var arg1Copy []*models.CAPIDiegoProcessAssociation
-	if arg1 != nil {
-		arg1Copy = make([]*models.CAPIDiegoProcessAssociation, len(arg1))
-		copy(arg1Copy, arg1)
+func (fake *CAPIDiegoProcessAssociationsRepo) Get(capiProcessGUID *models.CAPIProcessGUID) *models.CAPIDiegoProcessAssociation {
+	fake.getMutex.Lock()
+	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
+	fake.getArgsForCall = append(fake.getArgsForCall, struct {
+		capiProcessGUID *models.CAPIProcessGUID
+	}{capiProcessGUID})
+	fake.recordInvocation("Get", []interface{}{capiProcessGUID})
+	fake.getMutex.Unlock()
+	if fake.GetStub != nil {
+		return fake.GetStub(capiProcessGUID)
 	}
-	fake.syncMutex.Lock()
-	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
-		arg1 []*models.CAPIDiegoProcessAssociation
-	}{arg1Copy})
-	fake.recordInvocation("Sync", []interface{}{arg1Copy})
-	fake.syncMutex.Unlock()
-	if fake.SyncStub != nil {
-		fake.SyncStub(arg1)
+	if specificReturn {
+		return ret.result1
 	}
+	return fake.getReturns.result1
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) SyncCallCount() int {
-	fake.syncMutex.RLock()
-	defer fake.syncMutex.RUnlock()
-	return len(fake.syncArgsForCall)
+func (fake *CAPIDiegoProcessAssociationsRepo) GetCallCount() int {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return len(fake.getArgsForCall)
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) SyncCalls(stub func([]*models.CAPIDiegoProcessAssociation)) {
-	fake.syncMutex.Lock()
-	defer fake.syncMutex.Unlock()
-	fake.SyncStub = stub
+func (fake *CAPIDiegoProcessAssociationsRepo) GetArgsForCall(i int) *models.CAPIProcessGUID {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return fake.getArgsForCall[i].capiProcessGUID
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) SyncArgsForCall(i int) []*models.CAPIDiegoProcessAssociation {
-	fake.syncMutex.RLock()
-	defer fake.syncMutex.RUnlock()
-	argsForCall := fake.syncArgsForCall[i]
-	return argsForCall.arg1
+func (fake *CAPIDiegoProcessAssociationsRepo) GetReturns(result1 *models.CAPIDiegoProcessAssociation) {
+	fake.GetStub = nil
+	fake.getReturns = struct {
+		result1 *models.CAPIDiegoProcessAssociation
+	}{result1}
 }
 
-func (fake *CAPIDiegoProcessAssociationsRepo) Upsert(arg1 *models.CAPIDiegoProcessAssociation) {
-	fake.upsertMutex.Lock()
-	fake.upsertArgsForCall = append(fake.upsertArgsForCall, struct {
-		arg1 *models.CAPIDiegoProcessAssociation
-	}{arg1})
-	fake.recordInvocation("Upsert", []interface{}{arg1})
-	fake.upsertMutex.Unlock()
-	if fake.UpsertStub != nil {
-		fake.UpsertStub(arg1)
+func (fake *CAPIDiegoProcessAssociationsRepo) GetReturnsOnCall(i int, result1 *models.CAPIDiegoProcessAssociation) {
+	fake.GetStub = nil
+	if fake.getReturnsOnCall == nil {
+		fake.getReturnsOnCall = make(map[int]struct {
+			result1 *models.CAPIDiegoProcessAssociation
+		})
 	}
-}
-
-func (fake *CAPIDiegoProcessAssociationsRepo) UpsertCallCount() int {
-	fake.upsertMutex.RLock()
-	defer fake.upsertMutex.RUnlock()
-	return len(fake.upsertArgsForCall)
-}
-
-func (fake *CAPIDiegoProcessAssociationsRepo) UpsertCalls(stub func(*models.CAPIDiegoProcessAssociation)) {
-	fake.upsertMutex.Lock()
-	defer fake.upsertMutex.Unlock()
-	fake.UpsertStub = stub
-}
-
-func (fake *CAPIDiegoProcessAssociationsRepo) UpsertArgsForCall(i int) *models.CAPIDiegoProcessAssociation {
-	fake.upsertMutex.RLock()
-	defer fake.upsertMutex.RUnlock()
-	argsForCall := fake.upsertArgsForCall[i]
-	return argsForCall.arg1
+	fake.getReturnsOnCall[i] = struct {
+		result1 *models.CAPIDiegoProcessAssociation
+	}{result1}
 }
 
 func (fake *CAPIDiegoProcessAssociationsRepo) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.deleteMutex.RLock()
-	defer fake.deleteMutex.RUnlock()
-	fake.getMutex.RLock()
-	defer fake.getMutex.RUnlock()
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	fake.syncMutex.RLock()
-	defer fake.syncMutex.RUnlock()
 	fake.upsertMutex.RLock()
 	defer fake.upsertMutex.RUnlock()
-	copiedInvocations := map[string][][]interface{}{}
-	for key, value := range fake.invocations {
-		copiedInvocations[key] = value
-	}
-	return copiedInvocations
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return fake.invocations
 }
 
 func (fake *CAPIDiegoProcessAssociationsRepo) recordInvocation(key string, args []interface{}) {

@@ -2,33 +2,19 @@
 package fakes
 
 import (
-	sync "sync"
+	"sync"
 
-	events "code.cloudfoundry.org/bbs/events"
-	models "code.cloudfoundry.org/bbs/models"
-	modelsa "code.cloudfoundry.org/copilot/models"
-	lager "code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/bbs/events"
+	bbsmodels "code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/lager"
 )
 
 type BBSEventer struct {
-	ActualLRPGroupsStub        func(lager.Logger, models.ActualLRPFilter) ([]*models.ActualLRPGroup, error)
-	actualLRPGroupsMutex       sync.RWMutex
-	actualLRPGroupsArgsForCall []struct {
-		arg1 lager.Logger
-		arg2 models.ActualLRPFilter
-	}
-	actualLRPGroupsReturns struct {
-		result1 []*models.ActualLRPGroup
-		result2 error
-	}
-	actualLRPGroupsReturnsOnCall map[int]struct {
-		result1 []*models.ActualLRPGroup
-		result2 error
-	}
-	SubscribeToEventsStub        func(lager.Logger) (events.EventSource, error)
+	SubscribeToEventsStub        func(logger lager.Logger) (events.EventSource, error)
 	subscribeToEventsMutex       sync.RWMutex
 	subscribeToEventsArgsForCall []struct {
-		arg1 lager.Logger
+		logger lager.Logger
 	}
 	subscribeToEventsReturns struct {
 		result1 events.EventSource
@@ -38,90 +24,39 @@ type BBSEventer struct {
 		result1 events.EventSource
 		result2 error
 	}
+	ActualLRPGroupsStub        func(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
+	actualLRPGroupsMutex       sync.RWMutex
+	actualLRPGroupsArgsForCall []struct {
+		arg1 lager.Logger
+		arg2 bbsmodels.ActualLRPFilter
+	}
+	actualLRPGroupsReturns struct {
+		result1 []*bbsmodels.ActualLRPGroup
+		result2 error
+	}
+	actualLRPGroupsReturnsOnCall map[int]struct {
+		result1 []*bbsmodels.ActualLRPGroup
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *BBSEventer) ActualLRPGroups(arg1 lager.Logger, arg2 models.ActualLRPFilter) ([]*models.ActualLRPGroup, error) {
-	fake.actualLRPGroupsMutex.Lock()
-	ret, specificReturn := fake.actualLRPGroupsReturnsOnCall[len(fake.actualLRPGroupsArgsForCall)]
-	fake.actualLRPGroupsArgsForCall = append(fake.actualLRPGroupsArgsForCall, struct {
-		arg1 lager.Logger
-		arg2 models.ActualLRPFilter
-	}{arg1, arg2})
-	fake.recordInvocation("ActualLRPGroups", []interface{}{arg1, arg2})
-	fake.actualLRPGroupsMutex.Unlock()
-	if fake.ActualLRPGroupsStub != nil {
-		return fake.ActualLRPGroupsStub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.actualLRPGroupsReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *BBSEventer) ActualLRPGroupsCallCount() int {
-	fake.actualLRPGroupsMutex.RLock()
-	defer fake.actualLRPGroupsMutex.RUnlock()
-	return len(fake.actualLRPGroupsArgsForCall)
-}
-
-func (fake *BBSEventer) ActualLRPGroupsCalls(stub func(lager.Logger, models.ActualLRPFilter) ([]*models.ActualLRPGroup, error)) {
-	fake.actualLRPGroupsMutex.Lock()
-	defer fake.actualLRPGroupsMutex.Unlock()
-	fake.ActualLRPGroupsStub = stub
-}
-
-func (fake *BBSEventer) ActualLRPGroupsArgsForCall(i int) (lager.Logger, models.ActualLRPFilter) {
-	fake.actualLRPGroupsMutex.RLock()
-	defer fake.actualLRPGroupsMutex.RUnlock()
-	argsForCall := fake.actualLRPGroupsArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *BBSEventer) ActualLRPGroupsReturns(result1 []*models.ActualLRPGroup, result2 error) {
-	fake.actualLRPGroupsMutex.Lock()
-	defer fake.actualLRPGroupsMutex.Unlock()
-	fake.ActualLRPGroupsStub = nil
-	fake.actualLRPGroupsReturns = struct {
-		result1 []*models.ActualLRPGroup
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *BBSEventer) ActualLRPGroupsReturnsOnCall(i int, result1 []*models.ActualLRPGroup, result2 error) {
-	fake.actualLRPGroupsMutex.Lock()
-	defer fake.actualLRPGroupsMutex.Unlock()
-	fake.ActualLRPGroupsStub = nil
-	if fake.actualLRPGroupsReturnsOnCall == nil {
-		fake.actualLRPGroupsReturnsOnCall = make(map[int]struct {
-			result1 []*models.ActualLRPGroup
-			result2 error
-		})
-	}
-	fake.actualLRPGroupsReturnsOnCall[i] = struct {
-		result1 []*models.ActualLRPGroup
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *BBSEventer) SubscribeToEvents(arg1 lager.Logger) (events.EventSource, error) {
+func (fake *BBSEventer) SubscribeToEvents(logger lager.Logger) (events.EventSource, error) {
 	fake.subscribeToEventsMutex.Lock()
 	ret, specificReturn := fake.subscribeToEventsReturnsOnCall[len(fake.subscribeToEventsArgsForCall)]
 	fake.subscribeToEventsArgsForCall = append(fake.subscribeToEventsArgsForCall, struct {
-		arg1 lager.Logger
-	}{arg1})
-	fake.recordInvocation("SubscribeToEvents", []interface{}{arg1})
+		logger lager.Logger
+	}{logger})
+	fake.recordInvocation("SubscribeToEvents", []interface{}{logger})
 	fake.subscribeToEventsMutex.Unlock()
 	if fake.SubscribeToEventsStub != nil {
-		return fake.SubscribeToEventsStub(arg1)
+		return fake.SubscribeToEventsStub(logger)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.subscribeToEventsReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.subscribeToEventsReturns.result1, fake.subscribeToEventsReturns.result2
 }
 
 func (fake *BBSEventer) SubscribeToEventsCallCount() int {
@@ -130,22 +65,13 @@ func (fake *BBSEventer) SubscribeToEventsCallCount() int {
 	return len(fake.subscribeToEventsArgsForCall)
 }
 
-func (fake *BBSEventer) SubscribeToEventsCalls(stub func(lager.Logger) (events.EventSource, error)) {
-	fake.subscribeToEventsMutex.Lock()
-	defer fake.subscribeToEventsMutex.Unlock()
-	fake.SubscribeToEventsStub = stub
-}
-
 func (fake *BBSEventer) SubscribeToEventsArgsForCall(i int) lager.Logger {
 	fake.subscribeToEventsMutex.RLock()
 	defer fake.subscribeToEventsMutex.RUnlock()
-	argsForCall := fake.subscribeToEventsArgsForCall[i]
-	return argsForCall.arg1
+	return fake.subscribeToEventsArgsForCall[i].logger
 }
 
 func (fake *BBSEventer) SubscribeToEventsReturns(result1 events.EventSource, result2 error) {
-	fake.subscribeToEventsMutex.Lock()
-	defer fake.subscribeToEventsMutex.Unlock()
 	fake.SubscribeToEventsStub = nil
 	fake.subscribeToEventsReturns = struct {
 		result1 events.EventSource
@@ -154,8 +80,6 @@ func (fake *BBSEventer) SubscribeToEventsReturns(result1 events.EventSource, res
 }
 
 func (fake *BBSEventer) SubscribeToEventsReturnsOnCall(i int, result1 events.EventSource, result2 error) {
-	fake.subscribeToEventsMutex.Lock()
-	defer fake.subscribeToEventsMutex.Unlock()
 	fake.SubscribeToEventsStub = nil
 	if fake.subscribeToEventsReturnsOnCall == nil {
 		fake.subscribeToEventsReturnsOnCall = make(map[int]struct {
@@ -169,18 +93,66 @@ func (fake *BBSEventer) SubscribeToEventsReturnsOnCall(i int, result1 events.Eve
 	}{result1, result2}
 }
 
+func (fake *BBSEventer) ActualLRPGroups(arg1 lager.Logger, arg2 bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error) {
+	fake.actualLRPGroupsMutex.Lock()
+	ret, specificReturn := fake.actualLRPGroupsReturnsOnCall[len(fake.actualLRPGroupsArgsForCall)]
+	fake.actualLRPGroupsArgsForCall = append(fake.actualLRPGroupsArgsForCall, struct {
+		arg1 lager.Logger
+		arg2 bbsmodels.ActualLRPFilter
+	}{arg1, arg2})
+	fake.recordInvocation("ActualLRPGroups", []interface{}{arg1, arg2})
+	fake.actualLRPGroupsMutex.Unlock()
+	if fake.ActualLRPGroupsStub != nil {
+		return fake.ActualLRPGroupsStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.actualLRPGroupsReturns.result1, fake.actualLRPGroupsReturns.result2
+}
+
+func (fake *BBSEventer) ActualLRPGroupsCallCount() int {
+	fake.actualLRPGroupsMutex.RLock()
+	defer fake.actualLRPGroupsMutex.RUnlock()
+	return len(fake.actualLRPGroupsArgsForCall)
+}
+
+func (fake *BBSEventer) ActualLRPGroupsArgsForCall(i int) (lager.Logger, bbsmodels.ActualLRPFilter) {
+	fake.actualLRPGroupsMutex.RLock()
+	defer fake.actualLRPGroupsMutex.RUnlock()
+	return fake.actualLRPGroupsArgsForCall[i].arg1, fake.actualLRPGroupsArgsForCall[i].arg2
+}
+
+func (fake *BBSEventer) ActualLRPGroupsReturns(result1 []*bbsmodels.ActualLRPGroup, result2 error) {
+	fake.ActualLRPGroupsStub = nil
+	fake.actualLRPGroupsReturns = struct {
+		result1 []*bbsmodels.ActualLRPGroup
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *BBSEventer) ActualLRPGroupsReturnsOnCall(i int, result1 []*bbsmodels.ActualLRPGroup, result2 error) {
+	fake.ActualLRPGroupsStub = nil
+	if fake.actualLRPGroupsReturnsOnCall == nil {
+		fake.actualLRPGroupsReturnsOnCall = make(map[int]struct {
+			result1 []*bbsmodels.ActualLRPGroup
+			result2 error
+		})
+	}
+	fake.actualLRPGroupsReturnsOnCall[i] = struct {
+		result1 []*bbsmodels.ActualLRPGroup
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *BBSEventer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.actualLRPGroupsMutex.RLock()
-	defer fake.actualLRPGroupsMutex.RUnlock()
 	fake.subscribeToEventsMutex.RLock()
 	defer fake.subscribeToEventsMutex.RUnlock()
-	copiedInvocations := map[string][][]interface{}{}
-	for key, value := range fake.invocations {
-		copiedInvocations[key] = value
-	}
-	return copiedInvocations
+	fake.actualLRPGroupsMutex.RLock()
+	defer fake.actualLRPGroupsMutex.RUnlock()
+	return fake.invocations
 }
 
 func (fake *BBSEventer) recordInvocation(key string, args []interface{}) {
@@ -195,4 +167,4 @@ func (fake *BBSEventer) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ modelsa.BBSEventer = new(BBSEventer)
+var _ models.BBSEventer = new(BBSEventer)

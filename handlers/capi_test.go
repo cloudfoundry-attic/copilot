@@ -25,10 +25,13 @@ var _ = Describe("Capi Handlers", func() {
 		fakeRoutesRepo                       *fakes.RoutesRepo
 		fakeRouteMappingsRepo                *fakes.RouteMappingsRepo
 		fakeCAPIDiegoProcessAssociationsRepo *fakes.CAPIDiegoProcessAssociationsRepo
+		fakeVIPProvider                      *fakes.VIPProvider
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
+
+		fakeVIPProvider = &fakes.VIPProvider{}
 
 		fakeRoutesRepo = &fakes.RoutesRepo{}
 		fakeRouteMappingsRepo = &fakes.RouteMappingsRepo{}
@@ -38,6 +41,7 @@ var _ = Describe("Capi Handlers", func() {
 			RoutesRepo:                       fakeRoutesRepo,
 			RouteMappingsRepo:                fakeRouteMappingsRepo,
 			CAPIDiegoProcessAssociationsRepo: fakeCAPIDiegoProcessAssociationsRepo,
+			VIPProvider:                      fakeVIPProvider,
 		}
 	})
 
@@ -66,6 +70,8 @@ var _ = Describe("Capi Handlers", func() {
 		})
 
 		It("adds the route if it is new", func() {
+			fakeVIPProvider.GetReturns("1.2.3.4")
+
 			ctx := context.Background()
 			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
 				Route: &api.Route{
@@ -79,7 +85,10 @@ var _ = Describe("Capi Handlers", func() {
 				GUID:     "route-guid-a",
 				Host:     "route-a.example.com",
 				Internal: true,
+				VIP:      "1.2.3.4",
 			}))
+			Expect(fakeVIPProvider.GetCallCount()).To(Equal(1))
+			Expect(fakeVIPProvider.GetArgsForCall(0)).To(Equal("route-a.example.com"))
 		})
 	})
 
@@ -263,6 +272,7 @@ var _ = Describe("Capi Handlers", func() {
 		)
 
 		BeforeEach(func() {
+			fakeVIPProvider.GetReturns("1.2.3.4")
 			stream = &testhelpers.FakeCloudControllerCopilot_BulkSyncServer{}
 			request := &api.BulkSyncRequest{
 				RouteMappings: []*api.RouteMapping{
@@ -349,12 +359,14 @@ var _ = Describe("Capi Handlers", func() {
 					Host:     "example.host.com",
 					Path:     "/nothing/matters",
 					Internal: false,
+					VIP:      "1.2.3.4",
 				},
 				{
 					GUID:     "route-guid-b",
 					Host:     "example.internal",
 					Path:     "",
 					Internal: true,
+					VIP:      "1.2.3.4",
 				},
 			}))
 

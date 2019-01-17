@@ -1,6 +1,7 @@
 {
   "ListenAddressForCloudController": "127.0.0.1:1235",
   "ListenAddressForMCP":             "127.0.0.1:1236",
+  "ListenAddressForVIPResolver":     "127.0.0.1:1237",
   "PilotClientCAPath":               "some-pilot-ca-path",
   "CloudControllerClientCAPath":     "some-cloud-controller-ca-path",
   "ServerCertPath":                  "some-cert-path",
