@@ -3,6 +3,7 @@ module github.com/cloudfoundry/copilot
 require (
 	code.cloudfoundry.org/bbs v0.0.0-20171024141402-9b7c8f2e1df2
 	code.cloudfoundry.org/cfhttp v0.0.0-20170914230040-08baa6b247ca
+	code.cloudfoundry.org/copilot v0.0.0-20190117191613-d03e00c1b8bb
 	code.cloudfoundry.org/debugserver v0.0.0-20180612203758-a3ba348dfede
 	code.cloudfoundry.org/durationjson v0.0.0-20170223024715-718cecacb217
 	code.cloudfoundry.org/lager v1.0.0
@@ -24,7 +25,7 @@ require (
 	github.com/lyft/protoc-gen-validate v0.0.6
 	github.com/matttproud/golang_protobuf_extensions v1.0.1
 	github.com/natefinch/lumberjack v0.0.0-20170531160350-a96e63847dc3
-	github.com/onsi/ginkgo v1.6.0
+	github.com/onsi/ginkgo v1.7.0
 	github.com/onsi/gomega v1.4.1
 	github.com/pivotal-cf/paraphernalia v0.0.0-20171027171623-4272315231ce
 	github.com/prometheus/client_golang v0.9.2
