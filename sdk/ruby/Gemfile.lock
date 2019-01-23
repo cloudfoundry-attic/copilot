@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    cf-copilot (0.0.10)
+    cf-copilot (0.0.11)
       grpc (~> 1.0)
 
 GEM
@@ -12,7 +12,7 @@ GEM
     google-protobuf (3.6.1)
     googleapis-common-protos-types (1.0.2)
       google-protobuf (~> 3.0)
-    grpc (1.17.1)
+    grpc (1.18.0)
       google-protobuf (~> 3.1)
       googleapis-common-protos-types (~> 1.0.0)
     method_source (0.9.0)
@@ -38,11 +38,11 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 1.16)
+  bundler (~> 2.0.1)
   cf-copilot!
   pry
   rake (~> 10.0)
   rspec (~> 3.0)
 
 BUNDLED WITH
-   1.16.5
+   2.0.1
