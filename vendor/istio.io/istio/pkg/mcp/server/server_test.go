@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net"
 	"reflect"
 	"sync"
@@ -33,29 +32,29 @@ import (
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/pkg/mcp/internal/test"
-	mcptestmon "istio.io/istio/pkg/mcp/testing/monitoring"
+	"istio.io/istio/pkg/mcp/source"
+	"istio.io/istio/pkg/mcp/testing/monitoring"
 )
 
 type mockConfigWatcher struct {
 	mu        sync.Mutex
 	counts    map[string]int
-	responses map[string]*WatchResponse
+	responses map[string]*source.WatchResponse
 
 	watchesCreated map[string]chan struct{}
-	watches        map[string][]PushResponseFunc
+	watches        map[string][]source.PushResponseFunc
 	closeWatch     bool
 }
 
-func (config *mockConfigWatcher) Watch(req *mcp.MeshConfigRequest, pushResponse PushResponseFunc) CancelWatchFunc {
+func (config *mockConfigWatcher) Watch(req *source.Request, pushResponse source.PushResponseFunc) source.CancelWatchFunc {
 	config.mu.Lock()
 	defer config.mu.Unlock()
 
-	collection := req.TypeUrl
+	config.counts[req.Collection]++
 
-	config.counts[collection]++
-
-	if rsp, ok := config.responses[collection]; ok {
-		rsp.Collection = collection
+	if rsp, ok := config.responses[req.Collection]; ok {
+		delete(config.responses, req.Collection)
+		rsp.Collection = req.Collection
 		pushResponse(rsp)
 		return nil
 	} else if config.closeWatch {
@@ -63,17 +62,17 @@ func (config *mockConfigWatcher) Watch(req *mcp.MeshConfigRequest, pushResponse 
 		return nil
 	} else {
 		// save open watch channel for later
-		config.watches[collection] = append(config.watches[collection], pushResponse)
+		config.watches[req.Collection] = append(config.watches[req.Collection], pushResponse)
 	}
 
-	if ch, ok := config.watchesCreated[collection]; ok {
+	if ch, ok := config.watchesCreated[req.Collection]; ok {
 		ch <- struct{}{}
 	}
 
 	return func() {}
 }
 
-func (config *mockConfigWatcher) setResponse(response *WatchResponse) {
+func (config *mockConfigWatcher) setResponse(response *source.WatchResponse) {
 	config.mu.Lock()
 	defer config.mu.Unlock()
 
@@ -92,8 +91,8 @@ func makeMockConfigWatcher() *mockConfigWatcher {
 	return &mockConfigWatcher{
 		counts:         make(map[string]int),
 		watchesCreated: make(map[string]chan struct{}),
-		watches:        make(map[string][]PushResponseFunc),
-		responses:      make(map[string]*WatchResponse),
+		watches:        make(map[string][]source.PushResponseFunc),
+		responses:      make(map[string]*source.WatchResponse),
 	}
 }
 
@@ -158,7 +157,8 @@ func makeMockStream(t *testing.T) *mockStream {
 
 func TestMultipleRequests(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -171,7 +171,12 @@ func TestMultipleRequests(t *testing.T) {
 		TypeUrl:  test.FakeType0Collection,
 	}
 
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	go func() {
 		if err := s.StreamAggregatedResources(stream); err != nil {
 			t.Errorf("Stream() => got %v, want no error", err)
@@ -196,6 +201,12 @@ func TestMultipleRequests(t *testing.T) {
 		VersionInfo:   rsp.VersionInfo,
 		ResponseNonce: rsp.Nonce,
 	}
+
+	config.setResponse(&source.WatchResponse{
+		Collection: test.FakeType0Collection,
+		Version:    "2",
+		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
+	})
 
 	// check a response
 	select {
@@ -218,7 +229,7 @@ func (f *fakeAuthChecker) Check(authInfo credentials.AuthInfo) error {
 
 func TestAuthCheck_Failure(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -231,8 +242,15 @@ func TestAuthCheck_Failure(t *testing.T) {
 		TypeUrl:  test.FakeType0Collection,
 	}
 
-	checker := NewListAuthChecker()
-	s := New(config, test.SupportedCollections, checker, mcptestmon.NewInMemoryServerStatsContext())
+	checker := test.NewFakeAuthChecker()
+	checker.AllowError = errors.New("disallow")
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, checker)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -247,7 +265,8 @@ func TestAuthCheck_Failure(t *testing.T) {
 
 func TestAuthCheck_Success(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -260,7 +279,12 @@ func TestAuthCheck_Success(t *testing.T) {
 		TypeUrl:  test.FakeType0Collection,
 	}
 
-	s := New(config, test.SupportedCollections, &fakeAuthChecker{}, mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	go func() {
 		if err := s.StreamAggregatedResources(stream); err != nil {
 			t.Errorf("Stream() => got %v, want no error", err)
@@ -285,6 +309,12 @@ func TestAuthCheck_Success(t *testing.T) {
 		VersionInfo:   rsp.VersionInfo,
 		ResponseNonce: rsp.Nonce,
 	}
+
+	config.setResponse(&source.WatchResponse{
+		Collection: test.FakeType0Collection,
+		Version:    "2",
+		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
+	})
 
 	// check a response
 	select {
@@ -308,7 +338,12 @@ func TestWatchBeforeResponsesAvailable(t *testing.T) {
 		TypeUrl:  test.FakeType0Collection,
 	}
 
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	go func() {
 		if err := s.StreamAggregatedResources(stream); err != nil {
 			t.Errorf("Stream() => got %v, want no error", err)
@@ -316,7 +351,7 @@ func TestWatchBeforeResponsesAvailable(t *testing.T) {
 	}()
 
 	<-config.watchesCreated[test.FakeType0Collection]
-	config.setResponse(&WatchResponse{
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -346,7 +381,12 @@ func TestWatchClosed(t *testing.T) {
 	}
 
 	// check that response fails since watch gets closed
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	if err := s.StreamAggregatedResources(stream); err == nil {
 		t.Error("Stream() => got no error, want watch failed")
 	}
@@ -355,7 +395,7 @@ func TestWatchClosed(t *testing.T) {
 
 func TestSendError(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -369,7 +409,12 @@ func TestSendError(t *testing.T) {
 		TypeUrl:  test.FakeType0Collection,
 	}
 
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	// check that response fails since watch gets closed
 	if err := s.StreamAggregatedResources(stream); err == nil {
 		t.Error("Stream() => got no error, want send error")
@@ -380,7 +425,8 @@ func TestSendError(t *testing.T) {
 
 func TestReceiveError(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -395,7 +441,12 @@ func TestReceiveError(t *testing.T) {
 	}
 
 	// check that response fails since watch gets closed
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	if err := s.StreamAggregatedResources(stream); err == nil {
 		t.Error("Stream() => got no error, want send error")
 	}
@@ -405,7 +456,8 @@ func TestReceiveError(t *testing.T) {
 
 func TestUnsupportedTypeError(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+
+	config.setResponse(&source.WatchResponse{
 		Collection: "unsupportedCollection",
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -419,7 +471,12 @@ func TestUnsupportedTypeError(t *testing.T) {
 	}
 
 	// check that response fails since watch gets closed
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	if err := s.StreamAggregatedResources(stream); err == nil {
 		t.Error("Stream() => got no error, want send error")
 	}
@@ -429,7 +486,8 @@ func TestUnsupportedTypeError(t *testing.T) {
 
 func TestStaleNonce(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
@@ -441,7 +499,12 @@ func TestStaleNonce(t *testing.T) {
 		TypeUrl:  test.FakeType0Collection,
 	}
 	stop := make(chan struct{})
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	go func() {
 		if err := s.StreamAggregatedResources(stream); err != nil {
 			t.Errorf("StreamAggregatedResources() => got %v, want no error", err)
@@ -476,17 +539,18 @@ func TestStaleNonce(t *testing.T) {
 
 func TestAggregatedHandlers(t *testing.T) {
 	config := makeMockConfigWatcher()
-	config.setResponse(&WatchResponse{
+
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType0Collection,
 		Version:    "1",
 		Resources:  []*mcp.Resource{test.Type0A[0].Resource},
 	})
-	config.setResponse(&WatchResponse{
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType1Collection,
 		Version:    "2",
 		Resources:  []*mcp.Resource{test.Type1A[0].Resource},
 	})
-	config.setResponse(&WatchResponse{
+	config.setResponse(&source.WatchResponse{
 		Collection: test.FakeType2Collection,
 		Version:    "3",
 		Resources:  []*mcp.Resource{test.Type2A[0].Resource},
@@ -506,7 +570,12 @@ func TestAggregatedHandlers(t *testing.T) {
 		TypeUrl:  test.FakeType2Collection,
 	}
 
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	go func() {
 		if err := s.StreamAggregatedResources(stream); err != nil {
 			t.Errorf("StreamAggregatedResources() => got %v, want no error", err)
@@ -544,22 +613,35 @@ func TestAggregateRequestType(t *testing.T) {
 	stream := makeMockStream(t)
 	stream.recv <- &mcp.MeshConfigRequest{SinkNode: test.Node}
 
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 	if err := s.StreamAggregatedResources(stream); err == nil {
 		t.Error("StreamAggregatedResources() => got nil, want an error")
 	}
 	close(stream.recv)
 }
 
-func TestRateLimitNACK(t *testing.T) {
-	origNackLimitFreq := nackLimitFreq
-	nackLimitFreq = 1 * time.Millisecond
-	defer func() {
-		nackLimitFreq = origNackLimitFreq
-	}()
+func TestIncrementalAggregatedResources(t *testing.T) {
+	var s Server
+	got := s.IncrementalAggregatedResources(nil)
+	if status.Code(got) != codes.Unimplemented {
+		t.Fatalf("IncrementalAggregatedResources() should return an unimplemented error code: got %v", status.Code(got))
+	}
+}
+
+func TestNACK(t *testing.T) {
 
 	config := makeMockConfigWatcher()
-	s := New(config, test.SupportedCollections, NewAllowAllChecker(), mcptestmon.NewInMemoryServerStatsContext())
+	options := &source.Options{
+		Watcher:            config,
+		CollectionsOptions: source.CollectionOptionsFromSlice(test.SupportedCollections),
+		Reporter:           monitoring.NewInMemoryStatsContext(),
+	}
+	s := New(options, test.NewFakeAuthChecker())
 
 	stream := makeMockStream(t)
 	go func() {
@@ -567,58 +649,6 @@ func TestRateLimitNACK(t *testing.T) {
 			t.Errorf("StreamAggregatedResources() => got %v, want no error", err)
 		}
 	}()
-
-	var (
-		nackFloodRepeatDuration   = time.Millisecond * 500
-		nackFloodMaxWantResponses = int(nackFloodRepeatDuration/nackLimitFreq) + 1
-		nackFloodMinWantResponses = nackFloodMaxWantResponses / 2
-
-		ackFloodRepeatDuration   = time.Millisecond * 500
-		ackFloodMaxWantResponses = math.MaxInt64
-		ackFloodMinWantResponses = int(ackFloodRepeatDuration/nackLimitFreq) + 1
-	)
-
-	steps := []struct {
-		name           string
-		pushedVersion  string
-		ackedVersion   string
-		minResponses   int
-		maxResponses   int
-		repeatDuration time.Duration
-		errDetails     error
-	}{
-		{
-			name:          "initial push",
-			pushedVersion: "1",
-			ackedVersion:  "1",
-			minResponses:  1,
-			maxResponses:  1,
-		},
-		{
-			name:          "first ack",
-			pushedVersion: "2",
-			ackedVersion:  "2",
-			minResponses:  1,
-			maxResponses:  1,
-		},
-		{
-			name:           "verify nack flood is rate limited",
-			pushedVersion:  "3",
-			ackedVersion:   "2",
-			errDetails:     errors.New("nack"),
-			minResponses:   nackFloodMinWantResponses,
-			maxResponses:   nackFloodMaxWantResponses,
-			repeatDuration: nackFloodRepeatDuration,
-		},
-		{
-			name:           "verify back-to-back ack is not rate limited",
-			pushedVersion:  "4",
-			ackedVersion:   "4", // resuse version to simplify test code below
-			minResponses:   ackFloodMinWantResponses,
-			maxResponses:   ackFloodMaxWantResponses,
-			repeatDuration: ackFloodRepeatDuration,
-		},
-	}
 
 	sendRequest := func(typeURL, nonce, version string, err error) {
 		req := &mcp.MeshConfigRequest{
@@ -639,48 +669,57 @@ func TestRateLimitNACK(t *testing.T) {
 
 	nonces := make(map[string]bool)
 	var prevNonce string
+	pushedVersion := "1"
+	numResponses := 0
+	first := true
+	finish := time.Now().Add(1 * time.Second)
+	for i := 0; ; i++ {
+		var response *mcp.MeshConfigResponse
 
-	for _, s := range steps {
-		numResponses := 0
-		finish := time.Now().Add(s.repeatDuration)
-		first := true
-		for {
-			if first {
-				first = false
-				config.setResponse(&WatchResponse{
-					Collection: test.FakeType0Collection,
-					Version:    s.pushedVersion,
-					Resources:  []*mcp.Resource{test.Type0A[0].Resource},
-				})
-			}
-
-			var response *mcp.MeshConfigResponse
+		if first {
+			first = false
+			config.setResponse(&source.WatchResponse{
+				Collection: test.FakeType0Collection,
+				Version:    pushedVersion,
+				Resources:  []*mcp.Resource{test.Type0A[0].Resource},
+			})
 			select {
 			case response = <-stream.sent:
-				numResponses++
 			case <-time.After(time.Second):
-				t.Fatalf("%v: timed out waiting for response", s.name)
+				t.Fatal("timed out waiting for initial response")
 			}
 
-			if response.VersionInfo != s.pushedVersion {
-				t.Fatalf("%v: wrong response version: got %v want %v", s.name, response.VersionInfo, s.pushedVersion)
+			if response.VersionInfo != pushedVersion {
+				t.Fatalf(" wrong response version: got %v want %v", response.VersionInfo, pushedVersion)
 			}
 			if _, ok := nonces[response.Nonce]; ok {
-				t.Fatalf("%v: reused nonce in response: %v", s.name, response.Nonce)
+				t.Fatalf(" reused nonce in response: %v", response.Nonce)
 			}
 			nonces[response.Nonce] = true
 
 			prevNonce = response.Nonce
-
-			sendRequest(test.FakeType0Collection, prevNonce, s.ackedVersion, s.errDetails)
-
-			if time.Now().After(finish) {
-				break
+		} else {
+			select {
+			case response = <-stream.sent:
+				t.Fatal("received unexpected response after NACK")
+			case <-time.After(50 * time.Millisecond):
 			}
 		}
-		if numResponses < s.minResponses || numResponses > s.maxResponses {
-			t.Fatalf("%v: wrong number of responses: got %v want[%v,%v]",
-				s.name, numResponses, s.minResponses, s.maxResponses)
+
+		nonce := prevNonce
+		if i%2 == 1 {
+			nonce = "stale"
 		}
+
+		sendRequest(test.FakeType0Collection, nonce, pushedVersion, errors.New("nack"))
+
+		if time.Now().After(finish) {
+			break
+		}
+	}
+	wantResponses := 0
+	if numResponses != wantResponses {
+		t.Fatalf("wrong number of responses: got %v want %v",
+			numResponses, wantResponses)
 	}
 }

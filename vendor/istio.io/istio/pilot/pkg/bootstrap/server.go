@@ -74,9 +74,11 @@ import (
 	istiokeepalive "istio.io/istio/pkg/keepalive"
 	kubelib "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/log"
-	mcpclient "istio.io/istio/pkg/mcp/client"
+	"istio.io/istio/pkg/mcp/client"
 	"istio.io/istio/pkg/mcp/configz"
 	"istio.io/istio/pkg/mcp/creds"
+	"istio.io/istio/pkg/mcp/monitoring"
+	"istio.io/istio/pkg/mcp/sink"
 	"istio.io/istio/pkg/version"
 )
 
@@ -388,7 +390,11 @@ func (s *Server) initMesh(args *PilotArgs) error {
 					log.Infof("mesh configuration sources have changed")
 					//TODO Need to re-create or reload initConfigController()
 				}
-				s.EnvoyXdsServer.ConfigUpdate(true)
+				s.mesh = mesh
+				if s.EnvoyXdsServer != nil {
+					s.EnvoyXdsServer.Env.Mesh = mesh
+					s.EnvoyXdsServer.ConfigUpdate(true)
+				}
 			}
 		})
 	}
@@ -405,6 +411,11 @@ func (s *Server) initMesh(args *PilotArgs) error {
 			mesh.MixerCheckServer = args.Mesh.MixerAddress
 			mesh.MixerReportServer = args.Mesh.MixerAddress
 		}
+	}
+
+	if err = model.ValidateMeshConfig(mesh); err != nil {
+		log.Errorf("invalid mesh configuration: %v", err)
+		return err
 	}
 
 	log.Infof("mesh configuration %s", spew.Sdump(mesh))
@@ -447,7 +458,13 @@ func (s *Server) initMeshNetworks(args *PilotArgs) error {
 			log.Infof("mesh networks configuration file updated to: %s", spew.Sdump(meshNetworks))
 			util.ResolveHostsInNetworksConfig(s.meshNetworks)
 			s.meshNetworks = meshNetworks
-			s.EnvoyXdsServer.ConfigUpdate(true)
+			if s.kubeRegistry != nil {
+				s.kubeRegistry.InitNetworkLookup(meshNetworks)
+			}
+			if s.EnvoyXdsServer != nil {
+				s.EnvoyXdsServer.Env.MeshNetworks = meshNetworks
+				s.EnvoyXdsServer.ConfigUpdate(true)
+			}
 		}
 	})
 
@@ -497,9 +514,11 @@ func (c *mockController) Run(<-chan struct{}) {}
 
 func (s *Server) initMCPConfigController(args *PilotArgs) error {
 	clientNodeID := ""
-	collections := make([]string, len(model.IstioConfigTypes))
+	collections := make([]sink.CollectionOptions, len(model.IstioConfigTypes))
 	for i, model := range model.IstioConfigTypes {
-		collections[i] = model.Collection
+		collections[i] = sink.CollectionOptions{
+			Name: model.Collection,
+		}
 	}
 
 	options := coredatamodel.Options{
@@ -510,9 +529,11 @@ func (s *Server) initMCPConfigController(args *PilotArgs) error {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	var clients []*mcpclient.Client
+	var clients []*client.Client
 	var conns []*grpc.ClientConn
 	var configStores []model.ConfigStoreCache
+
+	reporter := monitoring.NewStatsContext("pilot/mcp/sink")
 
 	for _, configSource := range s.mesh.ConfigSources {
 		url, err := url.Parse(configSource.Address)
@@ -606,7 +627,13 @@ func (s *Server) initMCPConfigController(args *PilotArgs) error {
 		}
 		cl := mcpapi.NewAggregatedMeshConfigServiceClient(conn)
 		mcpController := coredatamodel.NewController(options)
-		mcpClient := mcpclient.New(cl, collections, mcpController, clientNodeID, map[string]string{}, mcpclient.NewStatsContext("pilot"))
+		sinkOptions := &sink.Options{
+			CollectionOptions: collections,
+			Updater:           mcpController,
+			ID:                clientNodeID,
+			Reporter:          reporter,
+		}
+		mcpClient := client.New(cl, sinkOptions)
 		configz.Register(mcpClient)
 
 		clients = append(clients, mcpClient)
@@ -665,7 +692,13 @@ func (s *Server) initMCPConfigController(args *PilotArgs) error {
 			}
 			cl := mcpapi.NewAggregatedMeshConfigServiceClient(conn)
 			mcpController := coredatamodel.NewController(options)
-			mcpClient := mcpclient.New(cl, collections, mcpController, clientNodeID, map[string]string{}, mcpclient.NewStatsContext("pilot"))
+			sinkOptions := &sink.Options{
+				CollectionOptions: collections,
+				Updater:           mcpController,
+				ID:                clientNodeID,
+				Reporter:          reporter,
+			}
+			mcpClient := client.New(cl, sinkOptions)
 			configz.Register(mcpClient)
 
 			clients = append(clients, mcpClient)
@@ -698,6 +731,8 @@ func (s *Server) initMCPConfigController(args *PilotArgs) error {
 			for _, conn := range conns {
 				_ = conn.Close() // nolint: errcheck
 			}
+
+			reporter.Close()
 		}()
 
 		return nil

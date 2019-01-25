@@ -29,8 +29,10 @@ import (
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/pkg/log"
+	"istio.io/istio/pkg/mcp/monitoring"
 	"istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/mcp/snapshot"
+	"istio.io/istio/pkg/mcp/source"
 )
 
 const istioCertRootPath = "/etc/istio"
@@ -152,15 +154,23 @@ func mainWithError() error {
 		copilotsnapshot.ServiceRoleTypeURL,
 		copilotsnapshot.ServiceRoleBindingTypeURL,
 		copilotsnapshot.RbacConfigTypeURL,
+		copilotsnapshot.ClusterRbacConfigTypeURL,
 	}
+
+	collectionOptions := source.CollectionOptionsFromSlice(typeURLs)
 
 	cache := snapshot.New(snapshot.DefaultGroupIndex)
 	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
 		func(s *grpc.Server) {
 			authChecker := server.NewAllowAllChecker()
-			reporter := server.NewStatsContext("copilot/")
-			mcpServer := server.New(cache, typeURLs, authChecker, reporter)
+			reporter := monitoring.NewStatsContext("copilot/")
+			options := &source.Options{
+				Watcher:            cache,
+				Reporter:           reporter,
+				CollectionsOptions: collectionOptions,
+			}
 
+			mcpServer := server.New(options, authChecker)
 			var pilotLogLevel log.Level
 			switch cfg.LogLevel {
 			case "debug":

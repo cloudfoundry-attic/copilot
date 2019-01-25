@@ -30,6 +30,7 @@ const (
 	ServiceRoleTypeURL        = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRole"
 	ServiceRoleBindingTypeURL = "type.googleapis.com/istio.rbac.v1alpha1.ServiceRoleBinding"
 	RbacConfigTypeURL         = "type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"
+	ClusterRbacConfigTypeURL  = "type.googleapis.com/istio.rbac.v1alpha1.RbacConfig"
 	DefaultGatewayName        = "cloudfoundry-ingress"
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot

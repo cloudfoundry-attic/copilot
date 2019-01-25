@@ -13,14 +13,15 @@ import (
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/api/networking/v1alpha3"
 	mcpclient "istio.io/istio/pkg/mcp/client"
+	"istio.io/istio/pkg/mcp/sink"
 )
 
 type MockMCPUpdater struct {
 	changesMux sync.Mutex
-	objects    map[string][]*mcpclient.Object
+	objects    map[string][]*sink.Object
 }
 
-func (m *MockMCPUpdater) Apply(c *mcpclient.Change) error {
+func (m *MockMCPUpdater) Apply(c *sink.Change) error {
 	m.changesMux.Lock()
 	defer m.changesMux.Unlock()
 	m.objects[c.Collection] = c.Objects
@@ -100,11 +101,16 @@ func (m *MockMCPUpdater) GetAllMessageNames() []string {
 // MetricReporter is used to report metrics for an MCP client.
 type MockMetricReporter struct{}
 
-func (m *MockMetricReporter) RecordSendError(err error, code codes.Code)     {}
-func (m *MockMetricReporter) RecordRecvError(err error, code codes.Code)     {}
-func (m *MockMetricReporter) RecordRequestAck(collection string)             {}
-func (m *MockMetricReporter) RecordRequestNack(collection string, err error) {}
-func (m *MockMetricReporter) RecordStreamCreateSuccess()                     {}
+func (m *MockMetricReporter) Close() error                                                      { return nil }
+func (m *MockMetricReporter) RecordSendError(err error, code codes.Code)                        {}
+func (m *MockMetricReporter) RecordRecvError(err error, code codes.Code)                        {}
+func (m *MockMetricReporter) RecordRequestSize(collection string, connectionID int64, size int) {}
+func (m *MockMetricReporter) RecordRequestAck(collection string, connectionID int64)            {}
+func (m *MockMetricReporter) RecordRequestNack(collection string, connectionID int64, code codes.Code) {
+}
+
+func (m *MockMetricReporter) SetStreamCount(clients int64) {}
+func (m *MockMetricReporter) RecordStreamCreateSuccess()   {}
 
 type MockPilotMCPClient struct {
 	ctx        context.Context
@@ -133,7 +139,7 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 	}
 
 	svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
-	mockUpdater := &MockMCPUpdater{objects: make(map[string][]*mcpclient.Object)}
+	mockUpdater := &MockMCPUpdater{objects: make(map[string][]*sink.Object)}
 	mockReporter := &MockMetricReporter{}
 
 	typeURLs := []string{
@@ -152,7 +158,16 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 		copilotsnapshot.ServiceRoleBindingTypeURL,
 		copilotsnapshot.RbacConfigTypeURL,
 	}
-	cl := mcpclient.New(svcClient, typeURLs, mockUpdater, "", nil, mockReporter)
+	collectionOptions := sink.CollectionOptionsFromSlice(typeURLs)
+
+	sinkOptions := &sink.Options{
+		CollectionOptions: collectionOptions,
+		Updater:           mockUpdater,
+		ID:                "",
+		Metadata:          nil,
+		Reporter:          mockReporter,
+	}
+	cl := mcpclient.New(svcClient, sinkOptions)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	go cl.Run(ctx)
 
