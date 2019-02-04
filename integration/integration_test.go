@@ -178,7 +178,6 @@ var _ = Describe("Copilot", func() {
 
 		cmd := exec.Command(binaryPath, "-config", configFilePath)
 		var err error
-		fmt.Printf("meow: %v", cmd)
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session.Out).Should(gbytes.Say(`started`))

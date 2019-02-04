@@ -1,6 +1,7 @@
 package snapshot
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -9,29 +10,33 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 
+	"istio.io/istio/pilot/pkg/model"
 	snap "istio.io/istio/pkg/mcp/snapshot"
 )
 
-const (
+var (
 	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
 	// when mcp client is capable of only sending a subset of the types
-	DestinationRuleTypeURL    = "istio/networking/v1alpha3/destinationrules"
-	VirtualServiceTypeURL     = "istio/networking/v1alpha3/virtualservices"
-	GatewayTypeURL            = "istio/networking/v1alpha3/gateways"
-	ServiceEntryTypeURL       = "istio/networking/v1alpha3/serviceentries"
-	EnvoyFilterTypeURL        = "istio/networking/v1alpha3/envoyfilters"
-	SidecarTypeURL            = "istio/networking/v1alpha3/sidecars"
-	HTTPAPISpecTypeURL        = "istio/config/v1alpha2/httpapispecs"
-	HTTPAPISpecBindingTypeURL = "istio/config/v1alpha2/httpapispecbindings"
-	QuotaSpecTypeURL          = "istio/mixer/v1/config/client/quotaspecs"
-	QuotaSpecBindingTypeURL   = "istio/mixer/v1/config/client/quotaspecbindings"
-	PolicyTypeURL             = "istio/authentication/v1alpha1/policies"
-	MeshPolicyTypeURL         = "istio/authentication/v1alpha1/meshpolicies"
-	ServiceRoleTypeURL        = "istio/rbac/v1alpha1/serviceroles"
-	ServiceRoleBindingTypeURL = "istio/rbac/v1alpha1/servicerolebindings"
-	RbacConfigTypeURL         = "istio/rbac/v1alpha1/rbacconfigs"
-	ClusterRbacConfigTypeURL  = "istio/rbac/v1alpha1/clusterrbacconfigs"
-	DefaultGatewayName        = "cloudfoundry-ingress"
+	DestinationRuleTypeURL    string
+	VirtualServiceTypeURL     string
+	GatewayTypeURL            string
+	ServiceEntryTypeURL       string
+	EnvoyFilterTypeURL        string
+	SidecarTypeURL            string
+	HTTPAPISpecTypeURL        string
+	HTTPAPISpecBindingTypeURL string
+	QuotaSpecTypeURL          string
+	QuotaSpecBindingTypeURL   string
+	PolicyTypeURL             string
+	MeshPolicyTypeURL         string
+	ServiceRoleTypeURL        string
+	ServiceRoleBindingTypeURL string
+	RbacConfigTypeURL         string
+	ClusterRbacConfigTypeURL  string
+)
+
+const (
+	DefaultGatewayName = "cloudfoundry-ingress"
 
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
@@ -112,4 +117,33 @@ func (s *Snapshot) version() string {
 func (s *Snapshot) increment() string {
 	s.ver++
 	return s.version()
+}
+
+func getTypeURLByType(name string) string {
+	protoSchema, ok := model.IstioConfigTypes.GetByType(name)
+	if !ok {
+		fmt.Fprintf(os.Stdout, "Istio Config Type %q does not exist.\n", name)
+		os.Exit(1)
+	}
+
+	return protoSchema.Collection
+}
+
+func init() {
+	DestinationRuleTypeURL = getTypeURLByType("destination-rule")
+	VirtualServiceTypeURL = getTypeURLByType("virtual-service")
+	GatewayTypeURL = getTypeURLByType("gateway")
+	ServiceEntryTypeURL = getTypeURLByType("service-entry")
+	EnvoyFilterTypeURL = getTypeURLByType("envoy-filter")
+	SidecarTypeURL = getTypeURLByType("sidecar")
+	HTTPAPISpecTypeURL = getTypeURLByType("http-api-spec")
+	HTTPAPISpecBindingTypeURL = getTypeURLByType("http-api-spec-binding")
+	QuotaSpecTypeURL = getTypeURLByType("quota-spec")
+	QuotaSpecBindingTypeURL = getTypeURLByType("quota-spec-binding")
+	PolicyTypeURL = getTypeURLByType("policy")
+	MeshPolicyTypeURL = getTypeURLByType("mesh-policy")
+	ServiceRoleTypeURL = getTypeURLByType("service-role")
+	ServiceRoleBindingTypeURL = getTypeURLByType("service-role-binding")
+	RbacConfigTypeURL = getTypeURLByType("rbac-config")
+	ClusterRbacConfigTypeURL = getTypeURLByType("cluster-rbac-config")
 }
