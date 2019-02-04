@@ -317,17 +317,17 @@ var _ = Describe("Copilot", func() {
 
 		By("istio pilot MCP client sees the correct messages and objects")
 		Eventually(mcpClient.GetAllMessageNames, "1s").Should(ConsistOf(
-			"type.googleapis.com/istio.networking.v1alpha3.DestinationRule",
-			"type.googleapis.com/istio.networking.v1alpha3.VirtualService",
-			"type.googleapis.com/istio.networking.v1alpha3.ServiceEntry",
-			"type.googleapis.com/istio.networking.v1alpha3.Gateway",
+			"istio/networking/v1alpha3/destinationrules",
+			"istio/networking/v1alpha3/virtualservices",
+			"istio/networking/v1alpha3/serviceentries",
+			"istio/networking/v1alpha3/gateways",
 		))
 
 		Eventually(mcpClient.GetAllObjectNames, "1s").Should(Equal(map[string][]string{
-			"type.googleapis.com/istio.networking.v1alpha3.DestinationRule": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost), fmt.Sprintf("copilot-rule-for-%s", internalRouteHost)},
-			"type.googleapis.com/istio.networking.v1alpha3.VirtualService":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("copilot-service-for-%s", internalRouteHost)},
-			"type.googleapis.com/istio.networking.v1alpha3.ServiceEntry":    []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("copilot-service-entry-for-%s", internalRouteHost)},
-			"type.googleapis.com/istio.networking.v1alpha3.Gateway":         []string{copilotsnapshot.DefaultGatewayName},
+			"istio/networking/v1alpha3/destinationrules": []string{fmt.Sprintf("copilot-rule-for-%s", routeHost), fmt.Sprintf("copilot-rule-for-%s", internalRouteHost)},
+			"istio/networking/v1alpha3/virtualservices":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("copilot-service-for-%s", internalRouteHost)},
+			"istio/networking/v1alpha3/serviceentries":   []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("copilot-service-entry-for-%s", internalRouteHost)},
+			"istio/networking/v1alpha3/gateways":         []string{copilotsnapshot.DefaultGatewayName},
 		}))
 
 		expectedRoutes := []Route{
