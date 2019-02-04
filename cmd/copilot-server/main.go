@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	mcp "istio.io/api/mcp/v1alpha1"
+	"istio.io/istio/galley/pkg/runtime/groups"
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/mcp/monitoring"
 	"istio.io/istio/pkg/mcp/server"
@@ -159,7 +160,7 @@ func mainWithError() error {
 
 	collectionOptions := source.CollectionOptionsFromSlice(typeURLs)
 
-	cache := snapshot.New(snapshot.DefaultGroupIndex)
+	cache := snapshot.New(groups.IndexFunction)
 	grpcServerForMcp := grpcrunner.New(logger, cfg.ListenAddressForMCP,
 		func(s *grpc.Server) {
 			authChecker := server.NewAllowAllChecker()
