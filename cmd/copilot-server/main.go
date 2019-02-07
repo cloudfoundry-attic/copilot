@@ -166,9 +166,9 @@ func mainWithError() error {
 			authChecker := server.NewAllowAllChecker()
 			reporter := monitoring.NewStatsContext("copilot/")
 			options := &source.Options{
-				Watcher:            cache,
-				Reporter:           reporter,
-				CollectionsOptions: collectionOptions,
+				Watcher:           cache,
+				Reporter:          reporter,
+				CollectionOptions: collectionOptions,
 			}
 
 			mcpServer := server.New(options, authChecker)

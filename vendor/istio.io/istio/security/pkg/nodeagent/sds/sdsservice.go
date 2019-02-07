@@ -48,6 +48,10 @@ const (
 	// k8sSAJwtTokenHeaderKey is the request header key, header value is k8s sa jwt, which is set in
 	// https://github.com/istio/istio/blob/master/pilot/pkg/model/authentication.go
 	k8sSAJwtTokenHeaderKey = "istio_sds_credentail_header-bin"
+
+	// IngressGatewaySdsCaSuffix is the suffix of the sds resource name for root CA. All SDS requests
+	// for root CA sent by ingress gateway have suffix -cacert.
+	IngressGatewaySdsCaSuffix = "-cacert"
 )
 
 var (
@@ -295,12 +299,6 @@ func removeConn(k cache.ConnKey) {
 }
 
 func pushSDS(con *sdsConnection) error {
-	if con.secret.RootCert != nil {
-		log.Infof("SDS: push root cert from node agent to proxy:%q", con.proxyID)
-	} else {
-		log.Infof("SDS: push key/cert pair from node agent to proxy:%q", con.proxyID)
-	}
-
 	response, err := sdsDiscoveryResponse(con.secret, con.proxyID)
 	if err != nil {
 		log.Errorf("SDS: Failed to construct response %v", err)
@@ -310,6 +308,14 @@ func pushSDS(con *sdsConnection) error {
 	if err = con.stream.Send(response); err != nil {
 		log.Errorf("SDS: Send response failure %v", err)
 		return err
+	}
+
+	if con.secret.RootCert != nil {
+		log.Infof("SDS: push root cert from node agent to proxy: %q\n", con.proxyID)
+		log.Debugf("SDS: push root cert %+v to proxy: %q\n", string(con.secret.RootCert), con.proxyID)
+	} else {
+		log.Infof("SDS: push key/cert pair from node agent to proxy: %q\n", con.proxyID)
+		log.Debugf("SDS: push certificate chain %+v to proxy: %q\n", string(con.secret.CertificateChain), con.proxyID)
 	}
 
 	return nil

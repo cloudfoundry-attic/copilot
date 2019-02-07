@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/types"
 	multierror "github.com/hashicorp/go-multierror"
 
@@ -85,6 +86,9 @@ type Proxy struct {
 	// ID is the unique platform-specific sidecar proxy ID. For k8s it is the pod ID and
 	// namespace.
 	ID string
+
+	// Locality is the location of where Envoy proxy runs.
+	Locality *core.Locality
 
 	// DNSDomain defines the DNS domain suffix for short hostnames (e.g.
 	// "default.svc.cluster.local")
@@ -517,6 +521,10 @@ const (
 
 	// NodeMetadataInstanceIPs is the set of IPs attached to this proxy
 	NodeMetadataInstanceIPs = "INSTANCE_IPS"
+
+	// NodeMetadataSdsTokenPath specifies the path of the SDS token used by the Enovy proxy.
+	// If not set, Pilot uses the default SDS token path.
+	NodeMetadataSdsTokenPath = "SDS_TOKEN_PATH"
 )
 
 // TrafficInterceptionMode indicates how traffic to/from the workload is captured and
