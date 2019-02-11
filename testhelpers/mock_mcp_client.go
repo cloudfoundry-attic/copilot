@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/api/networking/v1alpha3"
-	mcpclient "istio.io/istio/pkg/mcp/client"
 	"istio.io/istio/pkg/mcp/sink"
 )
 
@@ -114,7 +113,7 @@ func (m *MockMetricReporter) RecordStreamCreateSuccess()   {}
 
 type MockPilotMCPClient struct {
 	ctx        context.Context
-	client     *mcpclient.Client
+	client     *sink.Client
 	cancelFunc func()
 	conn       *grpc.ClientConn
 	*MockMCPUpdater
@@ -138,7 +137,7 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 		return nil, err
 	}
 
-	svcClient := mcp.NewAggregatedMeshConfigServiceClient(conn)
+	svcClient := mcp.NewResourceSourceClient(conn)
 	mockUpdater := &MockMCPUpdater{objects: make(map[string][]*sink.Object)}
 	mockReporter := &MockMetricReporter{}
 
@@ -167,7 +166,7 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 		Metadata:          nil,
 		Reporter:          mockReporter,
 	}
-	cl := mcpclient.New(svcClient, sinkOptions)
+	cl := sink.NewClient(svcClient, sinkOptions)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	go cl.Run(ctx)
 

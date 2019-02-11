@@ -170,8 +170,13 @@ func mainWithError() error {
 				Reporter:          reporter,
 				CollectionOptions: collectionOptions,
 			}
+			serverOptions := &source.ServerOptions{
+				NewConnectionFreq:      1000000000,
+				NewConnectionBurstSize: 1000000000,
+				AuthChecker:            authChecker,
+			}
 
-			mcpServer := server.New(options, authChecker)
+			mcpServer := source.NewServer(options, serverOptions)
 			var pilotLogLevel log.Level
 			switch cfg.LogLevel {
 			case "debug":
@@ -188,7 +193,7 @@ func mainWithError() error {
 				logger.Info("set pilot log level for scope", lager.Data{"scope-name": name})
 			}
 
-			mcp.RegisterAggregatedMeshConfigServiceServer(s, mcpServer)
+			mcp.RegisterResourceSourceServer(s, mcpServer)
 			reflection.Register(s)
 		},
 		grpc.Creds(credentials.NewTLS(pilotFacingTLSConfig)),
