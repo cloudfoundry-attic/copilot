@@ -93,10 +93,10 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			newVersion := s.increment()
 			s.cachedRoutes = routes
 
-			gateways := s.config.CreateGatewayEnvelopes()
-			virtualServices := s.config.CreateVirtualServiceEnvelopes(routes, newVersion)
-			destinationRules := s.config.CreateDestinationRuleEnvelopes(routes, newVersion)
-			serviceEntries := s.config.CreateServiceEntryEnvelopes(routes, newVersion)
+			gateways := s.config.CreateGatewayResources()
+			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
+			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
+			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)

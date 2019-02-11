@@ -23,9 +23,9 @@ var _ = Describe("Config", func() {
 		config = snapshot.NewConfig(fakeLocator, lagertest.NewTestLogger("config"))
 	})
 
-	Describe("CreateGatewayEnvelopes", func() {
-		It("creates gateway envelopes", func() {
-			gateways := config.CreateGatewayEnvelopes()
+	Describe("CreateGatewayResources", func() {
+		It("creates gateway resources", func() {
+			gateways := config.CreateGatewayResources()
 			var ga networking.Gateway
 
 			Expect(gateways).To(HaveLen(1))
@@ -49,7 +49,7 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("When locator returns cert pair paths", func() {
-			It("creates gateway envelopes with http and https servers", func() {
+			It("creates gateway resources with http and https servers", func() {
 				certPairs := []certs.PemInfo{
 					{
 						Hosts:    []string{"example.com"},
@@ -59,7 +59,7 @@ var _ = Describe("Config", func() {
 				}
 				fakeLocator.LocateReturns(certPairs, nil)
 
-				gateways := config.CreateGatewayEnvelopes()
+				gateways := config.CreateGatewayResources()
 				var ga networking.Gateway
 
 				Expect(gateways).To(HaveLen(1))
@@ -110,7 +110,7 @@ var _ = Describe("Config", func() {
 				}
 				fakeLocator.LocateReturns(certPairs, nil)
 
-				gateways := config.CreateGatewayEnvelopes()
+				gateways := config.CreateGatewayResources()
 				var ga networking.Gateway
 
 				Expect(gateways).To(HaveLen(1))
@@ -161,9 +161,9 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Describe("CreateVirtualServiceEnvelopes", func() {
-		It("creates virtualService envelopes", func() {
-			virtualServices := config.CreateVirtualServiceEnvelopes(routesWithBackends(), "1")
+	Describe("CreateVirtualServiceResources", func() {
+		It("creates virtualService resources", func() {
+			virtualServices := config.CreateVirtualServiceResources(routesWithBackends(), "1")
 			var vs networking.VirtualService
 
 			Expect(virtualServices).To(HaveLen(1))
@@ -232,8 +232,8 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("internal routes", func() {
-			It("creates virtualService envelopes with retries", func() {
-				virtualServices := config.CreateVirtualServiceEnvelopes(internalRoutesWithBackends(), "1")
+			It("creates virtualService resources with retries", func() {
+				virtualServices := config.CreateVirtualServiceResources(internalRoutesWithBackends(), "1")
 				var vs networking.VirtualService
 
 				err := types.UnmarshalAny(virtualServices[0].Body, &vs)
@@ -266,9 +266,9 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Describe("CreateDestinationRuleEnvelopes", func() {
-		It("creates destinationRule envelopes", func() {
-			destinationRules := config.CreateDestinationRuleEnvelopes(routesWithBackends(), "1")
+	Describe("CreateDestinationRuleResources", func() {
+		It("creates destinationRule resources", func() {
+			destinationRules := config.CreateDestinationRuleResources(routesWithBackends(), "1")
 			var dr networking.DestinationRule
 
 			Expect(destinationRules).To(HaveLen(1))
@@ -296,7 +296,7 @@ var _ = Describe("Config", func() {
 
 		Context("internal routes", func() {
 			It("creates destination rules", func() {
-				destinationRules := config.CreateDestinationRuleEnvelopes(internalRoutesWithBackends(), "1")
+				destinationRules := config.CreateDestinationRuleResources(internalRoutesWithBackends(), "1")
 				var dr networking.DestinationRule
 
 				Expect(destinationRules).To(HaveLen(1))
@@ -316,9 +316,9 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Describe("CreateServiceEntryEnvelopes", func() {
-		It("creates serviceEntry envelopes", func() {
-			serviceEntries := config.CreateServiceEntryEnvelopes(routesWithBackends(), "1")
+	Describe("CreateServiceEntryResources", func() {
+		It("creates serviceEntry resources", func() {
+			serviceEntries := config.CreateServiceEntryResources(routesWithBackends(), "1")
 			var se networking.ServiceEntry
 
 			Expect(serviceEntries).To(HaveLen(1))
@@ -364,8 +364,8 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("internal routes", func() {
-			It("creates service entries envelopes", func() {
-				serviceEntries := config.CreateServiceEntryEnvelopes(internalRoutesWithBackends(), "1")
+			It("creates service entries resources", func() {
+				serviceEntries := config.CreateServiceEntryResources(internalRoutesWithBackends(), "1")
 				var se networking.ServiceEntry
 
 				Expect(serviceEntries).To(HaveLen(1))

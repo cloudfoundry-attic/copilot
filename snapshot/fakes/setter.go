@@ -2,7 +2,7 @@
 package fakes
 
 import (
-	sync "sync"
+	"sync"
 
 	snapshota "istio.io/istio/pkg/mcp/snapshot"
 )

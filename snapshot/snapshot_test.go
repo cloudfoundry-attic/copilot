@@ -46,10 +46,10 @@ var _ = Describe("Snapshot", func() {
 			go s.Run(sig, ready)
 			ticker <- time.Time{}
 
-			Eventually(config.CreateGatewayEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateVirtualServiceEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateDestinationRuleEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateServiceEntryEnvelopesCallCount).Should(Equal(1))
+			Eventually(config.CreateGatewayResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 			node, shot := setter.SetSnapshotArgsForCall(0)
@@ -58,17 +58,17 @@ var _ = Describe("Snapshot", func() {
 
 			ticker <- time.Time{}
 
-			Eventually(config.CreateGatewayEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateVirtualServiceEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateDestinationRuleEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateServiceEntryEnvelopesCallCount).Should(Equal(1))
+			Eventually(config.CreateGatewayResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
 
 			Consistently(setter.SetSnapshotCallCount).Should(Equal(1))
 
 			sig <- os.Kill
 		})
 
-		It("creates envelopes and sets the snapshot with the correct versions", func() {
+		It("creates resources and sets the snapshot with the correct versions", func() {
 			sig := make(chan os.Signal)
 			ready := make(chan struct{})
 
@@ -78,10 +78,10 @@ var _ = Describe("Snapshot", func() {
 			go s.Run(sig, ready)
 			ticker <- time.Time{}
 
-			Eventually(config.CreateGatewayEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateVirtualServiceEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateDestinationRuleEnvelopesCallCount).Should(Equal(1))
-			Eventually(config.CreateServiceEntryEnvelopesCallCount).Should(Equal(1))
+			Eventually(config.CreateGatewayResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(1))
+			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(1))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
 			node, shot := setter.SetSnapshotArgsForCall(0)
@@ -90,10 +90,10 @@ var _ = Describe("Snapshot", func() {
 
 			ticker <- time.Time{}
 
-			Eventually(config.CreateGatewayEnvelopesCallCount).Should(Equal(2))
-			Eventually(config.CreateVirtualServiceEnvelopesCallCount).Should(Equal(2))
-			Eventually(config.CreateDestinationRuleEnvelopesCallCount).Should(Equal(2))
-			Eventually(config.CreateServiceEntryEnvelopesCallCount).Should(Equal(2))
+			Eventually(config.CreateGatewayResourcesCallCount).Should(Equal(2))
+			Eventually(config.CreateVirtualServiceResourcesCallCount).Should(Equal(2))
+			Eventually(config.CreateDestinationRuleResourcesCallCount).Should(Equal(2))
+			Eventually(config.CreateServiceEntryResourcesCallCount).Should(Equal(2))
 
 			Eventually(setter.SetSnapshotCallCount).Should(Equal(2))
 			_, shot = setter.SetSnapshotArgsForCall(1)

@@ -14,10 +14,10 @@ import (
 
 //go:generate counterfeiter -o fakes/config.go --fake-name Config . config
 type config interface {
-	CreateGatewayEnvelopes() []*mcp.Resource
-	CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource
-	CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource
-	CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreateGatewayResources() []*mcp.Resource
+	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 }
 
 type Config struct {
@@ -32,7 +32,7 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 	}
 }
 
-func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Resource) {
+func (c *Config) CreateGatewayResources() (resources []*mcp.Resource) {
 	gateway := &networking.Gateway{
 		Servers: []*networking.Server{
 			{
@@ -74,7 +74,7 @@ func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Resource) {
 		c.logger.Error("marshaling gateway", err)
 	}
 
-	envelopes = []*mcp.Resource{
+	resources = []*mcp.Resource{
 		{
 			Metadata: &mcp.Metadata{
 				Name:    DefaultGatewayName,
@@ -84,10 +84,10 @@ func (c *Config) CreateGatewayEnvelopes() (envelopes []*mcp.Resource) {
 		},
 	}
 
-	return envelopes
+	return resources
 }
 
-func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Resource) {
+func (c *Config) CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) (resources []*mcp.Resource) {
 	destinationRules := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
@@ -121,7 +121,7 @@ func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBacken
 			c.logger.Error("marshaling destination rule", err)
 		}
 
-		envelopes = append(envelopes, &mcp.Resource{
+		resources = append(resources, &mcp.Resource{
 			Metadata: &mcp.Metadata{
 				Name:    destinationRuleName,
 				Version: version,
@@ -130,10 +130,10 @@ func (c *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBacken
 		})
 	}
 
-	return envelopes
+	return resources
 }
 
-func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Resource) {
+func (c *Config) CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) (resources []*mcp.Resource) {
 	virtualServices := make(map[string]*model.Config, len(routes))
 	httpRoutes := make(map[string]*networking.HTTPRoute)
 
@@ -190,7 +190,7 @@ func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackend
 			c.logger.Error("marshaling virtual service", err)
 		}
 
-		envelopes = append(envelopes, &mcp.Resource{
+		resources = append(resources, &mcp.Resource{
 			Metadata: &mcp.Metadata{
 				Name:    virtualServiceName,
 				Version: version,
@@ -199,10 +199,10 @@ func (c *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackend
 		})
 	}
 
-	return envelopes
+	return resources
 }
 
-func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) (envelopes []*mcp.Resource) {
+func (c *Config) CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) (resources []*mcp.Resource) {
 	serviceEntries := make(map[string]*model.Config, len(routes))
 
 	for _, route := range routes {
@@ -232,7 +232,7 @@ func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends,
 			c.logger.Error("marshaling service entry", err)
 		}
 
-		envelopes = append(envelopes, &mcp.Resource{
+		resources = append(resources, &mcp.Resource{
 			Metadata: &mcp.Metadata{
 				Name:    serviceEntryName,
 				Version: version,
@@ -241,7 +241,7 @@ func (c *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends,
 		})
 	}
 
-	return envelopes
+	return resources
 }
 
 func createEndpoint(route *models.RouteWithBackends) []*networking.ServiceEntry_Endpoint {

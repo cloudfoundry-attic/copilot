@@ -5,273 +5,326 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/copilot/models"
-	mcp "istio.io/api/mcp/v1alpha1"
+	"istio.io/api/mcp/v1alpha1"
 )
 
 type Config struct {
-	CreateGatewayEnvelopesStub        func() []*mcp.Resource
-	createGatewayEnvelopesMutex       sync.RWMutex
-	createGatewayEnvelopesArgsForCall []struct{}
-	createGatewayEnvelopesReturns     struct {
-		result1 []*mcp.Resource
+	CreateDestinationRuleResourcesStub        func([]*models.RouteWithBackends, string) []*v1alpha1.Resource
+	createDestinationRuleResourcesMutex       sync.RWMutex
+	createDestinationRuleResourcesArgsForCall []struct {
+		arg1 []*models.RouteWithBackends
+		arg2 string
 	}
-	createGatewayEnvelopesReturnsOnCall map[int]struct {
-		result1 []*mcp.Resource
+	createDestinationRuleResourcesReturns struct {
+		result1 []*v1alpha1.Resource
 	}
-	CreateVirtualServiceEnvelopesStub        func(routes []*models.RouteWithBackends, version string) []*mcp.Resource
-	createVirtualServiceEnvelopesMutex       sync.RWMutex
-	createVirtualServiceEnvelopesArgsForCall []struct {
-		routes  []*models.RouteWithBackends
-		version string
+	createDestinationRuleResourcesReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
 	}
-	createVirtualServiceEnvelopesReturns struct {
-		result1 []*mcp.Resource
+	CreateGatewayResourcesStub        func() []*v1alpha1.Resource
+	createGatewayResourcesMutex       sync.RWMutex
+	createGatewayResourcesArgsForCall []struct {
 	}
-	createVirtualServiceEnvelopesReturnsOnCall map[int]struct {
-		result1 []*mcp.Resource
+	createGatewayResourcesReturns struct {
+		result1 []*v1alpha1.Resource
 	}
-	CreateDestinationRuleEnvelopesStub        func(routes []*models.RouteWithBackends, version string) []*mcp.Resource
-	createDestinationRuleEnvelopesMutex       sync.RWMutex
-	createDestinationRuleEnvelopesArgsForCall []struct {
-		routes  []*models.RouteWithBackends
-		version string
+	createGatewayResourcesReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
 	}
-	createDestinationRuleEnvelopesReturns struct {
-		result1 []*mcp.Resource
+	CreateServiceEntryResourcesStub        func([]*models.RouteWithBackends, string) []*v1alpha1.Resource
+	createServiceEntryResourcesMutex       sync.RWMutex
+	createServiceEntryResourcesArgsForCall []struct {
+		arg1 []*models.RouteWithBackends
+		arg2 string
 	}
-	createDestinationRuleEnvelopesReturnsOnCall map[int]struct {
-		result1 []*mcp.Resource
+	createServiceEntryResourcesReturns struct {
+		result1 []*v1alpha1.Resource
 	}
-	CreateServiceEntryEnvelopesStub        func(routes []*models.RouteWithBackends, version string) []*mcp.Resource
-	createServiceEntryEnvelopesMutex       sync.RWMutex
-	createServiceEntryEnvelopesArgsForCall []struct {
-		routes  []*models.RouteWithBackends
-		version string
+	createServiceEntryResourcesReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
 	}
-	createServiceEntryEnvelopesReturns struct {
-		result1 []*mcp.Resource
+	CreateVirtualServiceResourcesStub        func([]*models.RouteWithBackends, string) []*v1alpha1.Resource
+	createVirtualServiceResourcesMutex       sync.RWMutex
+	createVirtualServiceResourcesArgsForCall []struct {
+		arg1 []*models.RouteWithBackends
+		arg2 string
 	}
-	createServiceEntryEnvelopesReturnsOnCall map[int]struct {
-		result1 []*mcp.Resource
+	createVirtualServiceResourcesReturns struct {
+		result1 []*v1alpha1.Resource
+	}
+	createVirtualServiceResourcesReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Config) CreateGatewayEnvelopes() []*mcp.Resource {
-	fake.createGatewayEnvelopesMutex.Lock()
-	ret, specificReturn := fake.createGatewayEnvelopesReturnsOnCall[len(fake.createGatewayEnvelopesArgsForCall)]
-	fake.createGatewayEnvelopesArgsForCall = append(fake.createGatewayEnvelopesArgsForCall, struct{}{})
-	fake.recordInvocation("CreateGatewayEnvelopes", []interface{}{})
-	fake.createGatewayEnvelopesMutex.Unlock()
-	if fake.CreateGatewayEnvelopesStub != nil {
-		return fake.CreateGatewayEnvelopesStub()
+func (fake *Config) CreateDestinationRuleResources(arg1 []*models.RouteWithBackends, arg2 string) []*v1alpha1.Resource {
+	var arg1Copy []*models.RouteWithBackends
+	if arg1 != nil {
+		arg1Copy = make([]*models.RouteWithBackends, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.createDestinationRuleResourcesMutex.Lock()
+	ret, specificReturn := fake.createDestinationRuleResourcesReturnsOnCall[len(fake.createDestinationRuleResourcesArgsForCall)]
+	fake.createDestinationRuleResourcesArgsForCall = append(fake.createDestinationRuleResourcesArgsForCall, struct {
+		arg1 []*models.RouteWithBackends
+		arg2 string
+	}{arg1Copy, arg2})
+	fake.recordInvocation("CreateDestinationRuleResources", []interface{}{arg1Copy, arg2})
+	fake.createDestinationRuleResourcesMutex.Unlock()
+	if fake.CreateDestinationRuleResourcesStub != nil {
+		return fake.CreateDestinationRuleResourcesStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createGatewayEnvelopesReturns.result1
+	fakeReturns := fake.createDestinationRuleResourcesReturns
+	return fakeReturns.result1
 }
 
-func (fake *Config) CreateGatewayEnvelopesCallCount() int {
-	fake.createGatewayEnvelopesMutex.RLock()
-	defer fake.createGatewayEnvelopesMutex.RUnlock()
-	return len(fake.createGatewayEnvelopesArgsForCall)
+func (fake *Config) CreateDestinationRuleResourcesCallCount() int {
+	fake.createDestinationRuleResourcesMutex.RLock()
+	defer fake.createDestinationRuleResourcesMutex.RUnlock()
+	return len(fake.createDestinationRuleResourcesArgsForCall)
 }
 
-func (fake *Config) CreateGatewayEnvelopesReturns(result1 []*mcp.Resource) {
-	fake.CreateGatewayEnvelopesStub = nil
-	fake.createGatewayEnvelopesReturns = struct {
-		result1 []*mcp.Resource
+func (fake *Config) CreateDestinationRuleResourcesCalls(stub func([]*models.RouteWithBackends, string) []*v1alpha1.Resource) {
+	fake.createDestinationRuleResourcesMutex.Lock()
+	defer fake.createDestinationRuleResourcesMutex.Unlock()
+	fake.CreateDestinationRuleResourcesStub = stub
+}
+
+func (fake *Config) CreateDestinationRuleResourcesArgsForCall(i int) ([]*models.RouteWithBackends, string) {
+	fake.createDestinationRuleResourcesMutex.RLock()
+	defer fake.createDestinationRuleResourcesMutex.RUnlock()
+	argsForCall := fake.createDestinationRuleResourcesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *Config) CreateDestinationRuleResourcesReturns(result1 []*v1alpha1.Resource) {
+	fake.createDestinationRuleResourcesMutex.Lock()
+	defer fake.createDestinationRuleResourcesMutex.Unlock()
+	fake.CreateDestinationRuleResourcesStub = nil
+	fake.createDestinationRuleResourcesReturns = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateGatewayEnvelopesReturnsOnCall(i int, result1 []*mcp.Resource) {
-	fake.CreateGatewayEnvelopesStub = nil
-	if fake.createGatewayEnvelopesReturnsOnCall == nil {
-		fake.createGatewayEnvelopesReturnsOnCall = make(map[int]struct {
-			result1 []*mcp.Resource
+func (fake *Config) CreateDestinationRuleResourcesReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.createDestinationRuleResourcesMutex.Lock()
+	defer fake.createDestinationRuleResourcesMutex.Unlock()
+	fake.CreateDestinationRuleResourcesStub = nil
+	if fake.createDestinationRuleResourcesReturnsOnCall == nil {
+		fake.createDestinationRuleResourcesReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
 		})
 	}
-	fake.createGatewayEnvelopesReturnsOnCall[i] = struct {
-		result1 []*mcp.Resource
+	fake.createDestinationRuleResourcesReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateVirtualServiceEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource {
-	var routesCopy []*models.RouteWithBackends
-	if routes != nil {
-		routesCopy = make([]*models.RouteWithBackends, len(routes))
-		copy(routesCopy, routes)
-	}
-	fake.createVirtualServiceEnvelopesMutex.Lock()
-	ret, specificReturn := fake.createVirtualServiceEnvelopesReturnsOnCall[len(fake.createVirtualServiceEnvelopesArgsForCall)]
-	fake.createVirtualServiceEnvelopesArgsForCall = append(fake.createVirtualServiceEnvelopesArgsForCall, struct {
-		routes  []*models.RouteWithBackends
-		version string
-	}{routesCopy, version})
-	fake.recordInvocation("CreateVirtualServiceEnvelopes", []interface{}{routesCopy, version})
-	fake.createVirtualServiceEnvelopesMutex.Unlock()
-	if fake.CreateVirtualServiceEnvelopesStub != nil {
-		return fake.CreateVirtualServiceEnvelopesStub(routes, version)
+func (fake *Config) CreateGatewayResources() []*v1alpha1.Resource {
+	fake.createGatewayResourcesMutex.Lock()
+	ret, specificReturn := fake.createGatewayResourcesReturnsOnCall[len(fake.createGatewayResourcesArgsForCall)]
+	fake.createGatewayResourcesArgsForCall = append(fake.createGatewayResourcesArgsForCall, struct {
+	}{})
+	fake.recordInvocation("CreateGatewayResources", []interface{}{})
+	fake.createGatewayResourcesMutex.Unlock()
+	if fake.CreateGatewayResourcesStub != nil {
+		return fake.CreateGatewayResourcesStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createVirtualServiceEnvelopesReturns.result1
+	fakeReturns := fake.createGatewayResourcesReturns
+	return fakeReturns.result1
 }
 
-func (fake *Config) CreateVirtualServiceEnvelopesCallCount() int {
-	fake.createVirtualServiceEnvelopesMutex.RLock()
-	defer fake.createVirtualServiceEnvelopesMutex.RUnlock()
-	return len(fake.createVirtualServiceEnvelopesArgsForCall)
+func (fake *Config) CreateGatewayResourcesCallCount() int {
+	fake.createGatewayResourcesMutex.RLock()
+	defer fake.createGatewayResourcesMutex.RUnlock()
+	return len(fake.createGatewayResourcesArgsForCall)
 }
 
-func (fake *Config) CreateVirtualServiceEnvelopesArgsForCall(i int) ([]*models.RouteWithBackends, string) {
-	fake.createVirtualServiceEnvelopesMutex.RLock()
-	defer fake.createVirtualServiceEnvelopesMutex.RUnlock()
-	return fake.createVirtualServiceEnvelopesArgsForCall[i].routes, fake.createVirtualServiceEnvelopesArgsForCall[i].version
+func (fake *Config) CreateGatewayResourcesCalls(stub func() []*v1alpha1.Resource) {
+	fake.createGatewayResourcesMutex.Lock()
+	defer fake.createGatewayResourcesMutex.Unlock()
+	fake.CreateGatewayResourcesStub = stub
 }
 
-func (fake *Config) CreateVirtualServiceEnvelopesReturns(result1 []*mcp.Resource) {
-	fake.CreateVirtualServiceEnvelopesStub = nil
-	fake.createVirtualServiceEnvelopesReturns = struct {
-		result1 []*mcp.Resource
+func (fake *Config) CreateGatewayResourcesReturns(result1 []*v1alpha1.Resource) {
+	fake.createGatewayResourcesMutex.Lock()
+	defer fake.createGatewayResourcesMutex.Unlock()
+	fake.CreateGatewayResourcesStub = nil
+	fake.createGatewayResourcesReturns = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateVirtualServiceEnvelopesReturnsOnCall(i int, result1 []*mcp.Resource) {
-	fake.CreateVirtualServiceEnvelopesStub = nil
-	if fake.createVirtualServiceEnvelopesReturnsOnCall == nil {
-		fake.createVirtualServiceEnvelopesReturnsOnCall = make(map[int]struct {
-			result1 []*mcp.Resource
+func (fake *Config) CreateGatewayResourcesReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.createGatewayResourcesMutex.Lock()
+	defer fake.createGatewayResourcesMutex.Unlock()
+	fake.CreateGatewayResourcesStub = nil
+	if fake.createGatewayResourcesReturnsOnCall == nil {
+		fake.createGatewayResourcesReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
 		})
 	}
-	fake.createVirtualServiceEnvelopesReturnsOnCall[i] = struct {
-		result1 []*mcp.Resource
+	fake.createGatewayResourcesReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateDestinationRuleEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource {
-	var routesCopy []*models.RouteWithBackends
-	if routes != nil {
-		routesCopy = make([]*models.RouteWithBackends, len(routes))
-		copy(routesCopy, routes)
+func (fake *Config) CreateServiceEntryResources(arg1 []*models.RouteWithBackends, arg2 string) []*v1alpha1.Resource {
+	var arg1Copy []*models.RouteWithBackends
+	if arg1 != nil {
+		arg1Copy = make([]*models.RouteWithBackends, len(arg1))
+		copy(arg1Copy, arg1)
 	}
-	fake.createDestinationRuleEnvelopesMutex.Lock()
-	ret, specificReturn := fake.createDestinationRuleEnvelopesReturnsOnCall[len(fake.createDestinationRuleEnvelopesArgsForCall)]
-	fake.createDestinationRuleEnvelopesArgsForCall = append(fake.createDestinationRuleEnvelopesArgsForCall, struct {
-		routes  []*models.RouteWithBackends
-		version string
-	}{routesCopy, version})
-	fake.recordInvocation("CreateDestinationRuleEnvelopes", []interface{}{routesCopy, version})
-	fake.createDestinationRuleEnvelopesMutex.Unlock()
-	if fake.CreateDestinationRuleEnvelopesStub != nil {
-		return fake.CreateDestinationRuleEnvelopesStub(routes, version)
+	fake.createServiceEntryResourcesMutex.Lock()
+	ret, specificReturn := fake.createServiceEntryResourcesReturnsOnCall[len(fake.createServiceEntryResourcesArgsForCall)]
+	fake.createServiceEntryResourcesArgsForCall = append(fake.createServiceEntryResourcesArgsForCall, struct {
+		arg1 []*models.RouteWithBackends
+		arg2 string
+	}{arg1Copy, arg2})
+	fake.recordInvocation("CreateServiceEntryResources", []interface{}{arg1Copy, arg2})
+	fake.createServiceEntryResourcesMutex.Unlock()
+	if fake.CreateServiceEntryResourcesStub != nil {
+		return fake.CreateServiceEntryResourcesStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createDestinationRuleEnvelopesReturns.result1
+	fakeReturns := fake.createServiceEntryResourcesReturns
+	return fakeReturns.result1
 }
 
-func (fake *Config) CreateDestinationRuleEnvelopesCallCount() int {
-	fake.createDestinationRuleEnvelopesMutex.RLock()
-	defer fake.createDestinationRuleEnvelopesMutex.RUnlock()
-	return len(fake.createDestinationRuleEnvelopesArgsForCall)
+func (fake *Config) CreateServiceEntryResourcesCallCount() int {
+	fake.createServiceEntryResourcesMutex.RLock()
+	defer fake.createServiceEntryResourcesMutex.RUnlock()
+	return len(fake.createServiceEntryResourcesArgsForCall)
 }
 
-func (fake *Config) CreateDestinationRuleEnvelopesArgsForCall(i int) ([]*models.RouteWithBackends, string) {
-	fake.createDestinationRuleEnvelopesMutex.RLock()
-	defer fake.createDestinationRuleEnvelopesMutex.RUnlock()
-	return fake.createDestinationRuleEnvelopesArgsForCall[i].routes, fake.createDestinationRuleEnvelopesArgsForCall[i].version
+func (fake *Config) CreateServiceEntryResourcesCalls(stub func([]*models.RouteWithBackends, string) []*v1alpha1.Resource) {
+	fake.createServiceEntryResourcesMutex.Lock()
+	defer fake.createServiceEntryResourcesMutex.Unlock()
+	fake.CreateServiceEntryResourcesStub = stub
 }
 
-func (fake *Config) CreateDestinationRuleEnvelopesReturns(result1 []*mcp.Resource) {
-	fake.CreateDestinationRuleEnvelopesStub = nil
-	fake.createDestinationRuleEnvelopesReturns = struct {
-		result1 []*mcp.Resource
+func (fake *Config) CreateServiceEntryResourcesArgsForCall(i int) ([]*models.RouteWithBackends, string) {
+	fake.createServiceEntryResourcesMutex.RLock()
+	defer fake.createServiceEntryResourcesMutex.RUnlock()
+	argsForCall := fake.createServiceEntryResourcesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *Config) CreateServiceEntryResourcesReturns(result1 []*v1alpha1.Resource) {
+	fake.createServiceEntryResourcesMutex.Lock()
+	defer fake.createServiceEntryResourcesMutex.Unlock()
+	fake.CreateServiceEntryResourcesStub = nil
+	fake.createServiceEntryResourcesReturns = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateDestinationRuleEnvelopesReturnsOnCall(i int, result1 []*mcp.Resource) {
-	fake.CreateDestinationRuleEnvelopesStub = nil
-	if fake.createDestinationRuleEnvelopesReturnsOnCall == nil {
-		fake.createDestinationRuleEnvelopesReturnsOnCall = make(map[int]struct {
-			result1 []*mcp.Resource
+func (fake *Config) CreateServiceEntryResourcesReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.createServiceEntryResourcesMutex.Lock()
+	defer fake.createServiceEntryResourcesMutex.Unlock()
+	fake.CreateServiceEntryResourcesStub = nil
+	if fake.createServiceEntryResourcesReturnsOnCall == nil {
+		fake.createServiceEntryResourcesReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
 		})
 	}
-	fake.createDestinationRuleEnvelopesReturnsOnCall[i] = struct {
-		result1 []*mcp.Resource
+	fake.createServiceEntryResourcesReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateServiceEntryEnvelopes(routes []*models.RouteWithBackends, version string) []*mcp.Resource {
-	var routesCopy []*models.RouteWithBackends
-	if routes != nil {
-		routesCopy = make([]*models.RouteWithBackends, len(routes))
-		copy(routesCopy, routes)
+func (fake *Config) CreateVirtualServiceResources(arg1 []*models.RouteWithBackends, arg2 string) []*v1alpha1.Resource {
+	var arg1Copy []*models.RouteWithBackends
+	if arg1 != nil {
+		arg1Copy = make([]*models.RouteWithBackends, len(arg1))
+		copy(arg1Copy, arg1)
 	}
-	fake.createServiceEntryEnvelopesMutex.Lock()
-	ret, specificReturn := fake.createServiceEntryEnvelopesReturnsOnCall[len(fake.createServiceEntryEnvelopesArgsForCall)]
-	fake.createServiceEntryEnvelopesArgsForCall = append(fake.createServiceEntryEnvelopesArgsForCall, struct {
-		routes  []*models.RouteWithBackends
-		version string
-	}{routesCopy, version})
-	fake.recordInvocation("CreateServiceEntryEnvelopes", []interface{}{routesCopy, version})
-	fake.createServiceEntryEnvelopesMutex.Unlock()
-	if fake.CreateServiceEntryEnvelopesStub != nil {
-		return fake.CreateServiceEntryEnvelopesStub(routes, version)
+	fake.createVirtualServiceResourcesMutex.Lock()
+	ret, specificReturn := fake.createVirtualServiceResourcesReturnsOnCall[len(fake.createVirtualServiceResourcesArgsForCall)]
+	fake.createVirtualServiceResourcesArgsForCall = append(fake.createVirtualServiceResourcesArgsForCall, struct {
+		arg1 []*models.RouteWithBackends
+		arg2 string
+	}{arg1Copy, arg2})
+	fake.recordInvocation("CreateVirtualServiceResources", []interface{}{arg1Copy, arg2})
+	fake.createVirtualServiceResourcesMutex.Unlock()
+	if fake.CreateVirtualServiceResourcesStub != nil {
+		return fake.CreateVirtualServiceResourcesStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createServiceEntryEnvelopesReturns.result1
+	fakeReturns := fake.createVirtualServiceResourcesReturns
+	return fakeReturns.result1
 }
 
-func (fake *Config) CreateServiceEntryEnvelopesCallCount() int {
-	fake.createServiceEntryEnvelopesMutex.RLock()
-	defer fake.createServiceEntryEnvelopesMutex.RUnlock()
-	return len(fake.createServiceEntryEnvelopesArgsForCall)
+func (fake *Config) CreateVirtualServiceResourcesCallCount() int {
+	fake.createVirtualServiceResourcesMutex.RLock()
+	defer fake.createVirtualServiceResourcesMutex.RUnlock()
+	return len(fake.createVirtualServiceResourcesArgsForCall)
 }
 
-func (fake *Config) CreateServiceEntryEnvelopesArgsForCall(i int) ([]*models.RouteWithBackends, string) {
-	fake.createServiceEntryEnvelopesMutex.RLock()
-	defer fake.createServiceEntryEnvelopesMutex.RUnlock()
-	return fake.createServiceEntryEnvelopesArgsForCall[i].routes, fake.createServiceEntryEnvelopesArgsForCall[i].version
+func (fake *Config) CreateVirtualServiceResourcesCalls(stub func([]*models.RouteWithBackends, string) []*v1alpha1.Resource) {
+	fake.createVirtualServiceResourcesMutex.Lock()
+	defer fake.createVirtualServiceResourcesMutex.Unlock()
+	fake.CreateVirtualServiceResourcesStub = stub
 }
 
-func (fake *Config) CreateServiceEntryEnvelopesReturns(result1 []*mcp.Resource) {
-	fake.CreateServiceEntryEnvelopesStub = nil
-	fake.createServiceEntryEnvelopesReturns = struct {
-		result1 []*mcp.Resource
+func (fake *Config) CreateVirtualServiceResourcesArgsForCall(i int) ([]*models.RouteWithBackends, string) {
+	fake.createVirtualServiceResourcesMutex.RLock()
+	defer fake.createVirtualServiceResourcesMutex.RUnlock()
+	argsForCall := fake.createVirtualServiceResourcesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *Config) CreateVirtualServiceResourcesReturns(result1 []*v1alpha1.Resource) {
+	fake.createVirtualServiceResourcesMutex.Lock()
+	defer fake.createVirtualServiceResourcesMutex.Unlock()
+	fake.CreateVirtualServiceResourcesStub = nil
+	fake.createVirtualServiceResourcesReturns = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
-func (fake *Config) CreateServiceEntryEnvelopesReturnsOnCall(i int, result1 []*mcp.Resource) {
-	fake.CreateServiceEntryEnvelopesStub = nil
-	if fake.createServiceEntryEnvelopesReturnsOnCall == nil {
-		fake.createServiceEntryEnvelopesReturnsOnCall = make(map[int]struct {
-			result1 []*mcp.Resource
+func (fake *Config) CreateVirtualServiceResourcesReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.createVirtualServiceResourcesMutex.Lock()
+	defer fake.createVirtualServiceResourcesMutex.Unlock()
+	fake.CreateVirtualServiceResourcesStub = nil
+	if fake.createVirtualServiceResourcesReturnsOnCall == nil {
+		fake.createVirtualServiceResourcesReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
 		})
 	}
-	fake.createServiceEntryEnvelopesReturnsOnCall[i] = struct {
-		result1 []*mcp.Resource
+	fake.createVirtualServiceResourcesReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
 	}{result1}
 }
 
 func (fake *Config) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.createGatewayEnvelopesMutex.RLock()
-	defer fake.createGatewayEnvelopesMutex.RUnlock()
-	fake.createVirtualServiceEnvelopesMutex.RLock()
-	defer fake.createVirtualServiceEnvelopesMutex.RUnlock()
-	fake.createDestinationRuleEnvelopesMutex.RLock()
-	defer fake.createDestinationRuleEnvelopesMutex.RUnlock()
-	fake.createServiceEntryEnvelopesMutex.RLock()
-	defer fake.createServiceEntryEnvelopesMutex.RUnlock()
-	return fake.invocations
+	fake.createDestinationRuleResourcesMutex.RLock()
+	defer fake.createDestinationRuleResourcesMutex.RUnlock()
+	fake.createGatewayResourcesMutex.RLock()
+	defer fake.createGatewayResourcesMutex.RUnlock()
+	fake.createServiceEntryResourcesMutex.RLock()
+	defer fake.createServiceEntryResourcesMutex.RUnlock()
+	fake.createVirtualServiceResourcesMutex.RLock()
+	defer fake.createVirtualServiceResourcesMutex.RUnlock()
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *Config) recordInvocation(key string, args []interface{}) {
