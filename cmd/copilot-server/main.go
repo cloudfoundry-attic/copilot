@@ -170,6 +170,8 @@ func mainWithError() error {
 				Reporter:          reporter,
 				CollectionOptions: collectionOptions,
 			}
+			// TODO: Figure out sane NewConnectionsFreq and NewConnectionsBurstSize when we're doing scaling work.
+			// (https://www.pivotaltracker.com/story/show/162515083)
 			serverOptions := &source.ServerOptions{
 				NewConnectionFreq:      1000000000,
 				NewConnectionBurstSize: 1000000000,
