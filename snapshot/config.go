@@ -352,6 +352,7 @@ func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
 			Route: []*networking.HTTPRouteDestination{createDestinationWeight(route)},
 			Retries: &networking.HTTPRetry{
 				Attempts: 3,
+				RetryOn:  "5xx",
 			},
 		}
 	}

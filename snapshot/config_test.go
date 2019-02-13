@@ -284,6 +284,7 @@ var _ = Describe("Config", func() {
 						},
 						Retries: &networking.HTTPRetry{
 							Attempts: 3,
+							RetryOn:  "5xx",
 						},
 					},
 				}))

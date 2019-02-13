@@ -756,6 +756,7 @@ func expectedVirtualServiceWithRetries(host, gateway string, routes []Route) *v1
 			Timeout:          nil,
 			Retries: &v1alpha3.HTTPRetry{
 				Attempts: 3,
+				RetryOn:  "5xx",
 			},
 			Fault:                 nil,
 			Mirror:                nil,
