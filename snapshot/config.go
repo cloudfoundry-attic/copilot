@@ -133,6 +133,17 @@ func (c *Config) CreateDestinationRuleResources(routes []*models.RouteWithBacken
 			destinationRule = &networking.DestinationRule{Host: route.Hostname}
 		}
 
+		tlsSetting := &networking.TLSSettings{
+			Mode:              networking.TLSSettings_MUTUAL,
+			ClientCertificate: "/etc/cf-instance-credentials/instance.crt",
+			PrivateKey:        "/etc/cf-instance-credentials/instance.key",
+			CaCertificates:    "/etc/cf-system-certificates/trusted-ca-1.crt",
+		}
+
+		destinationRule.TrafficPolicy = &networking.TrafficPolicy{
+			Tls: tlsSetting,
+		}
+
 		subset := &networking.Subset{Name: route.CapiProcessGUID,
 			Labels: map[string]string{"cfapp": route.CapiProcessGUID},
 		}
