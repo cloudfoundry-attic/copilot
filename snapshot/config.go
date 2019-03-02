@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"github.com/gogo/protobuf/types"
+	authentication "istio.io/api/authentication/v1alpha1"
 	mcp "istio.io/api/mcp/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
@@ -19,6 +20,7 @@ type config interface {
 	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreatePolicyResources() []*mcp.Resource
 }
 
 type Config struct {
@@ -30,6 +32,37 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 	return &Config{
 		librarian: librarian,
 		logger:    logger,
+	}
+}
+
+func (c *Config) CreatePolicyResources() []*mcp.Resource {
+	policy := &authentication.Policy{
+		Peers: []*authentication.PeerAuthenticationMethod{
+			{
+				Params: &authentication.PeerAuthenticationMethod_Mtls{
+					Mtls: &authentication.MutualTls{
+						AllowTls: true,
+						Mode:     authentication.MutualTls_STRICT,
+					},
+				},
+			},
+		},
+	}
+
+	policyResource, err := types.MarshalAny(policy)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling policy", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default-policy",
+				Version: "1",
+			},
+			Body: policyResource,
+		},
 	}
 }
 
@@ -47,7 +80,7 @@ func (c *Config) CreateSidecarResources() []*mcp.Resource {
 	scResource, err := types.MarshalAny(sidecar)
 	if err != nil {
 		// not tested
-		c.logger.Error("marshaling gateway", err)
+		c.logger.Error("marshaling sidecar", err)
 	}
 
 	return []*mcp.Resource{

@@ -99,12 +99,14 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
 			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
 			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
+			policies := s.config.CreatePolicyResources()
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
 			s.builder.Set(SidecarTypeURL, "1", sidecars)
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
+			s.builder.Set(PolicyTypeURL, "1", policies)
 
 			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)
