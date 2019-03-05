@@ -106,7 +106,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
-			s.builder.Set(PolicyTypeURL, "1", policies)
+			s.builder.Set(MeshPolicyTypeURL, "1", policies)
 
 			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)

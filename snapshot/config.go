@@ -41,8 +41,7 @@ func (c *Config) CreatePolicyResources() []*mcp.Resource {
 			{
 				Params: &authentication.PeerAuthenticationMethod_Mtls{
 					Mtls: &authentication.MutualTls{
-						AllowTls: true,
-						Mode:     authentication.MutualTls_STRICT,
+						Mode: authentication.MutualTls_STRICT,
 					},
 				},
 			},
@@ -58,7 +57,7 @@ func (c *Config) CreatePolicyResources() []*mcp.Resource {
 	return []*mcp.Resource{
 		&mcp.Resource{
 			Metadata: &mcp.Metadata{
-				Name:    "default-policy",
+				Name:    "default",
 				Version: "1",
 			},
 			Body: policyResource,
@@ -86,7 +85,7 @@ func (c *Config) CreateSidecarResources() []*mcp.Resource {
 	return []*mcp.Resource{
 		&mcp.Resource{
 			Metadata: &mcp.Metadata{
-				Name:    DefaultSidecarName,
+				Name:    "internal/" + DefaultSidecarName,
 				Version: "1",
 			},
 			Body: scResource,
@@ -166,16 +165,18 @@ func (c *Config) CreateDestinationRuleResources(routes []*models.RouteWithBacken
 			destinationRule = &networking.DestinationRule{Host: route.Hostname}
 		}
 
-		tlsSetting := &networking.TLSSettings{
-			Mode:              networking.TLSSettings_MUTUAL,
-			ClientCertificate: "/etc/cf-instance-credentials/instance.crt",
-			PrivateKey:        "/etc/cf-instance-credentials/instance.key",
-			CaCertificates:    "/etc/cf-system-certificates/trusted-ca-1.crt",
-		}
+		// if route.Internal {
+		// 	tlsSetting := &networking.TLSSettings{
+		// 		Mode:              networking.TLSSettings_MUTUAL,
+		// 		ClientCertificate: "/etc/cf-instance-credentials/instance.crt",
+		// 		PrivateKey:        "/etc/cf-instance-credentials/instance.key",
+		// 		CaCertificates:    "/etc/cf-system-certificates/trusted-ca-1.crt",
+		// 	}
 
-		destinationRule.TrafficPolicy = &networking.TrafficPolicy{
-			Tls: tlsSetting,
-		}
+		// 	destinationRule.TrafficPolicy = &networking.TrafficPolicy{
+		// 		Tls: tlsSetting,
+		// 	}
+		// }
 
 		subset := &networking.Subset{Name: route.CapiProcessGUID,
 			Labels: map[string]string{"cfapp": route.CapiProcessGUID},
