@@ -19,7 +19,6 @@ run:
       go get github.com/onsi/ginkgo/ginkgo
       go get github.com/golang/dep/cmd/dep
       cd go/src/code.cloudfoundry.org/copilot
-      dep ensure
       ginkgo -r -p --randomizeAllSpecs --randomizeSuites --failOnPending --trace --race --progress
       go install ./cmd/copilot-server
       cd sdk/ruby
