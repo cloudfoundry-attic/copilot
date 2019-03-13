@@ -1,6 +1,8 @@
 package snapshot_test
 
 import (
+	"time"
+
 	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/copilot/certs/fakes"
 	"code.cloudfoundry.org/copilot/models"
@@ -286,6 +288,7 @@ var _ = Describe("Config", func() {
 							Attempts: 3,
 							RetryOn:  "5xx",
 						},
+						Timeout: types.DurationProto(15 * time.Second),
 					},
 				}))
 			})

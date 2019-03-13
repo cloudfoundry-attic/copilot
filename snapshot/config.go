@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"fmt"
+	"time"
 
 	"code.cloudfoundry.org/copilot/certs"
 	"code.cloudfoundry.org/copilot/models"
@@ -354,6 +355,7 @@ func createHTTPRoute(route *models.RouteWithBackends) *networking.HTTPRoute {
 				Attempts: 3,
 				RetryOn:  "5xx",
 			},
+			Timeout: types.DurationProto(15 * time.Second),
 		}
 	}
 

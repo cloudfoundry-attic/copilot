@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/copilot/testhelpers"
 	"code.cloudfoundry.org/durationjson"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -753,7 +754,7 @@ func expectedVirtualServiceWithRetries(host, gateway string, routes []Route) *v1
 			Redirect:         nil,
 			Rewrite:          nil,
 			WebsocketUpgrade: false,
-			Timeout:          nil,
+			Timeout:          types.DurationProto(15 * time.Second),
 			Retries: &v1alpha3.HTTPRetry{
 				Attempts: 3,
 				RetryOn:  "5xx",
