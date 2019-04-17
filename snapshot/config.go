@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"github.com/gogo/protobuf/types"
+	authentication "istio.io/api/authentication/v1alpha1"
 	mcp "istio.io/api/mcp/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
@@ -20,6 +21,7 @@ type config interface {
 	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	CreatePolicyResources() []*mcp.Resource
 }
 
 type Config struct {
@@ -117,6 +119,36 @@ func (c *Config) CreateGatewayResources() (resources []*mcp.Resource) {
 	return resources
 }
 
+func (c *Config) CreatePolicyResources() []*mcp.Resource {
+	policy := &authentication.Policy{
+		Peers: []*authentication.PeerAuthenticationMethod{
+			{
+				Params: &authentication.PeerAuthenticationMethod_Mtls{
+					Mtls: &authentication.MutualTls{
+						Mode: authentication.MutualTls_STRICT,
+					},
+				},
+			},
+		},
+	}
+
+	policyResource, err := types.MarshalAny(policy)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling policy", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: policyResource,
+		},
+	}
+}
+
 func (c *Config) CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) (resources []*mcp.Resource) {
 	destinationRules := make(map[string]*model.Config, len(routes))
 
@@ -132,6 +164,19 @@ func (c *Config) CreateDestinationRuleResources(routes []*models.RouteWithBacken
 			destinationRule = config.Spec.(*networking.DestinationRule)
 		} else {
 			destinationRule = &networking.DestinationRule{Host: route.Hostname}
+		}
+
+		if route.Internal {
+			trafficPolicy := &networking.TrafficPolicy{
+				Tls: &networking.TLSSettings{
+					Mode:              2,
+					ClientCertificate: "/etc/cf-instance-credentials/instance.crt",
+					PrivateKey:        "/etc/cf-instance-credentials/instance.key",
+					CaCertificates:    "/etc/cf-system-certificates/trusted-ca-1.crt",
+				},
+			}
+
+			destinationRule.TrafficPolicy = trafficPolicy
 		}
 
 		subset := &networking.Subset{Name: route.CapiProcessGUID,
