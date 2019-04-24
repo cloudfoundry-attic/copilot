@@ -21,18 +21,8 @@ var (
 	VirtualServiceTypeURL     string
 	GatewayTypeURL            string
 	ServiceEntryTypeURL       string
-	EnvoyFilterTypeURL        string
 	SidecarTypeURL            string
-	HTTPAPISpecTypeURL        string
-	HTTPAPISpecBindingTypeURL string
-	QuotaSpecTypeURL          string
-	QuotaSpecBindingTypeURL   string
-	PolicyTypeURL             string
 	MeshPolicyTypeURL         string
-	ServiceRoleTypeURL        string
-	ServiceRoleBindingTypeURL string
-	RbacConfigTypeURL         string
-	ClusterRbacConfigTypeURL  string
 )
 
 const (
@@ -139,16 +129,6 @@ func init() {
 	VirtualServiceTypeURL = getTypeURLByType("virtual-service")
 	GatewayTypeURL = getTypeURLByType("gateway")
 	ServiceEntryTypeURL = getTypeURLByType("service-entry")
-	EnvoyFilterTypeURL = getTypeURLByType("envoy-filter")
 	SidecarTypeURL = getTypeURLByType("sidecar")
-	HTTPAPISpecTypeURL = getTypeURLByType("http-api-spec")
-	HTTPAPISpecBindingTypeURL = getTypeURLByType("http-api-spec-binding")
-	QuotaSpecTypeURL = getTypeURLByType("quota-spec")
-	QuotaSpecBindingTypeURL = getTypeURLByType("quota-spec-binding")
-	PolicyTypeURL = getTypeURLByType("policy")
 	MeshPolicyTypeURL = getTypeURLByType("mesh-policy")
-	ServiceRoleTypeURL = getTypeURLByType("service-role")
-	ServiceRoleBindingTypeURL = getTypeURLByType("service-role-binding")
-	RbacConfigTypeURL = getTypeURLByType("rbac-config")
-	ClusterRbacConfigTypeURL = getTypeURLByType("cluster-rbac-config")
 }

@@ -143,19 +143,9 @@ func mainWithError() error {
 		copilotsnapshot.GatewayTypeURL,
 		copilotsnapshot.VirtualServiceTypeURL,
 		copilotsnapshot.DestinationRuleTypeURL,
-		copilotsnapshot.ServiceEntryTypeURL,
-		copilotsnapshot.EnvoyFilterTypeURL,
 		copilotsnapshot.SidecarTypeURL,
-		copilotsnapshot.HTTPAPISpecTypeURL,
-		copilotsnapshot.HTTPAPISpecBindingTypeURL,
-		copilotsnapshot.QuotaSpecTypeURL,
-		copilotsnapshot.QuotaSpecBindingTypeURL,
-		copilotsnapshot.PolicyTypeURL,
 		copilotsnapshot.MeshPolicyTypeURL,
-		copilotsnapshot.ServiceRoleTypeURL,
-		copilotsnapshot.ServiceRoleBindingTypeURL,
-		copilotsnapshot.RbacConfigTypeURL,
-		copilotsnapshot.ClusterRbacConfigTypeURL,
+		copilotsnapshot.ServiceEntryTypeURL,
 	}
 
 	collectionOptions := source.CollectionOptionsFromSlice(typeURLs)
