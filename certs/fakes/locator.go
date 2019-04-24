@@ -2,9 +2,9 @@
 package fakes
 
 import (
-	sync "sync"
+	"sync"
 
-	certs "code.cloudfoundry.org/copilot/certs"
+	"code.cloudfoundry.org/copilot/certs"
 )
 
 type Locator struct {

@@ -8,25 +8,15 @@ import (
 )
 
 type RoutesRepo struct {
-	UpsertStub        func(route *models.Route)
-	upsertMutex       sync.RWMutex
-	upsertArgsForCall []struct {
-		route *models.Route
-	}
-	DeleteStub        func(guid models.RouteGUID)
+	DeleteStub        func(models.RouteGUID)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		guid models.RouteGUID
+		arg1 models.RouteGUID
 	}
-	SyncStub        func(routes []*models.Route)
-	syncMutex       sync.RWMutex
-	syncArgsForCall []struct {
-		routes []*models.Route
-	}
-	GetStub        func(guid models.RouteGUID) (*models.Route, bool)
+	GetStub        func(models.RouteGUID) (*models.Route, bool)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		guid models.RouteGUID
+		arg1 models.RouteGUID
 	}
 	getReturns struct {
 		result1 *models.Route
@@ -38,50 +28,37 @@ type RoutesRepo struct {
 	}
 	ListStub        func() map[string]string
 	listMutex       sync.RWMutex
-	listArgsForCall []struct{}
-	listReturns     struct {
+	listArgsForCall []struct {
+	}
+	listReturns struct {
 		result1 map[string]string
 	}
 	listReturnsOnCall map[int]struct {
 		result1 map[string]string
 	}
+	SyncStub        func([]*models.Route)
+	syncMutex       sync.RWMutex
+	syncArgsForCall []struct {
+		arg1 []*models.Route
+	}
+	UpsertStub        func(*models.Route)
+	upsertMutex       sync.RWMutex
+	upsertArgsForCall []struct {
+		arg1 *models.Route
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RoutesRepo) Upsert(route *models.Route) {
-	fake.upsertMutex.Lock()
-	fake.upsertArgsForCall = append(fake.upsertArgsForCall, struct {
-		route *models.Route
-	}{route})
-	fake.recordInvocation("Upsert", []interface{}{route})
-	fake.upsertMutex.Unlock()
-	if fake.UpsertStub != nil {
-		fake.UpsertStub(route)
-	}
-}
-
-func (fake *RoutesRepo) UpsertCallCount() int {
-	fake.upsertMutex.RLock()
-	defer fake.upsertMutex.RUnlock()
-	return len(fake.upsertArgsForCall)
-}
-
-func (fake *RoutesRepo) UpsertArgsForCall(i int) *models.Route {
-	fake.upsertMutex.RLock()
-	defer fake.upsertMutex.RUnlock()
-	return fake.upsertArgsForCall[i].route
-}
-
-func (fake *RoutesRepo) Delete(guid models.RouteGUID) {
+func (fake *RoutesRepo) Delete(arg1 models.RouteGUID) {
 	fake.deleteMutex.Lock()
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		guid models.RouteGUID
-	}{guid})
-	fake.recordInvocation("Delete", []interface{}{guid})
+		arg1 models.RouteGUID
+	}{arg1})
+	fake.recordInvocation("Delete", []interface{}{arg1})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		fake.DeleteStub(guid)
+		fake.DeleteStub(arg1)
 	}
 }
 
@@ -91,56 +68,35 @@ func (fake *RoutesRepo) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
+func (fake *RoutesRepo) DeleteCalls(stub func(models.RouteGUID)) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = stub
+}
+
 func (fake *RoutesRepo) DeleteArgsForCall(i int) models.RouteGUID {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
-	return fake.deleteArgsForCall[i].guid
+	argsForCall := fake.deleteArgsForCall[i]
+	return argsForCall.arg1
 }
 
-func (fake *RoutesRepo) Sync(routes []*models.Route) {
-	var routesCopy []*models.Route
-	if routes != nil {
-		routesCopy = make([]*models.Route, len(routes))
-		copy(routesCopy, routes)
-	}
-	fake.syncMutex.Lock()
-	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
-		routes []*models.Route
-	}{routesCopy})
-	fake.recordInvocation("Sync", []interface{}{routesCopy})
-	fake.syncMutex.Unlock()
-	if fake.SyncStub != nil {
-		fake.SyncStub(routes)
-	}
-}
-
-func (fake *RoutesRepo) SyncCallCount() int {
-	fake.syncMutex.RLock()
-	defer fake.syncMutex.RUnlock()
-	return len(fake.syncArgsForCall)
-}
-
-func (fake *RoutesRepo) SyncArgsForCall(i int) []*models.Route {
-	fake.syncMutex.RLock()
-	defer fake.syncMutex.RUnlock()
-	return fake.syncArgsForCall[i].routes
-}
-
-func (fake *RoutesRepo) Get(guid models.RouteGUID) (*models.Route, bool) {
+func (fake *RoutesRepo) Get(arg1 models.RouteGUID) (*models.Route, bool) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		guid models.RouteGUID
-	}{guid})
-	fake.recordInvocation("Get", []interface{}{guid})
+		arg1 models.RouteGUID
+	}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(guid)
+		return fake.GetStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.getReturns.result1, fake.getReturns.result2
+	fakeReturns := fake.getReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *RoutesRepo) GetCallCount() int {
@@ -149,13 +105,22 @@ func (fake *RoutesRepo) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
+func (fake *RoutesRepo) GetCalls(stub func(models.RouteGUID) (*models.Route, bool)) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = stub
+}
+
 func (fake *RoutesRepo) GetArgsForCall(i int) models.RouteGUID {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	return fake.getArgsForCall[i].guid
+	argsForCall := fake.getArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *RoutesRepo) GetReturns(result1 *models.Route, result2 bool) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	fake.getReturns = struct {
 		result1 *models.Route
@@ -164,6 +129,8 @@ func (fake *RoutesRepo) GetReturns(result1 *models.Route, result2 bool) {
 }
 
 func (fake *RoutesRepo) GetReturnsOnCall(i int, result1 *models.Route, result2 bool) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
@@ -180,7 +147,8 @@ func (fake *RoutesRepo) GetReturnsOnCall(i int, result1 *models.Route, result2 b
 func (fake *RoutesRepo) List() map[string]string {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
+	fake.listArgsForCall = append(fake.listArgsForCall, struct {
+	}{})
 	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
@@ -189,7 +157,8 @@ func (fake *RoutesRepo) List() map[string]string {
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.listReturns.result1
+	fakeReturns := fake.listReturns
+	return fakeReturns.result1
 }
 
 func (fake *RoutesRepo) ListCallCount() int {
@@ -198,7 +167,15 @@ func (fake *RoutesRepo) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
+func (fake *RoutesRepo) ListCalls(stub func() map[string]string) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
+	fake.ListStub = stub
+}
+
 func (fake *RoutesRepo) ListReturns(result1 map[string]string) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
 		result1 map[string]string
@@ -206,6 +183,8 @@ func (fake *RoutesRepo) ListReturns(result1 map[string]string) {
 }
 
 func (fake *RoutesRepo) ListReturnsOnCall(i int, result1 map[string]string) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
@@ -217,20 +196,91 @@ func (fake *RoutesRepo) ListReturnsOnCall(i int, result1 map[string]string) {
 	}{result1}
 }
 
+func (fake *RoutesRepo) Sync(arg1 []*models.Route) {
+	var arg1Copy []*models.Route
+	if arg1 != nil {
+		arg1Copy = make([]*models.Route, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.syncMutex.Lock()
+	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
+		arg1 []*models.Route
+	}{arg1Copy})
+	fake.recordInvocation("Sync", []interface{}{arg1Copy})
+	fake.syncMutex.Unlock()
+	if fake.SyncStub != nil {
+		fake.SyncStub(arg1)
+	}
+}
+
+func (fake *RoutesRepo) SyncCallCount() int {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	return len(fake.syncArgsForCall)
+}
+
+func (fake *RoutesRepo) SyncCalls(stub func([]*models.Route)) {
+	fake.syncMutex.Lock()
+	defer fake.syncMutex.Unlock()
+	fake.SyncStub = stub
+}
+
+func (fake *RoutesRepo) SyncArgsForCall(i int) []*models.Route {
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	argsForCall := fake.syncArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *RoutesRepo) Upsert(arg1 *models.Route) {
+	fake.upsertMutex.Lock()
+	fake.upsertArgsForCall = append(fake.upsertArgsForCall, struct {
+		arg1 *models.Route
+	}{arg1})
+	fake.recordInvocation("Upsert", []interface{}{arg1})
+	fake.upsertMutex.Unlock()
+	if fake.UpsertStub != nil {
+		fake.UpsertStub(arg1)
+	}
+}
+
+func (fake *RoutesRepo) UpsertCallCount() int {
+	fake.upsertMutex.RLock()
+	defer fake.upsertMutex.RUnlock()
+	return len(fake.upsertArgsForCall)
+}
+
+func (fake *RoutesRepo) UpsertCalls(stub func(*models.Route)) {
+	fake.upsertMutex.Lock()
+	defer fake.upsertMutex.Unlock()
+	fake.UpsertStub = stub
+}
+
+func (fake *RoutesRepo) UpsertArgsForCall(i int) *models.Route {
+	fake.upsertMutex.RLock()
+	defer fake.upsertMutex.RUnlock()
+	argsForCall := fake.upsertArgsForCall[i]
+	return argsForCall.arg1
+}
+
 func (fake *RoutesRepo) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.upsertMutex.RLock()
-	defer fake.upsertMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
-	fake.syncMutex.RLock()
-	defer fake.syncMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
-	return fake.invocations
+	fake.syncMutex.RLock()
+	defer fake.syncMutex.RUnlock()
+	fake.upsertMutex.RLock()
+	defer fake.upsertMutex.RUnlock()
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *RoutesRepo) recordInvocation(key string, args []interface{}) {

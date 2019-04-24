@@ -6,10 +6,10 @@ import (
 )
 
 type RoutesRepoVIPResolverInterface struct {
-	GetVIPByNameStub        func(hostname string) (string, bool)
+	GetVIPByNameStub        func(string) (string, bool)
 	getVIPByNameMutex       sync.RWMutex
 	getVIPByNameArgsForCall []struct {
-		hostname string
+		arg1 string
 	}
 	getVIPByNameReturns struct {
 		result1 string
@@ -23,21 +23,22 @@ type RoutesRepoVIPResolverInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RoutesRepoVIPResolverInterface) GetVIPByName(hostname string) (string, bool) {
+func (fake *RoutesRepoVIPResolverInterface) GetVIPByName(arg1 string) (string, bool) {
 	fake.getVIPByNameMutex.Lock()
 	ret, specificReturn := fake.getVIPByNameReturnsOnCall[len(fake.getVIPByNameArgsForCall)]
 	fake.getVIPByNameArgsForCall = append(fake.getVIPByNameArgsForCall, struct {
-		hostname string
-	}{hostname})
-	fake.recordInvocation("GetVIPByName", []interface{}{hostname})
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetVIPByName", []interface{}{arg1})
 	fake.getVIPByNameMutex.Unlock()
 	if fake.GetVIPByNameStub != nil {
-		return fake.GetVIPByNameStub(hostname)
+		return fake.GetVIPByNameStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.getVIPByNameReturns.result1, fake.getVIPByNameReturns.result2
+	fakeReturns := fake.getVIPByNameReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameCallCount() int {
@@ -46,13 +47,22 @@ func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameCallCount() int {
 	return len(fake.getVIPByNameArgsForCall)
 }
 
+func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameCalls(stub func(string) (string, bool)) {
+	fake.getVIPByNameMutex.Lock()
+	defer fake.getVIPByNameMutex.Unlock()
+	fake.GetVIPByNameStub = stub
+}
+
 func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameArgsForCall(i int) string {
 	fake.getVIPByNameMutex.RLock()
 	defer fake.getVIPByNameMutex.RUnlock()
-	return fake.getVIPByNameArgsForCall[i].hostname
+	argsForCall := fake.getVIPByNameArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameReturns(result1 string, result2 bool) {
+	fake.getVIPByNameMutex.Lock()
+	defer fake.getVIPByNameMutex.Unlock()
 	fake.GetVIPByNameStub = nil
 	fake.getVIPByNameReturns = struct {
 		result1 string
@@ -61,6 +71,8 @@ func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameReturns(result1 string, 
 }
 
 func (fake *RoutesRepoVIPResolverInterface) GetVIPByNameReturnsOnCall(i int, result1 string, result2 bool) {
+	fake.getVIPByNameMutex.Lock()
+	defer fake.getVIPByNameMutex.Unlock()
 	fake.GetVIPByNameStub = nil
 	if fake.getVIPByNameReturnsOnCall == nil {
 		fake.getVIPByNameReturnsOnCall = make(map[int]struct {
@@ -79,7 +91,11 @@ func (fake *RoutesRepoVIPResolverInterface) Invocations() map[string][][]interfa
 	defer fake.invocationsMutex.RUnlock()
 	fake.getVIPByNameMutex.RLock()
 	defer fake.getVIPByNameMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *RoutesRepoVIPResolverInterface) recordInvocation(key string, args []interface{}) {

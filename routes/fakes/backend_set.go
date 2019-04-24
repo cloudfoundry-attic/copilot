@@ -2,9 +2,9 @@
 package fakes
 
 import (
-	sync "sync"
+	"sync"
 
-	models "code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/copilot/models"
 )
 
 type BackendSet struct {

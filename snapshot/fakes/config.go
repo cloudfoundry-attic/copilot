@@ -31,6 +31,16 @@ type Config struct {
 	createGatewayResourcesReturnsOnCall map[int]struct {
 		result1 []*v1alpha1.Resource
 	}
+	CreatePolicyResourcesStub        func() []*v1alpha1.Resource
+	createPolicyResourcesMutex       sync.RWMutex
+	createPolicyResourcesArgsForCall []struct {
+	}
+	createPolicyResourcesReturns struct {
+		result1 []*v1alpha1.Resource
+	}
+	createPolicyResourcesReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
+	}
 	CreateServiceEntryResourcesStub        func([]*models.RouteWithBackends, string) []*v1alpha1.Resource
 	createServiceEntryResourcesMutex       sync.RWMutex
 	createServiceEntryResourcesArgsForCall []struct {
@@ -183,6 +193,58 @@ func (fake *Config) CreateGatewayResourcesReturnsOnCall(i int, result1 []*v1alph
 		})
 	}
 	fake.createGatewayResourcesReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
+	}{result1}
+}
+
+func (fake *Config) CreatePolicyResources() []*v1alpha1.Resource {
+	fake.createPolicyResourcesMutex.Lock()
+	ret, specificReturn := fake.createPolicyResourcesReturnsOnCall[len(fake.createPolicyResourcesArgsForCall)]
+	fake.createPolicyResourcesArgsForCall = append(fake.createPolicyResourcesArgsForCall, struct {
+	}{})
+	fake.recordInvocation("CreatePolicyResources", []interface{}{})
+	fake.createPolicyResourcesMutex.Unlock()
+	if fake.CreatePolicyResourcesStub != nil {
+		return fake.CreatePolicyResourcesStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.createPolicyResourcesReturns
+	return fakeReturns.result1
+}
+
+func (fake *Config) CreatePolicyResourcesCallCount() int {
+	fake.createPolicyResourcesMutex.RLock()
+	defer fake.createPolicyResourcesMutex.RUnlock()
+	return len(fake.createPolicyResourcesArgsForCall)
+}
+
+func (fake *Config) CreatePolicyResourcesCalls(stub func() []*v1alpha1.Resource) {
+	fake.createPolicyResourcesMutex.Lock()
+	defer fake.createPolicyResourcesMutex.Unlock()
+	fake.CreatePolicyResourcesStub = stub
+}
+
+func (fake *Config) CreatePolicyResourcesReturns(result1 []*v1alpha1.Resource) {
+	fake.createPolicyResourcesMutex.Lock()
+	defer fake.createPolicyResourcesMutex.Unlock()
+	fake.CreatePolicyResourcesStub = nil
+	fake.createPolicyResourcesReturns = struct {
+		result1 []*v1alpha1.Resource
+	}{result1}
+}
+
+func (fake *Config) CreatePolicyResourcesReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.createPolicyResourcesMutex.Lock()
+	defer fake.createPolicyResourcesMutex.Unlock()
+	fake.CreatePolicyResourcesStub = nil
+	if fake.createPolicyResourcesReturnsOnCall == nil {
+		fake.createPolicyResourcesReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
+		})
+	}
+	fake.createPolicyResourcesReturnsOnCall[i] = struct {
 		result1 []*v1alpha1.Resource
 	}{result1}
 }
@@ -378,6 +440,8 @@ func (fake *Config) Invocations() map[string][][]interface{} {
 	defer fake.createDestinationRuleResourcesMutex.RUnlock()
 	fake.createGatewayResourcesMutex.RLock()
 	defer fake.createGatewayResourcesMutex.RUnlock()
+	fake.createPolicyResourcesMutex.RLock()
+	defer fake.createPolicyResourcesMutex.RUnlock()
 	fake.createServiceEntryResourcesMutex.RLock()
 	defer fake.createServiceEntryResourcesMutex.RUnlock()
 	fake.createSidecarResourcesMutex.RLock()
