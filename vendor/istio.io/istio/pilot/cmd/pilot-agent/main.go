@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,6 +43,7 @@ import (
 	"istio.io/istio/pilot/pkg/serviceregistry"
 	"istio.io/istio/pkg/cmd"
 	"istio.io/istio/pkg/collateral"
+	"istio.io/istio/pkg/features/pilot"
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/version"
 )
@@ -54,28 +56,37 @@ var (
 	applicationPorts []string
 
 	// proxy config flags (named identically)
-	configPath               string
-	controlPlaneBootstrap    bool
-	binaryPath               string
-	serviceCluster           string
-	drainDuration            time.Duration
-	parentShutdownDuration   time.Duration
-	discoveryAddress         string
-	zipkinAddress            string
-	lightstepAddress         string
-	lightstepAccessToken     string
-	lightstepSecure          bool
-	lightstepCacertPath      string
-	connectTimeout           time.Duration
-	statsdUDPAddress         string
-	proxyAdminPort           uint16
-	controlPlaneAuthPolicy   string
-	customConfigFile         string
-	proxyLogLevel            string
-	concurrency              int
-	templateFile             string
-	disableInternalTelemetry bool
-	loggingOptions           = log.DefaultOptions()
+	configPath                 string
+	controlPlaneBootstrap      bool
+	binaryPath                 string
+	serviceCluster             string
+	drainDuration              time.Duration
+	parentShutdownDuration     time.Duration
+	discoveryAddress           string
+	zipkinAddress              string
+	lightstepAddress           string
+	lightstepAccessToken       string
+	lightstepSecure            bool
+	lightstepCacertPath        string
+	datadogAgentAddress        string
+	connectTimeout             time.Duration
+	statsdUDPAddress           string
+	envoyMetricsServiceAddress string
+	proxyAdminPort             uint16
+	controlPlaneAuthPolicy     string
+	customConfigFile           string
+	proxyLogLevel              string
+	concurrency                int
+	templateFile               string
+	disableInternalTelemetry   bool
+	tlsServerCertChain         string
+	tlsServerKey               string
+	tlsServerRootCert          string
+	tlsClientCertChain         string
+	tlsClientKey               string
+	tlsClientRootCert          string
+	tlsCertsToWatch            []string
+	loggingOptions             = log.DefaultOptions()
 
 	wg sync.WaitGroup
 
@@ -139,6 +150,40 @@ var (
 			role.TrustDomain = spiffe.GetTrustDomain()
 			log.Infof("Proxy role: %#v", role)
 
+			// Add cert paths as node metadata only if they differ from defaults
+			if tlsServerCertChain != model.DefaultCertChain {
+				role.Metadata[model.NodeMetadataTLSServerCertChain] = tlsServerCertChain
+			}
+			if tlsServerKey != model.DefaultKey {
+				role.Metadata[model.NodeMetadataTLSServerKey] = tlsServerKey
+			}
+			if tlsServerRootCert != model.DefaultRootCert {
+				role.Metadata[model.NodeMetadataTLSServerRootCert] = tlsServerRootCert
+			}
+
+			if tlsClientCertChain != model.DefaultCertChain {
+				role.Metadata[model.NodeMetadataTLSClientCertChain] = tlsClientCertChain
+			}
+			if tlsClientKey != model.DefaultKey {
+				role.Metadata[model.NodeMetadataTLSClientKey] = tlsClientKey
+			}
+			if tlsClientRootCert != model.DefaultRootCert {
+				role.Metadata[model.NodeMetadataTLSClientRootCert] = tlsClientRootCert
+			}
+
+			tlsCertsToWatch = []string{
+				tlsServerCertChain, tlsServerKey, tlsServerRootCert,
+				tlsClientCertChain, tlsClientKey, tlsClientCertChain,
+			}
+
+			if role.Type == model.Ingress {
+				tlsCertsToWatch = append(tlsCertsToWatch, path.Join(model.IngressCertsPath, model.IngressCertFilename))
+				tlsCertsToWatch = append(tlsCertsToWatch, path.Join(model.IngressCertsPath, model.IngressKeyFilename))
+			}
+
+			// dedupe cert paths so we don't set up 2 watchers for the same file:
+			tlsCertsToWatch = dedupeStrings(tlsCertsToWatch)
+
 			proxyConfig := model.DefaultProxyConfig()
 
 			// set all flags
@@ -151,6 +196,7 @@ var (
 			proxyConfig.DiscoveryAddress = discoveryAddress
 			proxyConfig.ConnectTimeout = types.DurationProto(connectTimeout)
 			proxyConfig.StatsdUdpAddress = statsdUDPAddress
+			proxyConfig.EnvoyMetricsServiceAddress = envoyMetricsServiceAddress
 			proxyConfig.ProxyAdminPort = int32(proxyAdminPort)
 			proxyConfig.Concurrency = int32(concurrency)
 
@@ -219,6 +265,14 @@ var (
 						},
 					},
 				}
+			} else if datadogAgentAddress != "" {
+				proxyConfig.Tracing = &meshconfig.Tracing{
+					Tracer: &meshconfig.Tracing_Datadog_{
+						Datadog: &meshconfig.Tracing_Datadog{
+							Address: datadogAgentAddress,
+						},
+					},
+				}
 			}
 
 			if err := model.ValidateProxyConfig(&proxyConfig); err != nil {
@@ -231,21 +285,13 @@ var (
 				log.Infof("Effective config: %s", out)
 			}
 
-			certs := []envoy.CertSource{
-				{
-					Directory: model.AuthCertsPath,
-					Files:     []string{model.CertChainFilename, model.KeyFilename, model.RootCertFilename},
-				},
+			log.Infof("Monitored certs: %#v", tlsCertsToWatch)
+			// since Envoy needs the certs for mTLS, we wait for them to become available before starting it
+			if controlPlaneAuthPolicy == meshconfig.AuthenticationPolicy_MUTUAL_TLS.String() {
+				for _, cert := range tlsCertsToWatch {
+					waitForCerts(cert, 2*time.Minute)
+				}
 			}
-
-			if role.Type == model.Ingress {
-				certs = append(certs, envoy.CertSource{
-					Directory: model.IngressCertsPath,
-					Files:     []string{model.IngressCertFilename, model.IngressKeyFilename},
-				})
-			}
-
-			log.Infof("Monitored certs: %#v", certs)
 
 			// TODO: change Mixer and Pilot to use standard template and deprecate this custom bootstrap parser
 			if controlPlaneBootstrap {
@@ -314,8 +360,8 @@ var (
 			log.Infof("PilotSAN %#v", pilotSAN)
 
 			envoyProxy := envoy.NewProxy(proxyConfig, role.ServiceNode(), proxyLogLevel, pilotSAN, role.IPAddresses)
-			agent := proxy.NewAgent(envoyProxy, proxy.DefaultRetry, proxyConfig.ParentShutdownDuration)
-			watcher := envoy.NewWatcher(certs, agent.ConfigCh())
+			agent := proxy.NewAgent(envoyProxy, proxy.DefaultRetry, pilot.TerminationDrainDuration())
+			watcher := envoy.NewWatcher(tlsCertsToWatch, agent.ConfigCh())
 
 			go waitForCompletion(ctx, agent.Run)
 			go waitForCompletion(ctx, watcher.Run)
@@ -325,6 +371,18 @@ var (
 		},
 	}
 )
+
+func dedupeStrings(in []string) []string {
+	stringMap := map[string]bool{}
+	for _, c := range in {
+		stringMap[c] = true
+	}
+	unique := make([]string, 0)
+	for c := range stringMap {
+		unique = append(unique, c)
+	}
+	return unique
+}
 
 func waitForCompletion(ctx context.Context, fn func(context.Context)) {
 	wg.Add(1)
@@ -368,7 +426,7 @@ func getDNSDomain(domain string) string {
 }
 
 func parseApplicationPorts() ([]uint16, error) {
-	parsedPorts := make([]uint16, len(applicationPorts))
+	parsedPorts := make([]uint16, 0, len(applicationPorts))
 	for _, port := range applicationPorts {
 		port := strings.TrimSpace(port)
 		if len(port) > 0 {
@@ -434,11 +492,15 @@ func init() {
 		"Should connection to the LightStep Satellite pool be secure")
 	proxyCmd.PersistentFlags().StringVar(&lightstepCacertPath, "lightstepCacertPath", "",
 		"Path to the trusted cacert used to authenticate the pool")
+	proxyCmd.PersistentFlags().StringVar(&datadogAgentAddress, "datadogAgentAddress", "",
+		"Address of the Datadog Agent")
 	proxyCmd.PersistentFlags().DurationVar(&connectTimeout, "connectTimeout",
 		timeDuration(values.ConnectTimeout),
 		"Connection timeout used by Envoy for supporting services")
 	proxyCmd.PersistentFlags().StringVar(&statsdUDPAddress, "statsdUdpAddress", values.StatsdUdpAddress,
 		"IP Address and Port of a statsd UDP listener (e.g. 10.75.241.127:9125)")
+	proxyCmd.PersistentFlags().StringVar(&envoyMetricsServiceAddress, "envoyMetricsServiceAddress", values.EnvoyMetricsServiceAddress,
+		"Host and Port of an Envoy Metrics Service API implementation (e.g. metrics-service:15000)")
 	proxyCmd.PersistentFlags().Uint16Var(&proxyAdminPort, "proxyAdminPort", uint16(values.ProxyAdminPort),
 		"Port on which Envoy should listen for administrative commands")
 	proxyCmd.PersistentFlags().StringVar(&controlPlaneAuthPolicy, "controlPlaneAuthPolicy",
@@ -458,6 +520,22 @@ func init() {
 	proxyCmd.PersistentFlags().BoolVar(&controlPlaneBootstrap, "controlPlaneBootstrap", true,
 		"Process bootstrap provided via templateFile to be used by control plane components.")
 
+	// server certs
+	proxyCmd.PersistentFlags().StringVar(&tlsServerCertChain, "tlsServerCertChain",
+		model.DefaultCertChain, "Absolute path to server cert-chain file used for istio mTLS")
+	proxyCmd.PersistentFlags().StringVar(&tlsServerKey, "tlsServerKey",
+		model.DefaultKey, "Absolute path to server private key file used for istio mTLS")
+	proxyCmd.PersistentFlags().StringVar(&tlsServerRootCert, "tlsServerRootCert",
+		model.DefaultRootCert, "Absolute path to server root cert file used for istio mTLS")
+
+	// client certs
+	proxyCmd.PersistentFlags().StringVar(&tlsClientCertChain, "tlsClientCertChain",
+		model.DefaultCertChain, "Absolute path to client cert-chain file used for istio mTLS")
+	proxyCmd.PersistentFlags().StringVar(&tlsClientKey, "tlsSClientKey",
+		model.DefaultKey, "Absolute path to client key file used for istio mTLS")
+	proxyCmd.PersistentFlags().StringVar(&tlsClientRootCert, "tlsClientRootCert",
+		model.DefaultRootCert, "Absolute path to client root cert file used for istio mTLS")
+
 	// Attach the Istio logging options to the command.
 	loggingOptions.AttachCobraFlags(rootCmd)
 
@@ -471,6 +549,37 @@ func init() {
 		Section: "pilot-agent CLI",
 		Manual:  "Istio Pilot Agent",
 	}))
+}
+
+func waitForCerts(fname string, maxWait time.Duration) {
+	log.Infof("waiting %v for %s", maxWait, fname)
+
+	logDelay := 1 * time.Second
+	nextLog := time.Now().Add(logDelay)
+	endWait := time.Now().Add(maxWait)
+
+	for {
+		_, err := os.Stat(fname)
+		if err == nil {
+			return
+		}
+		if !os.IsNotExist(err) { // another error (e.g., permission) - likely no point in waiting longer
+			log.Errora("error while waiting for certificates", err.Error())
+			return
+		}
+
+		now := time.Now()
+		if now.After(endWait) {
+			log.Warna("certificates still not available after", maxWait)
+			break
+		}
+		if now.After(nextLog) {
+			log.Infof("waiting for certificates")
+			logDelay = logDelay * 2
+			nextLog.Add(logDelay)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func main() {

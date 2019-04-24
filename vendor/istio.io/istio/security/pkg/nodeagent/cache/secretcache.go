@@ -70,6 +70,9 @@ type Options struct {
 	// secret TTL.
 	SecretTTL time.Duration
 
+	// The initial backoff time in millisecond to avoid the thundering herd problem.
+	InitialBackoff int64
+
 	// secret should be refreshed before it expired, SecretRefreshGraceDuration is the grace period;
 	// secret should be refreshed if time.Now.After(secret.CreateTime + SecretTTL - SecretRefreshGraceDuration)
 	SecretRefreshGraceDuration time.Duration
@@ -94,18 +97,21 @@ type Options struct {
 // SecretManager defines secrets management interface which is used by SDS.
 type SecretManager interface {
 	// GenerateSecret generates new secret and cache the secret.
-	GenerateSecret(ctx context.Context, proxyID, resourceName, token string) (*model.SecretItem, error)
+	GenerateSecret(ctx context.Context, connectionID, resourceName, token string) (*model.SecretItem, error)
+
+	// ShouldWaitForIngressGatewaySecret indicates whether a valid ingress gateway secret is expected.
+	ShouldWaitForIngressGatewaySecret(connectionID, resourceName, token string) bool
 
 	// SecretExist checks if secret already existed.
-	SecretExist(proxyID, resourceName, token, version string) bool
+	SecretExist(connectionID, resourceName, token, version string) bool
 
 	// DeleteSecret deletes a secret by its key from cache.
-	DeleteSecret(proxyID, resourceName string)
+	DeleteSecret(connectionID, resourceName string)
 }
 
 // ConnKey is the key of one SDS connection.
 type ConnKey struct {
-	ProxyID string
+	ConnectionID string
 
 	// ResourceName of SDS request, get from SDS.DiscoveryRequest.ResourceName
 	// Current it's `ROOTCA` for root cert request, and 'default' for normal key/cert request.
@@ -152,6 +158,7 @@ func NewSecretCache(fetcher *secretfetcher.SecretFetcher, notifyCb func(string, 
 		configOptions:  options,
 	}
 
+	fetcher.AddCache = ret.UpdateK8sSecret
 	fetcher.DeleteCache = ret.DeleteK8sSecret
 	fetcher.UpdateCache = ret.UpdateK8sSecret
 
@@ -164,10 +171,10 @@ func NewSecretCache(fetcher *secretfetcher.SecretFetcher, notifyCb func(string, 
 // GenerateSecret generates new secret and cache the secret, this function is called by SDS.StreamSecrets
 // and SDS.FetchSecret. Since credential passing from client may change, regenerate secret every time
 // instead of reading from cache.
-func (sc *SecretCache) GenerateSecret(ctx context.Context, proxyID, resourceName, token string) (*model.SecretItem, error) {
+func (sc *SecretCache) GenerateSecret(ctx context.Context, connectionID, resourceName, token string) (*model.SecretItem, error) {
 	var ns *model.SecretItem
 	key := ConnKey{
-		ProxyID:      proxyID,
+		ConnectionID: connectionID,
 		ResourceName: resourceName,
 	}
 
@@ -177,7 +184,7 @@ func (sc *SecretCache) GenerateSecret(ctx context.Context, proxyID, resourceName
 		// root cert ends with "-cacert".
 		ns, err := sc.generateSecret(ctx, token, resourceName, time.Now())
 		if err != nil {
-			log.Errorf("Failed to generate secret for proxy %q: %v", proxyID, err)
+			log.Errorf("Failed to generate secret for proxy %q: %v", connectionID, err)
 			return nil, err
 		}
 
@@ -201,7 +208,7 @@ func (sc *SecretCache) GenerateSecret(ctx context.Context, proxyID, resourceName
 	}
 
 	if sc.rootCert == nil {
-		log.Errorf("Failed to get root cert for proxy %q", proxyID)
+		log.Errorf("Failed to get root cert for proxy %q", connectionID)
 		return nil, errors.New("failed to get root cert")
 
 	}
@@ -218,10 +225,54 @@ func (sc *SecretCache) GenerateSecret(ctx context.Context, proxyID, resourceName
 	return ns, nil
 }
 
-// DeleteSecret deletes a secret by its key from cache.
-func (sc *SecretCache) DeleteSecret(proxyID, resourceName string) {
+// IsIngressGatewaySecretReady returns true if node agent is working in ingress gateway agent mode
+// and needs to wait for ingress gateway secret to be ready.
+func (sc *SecretCache) ShouldWaitForIngressGatewaySecret(connectionID, resourceName, token string) bool {
+	// If node agent works as workload agent, node agent does not expect any ingress gateway secret.
+	if sc.fetcher.UseCaClient == true {
+		return false
+	}
+
 	key := ConnKey{
-		ProxyID:      proxyID,
+		ConnectionID: connectionID,
+		ResourceName: resourceName,
+	}
+	// Add an entry into cache, so that when ingress gateway secret is ready, gateway agent is able to
+	// notify the ingress gateway and push the secret to via connect ID.
+	if _, found := sc.secrets.Load(key); !found {
+		t := time.Now()
+		dummySecret := &model.SecretItem{
+			ResourceName: resourceName,
+			Token:        token,
+			CreatedTime:  t,
+			Version:      t.String(),
+		}
+		sc.secrets.Store(key, *dummySecret)
+	}
+
+	// If node agent works as ingress gateway agent, searches for kubernetes secret and verify secret
+	// is not empty.
+	secretItem, exist := sc.fetcher.FindIngressGatewaySecret(resourceName)
+	// If kubernetes secret does not exist, need to wait for secret.
+	if !exist {
+		return true
+	}
+
+	// If expecting ingress gateway CA certificate, and that resource is empty, need to wait for
+	// non empty resource.
+	if strings.HasSuffix(resourceName, secretfetcher.IngressGatewaySdsCaSuffix) {
+		return len(secretItem.RootCert) == 0
+	}
+
+	// If expect ingress gateway server certificate and private key, but at least one of them is
+	// empty, need to wait for non empty resource.
+	return len(secretItem.CertificateChain) == 0 || len(secretItem.PrivateKey) == 0
+}
+
+// DeleteSecret deletes a secret by its key from cache.
+func (sc *SecretCache) DeleteSecret(connectionID, resourceName string) {
+	key := ConnKey{
+		ConnectionID: connectionID,
 		ResourceName: resourceName,
 	}
 	sc.secrets.Delete(key)
@@ -235,14 +286,14 @@ func (sc *SecretCache) DeleteK8sSecret(secretName string) {
 		key := k.(ConnKey)
 
 		if key.ResourceName == secretName {
-			proxyID := key.ProxyID
+			connectionID := key.ConnectionID
 			sc.secrets.Delete(key)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 				if sc.notifyCallback != nil {
-					if err := sc.notifyCallback(proxyID, secretName, nil /*nil indicates close the streaming connection to proxy*/); err != nil {
-						log.Errorf("Failed to notify secret change for proxy %q: %v", proxyID, err)
+					if err := sc.notifyCallback(connectionID, secretName, nil /*nil indicates close the streaming connection to proxy*/); err != nil {
+						log.Errorf("Failed to notify secret change for proxy %q: %v", connectionID, err)
 					}
 				} else {
 					log.Warnf("secret cache notify callback isn't set")
@@ -266,23 +317,34 @@ func (sc *SecretCache) UpdateK8sSecret(secretName string, ns model.SecretItem) {
 		key := k.(ConnKey)
 		oldSecret := v.(model.SecretItem)
 		if key.ResourceName == secretName {
-			proxyID := key.ProxyID
+			connectionID := key.ConnectionID
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 
-				newSecret := &model.SecretItem{
-					CertificateChain: ns.CertificateChain,
-					PrivateKey:       ns.PrivateKey,
-					ResourceName:     secretName,
-					Token:            oldSecret.Token,
-					CreatedTime:      ns.CreatedTime,
-					Version:          ns.Version,
+				var newSecret *model.SecretItem
+				if strings.HasSuffix(secretName, secretfetcher.IngressGatewaySdsCaSuffix) {
+					newSecret = &model.SecretItem{
+						ResourceName: secretName,
+						RootCert:     ns.RootCert,
+						Token:        oldSecret.Token,
+						CreatedTime:  ns.CreatedTime,
+						Version:      ns.Version,
+					}
+				} else {
+					newSecret = &model.SecretItem{
+						CertificateChain: ns.CertificateChain,
+						PrivateKey:       ns.PrivateKey,
+						ResourceName:     secretName,
+						Token:            oldSecret.Token,
+						CreatedTime:      ns.CreatedTime,
+						Version:          ns.Version,
+					}
 				}
 				secretMap[key] = newSecret
 				if sc.notifyCallback != nil {
-					if err := sc.notifyCallback(proxyID, secretName, newSecret); err != nil {
-						log.Errorf("Failed to notify secret change for proxy %q: %v", proxyID, err)
+					if err := sc.notifyCallback(connectionID, secretName, newSecret); err != nil {
+						log.Errorf("Failed to notify secret change for proxy %q: %v", connectionID, err)
 					}
 				} else {
 					log.Warnf("secret cache notify callback isn't set")
@@ -302,9 +364,9 @@ func (sc *SecretCache) UpdateK8sSecret(secretName string, ns model.SecretItem) {
 }
 
 // SecretExist checks if secret already existed.
-func (sc *SecretCache) SecretExist(proxyID, resourceName, token, version string) bool {
+func (sc *SecretCache) SecretExist(connectionID, resourceName, token, version string) bool {
 	key := ConnKey{
-		ProxyID:      proxyID,
+		ConnectionID: connectionID,
 		ResourceName: resourceName,
 	}
 	val, exist := sc.secrets.Load(key)
@@ -358,7 +420,7 @@ func (sc *SecretCache) rotate() {
 			return true
 		}
 
-		proxyID := key.ProxyID
+		connectionID := key.ConnectionID
 		now := time.Now()
 
 		e := v.(model.SecretItem)
@@ -375,12 +437,12 @@ func (sc *SecretCache) rotate() {
 			go func() {
 				defer wg.Done()
 				if sc.isTokenExpired() {
-					log.Debugf("Token for %q expired for proxy %q", e.ResourceName, proxyID)
+					log.Debugf("Token for %q expired for proxy %q", e.ResourceName, connectionID)
 
 					if sc.notifyCallback != nil {
 						// Send the notification to close the stream connection if both cert and token have expired.
-						if err := sc.notifyCallback(key.ProxyID, key.ResourceName, nil /*nil indicates close the streaming connection to proxy*/); err != nil {
-							log.Errorf("Failed to notify for proxy %q: %v", proxyID, err)
+						if err := sc.notifyCallback(key.ConnectionID, key.ResourceName, nil /*nil indicates close the streaming connection to proxy*/); err != nil {
+							log.Errorf("Failed to notify for proxy %q: %v", connectionID, err)
 						}
 					} else {
 						log.Warnf("secret cache notify callback isn't set")
@@ -389,14 +451,14 @@ func (sc *SecretCache) rotate() {
 					return
 				}
 
-				log.Debugf("Token for %q is still valid for proxy %q, use it to generate key/cert", e.ResourceName, proxyID)
+				log.Debugf("Token for %q is still valid for proxy %q, use it to generate key/cert", e.ResourceName, connectionID)
 
 				// If token is still valid, re-generated the secret and push change to proxy.
 				// Most likey this code path may not necessary, since TTL of cert is much longer than token.
 				// When cert has expired, we could make it simple by assuming token has already expired.
 				ns, err := sc.generateSecret(context.Background(), e.Token, e.ResourceName, now)
 				if err != nil {
-					log.Errorf("Failed to generate secret for proxy %q: %v", proxyID, err)
+					log.Errorf("Failed to generate secret for proxy %q: %v", connectionID, err)
 					return
 				}
 
@@ -405,8 +467,8 @@ func (sc *SecretCache) rotate() {
 				atomic.AddUint64(&sc.secretChangedCount, 1)
 
 				if sc.notifyCallback != nil {
-					if err := sc.notifyCallback(proxyID, key.ResourceName, ns); err != nil {
-						log.Errorf("Failed to notify secret change for proxy %q: %v", proxyID, err)
+					if err := sc.notifyCallback(connectionID, key.ResourceName, ns); err != nil {
+						log.Errorf("Failed to notify secret change for proxy %q: %v", connectionID, err)
 					}
 				} else {
 					log.Warnf("secret cache notify callback isn't set")
@@ -485,12 +547,16 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		return nil, err
 	}
 
+	backOffInMilliSec := rand.Int63n(sc.configOptions.InitialBackoff)
+	log.Debugf("Wait for %d millisec for initial CSR", backOffInMilliSec)
+	// Add a jitter to initial CSR to avoid thundering herd problem.
+	time.Sleep(time.Duration(backOffInMilliSec) * time.Millisecond)
 	startTime := time.Now()
-	retry := 0
-	backOffInMilliSec := initialBackOffIntervalInMilliSec
+	var retry int64
 	var certChainPEM []string
 	for true {
-		certChainPEM, err = sc.fetcher.CaClient.CSRSign(ctx, csrPEM, exchangedToken, int64(sc.configOptions.SecretTTL.Seconds()))
+		certChainPEM, err = sc.fetcher.CaClient.CSRSign(
+			ctx, csrPEM, exchangedToken, int64(sc.configOptions.SecretTTL.Seconds()))
 		if err == nil {
 			break
 		}
@@ -508,10 +574,9 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		}
 
 		retry++
-		backOffInMilliSec = retry * backOffInMilliSec
-		randomTime := rand.Intn(initialBackOffIntervalInMilliSec)
-		time.Sleep(time.Duration(backOffInMilliSec+randomTime) * time.Millisecond)
-		log.Warnf("Failed to sign cert for %q: %v, will retry in %d millisec", resourceName, err, backOffInMilliSec)
+		backOffInMilliSec = rand.Int63n(retry * initialBackOffIntervalInMilliSec)
+		time.Sleep(time.Duration(backOffInMilliSec) * time.Millisecond)
+		log.Warnf("CSR failed for %q: %v, retry in %d millisec", resourceName, err, backOffInMilliSec)
 	}
 
 	log.Debugf("CSR response certificate chain %+v \n", certChainPEM)

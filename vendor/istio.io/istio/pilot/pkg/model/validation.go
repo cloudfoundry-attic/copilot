@@ -41,7 +41,7 @@ const (
 	dns1123LabelMaxLength int    = 63
 	dns1123LabelFmt       string = "[a-zA-Z0-9]([-a-z-A-Z0-9]*[a-zA-Z0-9])?"
 	// a wild-card prefix is an '*', a normal DNS1123 label with a leading '*' or '*-', or a normal DNS1123 label
-	wildcardPrefix string = `\*|(\*|\*-)?(` + dns1123LabelFmt + `)`
+	wildcardPrefix string = `(\*|(\*|\*-)?` + dns1123LabelFmt + `)`
 
 	// TODO: there is a stricter regex for the labels from validation.go in k8s
 	qualifiedNameFmt string = "[-A-Za-z0-9_./]*"
@@ -446,10 +446,6 @@ func validateServer(server *networking.Server) (errs error) {
 		errs = appendErrors(errs, fmt.Errorf("server config must contain at least one host"))
 	} else {
 		for _, host := range server.Hosts {
-			// short name hosts are not allowed in gateways
-			if host != "*" && !strings.Contains(host, ".") {
-				errs = appendErrors(errs, fmt.Errorf("short names (non FQDN) are not allowed in Gateway server hosts"))
-			}
 			errs = appendErrors(errs, validateNamespaceSlashWildcardHostname(host, true))
 		}
 	}
@@ -499,6 +495,12 @@ func validateServerPort(port *networking.Port) (errs error) {
 func validateTLSOptions(tls *networking.Server_TLSOptions) (errs error) {
 	if tls == nil {
 		// no tls config at all is valid
+		return
+	}
+
+	if (tls.Mode == networking.Server_TLSOptions_SIMPLE || tls.Mode == networking.Server_TLSOptions_MUTUAL) && tls.CredentialName != "" {
+		// If tls mode is SIMPLE or MUTUAL, and CredentialName is specified, credentials are fetched
+		// remotely. ServerCertificate and CaCertificates fields are not required.
 		return
 	}
 	if tls.Mode == networking.Server_TLSOptions_SIMPLE {
@@ -766,11 +768,15 @@ func ValidateSidecar(name, namespace string, msg proto.Message) (errs error) {
 func validateSidecarPortBindAndCaptureMode(port *networking.Port, bind string,
 	captureMode networking.CaptureMode) (errs error) {
 
+	// Port name is optional. Validate if exists.
+	if len(port.Name) > 0 {
+		errs = appendErrors(errs, validatePortName(port.Name))
+	}
+
 	// Handle Unix domain sockets
 	if port.Number == 0 {
 		// require bind to be a unix domain socket
 		errs = appendErrors(errs,
-			validatePortName(port.Name),
 			validateProtocol(port.Protocol))
 
 		if !strings.HasPrefix(bind, UnixAddressPrefix) {
@@ -784,7 +790,6 @@ func validateSidecarPortBindAndCaptureMode(port *networking.Port, bind string,
 		}
 	} else {
 		errs = appendErrors(errs,
-			validatePortName(port.Name),
 			validateProtocol(port.Protocol),
 			ValidatePort(int(port.Number)))
 
@@ -850,6 +855,9 @@ func validateConnectionPool(settings *networking.ConnectionPoolSettings) (errs e
 		}
 		if http.MaxRetries < 0 {
 			errs = appendErrors(errs, fmt.Errorf("max retries must be non-negative"))
+		}
+		if http.IdleTimeout != nil {
+			errs = appendErrors(errs, ValidateDurationGogo(http.IdleTimeout))
 		}
 	}
 
@@ -1064,6 +1072,12 @@ func ValidateZipkinCollector(z *meshconfig.Tracing_Zipkin) error {
 	return ValidateProxyAddress(z.GetAddress())
 }
 
+// ValidateDatadogCollector validates the configuration for sending envoy spans to Datadog
+func ValidateDatadogCollector(d *meshconfig.Tracing_Datadog) error {
+	// If the address contains $(HOST_IP), replace it with a valid IP before validation.
+	return ValidateProxyAddress(strings.Replace(d.GetAddress(), "$(HOST_IP)", "127.0.0.1", 1))
+}
+
 // ValidateConnectTimeout validates the envoy conncection timeout
 func ValidateConnectTimeout(timeout *types.Duration) error {
 	if err := ValidateDuration(timeout); err != nil {
@@ -1149,6 +1163,12 @@ func ValidateProxyConfig(config *meshconfig.ProxyConfig) (errs error) {
 		}
 	}
 
+	if tracer := config.GetTracing().GetDatadog(); tracer != nil {
+		if err := ValidateDatadogCollector(tracer); err != nil {
+			errs = multierror.Append(errs, multierror.Prefix(err, "invalid datadog config:"))
+		}
+	}
+
 	if err := ValidateConnectTimeout(config.ConnectTimeout); err != nil {
 		errs = multierror.Append(errs, multierror.Prefix(err, "invalid connect timeout:"))
 	}
@@ -1156,6 +1176,12 @@ func ValidateProxyConfig(config *meshconfig.ProxyConfig) (errs error) {
 	if config.StatsdUdpAddress != "" {
 		if err := ValidateProxyAddress(config.StatsdUdpAddress); err != nil {
 			errs = multierror.Append(errs, multierror.Prefix(err, fmt.Sprintf("invalid statsd udp address %q:", config.StatsdUdpAddress)))
+		}
+	}
+
+	if config.EnvoyMetricsServiceAddress != "" {
+		if err := ValidateProxyAddress(config.EnvoyMetricsServiceAddress); err != nil {
+			errs = multierror.Append(errs, multierror.Prefix(err, fmt.Sprintf("invalid envoy metrics service address %q:", config.EnvoyMetricsServiceAddress)))
 		}
 	}
 
@@ -2004,7 +2030,12 @@ func validateDestination(destination *networking.Destination) (errs error) {
 		return
 	}
 
-	errs = appendErrors(errs, ValidateWildcardDomain(destination.Host))
+	host := destination.Host
+	if host == "*" {
+		errs = appendErrors(errs, fmt.Errorf("invalid destintation host %s", host))
+	} else {
+		errs = appendErrors(errs, ValidateWildcardDomain(host))
+	}
 	if destination.Subset != "" {
 		errs = appendErrors(errs, validateSubsetName(destination.Subset))
 	}
@@ -2025,21 +2056,21 @@ func validateSubsetName(name string) error {
 	return nil
 }
 
-func validatePortSelector(selector *networking.PortSelector) error {
+func validatePortSelector(selector *networking.PortSelector) (errs error) {
 	if selector == nil {
 		return nil
 	}
 
-	// port selector is either a name or a number
+	// port must be a number
 	name := selector.GetName()
 	number := int(selector.GetNumber())
-	if name == "" && number == 0 {
-		// an unset value is indistinguishable from a zero value, so return both errors
-		return appendErrors(validateSubsetName(name), ValidatePort(number))
-	} else if number != 0 {
-		return ValidatePort(number)
+	if name != "" {
+		errs = appendErrors(errs, fmt.Errorf("port.name %s is no longer supported for destination", name))
 	}
-	return validateSubsetName(name)
+	if number != 0 {
+		errs = appendErrors(errs, ValidatePort(number))
+	}
+	return
 }
 
 func validateAuthNPortSelector(selector *authn.PortSelector) error {
@@ -2146,12 +2177,12 @@ func ValidateServiceEntry(name, namespace string, config proto.Message) (errs er
 	switch serviceEntry.Resolution {
 	case networking.ServiceEntry_NONE:
 		if len(serviceEntry.Endpoints) != 0 {
-			errs = appendErrors(errs, fmt.Errorf("no endpoints should be provided for discovery type none"))
+			errs = appendErrors(errs, fmt.Errorf("no endpoints should be provided for resolution type none"))
 		}
 	case networking.ServiceEntry_STATIC:
 		if len(serviceEntry.Endpoints) == 0 {
 			errs = appendErrors(errs,
-				fmt.Errorf("endpoints must be provided if service entry discovery mode is static"))
+				fmt.Errorf("endpoints must be provided if service entry resolution mode is static"))
 		}
 
 		unixEndpoint := false
@@ -2183,7 +2214,7 @@ func ValidateServiceEntry(name, namespace string, config proto.Message) (errs er
 			for _, host := range serviceEntry.Hosts {
 				if err := ValidateFQDN(host); err != nil {
 					errs = appendErrors(errs,
-						fmt.Errorf("hosts must be FQDN if no endpoints are provided for discovery mode DNS"))
+						fmt.Errorf("hosts must be FQDN if no endpoints are provided for resolution mode DNS"))
 				}
 			}
 		}

@@ -9,7 +9,6 @@ This chart bootstraps all istio [components](https://istio.io/docs/concepts/what
 ## Chart Details
 
 This chart can install multiple istio components as subcharts:
-- ingress
 - ingressgateway
 - egressgateway
 - sidecarInjectorWebhook
@@ -111,21 +110,17 @@ The chart deploys pods that consume minimum resources as specified in the resour
     $ helm repo add istio.io https://storage.googleapis.com/istio-prerelease/daily-build/release-1.1-latest-daily/charts
     ```
 
-1. Build the Helm dependencies:
-    ```
-    $ helm dep update install/kubernetes/helm/istio
-    ```
 
 1. To install the chart with the release name `istio` in namespace $NAMESPACE you defined above:
 
     - With [automatic sidecar injection](https://istio.io/docs/setup/kubernetes/sidecar-injection/#automatic-sidecar-injection) (requires Kubernetes >=1.9.0):
     ```
-    $ helm install install/kubernetes/helm/istio --name istio --namespace $NAMESPACE
+    $ helm install istio --name istio --namespace $NAMESPACE
     ```
 
     - Without the sidecar injection webhook:
     ```
-    $ helm install install/kubernetes/helm/istio --name istio --namespace $NAMESPACE --set sidecarInjectorWebhook.enabled=false
+    $ helm install istio --name istio --namespace $NAMESPACE --set sidecarInjectorWebhook.enabled=false
     ```
 
 ## Configuration

@@ -235,7 +235,7 @@ func (sd *ServiceDiscovery) GetProxyServiceInstances(node *model.Proxy) ([]*mode
 				// Only one IP for memory discovery?
 				if node.IPAddresses[0] == MakeIP(service, v) {
 					for _, port := range service.Ports {
-						out = append(out, MakeInstance(service, port, v, "zone/region"))
+						out = append(out, MakeInstance(service, port, v, "region/zone"))
 					}
 				}
 			}
@@ -243,6 +243,14 @@ func (sd *ServiceDiscovery) GetProxyServiceInstances(node *model.Proxy) ([]*mode
 		}
 	}
 	return out, sd.GetProxyServiceInstancesError
+}
+
+func (sd *ServiceDiscovery) GetProxyWorkloadLabels(proxy *model.Proxy) (model.LabelsCollection, error) {
+	if sd.GetProxyServiceInstancesError != nil {
+		return nil, sd.GetProxyServiceInstancesError
+	}
+	// no useful labels from the ServiceInstances created by MakeInstance()
+	return nil, nil
 }
 
 // ManagementPorts implements discovery interface

@@ -72,7 +72,7 @@
   revision = "6226ea591a40176dd3ff9cd8eff81ed6ca721a00"
 
 [[projects]]
-  digest = "1:2042b0f0950a2b628ebb914c43fb56d151bf53a72594e7d4f09d9dd5272aec3e"
+  digest = "1:a2d7fd2421a8578c4adea9830bef9d17366e4640edb57735dff2d1dc68815a9e"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -86,8 +86,8 @@
     "envoy/type",
   ]
   pruneopts = ""
-  revision = "eb553e72ac8724721a99ed85fcb116467c7a2bac"
-  version = "v0.6.7"
+  revision = "0ad6fa1cf0b9b6ca8f3617a7188a568e81f40b87"
+  version = "v0.6.9"
 
 [[projects]]
   digest = "1:b13707423743d41665fd23f0c36b2f37bb49c30e94adb813319c44188a51ba22"
@@ -593,7 +593,7 @@
 
 [[projects]]
   branch = "release-1.1"
-  digest = "1:3da950665c93ec3ed4107634028c473ec805f52da05d01bd310024a1a970b19b"
+  digest = "1:c6426c88987c197072a9f1f64b446e19f18f0afc4c4099ac1648daaa5c032101"
   name = "istio.io/api"
   packages = [
     "authentication/v1alpha1",
@@ -606,11 +606,10 @@
     "rbac/v1alpha1",
   ]
   pruneopts = ""
-  revision = ""
+  revision = "e9ab8d6a54a613b7a5877fdca1c033d5a8fbe86a"
 
 [[projects]]
-  branch = "release-1.1"
-  digest = "1:310222431af78a725ecea54d1bd44cd43db2ea8784cd85c191fda55fde936d4b"
+  digest = "1:e082e00716a878539fac3e841f970c356b64249413630b53957b96df48126174"
   name = "istio.io/istio"
   packages = [
     "galley/pkg/metadata",
@@ -621,7 +620,6 @@
     "pkg/cache",
     "pkg/features/pilot",
     "pkg/log",
-    "pkg/mcp/client",
     "pkg/mcp/env",
     "pkg/mcp/internal",
     "pkg/mcp/monitoring",
@@ -634,7 +632,8 @@
     "security/pkg/pki/util",
   ]
   pruneopts = ""
-  revision = ""
+  revision = "d19179769183541c5db473ae8d062ca899abb3be"
+  version = "1.1.3"
 
 [[projects]]
   branch = "release-1.11"
@@ -722,12 +721,12 @@
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
     "gopkg.in/validator.v2",
+    "istio.io/api/authentication/v1alpha1",
     "istio.io/api/mcp/v1alpha1",
     "istio.io/api/networking/v1alpha3",
     "istio.io/istio/galley/pkg/runtime/groups",
     "istio.io/istio/pilot/pkg/model",
     "istio.io/istio/pkg/log",
-    "istio.io/istio/pkg/mcp/client",
     "istio.io/istio/pkg/mcp/monitoring",
     "istio.io/istio/pkg/mcp/server",
     "istio.io/istio/pkg/mcp/sink",
