@@ -144,7 +144,7 @@ func mainWithError() error {
 		copilotsnapshot.VirtualServiceTypeURL,
 		copilotsnapshot.DestinationRuleTypeURL,
 		copilotsnapshot.SidecarTypeURL,
-		copilotsnapshot.MeshPolicyTypeURL,
+		copilotsnapshot.PolicyTypeURL,
 		copilotsnapshot.ServiceEntryTypeURL,
 	}
 

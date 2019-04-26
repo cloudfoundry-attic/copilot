@@ -172,7 +172,7 @@ func (c *Config) CreateDestinationRuleResources(routes []*models.RouteWithBacken
 					Mode:              2,
 					ClientCertificate: "/etc/cf-instance-credentials/instance.crt",
 					PrivateKey:        "/etc/cf-instance-credentials/instance.key",
-					CaCertificates:    "/etc/cf-instance-credentials/instance.crt",
+					CaCertificates:    "/etc/cf-instance-credentials/ca.crt",
 				},
 			}
 
