@@ -17,7 +17,6 @@ var _ = Describe("Collect", func() {
 		routeMappings  *fakes.RouteMappings
 		capiDiego      *fakes.CapiDiego
 		backendSetRepo *fakes.BackendSet
-		vipProvider    *fakes.VIPProvider
 	)
 
 	BeforeEach(func() {
@@ -26,7 +25,6 @@ var _ = Describe("Collect", func() {
 		routeMappings = &fakes.RouteMappings{}
 		capiDiego = &fakes.CapiDiego{}
 		backendSetRepo = &fakes.BackendSet{}
-		vipProvider = &fakes.VIPProvider{}
 
 		rc = routes.NewCollector(
 			logger,
@@ -34,7 +32,6 @@ var _ = Describe("Collect", func() {
 			routeMappings,
 			capiDiego,
 			backendSetRepo,
-			vipProvider,
 		)
 	})
 
@@ -501,20 +498,16 @@ var _ = Describe("Collect", func() {
 							Host:     "route-a.foo.internal",
 							Path:     "",
 							Internal: true,
+							VIP:      "127.127.4.5",
 						},
 					}
 
 					return r[guid], true
 				}
-
-				vipProvider.GetReturns("127.127.1.1")
 			})
 
 			It("marks the route with backend as internal", func() {
 				rwb := rc.Collect()
-
-				Expect(vipProvider.GetCallCount()).To(Equal(2))
-				Expect(vipProvider.GetArgsForCall(0)).To(Equal("route-a.foo.internal"))
 
 				Expect(rwb).To(HaveLen(2))
 
@@ -522,7 +515,7 @@ var _ = Describe("Collect", func() {
 					&models.RouteWithBackends{
 						Hostname: "route-a.foo.internal",
 						Internal: true,
-						VIP:      "127.127.1.1",
+						VIP:      "127.127.4.5",
 						Backends: models.BackendSet{
 							Backends: []*models.Backend{
 								{
@@ -541,7 +534,7 @@ var _ = Describe("Collect", func() {
 					&models.RouteWithBackends{
 						Hostname: "route-a.foo.internal",
 						Internal: true,
-						VIP:      "127.127.1.1",
+						VIP:      "127.127.4.5",
 						Backends: models.BackendSet{
 							Backends: []*models.Backend{
 								{

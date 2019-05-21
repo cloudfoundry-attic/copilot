@@ -29,28 +29,21 @@ type backendSet interface {
 	GetInternalBackends(guid models.DiegoProcessGUID) *models.BackendSet
 }
 
-//go:generate counterfeiter -o fakes/vip_provider.go --fake-name VIPProvider . vipProvider
-type vipProvider interface {
-	Get(hostname string) string
-}
-
 type Collector struct {
 	logger        lager.Logger
 	routesRepo    routesRepo
 	routeMappings routeMappings
 	capiDiego     capiDiego
 	backendSet    backendSet
-	vipProvider   vipProvider
 }
 
-func NewCollector(logger lager.Logger, rr routesRepo, rm routeMappings, cd capiDiego, bs backendSet, vp vipProvider) *Collector {
+func NewCollector(logger lager.Logger, rr routesRepo, rm routeMappings, cd capiDiego, bs backendSet) *Collector {
 	return &Collector{
 		logger:        logger,
 		routesRepo:    rr,
 		routeMappings: rm,
 		capiDiego:     cd,
 		backendSet:    bs,
-		vipProvider:   vp,
 	}
 }
 
@@ -97,11 +90,6 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 			return backends[i].Address < backends[j].Address
 		})
 
-		var vip string
-		if route.Internal {
-			vip = c.vipProvider.Get(route.Hostname())
-		}
-
 		builtRoute := &models.RouteWithBackends{
 			Hostname:        route.Hostname(),
 			Path:            route.Path,
@@ -109,7 +97,7 @@ func (c *Collector) Collect() []*models.RouteWithBackends {
 			CapiProcessGUID: string(routeMapping.CAPIProcessGUID),
 			RouteWeight:     c.routeMappings.GetCalculatedWeight(routeMapping),
 			Internal:        route.Internal,
-			VIP:             vip,
+			VIP:             route.VIP,
 		}
 
 		if route.Path != "" {
