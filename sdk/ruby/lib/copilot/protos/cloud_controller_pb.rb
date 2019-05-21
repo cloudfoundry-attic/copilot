@@ -28,6 +28,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :host, :string, 2
     optional :path, :string, 3
     optional :internal, :bool, 4
+    optional :vip, :string, 5
   end
   add_message "api.UpsertRouteRequest" do
     optional :route, :message, 1, "api.Route"
