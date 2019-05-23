@@ -4,3 +4,4 @@ manual_testing
 sdk/ruby/*.gem
 .DS_Store
 sdk/ruby/.rspec_status
+cmd/copilot-server/copilot-server
