@@ -17,6 +17,7 @@ class RealCopilotServer
       'ListenAddressForCloudController' => "#{host}:#{port}",
       'ListenAddressForVIPResolver' => "#{host}:#{resolver_port}",
       'ListenAddressForMCP' => "#{host}:51003",
+      'ListenAddressForPilot' => "#{host}:1234",
       'PilotClientCAPath' => fixture('fakeCA.crt'),
       'CloudControllerClientCAPath' => fixture('fakeCA.crt'),
       'ServerCertPath' => fixture('copilot-server.crt'),

@@ -29,8 +29,23 @@ RSpec.describe Cloudfoundry::Copilot do
         host: 'some-route-url',
         path: '/some/path',
         internal: true,
+        vip: '1.2.3.4',
       )
     ).to be_a(::Api::UpsertRouteResponse)
+  end
+
+  it 'raises an error if internal is true but vip is nil' do
+    expect do
+      @client.upsert_route(
+        guid: 'some-route-guid',
+        host: 'some-route-url',
+        path: '/some/path',
+        internal: true,
+      )
+    end.to raise_error(
+      Cloudfoundry::Copilot::Client::PilotError,
+      'vip required for internal routes'
+    )
   end
 
   it 'can delete a route' do

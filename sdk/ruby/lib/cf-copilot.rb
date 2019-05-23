@@ -27,8 +27,11 @@ module Cloudfoundry
         service.health(request)
       end
 
-      def upsert_route(guid:, host:, path: '', internal: false)
-        route = Api::Route.new(guid: guid, host: host, path: path, internal: internal)
+      def upsert_route(guid:, host:, path: '', internal: false, vip: nil)
+        if internal && vip.nil?
+          raise Cloudfoundry::Copilot::Client::PilotError, "vip required for internal routes"
+        end
+        route = Api::Route.new(guid: guid, host: host, path: path, internal: internal, vip: vip)
         request = Api::UpsertRouteRequest.new(route: route)
         service.upsert_route(request)
       rescue GRPC::BadStatus => e

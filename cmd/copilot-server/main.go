@@ -202,7 +202,7 @@ func mainWithError() error {
 	)
 
 	mcpTicker := time.NewTicker(time.Duration(cfg.MCPConvergeInterval))
-	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo, vipProvider)
+	collector := routes.NewCollector(logger, routesRepo, routeMappingsRepo, capiDiegoProcessAssociationsRepo, backendSetRepo)
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
 	librarian := certs.NewLocator(istioCertRootPath, cfg.TLSPems)
 	snapshotConfig := copilotsnapshot.NewConfig(librarian, logger)
