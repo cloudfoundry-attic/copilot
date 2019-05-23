@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# echo "Run  to run the tests!"
+
+docker run -v ~/workspace/istio-release/src/code.cloudfoundry.org/copilot/:/go/src/code.cloudfoundry.org/copilot -it cloudfoundry/cf-routing-pipeline /bin/bash -c "ln -s /go/src/code.cloudfoundry.org/copilot/sdk/ruby/bin/test tests; ./tests; /bin/bash"

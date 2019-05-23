@@ -12,16 +12,17 @@ pushd sdk/ruby
 popd
 ```
 
-### Run all of the associated ruby specs
-```
-pushd sdk/ruby
-  bin/test
-popd
-```
 
 ### How to build and install the `cf-copilot` ruby gem
 ```
 pushd sdk/ruby
   bin/build-and-install-copilot-gem
+popd
+```
+
+### How to run tests
+```
+pushd sdk/ruby
+  bin/run-tests-in-docker
 popd
 ```

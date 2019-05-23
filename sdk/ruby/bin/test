@@ -1,12 +1,13 @@
 #!/bin/bash
 
-set -euo pipefail
+export GOPATH=${PWD}/go
+export PATH=$PATH:$GOPATH/bin
+go get github.com/onsi/ginkgo/ginkgo
+go get github.com/golang/dep/cmd/dep
+cd go/src/code.cloudfoundry.org/copilot
+go install ./cmd/copilot-server
+cd sdk/ruby
+bundle install
+bundle exec rspec
 
-pushd "${COPILOT_ROOT}/cmd"
-  go install ./copilot-server
-popd
-
-pushd "${COPILOT_ROOT}/sdk/ruby"
-  bundle install
-  bundle exec rspec
-popd
+echo "Rerun ./tests as much as you need."
