@@ -10,6 +10,8 @@ import (
 	"github.com/gogo/protobuf/types"
 	mcp "istio.io/api/mcp/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
+	rbac "istio.io/api/rbac/v1alpha1"
+	clusterrbacconfigs "istio.io/api/rbac/v1alpha1/clusterrbacconfigs"
 	"istio.io/istio/pilot/pkg/model"
 )
 
@@ -20,6 +22,8 @@ type config interface {
 	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
+	EmptyRBACConfigResources() []*mcp.Resource
+	EmptyClusterRBACConfigsResources() []*mcp.Resource
 }
 
 type Config struct {
@@ -33,6 +37,30 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 		logger:    logger,
 	}
 }
+
+func (c *Config) EmptyRBACConfigResources() []*mcp.Resource {
+	rbacconfig := &rbac.RbacConfig{}
+
+	emptyRbacResource, err := types.MarshalAny(rbacconfig)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling rbacconfig", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyRbacResource,
+		},
+	}
+}
+func (c *Config) EmptyClusterRBACConfigsResources() []*mcp.Resource{
+	clusterrbacconfig := &clusterrbacconfigs
+}
+
 
 func (c *Config) CreateSidecarResources() []*mcp.Resource {
 	sidecar := &networking.Sidecar{
