@@ -3,7 +3,7 @@ package snapshot
 import (
 	"fmt"
 	"os"
-	"reflect"
+	// "reflect"
 	"strconv"
 	"time"
 
@@ -81,34 +81,57 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
 
 	for {
+		fmt.Println("Snapshot Run func")
 		select {
 		case <-signals:
+			fmt.Println("Signal")
 			return nil
 		case <-s.ticker:
+			fmt.Println("Tick")
 			routes := s.collector.Collect()
 
-			if reflect.DeepEqual(routes, s.cachedRoutes) {
-				continue
-			}
-
+			// if reflect.DeepEqual(routes, s.cachedRoutes) {
+			// 	continue
+			// }
 			newVersion := s.increment()
 			s.cachedRoutes = routes
 
+			fmt.Println("About to create Resources")
 			gateways := s.config.CreateGatewayResources()
 			sidecars := s.config.CreateSidecarResources()
 			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
 			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
 			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
 			emptyRbacConfig := s.config.EmptyRBACConfigResources()
+			emptyQuotaSpec := s.config.EmptyQuotaSpecResources()
+			emptyQuotaSpecBinding := s.config.EmptyQuotaSpecBindingResources()
+			emptyHTTPAPISpecBinding := s.config.EmptyHTTPAPISpecBindingResources()
+			emptyHTTPAPISpec := s.config.EmptyHTTPAPISpecResources()
+			emptyServiceRoleBinding := s.config.EmptyServiceRoleBindingResources()
+			emptyServiceRole := s.config.EmptyServiceRoleResources()
+			emptyPolicy := s.config.EmptyPolicyResources()
+			emptyEnvoyFilter := s.config.EmptyEnvoyFilterResources()
 
+			fmt.Println("About to build the set of resources")
 			s.builder.Set(GatewayTypeURL, "1", gateways)
 			s.builder.Set(SidecarTypeURL, "1", sidecars)
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
 			s.builder.Set(RbacConfigTypeURL, "1", emptyRbacConfig)
+			s.builder.Set(ClusterRbacConfigTypeURL, "1", emptyRbacConfig)
+			s.builder.Set(QuotaSpecTypeURL, "1", emptyQuotaSpec)
+			s.builder.Set(QuotaSpecBindingTypeURL, "1", emptyQuotaSpecBinding)
+			s.builder.Set(HTTPAPISpecBindingTypeURL, "1", emptyHTTPAPISpecBinding)
+			s.builder.Set(HTTPAPISpecTypeURL, "1", emptyHTTPAPISpec)
+			s.builder.Set(ServiceRoleBindingTypeURL, "1", emptyServiceRoleBinding)
+			s.builder.Set(ServiceRoleTypeURL, "1", emptyServiceRole)
+			s.builder.Set(PolicyTypeURL, "1", emptyPolicy)
+			s.builder.Set(MeshPolicyTypeURL, "1", emptyPolicy)
+			s.builder.Set(EnvoyFilterTypeURL, "1", emptyEnvoyFilter)
 
 
+			fmt.Println("about to set snap")
 			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)
 			s.builder = shot.Builder()

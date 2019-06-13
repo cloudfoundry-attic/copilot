@@ -8,10 +8,11 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 	"github.com/gogo/protobuf/types"
+	authentication "istio.io/api/authentication/v1alpha1"
 	mcp "istio.io/api/mcp/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
+	mixerclient "istio.io/api/mixer/v1/config/client"
 	rbac "istio.io/api/rbac/v1alpha1"
-	clusterrbacconfigs "istio.io/api/rbac/v1alpha1/clusterrbacconfigs"
 	"istio.io/istio/pilot/pkg/model"
 )
 
@@ -23,7 +24,14 @@ type config interface {
 	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	EmptyRBACConfigResources() []*mcp.Resource
-	EmptyClusterRBACConfigsResources() []*mcp.Resource
+	EmptyQuotaSpecResources() []*mcp.Resource
+	EmptyQuotaSpecBindingResources() []*mcp.Resource
+	EmptyHTTPAPISpecBindingResources() []*mcp.Resource
+	EmptyHTTPAPISpecResources() []*mcp.Resource
+	EmptyServiceRoleBindingResources() []*mcp.Resource
+	EmptyServiceRoleResources() []*mcp.Resource
+	EmptyPolicyResources() []*mcp.Resource
+	EmptyEnvoyFilterResources() []*mcp.Resource
 }
 
 type Config struct {
@@ -35,6 +43,159 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 	return &Config{
 		librarian: librarian,
 		logger:    logger,
+	}
+}
+
+
+func (c *Config) EmptyEnvoyFilterResources() []*mcp.Resource {
+	envoyfilter := &networking.EnvoyFilter{}
+	emptyEnvoyFilterResource, err := types.MarshalAny(envoyfilter)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling envoy filter", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyEnvoyFilterResource,
+		},
+	}
+}
+
+func (c *Config) EmptyPolicyResources() []*mcp.Resource {
+	policy := &authentication.Policy{}
+	emptyPolicyResource, err := types.MarshalAny(policy)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling policy", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyPolicyResource,
+		},
+	}
+}
+
+func (c *Config) EmptyServiceRoleResources() []*mcp.Resource {
+	serviceRole := &rbac.ServiceRole{}
+	emptyServiceRoleResource, err := types.MarshalAny(serviceRole)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling service role", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyServiceRoleResource,
+		},
+	}
+}
+
+func (c *Config) EmptyServiceRoleBindingResources() []*mcp.Resource {
+	serviceRoleBinding := &rbac.ServiceRoleBinding{}
+	emptyServiceRoleBindingResource, err := types.MarshalAny(serviceRoleBinding)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling service role binding", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyServiceRoleBindingResource,
+		},
+	}
+}
+
+func (c *Config) EmptyHTTPAPISpecResources() []*mcp.Resource {
+	HTTPAPISpec := &mixerclient.HTTPAPISpec{}
+	emptyHTTPAPISpecResource, err := types.MarshalAny(HTTPAPISpec)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling http api spec", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyHTTPAPISpecResource,
+		},
+	}
+}
+
+func (c *Config) EmptyHTTPAPISpecBindingResources() []*mcp.Resource {
+	HTTPAPISpecBinding := &mixerclient.HTTPAPISpecBinding{}
+	emptyHTTPAPISpecBindingResource, err := types.MarshalAny(HTTPAPISpecBinding)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling http api spec binding", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyHTTPAPISpecBindingResource,
+		},
+	}
+}
+
+func (c *Config) EmptyQuotaSpecBindingResources() []*mcp.Resource {
+	quotaSpecBinding := &mixerclient.QuotaSpecBinding{}
+	emptyQuotaSpecBindingResource, err := types.MarshalAny(quotaSpecBinding)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling quota spec", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyQuotaSpecBindingResource,
+		},
+	}
+}
+
+func (c *Config) EmptyQuotaSpecResources() []*mcp.Resource {
+	quotaSpec := &mixerclient.QuotaSpec{}
+	emptyQuotaSpecResource, err := types.MarshalAny(quotaSpec)
+	if err != nil {
+		// not tested
+		c.logger.Error("marshaling quota spec", err)
+	}
+
+	return []*mcp.Resource{
+		&mcp.Resource{
+			Metadata: &mcp.Metadata{
+				Name:    "default",
+				Version: "1",
+			},
+			Body: emptyQuotaSpecResource,
+		},
 	}
 }
 
@@ -57,10 +218,6 @@ func (c *Config) EmptyRBACConfigResources() []*mcp.Resource {
 		},
 	}
 }
-func (c *Config) EmptyClusterRBACConfigsResources() []*mcp.Resource{
-	clusterrbacconfig := &clusterrbacconfigs
-}
-
 
 func (c *Config) CreateSidecarResources() []*mcp.Resource {
 	sidecar := &networking.Sidecar{

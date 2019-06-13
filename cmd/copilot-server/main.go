@@ -180,16 +180,16 @@ func mainWithError() error {
 
 			mcpServer := source.NewServer(options, serverOptions)
 			var pilotLogLevel log.Level
-			switch cfg.LogLevel {
-			case "debug":
+			// switch cfg.LogLevel {
+			// case "debug":
 				pilotLogLevel = log.DebugLevel
-			case "info":
-				pilotLogLevel = log.InfoLevel
-			case "error":
-				pilotLogLevel = log.ErrorLevel
-			case "fatal":
-				pilotLogLevel = log.FatalLevel
-			}
+			// case "info":
+			// 	pilotLogLevel = log.InfoLevel
+			// case "error":
+			// 	pilotLogLevel = log.ErrorLevel
+			// case "fatal":
+			// 	pilotLogLevel = log.FatalLevel
+			// }
 			for name, scope := range log.Scopes() {
 				scope.SetOutputLevel(pilotLogLevel)
 				logger.Info("set pilot log level for scope", lager.Data{"scope-name": name})
