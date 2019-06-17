@@ -93,15 +93,20 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			// if reflect.DeepEqual(routes, s.cachedRoutes) {
 			// 	continue
 			// }
+			fmt.Printf("Routes %+v", routes)
 			newVersion := s.increment()
 			s.cachedRoutes = routes
 
 			fmt.Println("About to create Resources")
 			gateways := s.config.CreateGatewayResources()
+			fmt.Printf("gateways: %+v", gateways)
 			sidecars := s.config.CreateSidecarResources()
 			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
+			fmt.Printf("virtual services: %+v", virtualServices)
 			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
+			fmt.Printf("destination rules: %+v", destinationRules)
 			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
+			fmt.Printf("service entries: %+v", serviceEntries)
 			emptyRbacConfig := s.config.EmptyRBACConfigResources()
 			emptyQuotaSpec := s.config.EmptyQuotaSpecResources()
 			emptyQuotaSpecBinding := s.config.EmptyQuotaSpecBindingResources()
@@ -133,6 +138,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 			fmt.Println("about to set snap")
 			shot := s.builder.Build()
+			fmt.Printf("Snapshot is this: %+v", shot)
 			s.setter.SetSnapshot(node, shot)
 			s.builder = shot.Builder()
 		}
