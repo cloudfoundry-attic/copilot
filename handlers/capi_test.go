@@ -70,14 +70,13 @@ var _ = Describe("Capi Handlers", func() {
 		})
 
 		It("adds the route if it is new", func() {
-			fakeVIPProvider.GetReturns("1.2.3.4")
-
 			ctx := context.Background()
 			_, err := handler.UpsertRoute(ctx, &api.UpsertRouteRequest{
 				Route: &api.Route{
 					Guid:     "route-guid-a",
 					Host:     "route-a.example.com",
 					Internal: true,
+					Vip:      "2.2.3.4",
 				}})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeRoutesRepo.UpsertCallCount()).To(Equal(1))
@@ -85,10 +84,8 @@ var _ = Describe("Capi Handlers", func() {
 				GUID:     "route-guid-a",
 				Host:     "route-a.example.com",
 				Internal: true,
-				VIP:      "1.2.3.4",
+				VIP:      "2.2.3.4",
 			}))
-			Expect(fakeVIPProvider.GetCallCount()).To(Equal(1))
-			Expect(fakeVIPProvider.GetArgsForCall(0)).To(Equal("route-a.example.com"))
 		})
 	})
 
@@ -272,7 +269,6 @@ var _ = Describe("Capi Handlers", func() {
 		)
 
 		BeforeEach(func() {
-			fakeVIPProvider.GetReturns("1.2.3.4")
 			stream = &testhelpers.FakeCloudControllerCopilot_BulkSyncServer{}
 			request := &api.BulkSyncRequest{
 				RouteMappings: []*api.RouteMapping{
@@ -298,6 +294,7 @@ var _ = Describe("Capi Handlers", func() {
 						Host:     "example.internal",
 						Path:     "",
 						Internal: true,
+						Vip:      "3.4.3.2",
 					},
 				},
 				CapiDiegoProcessAssociations: []*api.CapiDiegoProcessAssociation{
@@ -359,14 +356,14 @@ var _ = Describe("Capi Handlers", func() {
 					Host:     "example.host.com",
 					Path:     "/nothing/matters",
 					Internal: false,
-					VIP:      "1.2.3.4",
+					VIP:      "",
 				},
 				{
 					GUID:     "route-guid-b",
 					Host:     "example.internal",
 					Path:     "",
 					Internal: true,
-					VIP:      "1.2.3.4",
+					VIP:      "3.4.3.2",
 				},
 			}))
 

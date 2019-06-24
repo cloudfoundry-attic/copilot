@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -75,7 +76,6 @@ func (r *RoutesRepo) GetVIPByName(hostname string) (string, bool) {
 	if !ok {
 		return "", ok
 	}
-
 	return route.VIP, true
 }
 

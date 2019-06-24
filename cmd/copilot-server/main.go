@@ -15,7 +15,6 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/copilot/routes"
 	copilotsnapshot "code.cloudfoundry.org/copilot/snapshot"
-	"code.cloudfoundry.org/copilot/vip"
 	"code.cloudfoundry.org/debugserver"
 	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
@@ -39,6 +38,18 @@ import (
 const istioCertRootPath = "/etc/istio"
 
 func mainWithError() error {
+	fmt.Println(`
+ $$$$$$\   $$$$$$\  $$$$$$$\ $$$$$$\ $$\       $$$$$$\ $$$$$$$$\ 
+$$  __$$\ $$  __$$\ $$  __$$\ _$$  _|$$ |     $$  __$$\__$$  __|
+$$ /  \__|$$ /  $$ |$$ |  $$ | $$ |  $$ |     $$ /  $$ |  $$ |
+$$ |      $$ |  $$ |$$$$$$$  | $$ |  $$ |     $$ |  $$ |  $$ |
+$$ |      $$ |  $$ |$$  ____/  $$ |  $$ |     $$ |  $$ |  $$ |
+$$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
+\$$$$$$  | $$$$$$  |$$ |     $$$$$$\ $$$$$$$$\ $$$$$$  |  $$ |
+ \______/  \______/ \__|     \______|\________|\______/   \__|
+																									 starting...
+ `)
+
 	var configFilePath string
 	flag.StringVar(&configFilePath, "config", "", "path to config file")
 	flag.Parse()
@@ -105,17 +116,11 @@ func mainWithError() error {
 	capiDiegoProcessAssociationsRepo := &models.CAPIDiegoProcessAssociationsRepo{
 		Repo: make(map[models.CAPIProcessGUID]*models.CAPIDiegoProcessAssociation),
 	}
-	vipCidr, err := cfg.GetVIPCIDR()
-	if err != nil {
-		return err
-	}
-	vipProvider := vip.NewProvider(vipCidr)
 
 	capiHandler := &handlers.CAPI{
 		RoutesRepo:                       routesRepo,
 		RouteMappingsRepo:                routeMappingsRepo,
 		CAPIDiegoProcessAssociationsRepo: capiDiegoProcessAssociationsRepo,
-		VIPProvider:                      vipProvider,
 		Logger:                           logger,
 	}
 	grpcServerForCloudController := grpcrunner.New(logger, cfg.ListenAddressForCloudController,

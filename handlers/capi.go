@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"code.cloudfoundry.org/copilot/api"
@@ -102,7 +103,7 @@ func (c *CAPI) UpsertRoute(context context.Context, request *api.UpsertRouteRequ
 		Host:     request.Route.Host,
 		Path:     request.Route.Path,
 		Internal: request.Route.Internal,
-		VIP:      c.VIPProvider.Get(request.Route.Host),
+		VIP:      request.Route.Vip,
 	}
 	c.RoutesRepo.Upsert(route)
 	return &api.UpsertRouteResponse{}, nil
@@ -226,7 +227,7 @@ func (c *CAPI) syncRequest(request *api.BulkSyncRequest) {
 			Host:     route.GetHost(),
 			Path:     route.GetPath(),
 			Internal: route.GetInternal(),
-			VIP:      c.VIPProvider.Get(route.GetHost()),
+			VIP:      route.GetVip(),
 		}
 	}
 
