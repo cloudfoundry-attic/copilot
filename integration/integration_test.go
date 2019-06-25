@@ -243,6 +243,7 @@ var _ = Describe("Copilot", func() {
 				Route: &api.Route{
 					Guid: "route-guid-a",
 					Host: routeHost,
+					Vip:  "127.0.0.76",
 				}})
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -255,7 +256,7 @@ var _ = Describe("Copilot", func() {
 				},
 			)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Ip).To(Equal("127.167.11.82"))
+			Expect(resp.Ip).To(Equal("127.0.0.76"))
 		})
 	})
 
@@ -295,6 +296,7 @@ var _ = Describe("Copilot", func() {
 				Guid:     "internal-route-guid-a",
 				Host:     internalRouteHost,
 				Internal: true,
+				Vip:      "127.0.0.44",
 			}})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -389,7 +391,7 @@ var _ = Describe("Copilot", func() {
 		)
 		expectedInternalSE := expectedServiceEntry(
 			"some-internal-url",
-			"127.175.61.18",
+			"127.0.0.44",
 			"http",
 			[]Endpoint{
 				{
