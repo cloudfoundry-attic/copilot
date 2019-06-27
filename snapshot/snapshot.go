@@ -2,13 +2,16 @@ package snapshot
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/cf-networking-helpers/mutualtls"
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/silk-release/src/lib/policy_client"
 
 	"istio.io/istio/pilot/pkg/model"
 	snap "istio.io/istio/pkg/mcp/snapshot"
@@ -80,12 +83,26 @@ func New(logger lager.Logger, ticker <-chan time.Time, collector collector, sett
 func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
 
+	clientTLSConfig, err := mutualtls.NewClientTLSConfig("/tmp/client_cert_file", "/tmp/client_key_file", "/tmp/server_ca_cert_file")
+	if err != nil {
+		panic("PANIC")
+	}
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: clientTLSConfig,
+		},
+		Timeout: time.Duration(10) * time.Second,
+	}
+
+	policyClient := policy_client.NewInternal(s.logger, httpClient, "https://policy-server.service.cf.internal:4003")
 	for {
 		select {
 		case <-signals:
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
+			policies, _, _ := policyClient.GetPolicies()
 
 			if reflect.DeepEqual(routes, s.cachedRoutes) {
 				continue
@@ -95,13 +112,13 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			s.cachedRoutes = routes
 
 			gateways := s.config.CreateGatewayResources()
-			sidecars := s.config.CreateSidecarResources()
+			sidecars := s.config.CreateSidecarResources(routes, policies, newVersion)
 			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
 			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
 			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
-			s.builder.Set(SidecarTypeURL, "1", sidecars)
+			s.builder.Set(SidecarTypeURL, "1", sidecars) //Make this newVersion eventually since we're no longer hardcoding sidecars
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
