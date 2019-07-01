@@ -83,9 +83,9 @@ func New(logger lager.Logger, ticker <-chan time.Time, collector collector, sett
 func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
 
-	clientTLSConfig, err := mutualtls.NewClientTLSConfig("/tmp/client_cert_file", "/tmp/client_key_file", "/tmp/server_ca_cert_file")
+	clientTLSConfig, err := mutualtls.NewClientTLSConfig("/var/vcap/jobs/copilot/config/certs/client.crt", "/var/vcap/jobs/copilot/config/certs/client.key", "/var/vcap/jobs/copilot/config/certs/ca.crt")
 	if err != nil {
-		panic("PANIC")
+		panic(err)
 	}
 
 	httpClient := &http.Client{
