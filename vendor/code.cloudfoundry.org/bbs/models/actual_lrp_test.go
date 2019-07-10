@@ -1,12 +1,13 @@
 package models_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/bbs/models"
-
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -277,11 +278,28 @@ var _ = Describe("ActualLRP", func() {
 
 		Describe("ActualLRPNetInfo", func() {
 			Describe("EmptyActualLRPNetInfo", func() {
-				It("returns a net info with an empty address and non-nil empty PortMapping slice", func() {
+				It("returns a net info with an empty address, non-nil empty PortMapping slice, and unknown address preference", func() {
 					netInfo := models.EmptyActualLRPNetInfo()
 
 					Expect(netInfo.GetAddress()).To(BeEmpty())
 					Expect(netInfo.GetPorts()).To(BeEmpty())
+					Expect(netInfo.PreferredAddress).To(Equal(models.ActualLRPNetInfo_PreferredAddressUnknown))
+				})
+			})
+
+			Describe("ActualLRPNetInfo_PreferredAddress", func() {
+				Describe("serialization", func() {
+					DescribeTable("marshals and unmarshals between the value and the expected JSON output",
+						func(v models.ActualLRPNetInfo_PreferredAddress, expectedJSON string) {
+							Expect(json.Marshal(v)).To(MatchJSON(expectedJSON))
+							var testV models.ActualLRPNetInfo_PreferredAddress
+							Expect(json.Unmarshal([]byte(expectedJSON), &testV)).To(Succeed())
+							Expect(testV).To(Equal(v))
+						},
+						Entry("UNKNOWN", models.ActualLRPNetInfo_PreferredAddressUnknown, `"UNKNOWN"`),
+						Entry("INSTANCE", models.ActualLRPNetInfo_PreferredAddressInstance, `"INSTANCE"`),
+						Entry("HOST", models.ActualLRPNetInfo_PreferredAddressHost, `"HOST"`),
+					)
 				})
 			})
 		})
@@ -297,6 +315,8 @@ var _ = Describe("ActualLRP", func() {
 
 				resolvedLRP *models.ActualLRP
 				evacuating  bool
+
+				resolveError error
 			)
 
 			BeforeEach(func() {
@@ -312,7 +332,7 @@ var _ = Describe("ActualLRP", func() {
 			})
 
 			JustBeforeEach(func() {
-				resolvedLRP, evacuating = group.Resolve()
+				resolvedLRP, evacuating, resolveError = group.Resolve()
 			})
 
 			Context("When only the Instance LRP is set", func() {
@@ -320,6 +340,10 @@ var _ = Describe("ActualLRP", func() {
 					group = models.ActualLRPGroup{
 						Instance: instanceLRP,
 					}
+				})
+
+				JustBeforeEach(func() {
+					Expect(resolveError).NotTo(HaveOccurred())
 				})
 
 				It("returns the Instance LRP", func() {
@@ -335,6 +359,10 @@ var _ = Describe("ActualLRP", func() {
 					}
 				})
 
+				JustBeforeEach(func() {
+					Expect(resolveError).NotTo(HaveOccurred())
+				})
+
 				It("returns the Evacuating LRP", func() {
 					Expect(resolvedLRP).To(Equal(evacuatingLRP))
 					Expect(evacuating).To(BeTrue())
@@ -347,6 +375,10 @@ var _ = Describe("ActualLRP", func() {
 						Evacuating: evacuatingLRP,
 						Instance:   instanceLRP,
 					}
+				})
+
+				JustBeforeEach(func() {
+					Expect(resolveError).NotTo(HaveOccurred())
 				})
 
 				Context("When the Instance is UNCLAIMED", func() {
@@ -393,6 +425,19 @@ var _ = Describe("ActualLRP", func() {
 					})
 				})
 			})
+
+			Context("When both the Instance and the Evacuating are nil", func() {
+				BeforeEach(func() {
+					group = models.ActualLRPGroup{
+						Evacuating: nil,
+						Instance:   nil,
+					}
+				})
+
+				It("returns an error", func() {
+					Expect(resolveError).To(MatchError("ActualLRPGroup invalid"))
+				})
+			})
 		})
 	})
 
@@ -405,7 +450,7 @@ var _ = Describe("ActualLRP", func() {
 		BeforeEach(func() {
 			lrpKey = models.NewActualLRPKey("some-guid", 2, "some-domain")
 			instanceKey = models.NewActualLRPInstanceKey("some-instance-guid", "some-cell-id")
-			netInfo = models.NewActualLRPNetInfo("1.2.3.4", "2.2.2.2", models.NewPortMapping(5678, 8080), models.NewPortMapping(1234, 8081))
+			netInfo = models.NewActualLRPNetInfo("1.2.3.4", "2.2.2.2", models.ActualLRPNetInfo_PreferredAddressUnknown, models.NewPortMapping(5678, 8080), models.NewPortMapping(1234, 8081))
 
 			lrp = models.ActualLRP{
 				ActualLRPKey:         lrpKey,
@@ -561,6 +606,7 @@ var _ = Describe("ActualLRP", func() {
 				itValidatesAbsenceOfTheInstanceKey(&lrp)
 				itValidatesAbsenceOfNetInfo(&lrp)
 				itValidatesPresenceOfPlacementError(&lrp)
+				itValidatesOrdinaryPresence(&lrp)
 			})
 
 			Context("when state is claimed", func() {
@@ -645,6 +691,120 @@ var _ = Describe("ActualLRP", func() {
 			})
 		})
 	})
+
+	Describe("ResolveActualLRPGroups", func() {
+		It("returns ordinary ActualLRPs in the instance slot of ActualLRPGroups", func() {
+			lrp1 := &models.ActualLRP{
+				ActualLRPKey:         models.NewActualLRPKey("process-guid-0", 0, "domain-0"),
+				ActualLRPInstanceKey: models.NewActualLRPInstanceKey("instance-guid-0", "cell-id-0"),
+				Presence:             models.ActualLRP_Ordinary,
+				State:                models.ActualLRPStateRunning,
+			}
+			lrp2 := &models.ActualLRP{
+				ActualLRPKey:         models.NewActualLRPKey("process-guid-1", 1, "domain-1"),
+				ActualLRPInstanceKey: models.NewActualLRPInstanceKey("instance-guid-1", "cell-id-0"),
+				Presence:             models.ActualLRP_Ordinary,
+				State:                models.ActualLRPStateRunning,
+			}
+			groups := models.ResolveActualLRPGroups([]*models.ActualLRP{lrp1, lrp2})
+			Expect(groups).To(ConsistOf(
+				&models.ActualLRPGroup{Instance: lrp1},
+				&models.ActualLRPGroup{Instance: lrp2},
+			))
+		})
+
+		It("returns evacuating ActualLRPs in the evacuating slot of ActualLRPGroups", func() {
+			lrp1 := &models.ActualLRP{
+				ActualLRPKey:         models.NewActualLRPKey("process-guid-0", 0, "domain-0"),
+				ActualLRPInstanceKey: models.NewActualLRPInstanceKey("instance-guid-0", "cell-id-0"),
+				Presence:             models.ActualLRP_Evacuating,
+				State:                models.ActualLRPStateRunning,
+			}
+			lrp2 := &models.ActualLRP{
+				ActualLRPKey:         models.NewActualLRPKey("process-guid-0", 0, "domain-0"),
+				ActualLRPInstanceKey: models.NewActualLRPInstanceKey("instance-guid-1", "cell-id-1"),
+				Presence:             models.ActualLRP_Ordinary,
+				State:                models.ActualLRPStateRunning,
+			}
+			groups := models.ResolveActualLRPGroups([]*models.ActualLRP{lrp1, lrp2})
+			Expect(groups).To(ConsistOf(
+				&models.ActualLRPGroup{Instance: lrp2, Evacuating: lrp1},
+			))
+
+		})
+
+		DescribeTable("resolution priority of the Instance slot",
+			func(
+				supLRPState string, supLRPPresence models.ActualLRP_Presence,
+				infLRPState string, infLRPPresence models.ActualLRP_Presence,
+			) {
+				supLRP := &models.ActualLRP{
+					ActualLRPKey:         models.NewActualLRPKey("process-guid-0", 0, "domain-0"),
+					ActualLRPInstanceKey: models.NewActualLRPInstanceKey("instance-guid-0", "cell-id-0"),
+					Presence:             supLRPPresence,
+					State:                supLRPState,
+				}
+				infLRP := &models.ActualLRP{
+					ActualLRPKey:         models.NewActualLRPKey("process-guid-0", 0, "domain-0"),
+					ActualLRPInstanceKey: models.NewActualLRPInstanceKey("instance-guid-1", "cell-id-1"),
+					Presence:             infLRPPresence,
+					State:                infLRPState,
+				}
+				groups := models.ResolveActualLRPGroups([]*models.ActualLRP{supLRP, infLRP})
+				Expect(groups).To(ConsistOf(
+					&models.ActualLRPGroup{Instance: supLRP},
+				))
+			},
+			Entry("chooses RUNNING/Ordinary over RUNNING/Suspect",
+				models.ActualLRPStateRunning, models.ActualLRP_Ordinary,
+				models.ActualLRPStateRunning, models.ActualLRP_Suspect,
+			),
+			Entry("chooses RUNNING/Ordinary over CLAIMED/Suspect",
+				models.ActualLRPStateRunning, models.ActualLRP_Ordinary,
+				models.ActualLRPStateClaimed, models.ActualLRP_Suspect,
+			),
+			Entry("chooses RUNNING/Suspect over CLAIMED/Ordinary",
+				models.ActualLRPStateRunning, models.ActualLRP_Suspect,
+				models.ActualLRPStateClaimed, models.ActualLRP_Ordinary,
+			),
+			Entry("chooses RUNNING/Suspect over UNCLAIMED/Ordinary",
+				models.ActualLRPStateRunning, models.ActualLRP_Suspect,
+				models.ActualLRPStateUnclaimed, models.ActualLRP_Ordinary,
+			),
+			Entry("chooses RUNNING/Suspect over CRASHED/Ordinary",
+				models.ActualLRPStateRunning, models.ActualLRP_Suspect,
+				models.ActualLRPStateCrashed, models.ActualLRP_Ordinary,
+			),
+			Entry("chooses CLAIMED/Suspect over CLAIMED/Ordinary",
+				models.ActualLRPStateClaimed, models.ActualLRP_Suspect,
+				models.ActualLRPStateClaimed, models.ActualLRP_Ordinary,
+			),
+			Entry("chooses CLAIMED/Suspect over UNCLAIMED/Ordinary",
+				models.ActualLRPStateClaimed, models.ActualLRP_Suspect,
+				models.ActualLRPStateUnclaimed, models.ActualLRP_Ordinary,
+			),
+			Entry("chooses CLAIMED/Suspect over CRASHED/Ordinary",
+				models.ActualLRPStateClaimed, models.ActualLRP_Suspect,
+				models.ActualLRPStateCrashed, models.ActualLRP_Ordinary,
+			),
+		)
+
+		Describe("ActualLRP_Presence", func() {
+			Describe("serialization", func() {
+				DescribeTable("marshals and unmarshals between the value and the expected JSON output",
+					func(v models.ActualLRP_Presence, expectedJSON string) {
+						Expect(json.Marshal(v)).To(MatchJSON(expectedJSON))
+						var testV models.ActualLRP_Presence
+						Expect(json.Unmarshal([]byte(expectedJSON), &testV)).To(Succeed())
+						Expect(testV).To(Equal(v))
+					},
+					Entry("Ordinary", models.ActualLRP_Ordinary, `"ORDINARY"`),
+					Entry("EVACUATING", models.ActualLRP_Evacuating, `"EVACUATING"`),
+					Entry("SUSPECT", models.ActualLRP_Suspect, `"SUSPECT"`),
+				)
+			})
+		})
+	})
 })
 
 func itValidatesPresenceOfTheLRPKey(lrp *models.ActualLRP) {
@@ -722,7 +882,7 @@ func itValidatesAbsenceOfTheInstanceKey(lrp *models.ActualLRP) {
 func itValidatesPresenceOfNetInfo(lrp *models.ActualLRP) {
 	Context("when net info is set", func() {
 		BeforeEach(func() {
-			lrp.ActualLRPNetInfo = models.NewActualLRPNetInfo("1.2.3.4", "2.2.2.2")
+			lrp.ActualLRPNetInfo = models.NewActualLRPNetInfo("1.2.3.4", "2.2.2.2", models.ActualLRPNetInfo_PreferredAddressUnknown)
 		})
 
 		It("validate does not return an error", func() {
@@ -746,7 +906,7 @@ func itValidatesPresenceOfNetInfo(lrp *models.ActualLRP) {
 func itValidatesAbsenceOfNetInfo(lrp *models.ActualLRP) {
 	Context("when net info is set", func() {
 		BeforeEach(func() {
-			lrp.ActualLRPNetInfo = models.NewActualLRPNetInfo("1.2.3.4", "2.2.2.2")
+			lrp.ActualLRPNetInfo = models.NewActualLRPNetInfo("1.2.3.4", "2.2.2.2", models.ActualLRPNetInfo_PreferredAddressUnknown)
 		})
 
 		It("validate returns an error", func() {
@@ -805,6 +965,30 @@ func itValidatesAbsenceOfPlacementError(lrp *models.ActualLRP) {
 	Context("when placement error is not set", func() {
 		BeforeEach(func() {
 			lrp.PlacementError = ""
+		})
+
+		It("validate does not return an error", func() {
+			Expect(lrp.Validate()).NotTo(HaveOccurred())
+		})
+	})
+}
+
+func itValidatesOrdinaryPresence(lrp *models.ActualLRP) {
+	Context("when presence is set", func() {
+		BeforeEach(func() {
+			lrp.Presence = models.ActualLRP_Evacuating
+		})
+
+		It("validate returns an error", func() {
+			err := lrp.Validate()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("presence cannot be set"))
+		})
+	})
+
+	Context("when presence is not set", func() {
+		BeforeEach(func() {
+			lrp.Presence = models.ActualLRP_Ordinary
 		})
 
 		It("validate does not return an error", func() {

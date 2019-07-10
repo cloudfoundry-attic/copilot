@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -17,14 +18,14 @@ const (
 )
 
 type SQLHelper interface {
-	Transact(logger lager.Logger, db *sql.DB, f func(logger lager.Logger, tx *sql.Tx) error) error
-	One(logger lager.Logger, q Queryable, table string, columns ColumnList, lockRow RowLock, wheres string, whereBindings ...interface{}) *sql.Row
-	All(logger lager.Logger, q Queryable, table string, columns ColumnList, lockRow RowLock, wheres string, whereBindings ...interface{}) (*sql.Rows, error)
-	Upsert(logger lager.Logger, q Queryable, table string, attributes SQLAttributes, wheres string, whereBindings ...interface{}) (sql.Result, error)
-	Insert(logger lager.Logger, q Queryable, table string, attributes SQLAttributes) (sql.Result, error)
-	Update(logger lager.Logger, q Queryable, table string, updates SQLAttributes, wheres string, whereBindings ...interface{}) (sql.Result, error)
-	Delete(logger lager.Logger, q Queryable, table string, wheres string, whereBindings ...interface{}) (sql.Result, error)
-	Count(logger lager.Logger, q Queryable, table string, wheres string, whereBindings ...interface{}) (int, error)
+	Transact(ctx context.Context, logger lager.Logger, db QueryableDB, f func(logger lager.Logger, tx Tx) error) error
+	One(ctx context.Context, logger lager.Logger, q Queryable, table string, columns ColumnList, lockRow RowLock, wheres string, whereBindings ...interface{}) RowScanner
+	All(ctx context.Context, logger lager.Logger, q Queryable, table string, columns ColumnList, lockRow RowLock, wheres string, whereBindings ...interface{}) (*sql.Rows, error)
+	Upsert(ctx context.Context, logger lager.Logger, q Queryable, table string, attributes SQLAttributes, wheres string, whereBindings ...interface{}) (bool, error)
+	Insert(ctx context.Context, logger lager.Logger, q Queryable, table string, attributes SQLAttributes) (sql.Result, error)
+	Update(ctx context.Context, logger lager.Logger, q Queryable, table string, updates SQLAttributes, wheres string, whereBindings ...interface{}) (sql.Result, error)
+	Delete(ctx context.Context, logger lager.Logger, q Queryable, table string, wheres string, whereBindings ...interface{}) (sql.Result, error)
+	Count(ctx context.Context, logger lager.Logger, q Queryable, table string, wheres string, whereBindings ...interface{}) (int, error)
 
 	ConvertSQLError(err error) error
 	Rebind(query string) string
@@ -36,13 +37,6 @@ type sqlHelper struct {
 
 func NewSQLHelper(flavor string) *sqlHelper {
 	return &sqlHelper{flavor: flavor}
-}
-
-type Queryable interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(query string) (*sql.Stmt, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
 type RowLock bool

@@ -12,7 +12,6 @@ import (
 type DomainHandler struct {
 	db       db.DomainDB
 	exitChan chan<- struct{}
-	logger   lager.Logger
 }
 
 var (
@@ -31,7 +30,7 @@ func (h *DomainHandler) Domains(logger lager.Logger, w http.ResponseWriter, req 
 	var err error
 	logger = logger.Session("domains")
 	response := &models.DomainsResponse{}
-	response.Domains, err = h.db.Domains(logger)
+	response.Domains, err = h.db.FreshDomains(req.Context(), logger)
 	response.Error = models.ConvertError(err)
 	writeResponse(w, response)
 	exitIfUnrecoverable(logger, h.exitChan, response.Error)
@@ -46,7 +45,7 @@ func (h *DomainHandler) Upsert(logger lager.Logger, w http.ResponseWriter, req *
 
 	err = parseRequest(logger, req, request)
 	if err == nil {
-		err = h.db.UpsertDomain(logger, request.Domain, request.Ttl)
+		err = h.db.UpsertDomain(req.Context(), logger, request.Domain, request.Ttl)
 	}
 
 	response.Error = models.ConvertError(err)

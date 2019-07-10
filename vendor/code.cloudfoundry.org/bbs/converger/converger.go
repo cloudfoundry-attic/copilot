@@ -1,6 +1,7 @@
 package converger
 
 import (
+	"context"
 	"os"
 	"sync"
 	"time"
@@ -15,12 +16,12 @@ import (
 
 //go:generate counterfeiter -o fake_controllers/fake_lrp_convergence_controller.go . LrpConvergenceController
 type LrpConvergenceController interface {
-	ConvergeLRPs(logger lager.Logger) error
+	ConvergeLRPs(ctx context.Context, logger lager.Logger)
 }
 
 //go:generate counterfeiter -o fake_controllers/fake_task_controller.go . TaskController
 type TaskController interface {
-	ConvergeTasks(logger lager.Logger, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration time.Duration) error
+	ConvergeTasks(ctx context.Context, logger lager.Logger, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration time.Duration) error
 }
 
 type Converger struct {
@@ -80,6 +81,7 @@ func (c *Converger) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}()
 
 	cellEvents := c.serviceClient.CellEvents(logger)
+	convergeChan := make(chan struct{}, 2)
 
 	close(ready)
 
@@ -96,32 +98,38 @@ func (c *Converger) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			switch event.EventType() {
 			case models.EventTypeCellDisappeared:
 				logger.Info("received-cell-disappeared-event", lager.Data{"cell-id": event.CellIDs()})
-				c.converge()
+				c.converge(convergeChan)
 			}
 
 		case <-convergeTimer.C():
 			convergeTimer.Stop()
-			c.converge()
+			c.converge(convergeChan)
+		}
+
+		select {
+		case <-signals:
+			return nil
+		case <-convergeChan:
+		}
+		select {
+		case <-signals:
+			return nil
+		case <-convergeChan:
 		}
 
 		convergeTimer.Reset(c.convergeRepeatInterval)
 	}
 }
 
-func (c *Converger) converge() {
+func (c *Converger) converge(convergeChan chan struct{}) {
 	logger := c.logger.Session("executing-convergence")
-	wg := sync.WaitGroup{}
 
-	wg.Add(1)
 	go func() {
 		logger.Info("converge-tasks-started")
-
-		defer func() {
-			logger.Info("converge-tasks-done")
-			wg.Done()
-		}()
+		defer logger.Info("converge-tasks-done")
 
 		err := c.taskController.ConvergeTasks(
+			context.Background(),
 			c.logger,
 			c.kickTaskDuration,
 			c.expirePendingTaskDuration,
@@ -130,22 +138,16 @@ func (c *Converger) converge() {
 		if err != nil {
 			logger.Error("failed-to-converge-tasks", err)
 		}
+
+		convergeChan <- struct{}{}
 	}()
 
-	wg.Add(1)
 	go func() {
 		logger.Info("converge-lrps-started")
+		defer logger.Info("converge-lrps-done")
 
-		defer func() {
-			logger.Info("converge-lrps-done")
-			wg.Done()
-		}()
+		c.lrpConvergenceController.ConvergeLRPs(context.Background(), c.logger)
 
-		err := c.lrpConvergenceController.ConvergeLRPs(c.logger)
-		if err != nil {
-			logger.Error("failed-to-converge-lrps", err)
-		}
+		convergeChan <- struct{}{}
 	}()
-
-	wg.Wait()
 }

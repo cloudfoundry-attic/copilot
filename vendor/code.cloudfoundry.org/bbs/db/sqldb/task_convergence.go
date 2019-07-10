@@ -1,91 +1,81 @@
 package sqldb
 
 import (
+	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/auctioneer"
+	"code.cloudfoundry.org/bbs/db"
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 )
 
 const (
-	convergeTaskRunsCounter = "ConvergenceTaskRuns"
-	convergeTaskDuration    = "ConvergenceTaskDuration"
-
-	tasksKickedCounter = "ConvergenceTasksKicked"
-	tasksPrunedCounter = "ConvergenceTasksPruned"
-
-	pendingTasks   = "TasksPending"
-	runningTasks   = "TasksRunning"
-	completedTasks = "TasksCompleted"
-	resolvingTasks = "TasksResolving"
-
 	expiredFailureReason         = "not started within time limit"
 	cellDisappearedFailureReason = "cell disappeared before completion"
 )
 
-func (db *SQLDB) ConvergeTasks(logger lager.Logger, cellSet models.CellSet, kickTasksDuration, expirePendingTaskDuration, expireCompletedTaskDuration time.Duration) ([]*auctioneer.TaskStartRequest, []*models.Task, []models.Event) {
+func (sqldb *SQLDB) ConvergeTasks(ctx context.Context, logger lager.Logger, cellSet models.CellSet, kickTasksDuration, expirePendingTaskDuration, expireCompletedTaskDuration time.Duration) db.TaskConvergenceResult {
+	logger = logger.Session("db-converge-tasks")
 	logger.Info("starting")
-	defer logger.Info("completed")
+	defer logger.Info("complete")
 
-	db.metronClient.IncrementCounter(convergeTaskRunsCounter)
-	convergeStart := db.clock.Now()
+	convergenceResult := db.TaskConvergenceResult{}
 
-	defer func() {
-		err := db.metronClient.SendDuration(convergeTaskDuration, time.Since(convergeStart))
-		if err != nil {
-			logger.Error("failed-to-send-converge-task-duration-metric", err)
-		}
-	}()
+	// failedEvents is a list of tasks that have transitioned from the pending to the completed state (but expired and failed)
+	// failedFetches are tasks that failed to deserialize (invalid task def)
+	// rowsAffected are the number of pending tasks that have expired
+	failedEvents, failedFetches, rowsAffected := sqldb.failExpiredPendingTasks(ctx, logger, expirePendingTaskDuration)
+	convergenceResult.Events = append(convergenceResult.Events, failedEvents...)
+	convergenceResult.Metrics.TasksPruned += failedFetches
+	convergenceResult.Metrics.TasksKicked += uint64(rowsAffected)
 
-	var tasksPruned, tasksKicked uint64
+	// tasksToAuction is a list of tasks in the pending state that have not expired and are being auctioned
+	tasksToAuction, failedFetches := sqldb.getTaskStartRequestsForKickablePendingTasks(ctx, logger, expirePendingTaskDuration)
+	convergenceResult.TasksToAuction = tasksToAuction
+	convergenceResult.Metrics.TasksPruned += failedFetches
+	convergenceResult.Metrics.TasksKicked += uint64(len(tasksToAuction))
 
-	events, failedFetches, rowsAffected := db.failExpiredPendingTasks(logger, expirePendingTaskDuration)
-	tasksPruned += failedFetches
-	tasksKicked += uint64(rowsAffected)
-
-	tasksToAuction, failedFetches := db.getTaskStartRequestsForKickablePendingTasks(logger, kickTasksDuration, expirePendingTaskDuration)
-	tasksPruned += failedFetches
-	tasksKicked += uint64(len(tasksToAuction))
-
-	failedEvents, failedFetches, rowsAffected := db.failTasksWithDisappearedCells(logger, cellSet)
-	tasksPruned += failedFetches
-	tasksKicked += uint64(rowsAffected)
-	events = append(events, failedEvents...)
+	// failedEvents is a list of tasks that have transitioned from the running to completed state (but cell dissappeared and failed)
+	// rowsAffected is the number of running tasks that have lost their cells
+	failedEvents, failedFetches, rowsAffected = sqldb.failTasksWithDisappearedCells(ctx, logger, cellSet)
+	convergenceResult.Events = append(convergenceResult.Events, failedEvents...)
+	convergenceResult.Metrics.TasksPruned += failedFetches
+	convergenceResult.Metrics.TasksKicked += uint64(rowsAffected)
 
 	// do this first so that we now have "Completed" tasks before cleaning up
 	// or re-sending the completion callback
-	demotedEvents, failedFetches := db.demoteKickableResolvingTasks(logger, kickTasksDuration)
-	tasksPruned += failedFetches
-	events = append(events, demotedEvents...)
+	// demotedEvents is a list of tasks transitioning from resolving back to completed state (bc they exceeded kickTasksDuration)
+	demotedEvents, failedFetches := sqldb.demoteKickableResolvingTasks(ctx, logger, kickTasksDuration)
+	convergenceResult.Events = append(convergenceResult.Events, demotedEvents...)
+	convergenceResult.Metrics.TasksPruned += failedFetches
 
-	removedEvents, rowsAffected := db.deleteExpiredCompletedTasks(logger, expireCompletedTaskDuration)
-	tasksPruned += uint64(rowsAffected)
-	events = append(events, removedEvents...)
+	// removedEvents is a list of tasks in the completed stated that have been deleted bc the time since they initially changed to completed exceeded expireCompleteTaskDuration
+	removedEvents, rowsAffected := sqldb.deleteExpiredCompletedTasks(ctx, logger, expireCompletedTaskDuration)
+	convergenceResult.Events = append(convergenceResult.Events, removedEvents...)
+	convergenceResult.Metrics.TasksPruned += uint64(rowsAffected)
 
-	tasksToComplete, failedFetches := db.getKickableCompleteTasksForCompletion(logger, kickTasksDuration)
-	tasksPruned += failedFetches
-	tasksKicked += uint64(len(tasksToComplete))
+	// tasksToComplete is a list of tasks in the complete state that have exceeded kickTasksDuration
+	tasksToComplete, failedFetches := sqldb.getKickableCompleteTasksForCompletion(ctx, logger, kickTasksDuration)
+	convergenceResult.TasksToComplete = tasksToComplete
+	convergenceResult.Metrics.TasksPruned += failedFetches
+	convergenceResult.Metrics.TasksKicked += uint64(len(tasksToComplete))
 
-	pendingCount, runningCount, completedCount, resolvingCount := db.countTasksByState(logger.Session("count-tasks"), db.db)
+	convergenceResult.Metrics.TasksPending, convergenceResult.Metrics.TasksRunning, convergenceResult.Metrics.TasksCompleted, convergenceResult.Metrics.TasksResolving = sqldb.getTaskCountByState(ctx, logger)
 
-	db.sendTaskMetrics(logger, pendingCount, runningCount, completedCount, resolvingCount)
-
-	db.metronClient.IncrementCounterWithDelta(tasksKickedCounter, uint64(tasksKicked))
-	db.metronClient.IncrementCounterWithDelta(tasksPrunedCounter, uint64(tasksPruned))
-
-	return tasksToAuction, tasksToComplete, events
+	return convergenceResult
 }
 
-func (db *SQLDB) failExpiredPendingTasks(logger lager.Logger, expirePendingTaskDuration time.Duration) ([]models.Event, uint64, int64) {
+func (db *SQLDB) failExpiredPendingTasks(ctx context.Context, logger lager.Logger, expirePendingTaskDuration time.Duration) ([]models.Event, uint64, int64) {
 	logger = logger.Session("fail-expired-pending-tasks")
 
 	now := db.clock.Now()
 
-	rows, err := db.all(logger, db.db, tasksTable,
+	rows, err := db.all(ctx, logger, db.db, tasksTable,
 		taskColumns, helpers.NoLockRow,
 		"state = ? AND created_at < ?", models.Task_Pending, now.Add(-expirePendingTaskDuration).UnixNano())
 	if err != nil {
@@ -94,13 +84,24 @@ func (db *SQLDB) failExpiredPendingTasks(logger lager.Logger, expirePendingTaskD
 	}
 	defer rows.Close()
 
-	tasks, invalidTasksCount, err := db.fetchTasks(logger, rows, db.db, false)
-
+	tasks, validTaskGuids, invalidTasksCount, err := db.fetchTasks(ctx, logger, rows, db.db, false)
 	if err != nil {
 		logger.Error("failed-fetching-some-tasks", err)
 	}
 
-	result, err := db.update(logger, db.db, tasksTable,
+	wheres := []string{"state = ?", "created_at < ?"}
+	bindings := []interface{}{models.Task_Pending, now.Add(-expirePendingTaskDuration).UnixNano()}
+
+	if len(validTaskGuids) == 0 {
+		return nil, uint64(invalidTasksCount), 0
+	}
+
+	wheres = append(wheres, fmt.Sprintf("guid IN (%s)", helpers.QuestionMarks(len(validTaskGuids))))
+	for _, guid := range validTaskGuids {
+		bindings = append(bindings, guid)
+	}
+
+	result, err := db.update(ctx, logger, db.db, tasksTable,
 		helpers.SQLAttributes{
 			"failed":             true,
 			"failure_reason":     expiredFailureReason,
@@ -109,7 +110,7 @@ func (db *SQLDB) failExpiredPendingTasks(logger lager.Logger, expirePendingTaskD
 			"first_completed_at": now.UnixNano(),
 			"updated_at":         now.UnixNano(),
 		},
-		"state = ? AND created_at < ?", models.Task_Pending, now.Add(-expirePendingTaskDuration).UnixNano())
+		strings.Join(wheres, " AND "), bindings...)
 	if err != nil {
 		logger.Error("failed-query", err)
 		return nil, uint64(invalidTasksCount), 0
@@ -136,13 +137,13 @@ func (db *SQLDB) failExpiredPendingTasks(logger lager.Logger, expirePendingTaskD
 	return events, uint64(invalidTasksCount), rowsAffected
 }
 
-func (db *SQLDB) getTaskStartRequestsForKickablePendingTasks(logger lager.Logger, kickTasksDuration, expirePendingTaskDuration time.Duration) ([]*auctioneer.TaskStartRequest, uint64) {
+func (db *SQLDB) getTaskStartRequestsForKickablePendingTasks(ctx context.Context, logger lager.Logger, expirePendingTaskDuration time.Duration) ([]*auctioneer.TaskStartRequest, uint64) {
 	logger = logger.Session("get-task-start-requests-for-kickable-pending-tasks")
 
-	rows, err := db.all(logger, db.db, tasksTable,
+	rows, err := db.all(ctx, logger, db.db, tasksTable,
 		taskColumns, helpers.NoLockRow,
-		"state = ? AND updated_at < ? AND created_at > ?",
-		models.Task_Pending, db.clock.Now().Add(-kickTasksDuration).UnixNano(), db.clock.Now().Add(-expirePendingTaskDuration).UnixNano(),
+		"state = ? AND created_at > ?",
+		models.Task_Pending, db.clock.Now().Add(-expirePendingTaskDuration).UnixNano(),
 	)
 
 	if err != nil {
@@ -153,20 +154,20 @@ func (db *SQLDB) getTaskStartRequestsForKickablePendingTasks(logger lager.Logger
 	defer rows.Close()
 
 	tasksToAuction := []*auctioneer.TaskStartRequest{}
-	tasks, invalidTasksCount, err := db.fetchTasks(logger, rows, db.db, false)
+	tasks, _, invalidTasksCount, err := db.fetchTasks(ctx, logger, rows, db.db, false)
+	if err != nil {
+		logger.Error("failed-fetching-some-tasks", err)
+	}
+
 	for _, task := range tasks {
 		taskStartRequest := auctioneer.NewTaskStartRequestFromModel(task.TaskGuid, task.Domain, task.TaskDefinition)
 		tasksToAuction = append(tasksToAuction, &taskStartRequest)
 	}
 
-	if err != nil {
-		logger.Error("failed-fetching-some-tasks", err)
-	}
-
 	return tasksToAuction, uint64(invalidTasksCount)
 }
 
-func (db *SQLDB) failTasksWithDisappearedCells(logger lager.Logger, cellSet models.CellSet) ([]models.Event, uint64, int64) {
+func (db *SQLDB) failTasksWithDisappearedCells(ctx context.Context, logger lager.Logger, cellSet models.CellSet) ([]models.Event, uint64, int64) {
 	logger = logger.Session("fail-tasks-with-disappeared-cells")
 
 	values := make([]interface{}, 0, 1+len(cellSet))
@@ -182,19 +183,29 @@ func (db *SQLDB) failTasksWithDisappearedCells(logger lager.Logger, cellSet mode
 	}
 	now := db.clock.Now().UnixNano()
 
-	rows, err := db.all(logger, db.db, tasksTable, taskColumns, helpers.NoLockRow, wheres, values...)
+	rows, err := db.all(ctx, logger, db.db, tasksTable, taskColumns, helpers.NoLockRow, wheres, values...)
 	if err != nil {
 		logger.Error("failed-query", err)
 		return nil, 0, 0
 	}
 	defer rows.Close()
 
-	tasks, invalidTasksCount, err := db.fetchTasks(logger, rows, db.db, false)
+	tasks, validTaskGuids, invalidTasksCount, err := db.fetchTasks(ctx, logger, rows, db.db, false)
 	if err != nil {
 		logger.Error("failed-fetching-tasks", err)
 	}
 
-	result, err := db.update(logger, db.db, tasksTable,
+	if len(validTaskGuids) == 0 {
+		return nil, uint64(invalidTasksCount), 0
+	}
+
+	wheres += fmt.Sprintf(" AND guid IN (%s)", helpers.QuestionMarks(len(validTaskGuids)))
+
+	for _, guid := range validTaskGuids {
+		values = append(values, guid)
+	}
+
+	result, err := db.update(ctx, logger, db.db, tasksTable,
 		helpers.SQLAttributes{
 			"failed":             true,
 			"failure_reason":     cellDisappearedFailureReason,
@@ -232,10 +243,10 @@ func (db *SQLDB) failTasksWithDisappearedCells(logger lager.Logger, cellSet mode
 	return events, uint64(invalidTasksCount), rowsAffected
 }
 
-func (db *SQLDB) demoteKickableResolvingTasks(logger lager.Logger, kickTasksDuration time.Duration) ([]models.Event, uint64) {
+func (db *SQLDB) demoteKickableResolvingTasks(ctx context.Context, logger lager.Logger, kickTasksDuration time.Duration) ([]models.Event, uint64) {
 	logger = logger.Session("demote-kickable-resolving-tasks")
 
-	rows, err := db.all(logger, db.db, tasksTable,
+	rows, err := db.all(ctx, logger, db.db, tasksTable,
 		taskColumns, helpers.NoLockRow,
 		"state = ? AND updated_at < ?", models.Task_Resolving, db.clock.Now().Add(-kickTasksDuration).UnixNano(),
 	)
@@ -245,15 +256,27 @@ func (db *SQLDB) demoteKickableResolvingTasks(logger lager.Logger, kickTasksDura
 	}
 	defer rows.Close()
 
-	tasks, invalidTasksCount, err := db.fetchTasks(logger, rows, db.db, false)
+	tasks, validTaskGuids, invalidTasksCount, err := db.fetchTasks(ctx, logger, rows, db.db, false)
 	if err != nil {
 		logger.Error("failed-fetching-tasks", err)
 	}
 
-	_, err = db.update(logger, db.db, tasksTable,
+	wheres := []string{"state = ?", "updated_at < ?"}
+	bindings := []interface{}{models.Task_Resolving, db.clock.Now().Add(-kickTasksDuration).UnixNano()}
+
+	if len(validTaskGuids) == 0 {
+		return nil, uint64(invalidTasksCount)
+	}
+
+	wheres = append(wheres, fmt.Sprintf("guid IN (%s)", helpers.QuestionMarks(len(validTaskGuids))))
+
+	for _, guid := range validTaskGuids {
+		bindings = append(bindings, guid)
+	}
+
+	_, err = db.update(ctx, logger, db.db, tasksTable,
 		helpers.SQLAttributes{"state": models.Task_Completed},
-		"state = ? AND updated_at < ?",
-		models.Task_Resolving, db.clock.Now().Add(-kickTasksDuration).UnixNano(),
+		strings.Join(wheres, " AND "), bindings...,
 	)
 	if err != nil {
 		logger.Error("failed-updating-tasks", err)
@@ -269,12 +292,12 @@ func (db *SQLDB) demoteKickableResolvingTasks(logger lager.Logger, kickTasksDura
 	return events, uint64(invalidTasksCount)
 }
 
-func (db *SQLDB) deleteExpiredCompletedTasks(logger lager.Logger, expireCompletedTaskDuration time.Duration) ([]models.Event, int64) {
+func (db *SQLDB) deleteExpiredCompletedTasks(ctx context.Context, logger lager.Logger, expireCompletedTaskDuration time.Duration) ([]models.Event, int64) {
 	logger = logger.Session("delete-expired-completed-tasks")
 	wheres := "state = ? AND first_completed_at < ?"
 	values := []interface{}{models.Task_Completed, db.clock.Now().Add(-expireCompletedTaskDuration).UnixNano()}
 
-	rows, err := db.all(logger, db.db, tasksTable,
+	rows, err := db.all(ctx, logger, db.db, tasksTable,
 		taskColumns, helpers.NoLockRow,
 		wheres, values...,
 	)
@@ -284,13 +307,22 @@ func (db *SQLDB) deleteExpiredCompletedTasks(logger lager.Logger, expireComplete
 	}
 	defer rows.Close()
 
-	tasks, invalidTasksCount, err := db.fetchTasks(logger, rows, db.db, false)
+	tasks, validTaskGuids, invalidTasksCount, err := db.fetchTasks(ctx, logger, rows, db.db, false)
 	if err != nil {
-		logger.Error("failed-fetching-tasks", err)
+		logger.Error("failed-fetching-tasks", err, lager.Data{"invalidTasksCound": int64(invalidTasksCount)})
+	}
+
+	if len(validTaskGuids) == 0 {
 		return nil, int64(invalidTasksCount)
 	}
 
-	result, err := db.delete(logger, db.db, tasksTable, wheres, values...)
+	wheres += fmt.Sprintf(" AND guid IN (%s)", helpers.QuestionMarks(len(validTaskGuids)))
+
+	for _, guid := range validTaskGuids {
+		values = append(values, guid)
+	}
+
+	result, err := db.delete(ctx, logger, db.db, tasksTable, wheres, values...)
 	if err != nil {
 		logger.Error("failed-query", err)
 		return nil, int64(invalidTasksCount)
@@ -311,10 +343,10 @@ func (db *SQLDB) deleteExpiredCompletedTasks(logger lager.Logger, expireComplete
 	return events, rowsAffected
 }
 
-func (db *SQLDB) getKickableCompleteTasksForCompletion(logger lager.Logger, kickTasksDuration time.Duration) ([]*models.Task, uint64) {
+func (db *SQLDB) getKickableCompleteTasksForCompletion(ctx context.Context, logger lager.Logger, kickTasksDuration time.Duration) ([]*models.Task, uint64) {
 	logger = logger.Session("get-kickable-complete-tasks-for-completion")
 
-	rows, err := db.all(logger, db.db, tasksTable,
+	rows, err := db.all(ctx, logger, db.db, tasksTable,
 		taskColumns, helpers.NoLockRow,
 		"state = ? AND updated_at < ?",
 		models.Task_Completed, db.clock.Now().Add(-kickTasksDuration).UnixNano(),
@@ -327,7 +359,7 @@ func (db *SQLDB) getKickableCompleteTasksForCompletion(logger lager.Logger, kick
 
 	defer rows.Close()
 
-	tasksToComplete, failedFetches, err := db.fetchTasks(logger, rows, db.db, false)
+	tasksToComplete, _, failedFetches, err := db.fetchTasks(ctx, logger, rows, db.db, false)
 
 	if err != nil {
 		logger.Error("failed-fetching-some-tasks", err)
@@ -336,24 +368,36 @@ func (db *SQLDB) getKickableCompleteTasksForCompletion(logger lager.Logger, kick
 	return tasksToComplete, uint64(failedFetches)
 }
 
-func (db *SQLDB) sendTaskMetrics(logger lager.Logger, pendingCount, runningCount, completedCount, resolvingCount int) {
-	err := db.metronClient.SendMetric(pendingTasks, pendingCount)
-	if err != nil {
-		logger.Error("failed-to-send-pending-tasks-metric", err)
+func (db *SQLDB) getTaskCountByState(ctx context.Context, logger lager.Logger) (pendingCount, runningCount, completedCount, resolvingCount int) {
+	var query string
+	switch db.flavor {
+	case helpers.Postgres:
+		query = `
+			SELECT
+				COUNT(*) FILTER (WHERE state = $1) AS pending_tasks,
+				COUNT(*) FILTER (WHERE state = $2) AS running_tasks,
+				COUNT(*) FILTER (WHERE state = $3) AS completed_tasks,
+				COUNT(*) FILTER (WHERE state = $4) AS resolving_tasks
+			FROM tasks
+		`
+	case helpers.MySQL:
+		query = `
+			SELECT
+				COUNT(IF(state = ?, 1, NULL)) AS pending_tasks,
+				COUNT(IF(state = ?, 1, NULL)) AS running_tasks,
+				COUNT(IF(state = ?, 1, NULL)) AS completed_tasks,
+				COUNT(IF(state = ?, 1, NULL)) AS resolving_tasks
+			FROM tasks
+		`
+	default:
+		// totally shouldn't happen
+		panic("database flavor not implemented: " + db.flavor)
 	}
 
-	err = db.metronClient.SendMetric(runningTasks, runningCount)
+	row := db.db.QueryRowContext(ctx, query, models.Task_Pending, models.Task_Running, models.Task_Completed, models.Task_Resolving)
+	err := row.Scan(&pendingCount, &runningCount, &completedCount, &resolvingCount)
 	if err != nil {
-		logger.Error("failed-to-send-running-tasks-metric", err)
+		logger.Error("failed-counting-tasks", err)
 	}
-
-	err = db.metronClient.SendMetric(completedTasks, completedCount)
-	if err != nil {
-		logger.Error("failed-to-send-completed-tasks-metric", err)
-	}
-
-	err = db.metronClient.SendMetric(resolvingTasks, resolvingCount)
-	if err != nil {
-		logger.Error("failed-to-send-resolving-tasks-metric", err)
-	}
+	return
 }

@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ff92ea4a48b6fc58010938537736a66f65be4ed35faade4f674fc8326147df63"
+  digest = "1:d678bcab9a6fa346fcc1df084f76430048e976f990a631a6b8e3083f854b2d3e"
   name = "code.cloudfoundry.org/bbs"
   packages = [
     ".",
@@ -14,18 +14,15 @@
     "models",
   ]
   pruneopts = ""
-  revision = "9b7c8f2e1df2f7d9cc80146d097647ace27aceaf"
+  revision = "cfbface35ac0e78f6367c8577542d40ee03cb48b"
 
 [[projects]]
-  branch = "master"
-  digest = "1:394f9bc06365f1d766baf5f8dd18a05fc339c778b4fb7289276543f0ac836eee"
+  digest = "1:2c620dd8ec51475b61f876e9ec1dac8a06e3a4f81b5ffb5cb28d1ce9725b4c52"
   name = "code.cloudfoundry.org/cfhttp"
-  packages = [
-    ".",
-    "unix_transport",
-  ]
+  packages = ["v2"]
   pruneopts = ""
-  revision = "08baa6b247caf03100a743f6c3c426d28e55336a"
+  revision = "96f7a23cbfc6b07fdc47b5b51ed7ca6215dfeb0c"
+  version = "v2.0.0"
 
 [[projects]]
   branch = "master"
@@ -54,6 +51,14 @@
   ]
   pruneopts = ""
   revision = "0bfa98e49e7a976af91e918d47978f07c00b081f"
+
+[[projects]]
+  branch = "master"
+  digest = "1:40d5dc9e1fdceb1640f25f9cc14a603de101ec322977b234f7657d7fc2aec833"
+  name = "code.cloudfoundry.org/tlsconfig"
+  packages = ["."]
+  pruneopts = ""
+  revision = "eb9396db5a718d9d9a3c5ee0af6baafa56e5e76b"
 
 [[projects]]
   branch = "master"

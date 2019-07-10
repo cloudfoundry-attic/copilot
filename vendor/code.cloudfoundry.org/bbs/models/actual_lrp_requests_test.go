@@ -1,6 +1,8 @@
 package models_test
 
 import (
+	"encoding/json"
+
 	"code.cloudfoundry.org/bbs/models"
 
 	. "github.com/onsi/ginkgo"
@@ -8,6 +10,52 @@ import (
 )
 
 var _ = Describe("ActualLRP Requests", func() {
+	Describe("ActualLRPsRequest", func() {
+		Describe("Validate", func() {
+			var request models.ActualLRPsRequest
+
+			BeforeEach(func() {
+				request = models.ActualLRPsRequest{}
+			})
+
+			Context("when valid", func() {
+				It("returns nil", func() {
+					Expect(request.Validate()).To(BeNil())
+				})
+			})
+		})
+
+		Describe("serialization", func() {
+			var (
+				expectedJSON string
+				request      models.ActualLRPsRequest
+			)
+			BeforeEach(func() {
+				request = models.ActualLRPsRequest{
+					Domain:      "cfapps",
+					CellId:      "abc123",
+					ProcessGuid: "def456",
+				}
+				request.SetIndex(3)
+
+				expectedJSON = `{
+					"domain": "cfapps",
+					"cell_id": "abc123",
+					"process_guid": "def456",
+					"index": 3
+				}`
+			})
+
+			It("can marshal to JSON and back", func() {
+				Expect(json.Marshal(request)).To(MatchJSON(expectedJSON))
+
+				var testV models.ActualLRPsRequest
+				Expect(json.Unmarshal([]byte(expectedJSON), &testV)).To(Succeed())
+				Expect(testV).To(Equal(request))
+			})
+		})
+	})
+
 	Describe("ActualLRPGroupsRequest", func() {
 		Describe("Validate", func() {
 			var request models.ActualLRPGroupsRequest

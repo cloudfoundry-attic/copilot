@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/bbs/db"
 	"code.cloudfoundry.org/bbs/events"
+	"code.cloudfoundry.org/bbs/events/calculator"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/serviceclient"
 	"code.cloudfoundry.org/lager"
@@ -11,90 +14,175 @@ import (
 )
 
 type ActualLRPLifecycleController struct {
-	db               db.ActualLRPDB
-	evacuationDB     db.EvacuationDB
-	desiredLRPDB     db.DesiredLRPDB
-	auctioneerClient auctioneer.Client
-	serviceClient    serviceclient.ServiceClient
-	repClientFactory rep.ClientFactory
-	actualHub        events.Hub
+	db                   db.ActualLRPDB
+	suspectDB            db.SuspectDB
+	evacuationDB         db.EvacuationDB
+	desiredLRPDB         db.DesiredLRPDB
+	auctioneerClient     auctioneer.Client
+	serviceClient        serviceclient.ServiceClient
+	repClientFactory     rep.ClientFactory
+	actualHub            events.Hub
+	actualLRPInstanceHub events.Hub
 }
 
 func NewActualLRPLifecycleController(
 	db db.ActualLRPDB,
+	suspectDB db.SuspectDB,
 	evacuationDB db.EvacuationDB,
 	desiredLRPDB db.DesiredLRPDB,
 	auctioneerClient auctioneer.Client,
 	serviceClient serviceclient.ServiceClient,
 	repClientFactory rep.ClientFactory,
 	actualHub events.Hub,
+	actualLRPInstanceHub events.Hub,
 ) *ActualLRPLifecycleController {
 	return &ActualLRPLifecycleController{
-		db:               db,
-		evacuationDB:     evacuationDB,
-		desiredLRPDB:     desiredLRPDB,
-		auctioneerClient: auctioneerClient,
-		serviceClient:    serviceClient,
-		repClientFactory: repClientFactory,
-		actualHub:        actualHub,
+		db:                   db,
+		suspectDB:            suspectDB,
+		evacuationDB:         evacuationDB,
+		desiredLRPDB:         desiredLRPDB,
+		auctioneerClient:     auctioneerClient,
+		serviceClient:        serviceClient,
+		repClientFactory:     repClientFactory,
+		actualHub:            actualHub,
+		actualLRPInstanceHub: actualLRPInstanceHub,
 	}
 }
 
-func (h *ActualLRPLifecycleController) ClaimActualLRP(logger lager.Logger, processGuid string, index int32, actualLRPInstanceKey *models.ActualLRPInstanceKey) error {
-	before, after, err := h.db.ClaimActualLRP(logger, processGuid, index, actualLRPInstanceKey)
-	if err != nil {
-		return err
-	}
-
-	if !after.Equal(before) {
-		go h.actualHub.Emit(models.NewActualLRPChangedEvent(before, after))
+func findWithPresence(lrps []*models.ActualLRP, presence models.ActualLRP_Presence) *models.ActualLRP {
+	for _, lrp := range lrps {
+		if lrp.Presence == presence {
+			return lrp
+		}
 	}
 	return nil
 }
-func (h *ActualLRPLifecycleController) StartActualLRP(logger lager.Logger, actualLRPKey *models.ActualLRPKey, actualLRPInstanceKey *models.ActualLRPInstanceKey, actualLRPNetInfo *models.ActualLRPNetInfo) error {
-	before, after, err := h.db.StartActualLRP(logger, actualLRPKey, actualLRPInstanceKey, actualLRPNetInfo)
+
+func lookupLRPInSlice(lrps []*models.ActualLRP, key *models.ActualLRPInstanceKey) *models.ActualLRP {
+	for _, lrp := range lrps {
+		if lrp.ActualLRPInstanceKey == *key {
+			return lrp
+		}
+	}
+	return nil
+}
+
+func (h *ActualLRPLifecycleController) ClaimActualLRP(ctx context.Context, logger lager.Logger, processGUID string, index int32, actualLRPInstanceKey *models.ActualLRPInstanceKey) error {
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
+	}
+
+	lrps, err := h.db.ActualLRPs(ctx, logger, models.ActualLRPFilter{ProcessGuid: processGUID, Index: &index})
 	if err != nil {
 		return err
 	}
 
-	lrpGroup, err := h.db.ActualLRPGroupByProcessGuidAndIndex(logger, actualLRPKey.ProcessGuid, actualLRPKey.Index)
+	before, after, err := h.db.ClaimActualLRP(ctx, logger, processGUID, index, actualLRPInstanceKey)
 	if err != nil {
 		return err
 	}
 
-	if lrpGroup.Evacuating != nil {
-		h.evacuationDB.RemoveEvacuatingActualLRP(logger, &lrpGroup.Evacuating.ActualLRPKey, &lrpGroup.Evacuating.ActualLRPInstanceKey)
+	newLRPs := eventCalculator.RecordChange(before, after, lrps)
+	go eventCalculator.EmitEvents(lrps, newLRPs)
+
+	return nil
+}
+
+func (h *ActualLRPLifecycleController) StartActualLRP(ctx context.Context, logger lager.Logger, actualLRPKey *models.ActualLRPKey, actualLRPInstanceKey *models.ActualLRPInstanceKey, actualLRPNetInfo *models.ActualLRPNetInfo) error {
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
 	}
 
-	go func() {
-		if before == nil {
-			h.actualHub.Emit(models.NewActualLRPCreatedEvent(after))
-		} else if !before.Equal(after) {
-			h.actualHub.Emit(models.NewActualLRPChangedEvent(before, after))
-		}
-		if lrpGroup.Evacuating != nil {
-			h.actualHub.Emit(models.NewActualLRPRemovedEvent(&models.ActualLRPGroup{Evacuating: lrpGroup.Evacuating}))
-		}
+	lrps, err := h.db.ActualLRPs(ctx, logger, models.ActualLRPFilter{ProcessGuid: actualLRPKey.ProcessGuid, Index: &actualLRPKey.Index})
+	if err != nil && err != models.ErrResourceNotFound {
+		return err
+	}
+
+	lrp := lookupLRPInSlice(lrps, actualLRPInstanceKey)
+	if lrp != nil && lrp.Presence == models.ActualLRP_Suspect {
+		logger.Info("ignored-start-request-from-suspect", lager.Data{
+			"process_guid":  actualLRPKey.ProcessGuid,
+			"index":         actualLRPKey.Index,
+			"instance_guid": actualLRPInstanceKey,
+			"state":         lrp.State,
+		})
+		return nil
+	}
+
+	// creates ordinary running actual LRP if it doesn't exist, otherwise updates
+	// the existing ordinary actual LRP to running state
+	before, after, err := h.db.StartActualLRP(ctx, logger, actualLRPKey, actualLRPInstanceKey, actualLRPNetInfo)
+	if err != nil {
+		return err
+	}
+	newLRPs := eventCalculator.RecordChange(before, after, lrps)
+
+	defer func() {
+		go eventCalculator.EmitEvents(lrps, newLRPs)
 	}()
+
+	evacuating := findWithPresence(lrps, models.ActualLRP_Evacuating)
+	suspect := findWithPresence(lrps, models.ActualLRP_Suspect)
+
+	var suspectLRP *models.ActualLRP
+	if evacuating != nil {
+		h.evacuationDB.RemoveEvacuatingActualLRP(ctx, logger, &evacuating.ActualLRPKey, &evacuating.ActualLRPInstanceKey)
+		newLRPs = eventCalculator.RecordChange(evacuating, nil, newLRPs)
+	}
+
+	// prior to starting this ActualLRP there was a suspect LRP that we need to remove
+	if suspect != nil {
+		suspectLRP, err = h.suspectDB.RemoveSuspectActualLRP(ctx, logger, actualLRPKey)
+		if err != nil {
+			logger.Error("failed-to-remove-suspect-lrp", err)
+		} else {
+			newLRPs = eventCalculator.RecordChange(suspectLRP, nil, newLRPs)
+		}
+	}
+
 	return nil
 }
 
-func (h *ActualLRPLifecycleController) CrashActualLRP(logger lager.Logger, actualLRPKey *models.ActualLRPKey, actualLRPInstanceKey *models.ActualLRPInstanceKey, errorMessage string) error {
-	before, after, shouldRestart, err := h.db.CrashActualLRP(logger, actualLRPKey, actualLRPInstanceKey, errorMessage)
+func (h *ActualLRPLifecycleController) CrashActualLRP(ctx context.Context, logger lager.Logger, actualLRPKey *models.ActualLRPKey, actualLRPInstanceKey *models.ActualLRPInstanceKey, errorMessage string) error {
+	lrps, err := h.db.ActualLRPs(ctx, logger, models.ActualLRPFilter{ProcessGuid: actualLRPKey.ProcessGuid, Index: &actualLRPKey.Index})
 	if err != nil {
 		return err
 	}
 
-	beforeActualLRP, _ := before.Resolve()
-	afterActualLRP, _ := after.Resolve()
-	go h.actualHub.Emit(models.NewActualLRPCrashedEvent(beforeActualLRP, afterActualLRP))
-	go h.actualHub.Emit(models.NewActualLRPChangedEvent(before, after))
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
+	}
+
+	lrp := lookupLRPInSlice(lrps, actualLRPInstanceKey)
+	if lrp != nil && lrp.Presence == models.ActualLRP_Suspect {
+		suspectLRP, err := h.suspectDB.RemoveSuspectActualLRP(ctx, logger, actualLRPKey)
+		if err != nil {
+			return err
+		}
+
+		afterLRPs := eventCalculator.RecordChange(suspectLRP, nil, lrps)
+		logger.Info("removing-suspect-lrp", lager.Data{"ig": suspectLRP.InstanceGuid})
+		go eventCalculator.EmitEvents(lrps, afterLRPs)
+
+		return nil
+	}
+
+	before, after, shouldRestart, err := h.db.CrashActualLRP(ctx, logger, actualLRPKey, actualLRPInstanceKey, errorMessage)
+	if err != nil {
+		return err
+	}
+
+	afterLRPs := eventCalculator.RecordChange(before, after, lrps)
+	go eventCalculator.EmitEvents(lrps, afterLRPs)
 
 	if !shouldRestart {
 		return nil
 	}
 
-	desiredLRP, err := h.desiredLRPDB.DesiredLRPByProcessGuid(logger, actualLRPKey.ProcessGuid)
+	desiredLRP, err := h.desiredLRPDB.DesiredLRPByProcessGuid(ctx, logger, actualLRPKey.ProcessGuid)
 	if err != nil {
 		logger.Error("failed-fetching-desired-lrp", err)
 		return err
@@ -107,69 +195,105 @@ func (h *ActualLRPLifecycleController) CrashActualLRP(logger lager.Logger, actua
 	logger.Info("finished-lrp-auction-request", lager.Data{"app_guid": schedInfo.ProcessGuid, "index": int(actualLRPKey.Index)})
 	if err != nil {
 		logger.Error("failed-requesting-auction", err)
-		return err
 	}
 	return nil
 }
 
-func (h *ActualLRPLifecycleController) FailActualLRP(logger lager.Logger, key *models.ActualLRPKey, errorMessage string) error {
-	before, after, err := h.db.FailActualLRP(logger, key, errorMessage)
+func (h *ActualLRPLifecycleController) FailActualLRP(ctx context.Context, logger lager.Logger, key *models.ActualLRPKey, errorMessage string) error {
+	lrps, err := h.db.ActualLRPs(ctx, logger, models.ActualLRPFilter{ProcessGuid: key.ProcessGuid, Index: &key.Index})
 	if err != nil {
 		return err
 	}
 
-	go h.actualHub.Emit(models.NewActualLRPChangedEvent(before, after))
+	before, after, err := h.db.FailActualLRP(ctx, logger, key, errorMessage)
+	if err != nil && err != models.ErrResourceNotFound {
+		return err
+	}
+
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
+	}
+
+	newLRPs := eventCalculator.RecordChange(before, after, lrps)
+	go eventCalculator.EmitEvents(lrps, newLRPs)
+
 	return nil
 }
 
-func (h *ActualLRPLifecycleController) RemoveActualLRP(logger lager.Logger, processGuid string, index int32, instanceKey *models.ActualLRPInstanceKey) error {
-	beforeActualLRPGroup, err := h.db.ActualLRPGroupByProcessGuidAndIndex(logger, processGuid, index)
+func (h *ActualLRPLifecycleController) RemoveActualLRP(ctx context.Context, logger lager.Logger, processGUID string, index int32, instanceKey *models.ActualLRPInstanceKey) error {
+	beforeLRPs, err := h.db.ActualLRPs(ctx, logger, models.ActualLRPFilter{ProcessGuid: processGUID, Index: &index})
 	if err != nil {
 		return err
 	}
 
-	err = h.db.RemoveActualLRP(logger, processGuid, index, instanceKey)
+	lrp := findWithPresence(beforeLRPs, models.ActualLRP_Ordinary)
+	if lrp == nil {
+		return models.ErrResourceNotFound
+	}
+
+	err = h.db.RemoveActualLRP(ctx, logger, processGUID, index, instanceKey)
 	if err != nil {
 		return err
-
 	}
-	go h.actualHub.Emit(models.NewActualLRPRemovedEvent(beforeActualLRPGroup))
+
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
+	}
+
+	newLRPs := eventCalculator.RecordChange(lrp, nil, beforeLRPs)
+	go eventCalculator.EmitEvents(beforeLRPs, newLRPs)
+
 	return nil
 }
 
-func (h *ActualLRPLifecycleController) RetireActualLRP(logger lager.Logger, key *models.ActualLRPKey) error {
+func (h *ActualLRPLifecycleController) RetireActualLRP(ctx context.Context, logger lager.Logger, key *models.ActualLRPKey) error {
 	var err error
 	var cell *models.CellPresence
 
 	logger = logger.Session("retire-actual-lrp", lager.Data{"process_guid": key.ProcessGuid, "index": key.Index})
 
+	lrps, err := h.db.ActualLRPs(ctx, logger, models.ActualLRPFilter{ProcessGuid: key.ProcessGuid, Index: &key.Index})
+	if err != nil {
+		return err
+	}
+
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
+	}
+
+	lrp := findWithPresence(lrps, models.ActualLRP_Ordinary)
+	if lrp == nil {
+		return models.ErrResourceNotFound
+	}
+
+	newLRPs := make([]*models.ActualLRP, len(lrps))
+	copy(newLRPs, lrps)
+
+	defer func() {
+		go eventCalculator.EmitEvents(lrps, newLRPs)
+	}()
+
+	removeLRP := func() error {
+		err = h.db.RemoveActualLRP(ctx, logger, lrp.ProcessGuid, lrp.Index, &lrp.ActualLRPInstanceKey)
+		if err == nil {
+			newLRPs = eventCalculator.RecordChange(lrp, nil, lrps)
+		}
+		return err
+	}
+
 	for retryCount := 0; retryCount < models.RetireActualLRPRetryAttempts; retryCount++ {
-		var lrpGroup *models.ActualLRPGroup
-		lrpGroup, err = h.db.ActualLRPGroupByProcessGuidAndIndex(logger, key.ProcessGuid, key.Index)
-		if err != nil {
-			return err
-		}
-
-		lrp := lrpGroup.Instance
-		if lrp == nil {
-			return models.ErrResourceNotFound
-		}
-
 		switch lrp.State {
 		case models.ActualLRPStateUnclaimed, models.ActualLRPStateCrashed:
-			err = h.db.RemoveActualLRP(logger, lrp.ProcessGuid, lrp.Index, &lrp.ActualLRPInstanceKey)
-			if err == nil {
-				go h.actualHub.Emit(models.NewActualLRPRemovedEvent(lrpGroup))
-			}
+			err = removeLRP()
 		case models.ActualLRPStateClaimed, models.ActualLRPStateRunning:
 			cell, err = h.serviceClient.CellById(logger, lrp.CellId)
 			if err != nil {
 				bbsErr := models.ConvertError(err)
 				if bbsErr.Type == models.Error_ResourceNotFound {
-					err = h.db.RemoveActualLRP(logger, lrp.ProcessGuid, lrp.Index, &lrp.ActualLRPInstanceKey)
-					if err == nil {
-						go h.actualHub.Emit(models.NewActualLRPRemovedEvent(lrpGroup))
-					}
+					return removeLRP()
 				}
 				return err
 			}

@@ -1,6 +1,7 @@
 package sqldb_test
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"code.cloudfoundry.org/bbs/db/migrations"
 	"code.cloudfoundry.org/bbs/db/sqldb"
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
+	"code.cloudfoundry.org/bbs/db/sqldb/helpers/monitor"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/guidprovider/guidproviderfakes"
@@ -29,8 +31,10 @@ import (
 )
 
 var (
-	db                                   *sql.DB
+	rawDB                                *sql.DB
+	db                                   helpers.QueryableDB
 	sqlDB                                *sqldb.SQLDB
+	ctx                                  context.Context
 	fakeClock                            *fakeclock.FakeClock
 	fakeGUIDProvider                     *guidproviderfakes.FakeGUIDProvider
 	logger                               *lagertest.TestLogger
@@ -53,7 +57,6 @@ var _ = BeforeSuite(func() {
 	fakeClock = fakeclock.NewFakeClock(time.Now())
 	fakeGUIDProvider = &guidproviderfakes.FakeGUIDProvider{}
 	fakeMetronClient = new(mfakes.FakeIngressClient)
-	logger = lagertest.NewTestLogger("sql-db")
 
 	if test_helpers.UsePostgres() {
 		dbDriverName = "postgres"
@@ -68,20 +71,21 @@ var _ = BeforeSuite(func() {
 	}
 
 	// mysql must be set up on localhost as described in the CONTRIBUTING.md doc
-	// in diego-release.
-	db, err = sql.Open(dbDriverName, dbBaseConnectionString)
+	// in diego-release .
+	rawDB, err = sql.Open(dbDriverName, dbBaseConnectionString)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(db.Ping()).NotTo(HaveOccurred())
+
+	Expect(rawDB.Ping()).NotTo(HaveOccurred())
 
 	// Ensure that if another test failed to clean up we can still proceed
-	db.Exec(fmt.Sprintf("DROP DATABASE diego_%d", GinkgoParallelNode()))
+	rawDB.Exec(fmt.Sprintf("DROP DATABASE diego_%d", GinkgoParallelNode()))
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE diego_%d", GinkgoParallelNode()))
+	_, err = rawDB.Exec(fmt.Sprintf("CREATE DATABASE diego_%d", GinkgoParallelNode()))
 	Expect(err).NotTo(HaveOccurred())
 
-	db, err = sql.Open(dbDriverName, fmt.Sprintf("%sdiego_%d", dbBaseConnectionString, GinkgoParallelNode()))
+	rawDB, err = sql.Open(dbDriverName, fmt.Sprintf("%sdiego_%d", dbBaseConnectionString, GinkgoParallelNode()))
 	Expect(err).NotTo(HaveOccurred())
-	Expect(db.Ping()).NotTo(HaveOccurred())
+	Expect(rawDB.Ping()).NotTo(HaveOccurred())
 
 	encryptionKey, err := encryption.NewKey("label", "passphrase")
 	Expect(err).NotTo(HaveOccurred())
@@ -90,8 +94,11 @@ var _ = BeforeSuite(func() {
 	cryptor = encryption.NewCryptor(keyManager, rand.Reader)
 	serializer = format.NewSerializer(cryptor)
 
-	sqlDB = sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
-	err = sqlDB.CreateConfigurationsTable(logger)
+	db = helpers.NewMonitoredDB(rawDB, monitor.New())
+	ctx = context.Background()
+
+	sqlDB = sqldb.NewSQLDB(db, 5, 5, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
+	err = sqlDB.CreateConfigurationsTable(ctx, logger)
 	if err != nil {
 		logger.Fatal("sql-failed-create-configurations-table", err)
 	}
@@ -101,19 +108,19 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
+	logger = lagertest.NewTestLogger("sql-db")
+
 	fakeMetronClient = new(mfakes.FakeIngressClient)
 	migrationMetronClient := new(mfakes.FakeIngressClient)
-	sqlDB = sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
+	sqlDB = sqldb.NewSQLDB(db, 5, 5, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
 
 	migrationsDone := make(chan struct{})
 
 	migrationManager := migration.NewManager(logger,
-		nil,
-		nil,
 		sqlDB,
-		db,
+		rawDB,
 		cryptor,
-		migrations.Migrations,
+		migrations.AllMigrations(),
 		migrationsDone,
 		fakeClock,
 		dbDriverName,
@@ -128,12 +135,12 @@ var _ = BeforeEach(func() {
 	// ensure that all sqldb functions being tested only require one connection
 	// to operate, otherwise a deadlock can be caused in bbs. For more
 	// information see https://www.pivotaltracker.com/story/show/136754083
-	db.SetMaxOpenConns(1)
+	rawDB.SetMaxOpenConns(1)
 })
 
 var _ = AfterEach(func() {
 	fakeGUIDProvider.NextGUIDReturns("", nil)
-	truncateTables(db)
+	truncateTables(rawDB)
 })
 
 var _ = AfterSuite(func() {
@@ -141,13 +148,13 @@ var _ = AfterSuite(func() {
 		migrationProcess.Signal(os.Kill)
 	}
 
-	Expect(db.Close()).NotTo(HaveOccurred())
-	db, err := sql.Open(dbDriverName, dbBaseConnectionString)
+	Expect(rawDB.Close()).NotTo(HaveOccurred())
+	rawDB, err := sql.Open(dbDriverName, dbBaseConnectionString)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(db.Ping()).NotTo(HaveOccurred())
-	_, err = db.Exec(fmt.Sprintf("DROP DATABASE diego_%d", GinkgoParallelNode()))
+	Expect(rawDB.Ping()).NotTo(HaveOccurred())
+	_, err = rawDB.Exec(fmt.Sprintf("DROP DATABASE diego_%d", GinkgoParallelNode()))
 	Expect(err).NotTo(HaveOccurred())
-	Expect(db.Close()).NotTo(HaveOccurred())
+	Expect(rawDB.Close()).NotTo(HaveOccurred())
 })
 
 func truncateTables(db *sql.DB) {
