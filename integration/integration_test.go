@@ -46,95 +46,86 @@ var _ = Describe("Copilot", func() {
 
 	BeforeEach(func() {
 		mockBBS = testhelpers.NewMockBBSServer()
-		mockBBS.SetGetV1EventsResponse(&bbsmodels.ActualLRPGroup{
-			Instance: &bbsmodels.ActualLRP{
-				ActualLRPKey: bbsmodels.ActualLRPKey{
-					ProcessGuid: "diego-process-guid-a",
-				},
-				State: bbsmodels.ActualLRPStateRunning,
-				ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-					Address:         "10.10.1.3",
-					InstanceAddress: "10.255.1.13",
-					Ports: []*bbsmodels.PortMapping{
-						{ContainerPort: 8080, HostPort: 61003},
-					},
+		mockBBS.SetPostV1EventsResponse(&bbsmodels.ActualLRP{
+			ActualLRPKey: bbsmodels.ActualLRPKey{
+				ProcessGuid: "diego-process-guid-a",
+			},
+			State: bbsmodels.ActualLRPStateRunning,
+			ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+				Address:         "10.10.1.3",
+				InstanceAddress: "10.255.1.13",
+				Ports: []*bbsmodels.PortMapping{
+					{ContainerPort: 8080, HostPort: 61003},
 				},
 			},
 		})
 
-		mockBBS.SetPostV1ActualLRPGroupsList(
-			[]*bbsmodels.ActualLRPGroup{
+		mockBBS.SetPostV1ActualLRPsList(
+			[]*bbsmodels.ActualLRP{
 				{
-					Instance: &bbsmodels.ActualLRP{
-						ActualLRPKey: bbsmodels.ActualLRPKey{
-							ProcessGuid: "diego-process-guid-a",
-						},
-						State: bbsmodels.ActualLRPStateRunning,
-						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-							Address:         "10.10.1.3",
-							InstanceAddress: "10.255.1.13",
-							Ports: []*bbsmodels.PortMapping{
-								{ContainerPort: 8080, HostPort: 61003},
-							},
+					ActualLRPKey: bbsmodels.ActualLRPKey{
+						ProcessGuid: "diego-process-guid-a",
+					},
+					State:    bbsmodels.ActualLRPStateRunning,
+					Presence: bbsmodels.ActualLRP_Ordinary,
+					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+						Address:         "10.10.1.3",
+						InstanceAddress: "10.255.1.13",
+						Ports: []*bbsmodels.PortMapping{
+							{ContainerPort: 8080, HostPort: 61003},
 						},
 					},
 				},
 				{ // this instance only has SSH port, not app port.  it shouldn't show up in route results
-					Instance: &bbsmodels.ActualLRP{
-						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
-						State:        bbsmodels.ActualLRPStateRunning,
-						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-							Address:         "10.10.1.4",
-							InstanceAddress: "10.255.1.15",
-							Ports: []*bbsmodels.PortMapping{
-								{ContainerPort: 2222, HostPort: 61004},
-							},
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
+					State:        bbsmodels.ActualLRPStateRunning,
+					Presence:     bbsmodels.ActualLRP_Ordinary,
+					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+						Address:         "10.10.1.4",
+						InstanceAddress: "10.255.1.15",
+						Ports: []*bbsmodels.PortMapping{
+							{ContainerPort: 2222, HostPort: 61004},
 						},
 					},
 				},
 				{
-					Instance: &bbsmodels.ActualLRP{
-						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
-						State:        bbsmodels.ActualLRPStateRunning,
-						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-							Address:         "10.10.1.5",
-							InstanceAddress: "10.255.1.16",
-							Ports: []*bbsmodels.PortMapping{
-								{ContainerPort: 8080, HostPort: 61005},
-							},
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-a", 1, "domain1"),
+					State:        bbsmodels.ActualLRPStateRunning,
+					Presence:     bbsmodels.ActualLRP_Ordinary,
+					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+						Address:         "10.10.1.5",
+						InstanceAddress: "10.255.1.16",
+						Ports: []*bbsmodels.PortMapping{
+							{ContainerPort: 8080, HostPort: 61005},
 						},
 					},
 				},
 				{
-					Instance: &bbsmodels.ActualLRP{
-						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
-						State:        bbsmodels.ActualLRPStateRunning,
-						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-							Address:         "10.10.1.6",
-							InstanceAddress: "10.255.0.34",
-							Ports: []*bbsmodels.PortMapping{
-								{ContainerPort: 2222, HostPort: 61008},
-								{ContainerPort: 8080, HostPort: 61006},
-							},
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-b", 1, "domain1"),
+					State:        bbsmodels.ActualLRPStateRunning,
+					Presence:     bbsmodels.ActualLRP_Ordinary,
+					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+						Address:         "10.10.1.6",
+						InstanceAddress: "10.255.0.34",
+						Ports: []*bbsmodels.PortMapping{
+							{ContainerPort: 2222, HostPort: 61008},
+							{ContainerPort: 8080, HostPort: 61006},
 						},
 					},
 				},
 				{
-					Instance: &bbsmodels.ActualLRP{
-						ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-other", 1, "domain1"),
-						State:        bbsmodels.ActualLRPStateRunning,
-						ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
-							Address:         "10.10.1.7",
-							InstanceAddress: "10.255.0.35",
-							Ports: []*bbsmodels.PortMapping{
-								{ContainerPort: 8080, HostPort: 61111},
-							},
+					ActualLRPKey: bbsmodels.NewActualLRPKey("diego-process-guid-other", 1, "domain1"),
+					State:        bbsmodels.ActualLRPStateRunning,
+					Presence:     bbsmodels.ActualLRP_Ordinary,
+					ActualLRPNetInfo: bbsmodels.ActualLRPNetInfo{
+						Address:         "10.10.1.7",
+						InstanceAddress: "10.255.0.35",
+						Ports: []*bbsmodels.PortMapping{
+							{ContainerPort: 8080, HostPort: 61111},
 						},
 					},
 				},
 			})
-		mockBBS.Server.Start()
-		cleanupFuncs = append(cleanupFuncs, mockBBS.Server.Close)
 
 		copilotCreds := testhelpers.GenerateMTLS()
 		cleanupFuncs = append(cleanupFuncs, copilotCreds.CleanupTempFiles)
@@ -145,6 +136,9 @@ var _ = Describe("Copilot", func() {
 		bbsCreds := testhelpers.GenerateMTLS()
 		bbsTLSFiles := bbsCreds.CreateClientTLSFiles()
 		mockBBS.Server.HTTPTestServer.TLS = bbsCreds.ServerTLSConfig()
+
+		mockBBS.Server.HTTPTestServer.StartTLS()
+		cleanupFuncs = append(cleanupFuncs, mockBBS.Server.Close)
 
 		serverConfig = &config.Config{
 			ListenAddressForCloudController: listenAddrForCloudController,

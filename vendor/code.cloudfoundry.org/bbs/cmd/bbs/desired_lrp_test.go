@@ -8,10 +8,9 @@ import (
 	"code.cloudfoundry.org/bbs/cmd/bbs/testrunner"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/models/test/model_helpers"
-	"github.com/tedsuo/ifrit/ginkgomon"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
 var _ = Describe("DesiredLRP API", func() {
@@ -49,7 +48,6 @@ var _ = Describe("DesiredLRP API", func() {
 		It("responds without error", func() {
 			Expect(getErr).NotTo(HaveOccurred())
 		})
-
 		It("has the correct number of responses", func() {
 			Expect(actualDesiredLRPs).To(HaveLen(5))
 		})
@@ -203,12 +201,14 @@ var _ = Describe("DesiredLRP API", func() {
 
 	Describe("DesireLRP", func() {
 		var (
-			desiredLRP *models.DesiredLRP
-			desireErr  error
+			desiredLRP         *models.DesiredLRP
+			expectedDesiredLRP *models.DesiredLRP
+			desireErr          error
 		)
 
 		BeforeEach(func() {
 			desiredLRP = model_helpers.NewValidDesiredLRP("super-lrp")
+			expectedDesiredLRP = desiredLRP
 		})
 
 		JustBeforeEach(func() {
@@ -219,17 +219,17 @@ var _ = Describe("DesiredLRP API", func() {
 			Expect(desireErr).NotTo(HaveOccurred())
 			persistedDesiredLRP, err := client.DesiredLRPByProcessGuid(logger, "super-lrp")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(persistedDesiredLRP.DesiredLRPKey()).To(Equal(desiredLRP.DesiredLRPKey()))
-			Expect(persistedDesiredLRP.DesiredLRPResource()).To(Equal(desiredLRP.DesiredLRPResource()))
-			Expect(persistedDesiredLRP.Annotation).To(Equal(desiredLRP.Annotation))
-			Expect(persistedDesiredLRP.Instances).To(Equal(desiredLRP.Instances))
-			Expect(persistedDesiredLRP.DesiredLRPRunInfo(time.Unix(42, 0))).To(Equal(desiredLRP.DesiredLRPRunInfo(time.Unix(42, 0))))
+			Expect(persistedDesiredLRP.DesiredLRPKey()).To(Equal(expectedDesiredLRP.DesiredLRPKey()))
+			Expect(persistedDesiredLRP.DesiredLRPResource()).To(Equal(expectedDesiredLRP.DesiredLRPResource()))
+			Expect(persistedDesiredLRP.Annotation).To(Equal(expectedDesiredLRP.Annotation))
+			Expect(persistedDesiredLRP.Instances).To(Equal(expectedDesiredLRP.Instances))
+			Expect(persistedDesiredLRP.DesiredLRPRunInfo(time.Unix(42, 0))).To(Equal(expectedDesiredLRP.DesiredLRPRunInfo(time.Unix(42, 0))))
 			Expect(persistedDesiredLRP.Action.RunAction.SuppressLogOutput).To(BeFalse())
 			Expect(persistedDesiredLRP.CertificateProperties).NotTo(BeNil())
 			Expect(persistedDesiredLRP.CertificateProperties.OrganizationalUnit).NotTo(BeEmpty())
-			Expect(persistedDesiredLRP.CertificateProperties.OrganizationalUnit).To(Equal(desiredLRP.CertificateProperties.OrganizationalUnit))
-			Expect(persistedDesiredLRP.ImageUsername).To(Equal(desiredLRP.ImageUsername))
-			Expect(persistedDesiredLRP.ImagePassword).To(Equal(desiredLRP.ImagePassword))
+			Expect(persistedDesiredLRP.CertificateProperties.OrganizationalUnit).To(Equal(expectedDesiredLRP.CertificateProperties.OrganizationalUnit))
+			Expect(persistedDesiredLRP.ImageUsername).To(Equal(expectedDesiredLRP.ImageUsername))
+			Expect(persistedDesiredLRP.ImagePassword).To(Equal(expectedDesiredLRP.ImagePassword))
 		})
 
 		Context("when suppressing log output", func() {
@@ -292,8 +292,9 @@ var _ = Describe("DesiredLRP API", func() {
 			desiredLRP = model_helpers.NewValidDesiredLRP("super-lrp")
 			err := client.DesireLRP(logger, desiredLRP)
 			Expect(err).NotTo(HaveOccurred())
-			three := int32(3)
-			updateErr = client.UpdateDesiredLRP(logger, "super-lrp", &models.DesiredLRPUpdate{Instances: &three})
+			update := &models.DesiredLRPUpdate{}
+			update.SetInstances(3)
+			updateErr = client.UpdateDesiredLRP(logger, "super-lrp", update)
 		})
 
 		It("creates the desired LRP in the system", func() {

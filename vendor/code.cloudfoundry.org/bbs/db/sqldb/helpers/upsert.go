@@ -1,20 +1,24 @@
 package helpers
 
 import (
-	"database/sql"
+	"context"
 
 	"code.cloudfoundry.org/lager"
 )
 
+// Upsert insert a record if it doesn't exist or update the record if one
+// already exists.  Returns true if a new record was inserted in the database.
 func (h *sqlHelper) Upsert(
+	ctx context.Context,
 	logger lager.Logger,
 	q Queryable,
 	table string,
 	attributes SQLAttributes,
 	wheres string,
 	whereBindings ...interface{},
-) (sql.Result, error) {
+) (bool, error) {
 	res, err := h.Update(
+		ctx,
 		logger,
 		q,
 		table,
@@ -23,29 +27,30 @@ func (h *sqlHelper) Upsert(
 		whereBindings...,
 	)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		// this should never happen
 		logger.Error("failed-getting-rows-affected", err)
-		return nil, err
+		return false, err
 	}
 
 	if rowsAffected > 0 {
-		return res, nil
+		return false, nil
 	}
 
 	res, err = h.Insert(
+		ctx,
 		logger,
 		q,
 		table,
 		attributes,
 	)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	return res, nil
+	return true, nil
 }

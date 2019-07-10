@@ -12,7 +12,7 @@ func NewValidActualLRP(guid string, index int32) *models.ActualLRP {
 	actualLRP := &models.ActualLRP{
 		ActualLRPKey:         models.NewActualLRPKey(guid, index, "some-domain"),
 		ActualLRPInstanceKey: models.NewActualLRPInstanceKey("some-guid", "some-cell"),
-		ActualLRPNetInfo:     models.NewActualLRPNetInfo("some-address", "container-address", models.NewPortMapping(2222, 4444)),
+		ActualLRPNetInfo:     models.NewActualLRPNetInfo("some-address", "container-address", models.ActualLRPNetInfo_PreferredAddressUnknown, models.NewPortMapping(2222, 4444)),
 		CrashCount:           33,
 		CrashReason:          "badness",
 		State:                models.ActualLRPStateRunning,
@@ -25,6 +25,13 @@ func NewValidActualLRP(guid string, index int32) *models.ActualLRP {
 	err := actualLRP.Validate()
 	Expect(err).NotTo(HaveOccurred())
 
+	return actualLRP
+}
+
+func NewValidEvacuatingActualLRP(guid string, index int32) *models.ActualLRP {
+	actualLRP := NewValidActualLRP(guid, index)
+	actualLRP.Presence = models.ActualLRP_Evacuating
+	actualLRP.ActualLRPInstanceKey = models.NewActualLRPInstanceKey("some-guid", "some-evacuating-cell")
 	return actualLRP
 }
 
@@ -103,6 +110,13 @@ func NewValidDesiredLRP(guid string) *models.DesiredLRP {
 		},
 		ImageUsername: "image-username",
 		ImagePassword: "image-password",
+		ImageLayers: []*models.ImageLayer{
+			{Name: "shared layer", LayerType: models.LayerTypeShared, Url: "some-url", DestinationPath: "/tmp", MediaType: models.MediaTypeTgz},
+			{Name: "exclusive layer", LayerType: models.LayerTypeExclusive, Url: "some-url-2", DestinationPath: "/tmp/foo", MediaType: models.MediaTypeZip, DigestAlgorithm: models.DigestAlgorithmSha256, DigestValue: "some-sha256"},
+		},
+		MetricTags: map[string]*models.MetricTagValue{
+			"source_id": &models.MetricTagValue{Static: "some-metrics-guid"},
+		},
 	}
 	err := desiredLRP.Validate()
 	Expect(err).NotTo(HaveOccurred())
@@ -180,6 +194,10 @@ func NewValidTaskDefinition() *models.TaskDefinition {
 		},
 		ImageUsername: "image-username",
 		ImagePassword: "image-password",
+		ImageLayers: []*models.ImageLayer{
+			{Name: "shared layer", LayerType: models.LayerTypeShared, Url: "some-url", DestinationPath: "/tmp", MediaType: models.MediaTypeTgz},
+			{Name: "exclusive layer", LayerType: models.LayerTypeExclusive, Url: "some-url-2", DestinationPath: "/tmp/foo", MediaType: models.MediaTypeZip, DigestAlgorithm: models.DigestAlgorithmSha256, DigestValue: "some-sha256"},
+		},
 	}
 }
 

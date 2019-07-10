@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"code.cloudfoundry.org/bbs/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/bbs/models"
 )
 
 var _ = Describe("Actions", func() {
 	itSerializes := func(actionPayload string, a *models.Action) {
 		action := models.UnwrapAction(a)
 		It("Action -> JSON for "+string(action.ActionType()), func() {
-			marshalledAction := action
-			json, err := json.Marshal(&marshalledAction)
+			json, err := json.Marshal(action)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(json).To(MatchJSON(actionPayload))
 		})
@@ -290,7 +288,13 @@ var _ = Describe("Actions", func() {
 	})
 
 	Describe("Run", func() {
-		var nofile uint64 = 10
+		var (
+			nofile uint64 = 10
+			nproc  uint64 = 20
+		)
+		resourceLimits := &models.ResourceLimits{}
+		resourceLimits.SetNofile(nofile)
+		resourceLimits.SetNproc(nproc)
 		itSerializesAndDeserializes(
 			`{
 					"user": "me",
@@ -301,7 +305,7 @@ var _ = Describe("Actions", func() {
 						{"name":"FOO", "value":"1"},
 						{"name":"BAR", "value":"2"}
 					],
-					"resource_limits":{"nofile": 10},
+					"resource_limits":{"nofile": 10, "nproc": 20},
 					"suppress_log_output": false
 			}`,
 			models.WrapAction(&models.RunAction{
@@ -313,7 +317,7 @@ var _ = Describe("Actions", func() {
 					{"FOO", "1"},
 					{"BAR", "2"},
 				},
-				ResourceLimits: &models.ResourceLimits{Nofile: &nofile},
+				ResourceLimits: resourceLimits,
 			}),
 		)
 
@@ -353,6 +357,10 @@ var _ = Describe("Actions", func() {
 
 	Describe("Timeout", func() {
 		var nofile uint64 = 10
+
+		resourceLimits := &models.ResourceLimits{}
+		resourceLimits.SetNofile(nofile)
+
 		itSerializesAndDeserializes(
 			`{
 				"action": {
@@ -372,7 +380,7 @@ var _ = Describe("Actions", func() {
 					&models.RunAction{
 						Path:           "echo",
 						User:           "someone",
-						ResourceLimits: &models.ResourceLimits{Nofile: &nofile},
+						ResourceLimits: resourceLimits,
 					},
 					10*time.Millisecond,
 				)),

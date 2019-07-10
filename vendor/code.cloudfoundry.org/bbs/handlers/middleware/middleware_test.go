@@ -32,7 +32,7 @@ var _ = Describe("Middleware", func() {
 			handler.ServeHTTP(nil, nil)
 			handler.ServeHTTP(nil, nil)
 
-			Expect(emitter.IncrementCounterCallCount()).To(Equal(3))
+			Expect(emitter.IncrementRequestCounterCallCount()).To(Equal(3))
 		})
 	})
 
@@ -94,7 +94,7 @@ var _ = Describe("Middleware", func() {
 				Expect(logger.Buffer()).To(gbytes.Say("\"session\":\"1\""))
 			})
 
-			It("logs method, reqeust, ip, and port to serving and done logs", func() {
+			It("logs method, request, ip, and port to serving and done logs", func() {
 				Expect(logger.Buffer()).To(gbytes.Say("test-session.request.serving"))
 				Expect(logger.Buffer()).To(gbytes.Say("method\":\"GET\""))
 				Expect(logger.Buffer()).To(gbytes.Say("remote_addr\":\"127.0.0.1:8080\""))
@@ -114,7 +114,6 @@ var _ = Describe("Middleware", func() {
 				Expect(accessLogger.Buffer()).To(gbytes.Say("method\":\"GET\""))
 				Expect(accessLogger.Buffer()).To(gbytes.Say("remote_addr\":\"127.0.0.1:8080\""))
 				Expect(accessLogger.Buffer()).To(gbytes.Say("request\":\"http://example.com\""))
-
 			})
 		})
 	})

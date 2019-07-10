@@ -61,7 +61,7 @@ var _ = Describe("Encryptor", func() {
 		Eventually(logger.LogMessages).Should(ContainElement("test.encryptor.encryption-finished"))
 
 		Expect(fakeMetronClient.SendDurationCallCount()).To(Equal(1))
-		name, duration := fakeMetronClient.SendDurationArgsForCall(0)
+		name, duration, _ := fakeMetronClient.SendDurationArgsForCall(0)
 		Expect(name).To(Equal("EncryptionDuration"))
 		Expect(duration).NotTo(BeZero())
 	})
@@ -79,7 +79,7 @@ var _ = Describe("Encryptor", func() {
 
 		It("writes the current encryption key", func() {
 			Eventually(fakeDB.SetEncryptionKeyLabelCallCount).Should(Equal(1))
-			_, newLabel := fakeDB.SetEncryptionKeyLabelArgsForCall(0)
+			_, _, newLabel := fakeDB.SetEncryptionKeyLabelArgsForCall(0)
 			Expect(newLabel).To(Equal("label"))
 		})
 	})
@@ -156,7 +156,7 @@ var _ = Describe("Encryptor", func() {
 
 		It("writes the current encryption key", func() {
 			Eventually(fakeDB.SetEncryptionKeyLabelCallCount).Should(Equal(1))
-			_, newLabel := fakeDB.SetEncryptionKeyLabelArgsForCall(0)
+			_, _, newLabel := fakeDB.SetEncryptionKeyLabelArgsForCall(0)
 			Expect(newLabel).To(Equal("label"))
 		})
 	})

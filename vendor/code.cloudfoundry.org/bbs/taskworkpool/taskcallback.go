@@ -2,16 +2,18 @@ package taskworkpool
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 
 	"code.cloudfoundry.org/bbs/db"
 	"code.cloudfoundry.org/bbs/events"
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/cfhttp"
+	cfhttp "code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/workpool"
 )
@@ -34,17 +36,15 @@ type TaskCompletionWorkPool struct {
 	httpClient       *http.Client
 }
 
-func New(logger lager.Logger, maxWorkers int, cbHandler CompletedTaskHandler, tlsConfig *tls.Config) *TaskCompletionWorkPool {
+func New(logger lager.Logger, maxWorkers int, cbHandler CompletedTaskHandler, tlsConfig *tls.Config, requestTimeout time.Duration) *TaskCompletionWorkPool {
 	if cbHandler == nil {
 		panic("callbackHandler cannot be nil")
 	}
 
-	httpClient := cfhttp.NewClient()
-	if tr, ok := httpClient.Transport.(*http.Transport); ok {
-		tr.TLSClientConfig = tlsConfig
-	} else {
-		panic("invalid transport")
-	}
+	httpClient := cfhttp.NewClient(
+		cfhttp.WithTLSConfig(tlsConfig),
+		cfhttp.WithRequestTimeout(requestTimeout),
+	)
 
 	return &TaskCompletionWorkPool{
 		logger:          logger.Session("task-completion-workpool"),
@@ -88,7 +88,7 @@ func HandleCompletedTask(logger lager.Logger, httpClient *http.Client, taskDB db
 	logger = logger.Session("handle-completed-task", lager.Data{"task_guid": task.TaskGuid})
 
 	if task.CompletionCallbackUrl != "" {
-		before, after, modelErr := taskDB.ResolvingTask(logger, task.TaskGuid)
+		before, after, modelErr := taskDB.ResolvingTask(context.Background(), logger, task.TaskGuid)
 		if modelErr != nil {
 			logger.Error("marking-task-as-resolving-failed", modelErr)
 			return
@@ -133,7 +133,7 @@ func HandleCompletedTask(logger lager.Logger, httpClient *http.Client, taskDB db
 
 			statusCode = response.StatusCode
 			if shouldResolve(statusCode) {
-				deletedTask, modelErr := taskDB.DeleteTask(logger, task.TaskGuid)
+				deletedTask, modelErr := taskDB.DeleteTask(context.Background(), logger, task.TaskGuid)
 				if modelErr != nil {
 					logger.Error("delete-task-failed", modelErr)
 				}

@@ -90,7 +90,7 @@ $$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
 	var bbsEventer models.BBSEventer
 	var diegoTickerChan <-chan time.Time
 	if cfg.BBS != nil {
-		bbsClient, err := bbs.NewSecureClient(
+		bbsClient, err := bbs.NewClient(
 			cfg.BBS.Address,
 			cfg.BBS.ServerCACertPath,
 			cfg.BBS.ClientCertPath,

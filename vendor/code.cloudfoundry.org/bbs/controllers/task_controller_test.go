@@ -7,8 +7,10 @@ import (
 	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/auctioneer/auctioneerfakes"
 	"code.cloudfoundry.org/bbs/controllers"
+	"code.cloudfoundry.org/bbs/db"
 	"code.cloudfoundry.org/bbs/db/dbfakes"
 	"code.cloudfoundry.org/bbs/events/eventfakes"
+	"code.cloudfoundry.org/bbs/metrics/fakes"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/models/test/model_helpers"
 	"code.cloudfoundry.org/bbs/taskworkpool/taskworkpoolfakes"
@@ -26,20 +28,27 @@ var _ = Describe("Task Controller", func() {
 		fakeAuctioneerClient     *auctioneerfakes.FakeClient
 		fakeTaskCompletionClient *taskworkpoolfakes.FakeTaskCompletionClient
 		taskHub                  *eventfakes.FakeHub
+		maxPlacementRetries      int
 
-		controller *controllers.TaskController
-		err        error
+		controller           *controllers.TaskController
+		fakeTaskStatNotifier *fakes.FakeTaskStatMetronNotifier
+		err                  error
 	)
 
 	BeforeEach(func() {
 		fakeTaskDB = new(dbfakes.FakeTaskDB)
 		fakeAuctioneerClient = new(auctioneerfakes.FakeClient)
 		fakeTaskCompletionClient = new(taskworkpoolfakes.FakeTaskCompletionClient)
+		fakeTaskStatNotifier = &fakes.FakeTaskStatMetronNotifier{}
 
 		logger = lagertest.NewTestLogger("test")
 		err = nil
 
 		taskHub = &eventfakes.FakeHub{}
+		maxPlacementRetries = 0
+	})
+
+	JustBeforeEach(func() {
 		controller = controllers.NewTaskController(
 			fakeTaskDB,
 			fakeTaskCompletionClient,
@@ -47,6 +56,8 @@ var _ = Describe("Task Controller", func() {
 			fakeServiceClient,
 			fakeRepClientFactory,
 			taskHub,
+			fakeTaskStatNotifier,
+			maxPlacementRetries,
 		)
 	})
 
@@ -66,7 +77,7 @@ var _ = Describe("Task Controller", func() {
 		})
 
 		JustBeforeEach(func() {
-			actualTasks, err = controller.Tasks(logger, domain, cellId)
+			actualTasks, err = controller.Tasks(ctx, logger, domain, cellId)
 		})
 
 		Context("when reading tasks from DB succeeds", func() {
@@ -84,7 +95,7 @@ var _ = Describe("Task Controller", func() {
 
 			It("calls the DB with no filter", func() {
 				Expect(fakeTaskDB.TasksCallCount()).To(Equal(1))
-				_, filter := fakeTaskDB.TasksArgsForCall(0)
+				_, _, filter := fakeTaskDB.TasksArgsForCall(0)
 				Expect(filter).To(Equal(models.TaskFilter{}))
 			})
 
@@ -95,7 +106,7 @@ var _ = Describe("Task Controller", func() {
 
 				It("calls the DB with a domain filter", func() {
 					Expect(fakeTaskDB.TasksCallCount()).To(Equal(1))
-					_, filter := fakeTaskDB.TasksArgsForCall(0)
+					_, _, filter := fakeTaskDB.TasksArgsForCall(0)
 					Expect(filter.Domain).To(Equal(domain))
 				})
 			})
@@ -107,7 +118,7 @@ var _ = Describe("Task Controller", func() {
 
 				It("calls the DB with a cell filter", func() {
 					Expect(fakeTaskDB.TasksCallCount()).To(Equal(1))
-					_, filter := fakeTaskDB.TasksArgsForCall(0)
+					_, _, filter := fakeTaskDB.TasksArgsForCall(0)
 					Expect(filter.CellID).To(Equal(cellId))
 				})
 			})
@@ -131,7 +142,7 @@ var _ = Describe("Task Controller", func() {
 		)
 
 		JustBeforeEach(func() {
-			actualTask, err = controller.TaskByGuid(logger, taskGuid)
+			actualTask, err = controller.TaskByGuid(ctx, logger, taskGuid)
 		})
 
 		Context("when reading a task from the DB succeeds", func() {
@@ -144,7 +155,7 @@ var _ = Describe("Task Controller", func() {
 
 			It("fetches task by guid", func() {
 				Expect(fakeTaskDB.TaskByGuidCallCount()).To(Equal(1))
-				_, actualGuid := fakeTaskDB.TaskByGuidArgsForCall(0)
+				_, _, actualGuid := fakeTaskDB.TaskByGuidArgsForCall(0)
 				Expect(actualGuid).To(Equal(taskGuid))
 			})
 
@@ -177,7 +188,7 @@ var _ = Describe("Task Controller", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = controller.DesireTask(logger, taskDef, taskGuid, domain)
+			err = controller.DesireTask(ctx, logger, taskDef, taskGuid, domain)
 		})
 
 		Context("when the desire is successful", func() {
@@ -189,7 +200,7 @@ var _ = Describe("Task Controller", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(fakeTaskDB.DesireTaskCallCount()).To(Equal(1))
-				_, actualTaskDef, actualTaskGuid, actualDomain := fakeTaskDB.DesireTaskArgsForCall(0)
+				_, _, actualTaskDef, actualTaskGuid, actualDomain := fakeTaskDB.DesireTaskArgsForCall(0)
 				Expect(actualTaskDef).To(Equal(taskDef))
 				Expect(actualTaskGuid).To(Equal(taskGuid))
 				Expect(actualDomain).To(Equal(domain))
@@ -296,12 +307,13 @@ var _ = Describe("Task Controller", func() {
 			})
 
 			JustBeforeEach(func() {
-				shouldStart, err = controller.StartTask(logger, taskGuid, cellId)
+				shouldStart, err = controller.StartTask(ctx, logger, taskGuid, cellId)
 			})
 
 			It("calls StartTask", func() {
 				Expect(fakeTaskDB.StartTaskCallCount()).To(Equal(1))
-				taskLogger, taskGuid, cellId := fakeTaskDB.StartTaskArgsForCall(0)
+				taskContext, taskLogger, taskGuid, cellId := fakeTaskDB.StartTaskArgsForCall(0)
+				Expect(taskContext).To(Equal(ctx))
 				Expect(taskLogger.SessionName()).To(ContainSubstring("start-task"))
 				Expect(taskGuid).To(Equal(taskGuid))
 				Expect(cellId).To(Equal(cellId))
@@ -314,6 +326,12 @@ var _ = Describe("Task Controller", func() {
 					before = &models.Task{State: models.Task_Pending}
 					after = &models.Task{State: models.Task_Running}
 					fakeTaskDB.StartTaskReturns(before, after, true, nil)
+				})
+
+				It("updates the task stats", func() {
+					Expect(fakeTaskStatNotifier.RecordTaskStartedCallCount()).To(Equal(1))
+					actualCellId := fakeTaskStatNotifier.RecordTaskStartedArgsForCall(0)
+					Expect(actualCellId).To(Equal(cellId))
 				})
 
 				It("responds with true", func() {
@@ -341,6 +359,10 @@ var _ = Describe("Task Controller", func() {
 					Expect(shouldStart).To(BeFalse())
 				})
 
+				It("does not update the task stats", func() {
+					Expect(fakeTaskStatNotifier.RecordTaskStartedCallCount()).To(BeZero())
+				})
+
 				It("does not emit a change to the hub", func() {
 					Consistently(taskHub.EmitCallCount).Should(Equal(0))
 				})
@@ -349,6 +371,10 @@ var _ = Describe("Task Controller", func() {
 			Context("when the DB fails", func() {
 				BeforeEach(func() {
 					fakeTaskDB.StartTaskReturns(nil, nil, false, errors.New("kaboom"))
+				})
+
+				It("does not update the task stats", func() {
+					Expect(fakeTaskStatNotifier.RecordTaskStartedCallCount()).To(BeZero())
 				})
 
 				It("bubbles up the underlying model error", func() {
@@ -376,7 +402,7 @@ var _ = Describe("Task Controller", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = controller.CancelTask(logger, taskGuid)
+			err = controller.CancelTask(ctx, logger, taskGuid)
 		})
 
 		Context("when the cancel request is normal", func() {
@@ -388,7 +414,8 @@ var _ = Describe("Task Controller", func() {
 
 				It("returns no error", func() {
 					Expect(fakeTaskDB.CancelTaskCallCount()).To(Equal(1))
-					taskLogger, taskGuid := fakeTaskDB.CancelTaskArgsForCall(0)
+					taskContext, taskLogger, taskGuid := fakeTaskDB.CancelTaskArgsForCall(0)
+					Expect(taskContext).To(Equal(ctx))
 					Expect(taskLogger.SessionName()).To(ContainSubstring("cancel-task"))
 					Expect(taskGuid).To(Equal("task-guid"))
 					Expect(err).NotTo(HaveOccurred())
@@ -525,28 +552,10 @@ var _ = Describe("Task Controller", func() {
 		})
 	})
 
-	Describe("FailTask", func() {
-		var (
-			taskGuid      string
-			failureReason string
-			before, after *models.Task
-		)
-
-		BeforeEach(func() {
-			taskGuid = "task-guid"
-			failureReason = "just cuz ;)"
-			before = &models.Task{}
-			after = model_helpers.NewValidTask("hi-bob")
-			fakeTaskDB.FailTaskReturns(before, after, nil)
-		})
-
-		JustBeforeEach(func() {
-			err = controller.FailTask(logger, taskGuid, failureReason)
-		})
-
+	AssertTaskFailing := func(taskGuid, failureReason string) {
 		Context("when failing the task succeeds", func() {
 			It("returns no error", func() {
-				_, actualTaskGuid, actualFailureReason := fakeTaskDB.FailTaskArgsForCall(0)
+				_, _, actualTaskGuid, actualFailureReason := fakeTaskDB.FailTaskArgsForCall(0)
 				Expect(actualTaskGuid).To(Equal(taskGuid))
 				Expect(actualFailureReason).To(Equal(failureReason))
 				Expect(err).NotTo(HaveOccurred())
@@ -557,8 +566,8 @@ var _ = Describe("Task Controller", func() {
 				event := taskHub.EmitArgsForCall(0)
 				changedEvent, ok := event.(*models.TaskChangedEvent)
 				Expect(ok).To(BeTrue())
-				Expect(changedEvent.Before).To(Equal(before))
-				Expect(changedEvent.After).To(Equal(after))
+				Expect(changedEvent.Before).To(Equal(&models.Task{}))
+				Expect(changedEvent.After).To(Equal(model_helpers.NewValidTask("hi-bob")))
 			})
 
 			Context("and the task has a complete URL", func() {
@@ -598,6 +607,132 @@ var _ = Describe("Task Controller", func() {
 				Consistently(taskHub.EmitCallCount).Should(Equal(0))
 			})
 		})
+	}
+
+	Describe("FailTask", func() {
+		var (
+			taskGuid      = "task-guid"
+			failureReason = "just cuz ;)"
+		)
+
+		BeforeEach(func() {
+			before := &models.Task{}
+			after := model_helpers.NewValidTask("hi-bob")
+			fakeTaskDB.FailTaskReturns(before, after, nil)
+		})
+
+		JustBeforeEach(func() {
+			err = controller.FailTask(ctx, logger, taskGuid, failureReason)
+		})
+
+		AssertTaskFailing(taskGuid, failureReason)
+	})
+
+	Describe("RejectTask", func() {
+		var (
+			taskGuid        = "task-guid"
+			rejectionReason = "rejection"
+			before, after   *models.Task
+		)
+
+		BeforeEach(func() {
+			before = &models.Task{}
+			after = model_helpers.NewValidTask("hi-bob")
+			fakeTaskDB.FailTaskReturns(before, after, nil)
+			fakeTaskDB.RejectTaskReturns(before, after, nil)
+			fakeTaskDB.TaskByGuidReturns(before, nil)
+		})
+
+		JustBeforeEach(func() {
+			err = controller.RejectTask(ctx, logger, taskGuid, rejectionReason)
+		})
+
+		Context("when fetching the task returns an error", func() {
+			BeforeEach(func() {
+				fakeTaskDB.TaskByGuidReturns(nil, errors.New("some db error"))
+			})
+
+			It("forwards the error", func() {
+				Expect(err).To(MatchError(errors.New("some db error")))
+			})
+		})
+
+		Context("when max_task_retries is 0", func() {
+			BeforeEach(func() {
+				maxPlacementRetries = 0
+			})
+
+			By("immediately failing the task")
+			AssertTaskFailing(taskGuid, rejectionReason)
+
+			It("rejects the task", func() {
+				Expect(fakeTaskDB.RejectTaskCallCount()).To(Equal(1))
+				_, _, actualTaskGuid, actualRejectionReason := fakeTaskDB.RejectTaskArgsForCall(0)
+				Expect(actualTaskGuid).To(Equal(taskGuid))
+				Expect(actualRejectionReason).To(Equal(rejectionReason))
+			})
+
+			It("logs the rejection reason", func() {
+				Eventually(logger.Buffer()).Should(gbytes.Say(rejectionReason))
+			})
+		})
+
+		Context("when max_task_retries is 1", func() {
+			BeforeEach(func() {
+				maxPlacementRetries = 1
+			})
+
+			Context("when the task has a rejection count of 0", func() {
+				It("rejects the task", func() {
+					Expect(fakeTaskDB.RejectTaskCallCount()).To(Equal(1))
+					_, _, actualTaskGuid, actualRejectionReason := fakeTaskDB.RejectTaskArgsForCall(0)
+					Expect(actualTaskGuid).To(Equal(taskGuid))
+					Expect(actualRejectionReason).To(Equal(rejectionReason))
+				})
+
+				It("emits a change to the hub", func() {
+					Eventually(taskHub.EmitCallCount).Should(Equal(1))
+					event := taskHub.EmitArgsForCall(0)
+					changedEvent, ok := event.(*models.TaskChangedEvent)
+					Expect(ok).To(BeTrue())
+					Expect(changedEvent.Before).To(Equal(before))
+					Expect(changedEvent.After).To(Equal(after))
+				})
+
+				It("logs the rejection reason", func() {
+					Eventually(logger.Buffer()).Should(gbytes.Say(rejectionReason))
+				})
+			})
+
+			Context("when the task has a rejection count of 1", func() {
+				BeforeEach(func() {
+					fakeTaskDB.TaskByGuidReturns(&models.Task{RejectionCount: 1}, nil)
+				})
+
+				By("failing the task")
+				AssertTaskFailing(taskGuid, rejectionReason)
+
+				It("rejects the task", func() {
+					Expect(fakeTaskDB.RejectTaskCallCount()).To(Equal(1))
+					_, _, actualTaskGuid, actualRejectionReason := fakeTaskDB.RejectTaskArgsForCall(0)
+					Expect(actualTaskGuid).To(Equal(taskGuid))
+					Expect(actualRejectionReason).To(Equal(rejectionReason))
+				})
+
+				It("logs the rejection reason", func() {
+					Eventually(logger.Buffer()).Should(gbytes.Say(rejectionReason))
+				})
+
+				Context("when RejectTask returns an error", func() {
+					BeforeEach(func() {
+						fakeTaskDB.RejectTaskReturns(nil, nil, errors.New("o noes!"))
+					})
+
+					By("it still calls FailTask regardless")
+					AssertTaskFailing(taskGuid, rejectionReason)
+				})
+			})
+		})
 	})
 
 	Describe("CompleteTask", func() {
@@ -623,13 +758,25 @@ var _ = Describe("Task Controller", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = controller.CompleteTask(logger, taskGuid, cellId, failed, failureReason, result)
+			err = controller.CompleteTask(ctx, logger, taskGuid, cellId, failed, failureReason, result)
+		})
+
+		Context("when the task is not marked failed", func() {
+			BeforeEach(func() {
+				failed = false
+			})
+
+			It("updates the task stats", func() {
+				Expect(fakeTaskStatNotifier.RecordTaskSucceededCallCount()).To(Equal(1))
+				actualCellId := fakeTaskStatNotifier.RecordTaskSucceededArgsForCall(0)
+				Expect(actualCellId).To(Equal(cellId))
+			})
 		})
 
 		Context("when completing the task succeeds", func() {
 			It("returns no error", func() {
 				Expect(fakeTaskDB.CompleteTaskCallCount()).To(Equal(1))
-				_, actualTaskGuid, actualCellId, actualFailed, actualFailureReason, actualResult := fakeTaskDB.CompleteTaskArgsForCall(0)
+				_, _, actualTaskGuid, actualCellId, actualFailed, actualFailureReason, actualResult := fakeTaskDB.CompleteTaskArgsForCall(0)
 				Expect(actualTaskGuid).To(Equal(taskGuid))
 				Expect(actualCellId).To(Equal(cellId))
 				Expect(actualFailed).To(Equal(failed))
@@ -645,6 +792,12 @@ var _ = Describe("Task Controller", func() {
 				Expect(ok).To(BeTrue())
 				Expect(changedEvent.Before).To(Equal(before))
 				Expect(changedEvent.After).To(Equal(after))
+			})
+
+			It("updates the task stats", func() {
+				Expect(fakeTaskStatNotifier.RecordTaskFailedCallCount()).To(Equal(1))
+				actualCellId := fakeTaskStatNotifier.RecordTaskFailedArgsForCall(0)
+				Expect(actualCellId).To(Equal(cellId))
 			})
 
 			Context("and completing succeeds", func() {
@@ -682,6 +835,10 @@ var _ = Describe("Task Controller", func() {
 				Expect(err).To(MatchError("kaboom"))
 			})
 
+			It("does not update the task stats", func() {
+				Expect(fakeTaskStatNotifier.RecordTaskSucceededCallCount()).To(BeZero())
+			})
+
 			It("does not emit a change to the hub", func() {
 				Consistently(taskHub.EmitCallCount).Should(Equal(0))
 			})
@@ -703,13 +860,13 @@ var _ = Describe("Task Controller", func() {
 			})
 
 			JustBeforeEach(func() {
-				err = controller.ResolvingTask(logger, taskGuid)
+				err = controller.ResolvingTask(ctx, logger, taskGuid)
 			})
 
 			Context("when resolvinging the task succeeds", func() {
 				It("returns no error", func() {
 					Expect(fakeTaskDB.ResolvingTaskCallCount()).To(Equal(1))
-					_, taskGuid := fakeTaskDB.ResolvingTaskArgsForCall(0)
+					_, _, taskGuid := fakeTaskDB.ResolvingTaskArgsForCall(0)
 					Expect(taskGuid).To(Equal("task-guid"))
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -754,13 +911,13 @@ var _ = Describe("Task Controller", func() {
 			})
 
 			JustBeforeEach(func() {
-				err = controller.DeleteTask(logger, taskGuid)
+				err = controller.DeleteTask(ctx, logger, taskGuid)
 			})
 
 			Context("when deleting the task succeeds", func() {
 				It("returns no error", func() {
 					Expect(fakeTaskDB.DeleteTaskCallCount()).To(Equal(1))
-					_, taskGuid := fakeTaskDB.DeleteTaskArgsForCall(0)
+					_, _, taskGuid := fakeTaskDB.DeleteTaskArgsForCall(0)
 					Expect(taskGuid).To(Equal("task-guid"))
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -803,21 +960,53 @@ var _ = Describe("Task Controller", func() {
 				cellPresence := models.NewCellPresence("cell-id", "1.1.1.1", "", "z1", models.CellCapacity{}, nil, nil, nil, nil)
 				cellSet = models.CellSet{"cell-id": &cellPresence}
 				fakeServiceClient.CellsReturns(cellSet, nil)
+
+				fakeTaskDB.ConvergeTasksReturns(db.TaskConvergenceResult{
+					TasksToAuction:  nil,
+					TasksToComplete: nil,
+					Events:          nil,
+					Metrics: db.TaskMetrics{
+						TasksPending:   1,
+						TasksRunning:   2,
+						TasksCompleted: 3,
+						TasksResolving: 4,
+						TasksPruned:    5,
+						TasksKicked:    6,
+					},
+				})
 			})
 
 			JustBeforeEach(func() {
-				err = controller.ConvergeTasks(logger, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration)
+				err = controller.ConvergeTasks(ctx, logger, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration)
 			})
 
 			It("calls ConvergeTasks", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(fakeTaskDB.ConvergeTasksCallCount()).To(Equal(1))
-				taskLogger, actualCellSet, actualKickDuration, actualPendingDuration, actualCompletedDuration := fakeTaskDB.ConvergeTasksArgsForCall(0)
+				taskContext, taskLogger, actualCellSet, actualKickDuration, actualPendingDuration, actualCompletedDuration := fakeTaskDB.ConvergeTasksArgsForCall(0)
+				Expect(taskContext).To(Equal(ctx))
 				Expect(taskLogger.SessionName()).To(ContainSubstring("converge-tasks"))
 				Expect(actualCellSet).To(BeEquivalentTo(cellSet))
 				Expect(actualKickDuration).To(BeEquivalentTo(kickTaskDuration))
 				Expect(actualPendingDuration).To(BeEquivalentTo(expirePendingTaskDuration))
 				Expect(actualCompletedDuration).To(BeEquivalentTo(expireCompletedTaskDuration))
+			})
+
+			It("records task count metrics", func() {
+				Expect(fakeTaskStatNotifier.RecordTaskCountsCallCount()).To(Equal(1))
+
+				pending, running, completed, resolving, pruned, kicked := fakeTaskStatNotifier.RecordTaskCountsArgsForCall(0)
+				Expect(pending).To(Equal(1))
+				Expect(running).To(Equal(2))
+				Expect(completed).To(Equal(3))
+				Expect(resolving).To(Equal(4))
+				Expect(pruned).To(Equal(uint64(5)))
+				Expect(kicked).To(Equal(uint64(6)))
+			})
+
+			It("records the convergence runs counter and duration", func() {
+				Expect(fakeTaskStatNotifier.RecordConvergenceDurationCallCount()).To(Equal(1))
+				Expect(fakeTaskStatNotifier.RecordConvergenceDurationArgsForCall(0)).To(BeNumerically(">", 0))
 			})
 
 			Context("when fetching cells fails", func() {
@@ -839,7 +1028,7 @@ var _ = Describe("Task Controller", func() {
 				It("calls ConvergeTasks with an empty CellSet", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(fakeTaskDB.ConvergeTasksCallCount()).To(Equal(1))
-					_, actualCellSet, _, _, _ := fakeTaskDB.ConvergeTasksArgsForCall(0)
+					_, _, actualCellSet, _, _, _ := fakeTaskDB.ConvergeTasksArgsForCall(0)
 					Expect(actualCellSet).To(BeEquivalentTo(models.CellSet{}))
 				})
 			})
@@ -851,7 +1040,12 @@ var _ = Describe("Task Controller", func() {
 				BeforeEach(func() {
 					task1 := model_helpers.NewValidTask(taskGuid1)
 					task2 := model_helpers.NewValidTask(taskGuid2)
-					fakeTaskDB.ConvergeTasksReturns(nil, []*models.Task{task1, task2}, []models.Event{})
+					convergenceResult := db.TaskConvergenceResult{
+						TasksToAuction:  nil,
+						TasksToComplete: []*models.Task{task1, task2},
+						Events:          []models.Event{},
+					}
+					fakeTaskDB.ConvergeTasksReturns(convergenceResult)
 				})
 
 				It("submits the tasks to the workpool", func() {
@@ -886,7 +1080,12 @@ var _ = Describe("Task Controller", func() {
 				BeforeEach(func() {
 					taskStartRequest1 := auctioneer.NewTaskStartRequestFromModel(taskGuid1, "domain", model_helpers.NewValidTaskDefinition())
 					taskStartRequest2 := auctioneer.NewTaskStartRequestFromModel(taskGuid2, "domain", model_helpers.NewValidTaskDefinition())
-					fakeTaskDB.ConvergeTasksReturns([]*auctioneer.TaskStartRequest{&taskStartRequest1, &taskStartRequest2}, nil, []models.Event{})
+					convergenceResult := db.TaskConvergenceResult{
+						TasksToAuction:  []*auctioneer.TaskStartRequest{&taskStartRequest1, &taskStartRequest2},
+						TasksToComplete: nil,
+						Events:          nil,
+					}
+					fakeTaskDB.ConvergeTasksReturns(convergenceResult)
 				})
 
 				It("requests an auction", func() {
@@ -914,7 +1113,12 @@ var _ = Describe("Task Controller", func() {
 				BeforeEach(func() {
 					event1 = models.NewTaskRemovedEvent(&models.Task{TaskGuid: "removed-task-1"})
 					event2 = models.NewTaskRemovedEvent(&models.Task{TaskGuid: "removed-task-2"})
-					fakeTaskDB.ConvergeTasksReturns([]*auctioneer.TaskStartRequest{}, nil, []models.Event{event1, event2})
+					convergenceResult := db.TaskConvergenceResult{
+						TasksToAuction:  nil,
+						TasksToComplete: nil,
+						Events:          []models.Event{event1, event2},
+					}
+					fakeTaskDB.ConvergeTasksReturns(convergenceResult)
 				})
 
 				It("emits a Task event to the hub", func() {

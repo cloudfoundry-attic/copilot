@@ -52,7 +52,6 @@ err = client.DesireLRP(logger, &models.DesiredLRP{
     Routes:      &models.Routes{"my-router": json.RawMessage(`{"foo":"bar"}`)},
     LogSource:   "some-log-source",
     LogGuid:     "some-log-guid",
-    MetricsGuid: "some-metrics-guid",
     Annotation:  "some-annotation",
     Network: &models.Network{
       Properties: map[string]string{
@@ -71,9 +70,19 @@ err = client.DesireLRP(logger, &models.DesiredLRP{
     VolumeMounts: []*models.VolumeMount{
       {
         Driver:        "my-driver",
-        VolumeId:      "my-volume",
         ContainerPath: "/mnt/mypath",
         Mode:          models.BindMountMode_RO,
+        Shared: {
+          VolumeId:      "my-volume",
+        },
+      },
+    },
+    MetricTags: map[string]*models.MetricTagValue{
+      "source_id": &models.MetricTagValue{
+	Static: "some-source-id",
+      },
+      "instance_index": &models.MetricTagValue{
+	Dynamic: models.MetricTagDynamicValueIndex,
       },
     },
 })
@@ -83,12 +92,14 @@ err = client.DesireLRP(logger, &models.DesiredLRP{
 
 ```go
 for {
-  lrpGroups, err := client.ActualLRPGroupsByProcessGuid(logger, "some-guid")
+  lrps, err := client.ActualLRPs(logger, models.ActualLRPFilter{
+		ProcessGuid: "some-guid",
+	})
   if err != nil {
     log.Printf("failed to fetch lrps!")
     panic(err)
   }
-  log.Printf("You have %d instances of your LRP", len(lrpGroups))
+  log.Printf("You have %d instances of your LRP", len(lrps))
   time.Sleep(time.Second)
 }
 ```

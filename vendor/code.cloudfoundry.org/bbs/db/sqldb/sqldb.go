@@ -1,7 +1,7 @@
 package sqldb
 
 import (
-	"database/sql"
+	"context"
 
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
 	"code.cloudfoundry.org/bbs/encryption"
@@ -14,11 +14,10 @@ import (
 )
 
 type SQLDB struct {
-	db                     *sql.DB
+	db                     helpers.QueryableDB
 	convergenceWorkersSize int
 	updateWorkersSize      int
 	clock                  clock.Clock
-	format                 *format.Format
 	guidProvider           guidprovider.GUIDProvider
 	serializer             format.Serializer
 	cryptor                encryption.Cryptor
@@ -28,22 +27,10 @@ type SQLDB struct {
 	metronClient           loggingclient.IngressClient
 }
 
-type RowScanner interface {
-	Scan(dest ...interface{}) error
-}
-
-type Queryable interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(query string) (*sql.Stmt, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
-}
-
 func NewSQLDB(
-	db *sql.DB,
+	db helpers.QueryableDB,
 	convergenceWorkersSize int,
 	updateWorkersSize int,
-	serializationFormat *format.Format,
 	cryptor encryption.Cryptor,
 	guidProvider guidprovider.GUIDProvider,
 	clock clock.Clock,
@@ -52,11 +39,10 @@ func NewSQLDB(
 ) *SQLDB {
 	helper := helpers.NewSQLHelper(flavor)
 	return &SQLDB{
-		db: db,
+		db:                     db,
 		convergenceWorkersSize: convergenceWorkersSize,
 		updateWorkersSize:      updateWorkersSize,
 		clock:                  clock,
-		format:                 serializationFormat,
 		guidProvider:           guidProvider,
 		serializer:             format.NewSerializer(cryptor),
 		cryptor:                cryptor,
@@ -67,16 +53,16 @@ func NewSQLDB(
 	}
 }
 
-func (db *SQLDB) transact(logger lager.Logger, f func(logger lager.Logger, tx *sql.Tx) error) error {
-	err := db.helper.Transact(logger, db.db, f)
+func (db *SQLDB) transact(ctx context.Context, logger lager.Logger, f func(logger lager.Logger, tx helpers.Tx) error) error {
+	err := db.helper.Transact(ctx, logger, db.db, f)
 	if err != nil {
 		return db.convertSQLError(err)
 	}
 	return nil
 }
 
-func (db *SQLDB) serializeModel(logger lager.Logger, model format.Versioner) ([]byte, error) {
-	encodedPayload, err := db.serializer.Marshal(logger, db.format, model)
+func (db *SQLDB) serializeModel(logger lager.Logger, model format.Model) ([]byte, error) {
+	encodedPayload, err := db.serializer.Marshal(logger, model)
 	if err != nil {
 		logger.Error("failed-to-serialize-model", err)
 		return nil, models.NewError(models.Error_InvalidRecord, err.Error())
@@ -84,7 +70,7 @@ func (db *SQLDB) serializeModel(logger lager.Logger, model format.Versioner) ([]
 	return encodedPayload, nil
 }
 
-func (db *SQLDB) deserializeModel(logger lager.Logger, data []byte, model format.Versioner) error {
+func (db *SQLDB) deserializeModel(logger lager.Logger, data []byte, model format.Model) error {
 	err := db.serializer.Unmarshal(logger, data, model)
 	if err != nil {
 		logger.Error("failed-to-deserialize-model", err)

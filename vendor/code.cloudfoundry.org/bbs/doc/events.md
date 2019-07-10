@@ -6,6 +6,8 @@ to those events as well as the type of events supported by the BBS.
 
 ## Subscribing to LRP Events
 
+**Deprecated** in favor of [subscribing to LRP Instance Events](#subscribing-to-lrp-instance-events)
+
 You can use the `SubscribeToEvents(logger lager.Logger) (events.EventSource,
 error)` client method to subscribe to lrp events. For example:
 
@@ -37,6 +39,40 @@ Events relevant to the cell are defined as:
 **Note** Passing an empty string `cellID` argument to `SubscribeToEventsByCellID` is equivalent to calling `SubscribeToEvents`
 
 **Note** `SubscribeToEventsByCellID` and `SubscribeToEvents` do not have events related to Tasks.
+
+## Subscribing to LRP Instance Events
+
+You can use the `SubscribeToInstanceEvents(logger lager.Logger) (events.EventSource,
+error)` client method to subscribe to lrp instance events. For example:
+
+``` go
+client := bbs.NewClient(url)
+eventSource, err := client.SubscribeToInstanceEvents(logger)
+if err != nil {
+    log.Printf("failed to subscribe to lrp instance events: " + err.Error())
+}
+```
+
+Alternatively you can use the `SubscribeToInstanceEventsByCellID` client method to subscribe to events that are relevant to the given cell. For example:
+
+``` go
+client := bbs.NewClient(url)
+eventSource, err := client.SubscribeToInstanceEventsByCellID(logger, "some-cell-id")
+if err != nil {
+    log.Printf("failed to subscribe to instance lrp events: " + err.Error())
+}
+```
+
+Events relevant to the cell are defined as:
+
+1. `ActualLRPInstanceCreatedEvent` that is running on that cell
+2. `ActualLRPInstanceRemovedEvent` that used to run on that cell
+3. `ActualLRPInstanceChangedEvent` that used to/started running on that cell
+4. `ActualLRPCrashedEvent` that used to run on that cell
+
+**Note** Passing an empty string `cellID` argument to `SubscribeToInstanceEventsByCellID` is equivalent to calling `SubscribeToInstanceEvents`
+
+**Note** `SubscribeToInstanceEventsByCellID` and `SubscribeToInstanceEvents` do not have events related to Tasks.
 
 ## Subscribing to Task Events
 
@@ -123,6 +159,8 @@ DesiredLRP that was just removed.
 
 ### `ActualLRPCreatedEvent`
 
+**Deprecated** in favor of [ActualLRPInstanceCreatedEvent](#ActualLRPInstanceCreatedEvent)
+
 When a new ActualLRP is created, a
 [ActualLRPCreatedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPCreatedEvent)
 is emitted. The value of the `ActualLrpGroup` field contains more information
@@ -131,6 +169,8 @@ about the ActualLRP.
 
 ### `ActualLRPChangedEvent`
 
+**Deprecated** in favor of [ActualLRPInstanceChangedEvent](#ActualLRPInstanceChangedEvent)
+
 When a ActualLRP changes, a
 [ActualLRPChangedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPChangedEvent)
 is emitted. The value of the `Before` and `After` fields contains information about the
@@ -138,8 +178,35 @@ ActualLRP state before and after the change.
 
 ### `ActualLRPRemovedEvent`
 
+**Deprecated** in favor of [ActualLRPInstanceRemovedEvent](#ActualLRPInstanceRemovedEvent)
+
 When a ActualLRP is removed, a
 [ActualLRPRemovedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPRemovedEvent)
+is emitted. The value of the `ActualLrpGroup` field contains information about the
+ActualLRP that was just removed.
+
+
+## ActualLRP instance events
+
+### `ActualLRPInstanceCreatedEvent`
+
+When a new ActualLRP instance is created, a
+[ActualLRPInstanceCreatedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceCreatedEvent)
+is emitted. The value of the `ActualLrp` field contains more information
+about the ActualLRP.
+
+
+### `ActualLRPInstanceChangedEvent`
+
+When a ActualLRP changes, a
+[ActualLRPInstanceChangedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceChangedEvent)
+is emitted. The value of the `Before` and `After` fields contains information about the
+ActualLRP state before and after the change.
+
+### `ActualLRPInstanceRemovedEvent`
+
+When a ActualLRP is removed, a
+[ActualLRPInstanceRemovedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceRemovedEvent)
 is emitted. The value of the `ActualLrp` field contains information about the
 ActualLRP that was just removed.
 

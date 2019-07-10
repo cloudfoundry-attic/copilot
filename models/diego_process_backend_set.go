@@ -92,8 +92,8 @@ type DiegoBackendSetRepo struct {
 
 //go:generate counterfeiter -o fakes/bbs_eventer.go --fake-name BBSEventer . BBSEventer
 type BBSEventer interface {
-	SubscribeToEvents(logger lager.Logger) (events.EventSource, error)
-	ActualLRPGroups(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRPGroup, error)
+	SubscribeToInstanceEvents(logger lager.Logger) (events.EventSource, error)
+	ActualLRPs(lager.Logger, bbsmodels.ActualLRPFilter) ([]*bbsmodels.ActualLRP, error)
 }
 
 type BackendSetRepo interface {
@@ -120,7 +120,7 @@ func NewBackendSetRepo(bbs BBSEventer, logger lager.Logger, tChan <-chan time.Ti
 func (b *DiegoBackendSetRepo) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	stop := make(chan struct{})
 
-	eventSource, err := b.bbs.SubscribeToEvents(b.logger)
+	eventSource, err := b.bbs.SubscribeToInstanceEvents(b.logger)
 	if err != nil {
 		return err
 	}
@@ -172,18 +172,16 @@ func (b *DiegoBackendSetRepo) collectEvents(stop <-chan struct{}, eventSource ev
 				continue
 			}
 
-			switch event.EventType() {
-			case bbsmodels.EventTypeActualLRPCreated:
-				createdEvent := event.(*bbsmodels.ActualLRPCreatedEvent)
-				instance := createdEvent.GetActualLrpGroup().GetInstance()
-				ex, in := processInstance(instance)
-				guid := DiegoProcessGUID(instance.ActualLRPKey.GetProcessGuid())
+			switch event := event.(type) {
+			case *bbsmodels.ActualLRPInstanceCreatedEvent:
+				lrp := event.GetActualLrp()
+				ex, in := processActualLRP(lrp)
+				guid := DiegoProcessGUID(lrp.GetProcessGuid())
 				b.store.Insert(guid, false, ex)
 				b.store.Insert(guid, true, in)
 
-			case bbsmodels.EventTypeActualLRPRemoved:
-				removedEvent := event.(*bbsmodels.ActualLRPRemovedEvent)
-				guid := DiegoProcessGUID(removedEvent.GetActualLrpGroup().GetInstance().ActualLRPKey.GetProcessGuid())
+			case *bbsmodels.ActualLRPInstanceRemovedEvent:
+				guid := DiegoProcessGUID(event.GetActualLrp().GetProcessGuid())
 				b.store.Remove(guid)
 			default:
 				b.logger.Debug("unhandled-event-type")
@@ -197,7 +195,7 @@ func (b *DiegoBackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan 
 	for {
 		select {
 		case <-ticker:
-			groups, err := b.bbs.ActualLRPGroups(b.logger, bbsmodels.ActualLRPFilter{})
+			lrps, err := b.bbs.ActualLRPs(b.logger, bbsmodels.ActualLRPFilter{})
 			if err != nil {
 				b.logger.Debug("lrp-groups-error", lager.Data{"lrp-groups-error": err.Error()})
 				continue
@@ -205,9 +203,9 @@ func (b *DiegoBackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan 
 
 			// not locking replacement store - no other goroutine can update it
 			replaceStore := store{content: make(map[DiegoProcessGUID]sets)}
-			for _, group := range groups {
-				ex, in := processInstance(group.Instance)
-				guid := DiegoProcessGUID(group.GetInstance().ActualLRPKey.GetProcessGuid())
+			for _, lrp := range lrps {
+				ex, in := processActualLRP(lrp)
+				guid := DiegoProcessGUID(lrp.GetProcessGuid())
 				replaceStore.Insert(guid, false, ex)
 				replaceStore.Insert(guid, true, in)
 			}
@@ -222,7 +220,7 @@ func (b *DiegoBackendSetRepo) reconcileLRPs(stop <-chan struct{}, ticker <-chan 
 	}
 }
 
-func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
+func processActualLRP(lrp *bbsmodels.ActualLRP) (*Backend, *Backend) {
 	var (
 		appHostPort      uint32
 		appContainerPort uint32
@@ -230,11 +228,15 @@ func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 		internalBackend  *Backend
 	)
 
-	if instance.State != bbsmodels.ActualLRPStateRunning {
+	if lrp.GetPresence() == bbsmodels.ActualLRP_Evacuating {
 		return externalBackend, internalBackend
 	}
 
-	for _, port := range instance.ActualLRPNetInfo.Ports {
+	if lrp.GetState() != bbsmodels.ActualLRPStateRunning {
+		return externalBackend, internalBackend
+	}
+
+	for _, port := range lrp.ActualLRPNetInfo.Ports {
 		if port.ContainerPort != CF_APP_SSH_PORT {
 			appHostPort = port.HostPort
 			appContainerPort = port.ContainerPort
@@ -243,7 +245,7 @@ func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 
 	if appHostPort != 0 {
 		externalBackend = &Backend{
-			Address:       instance.ActualLRPNetInfo.Address,
+			Address:       lrp.ActualLRPNetInfo.Address,
 			Port:          appHostPort,
 			ContainerPort: appContainerPort,
 		}
@@ -251,7 +253,7 @@ func processInstance(instance *bbsmodels.ActualLRP) (*Backend, *Backend) {
 
 	if appContainerPort != 0 {
 		internalBackend = &Backend{
-			Address:       instance.ActualLRPNetInfo.InstanceAddress,
+			Address:       lrp.ActualLRPNetInfo.InstanceAddress,
 			Port:          appContainerPort,
 			ContainerPort: appContainerPort,
 		}

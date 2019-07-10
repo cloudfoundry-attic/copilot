@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -9,8 +10,8 @@ import (
 
 const VersionID = "version"
 
-func (db *SQLDB) SetVersion(logger lager.Logger, version *models.Version) error {
-	logger = logger.Session("set-version", lager.Data{"version": version})
+func (db *SQLDB) SetVersion(ctx context.Context, logger lager.Logger, version *models.Version) error {
+	logger = logger.Session("db-set-version", lager.Data{"version": version})
 	logger.Debug("starting")
 	defer logger.Debug("complete")
 
@@ -20,15 +21,15 @@ func (db *SQLDB) SetVersion(logger lager.Logger, version *models.Version) error 
 		return err
 	}
 
-	return db.setConfigurationValue(logger, VersionID, string(versionJSON))
+	return db.setConfigurationValue(ctx, logger, VersionID, string(versionJSON))
 }
 
-func (db *SQLDB) Version(logger lager.Logger) (*models.Version, error) {
-	logger = logger.Session("version")
+func (db *SQLDB) Version(ctx context.Context, logger lager.Logger) (*models.Version, error) {
+	logger = logger.Session("db-version")
 	logger.Debug("starting")
 	defer logger.Debug("complete")
 
-	versionJSON, err := db.getConfigurationValue(logger, VersionID)
+	versionJSON, err := db.getConfigurationValue(ctx, logger, VersionID)
 	if err != nil {
 		return nil, err
 	}

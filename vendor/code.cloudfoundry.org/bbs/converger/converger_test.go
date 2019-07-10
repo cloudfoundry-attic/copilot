@@ -1,9 +1,11 @@
 package converger_test
 
 import (
+	"context"
 	"errors"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -88,7 +90,7 @@ var _ = Describe("ConvergerProcess", func() {
 			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(1))
 			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(1))
 
-			_, actualKickTaskDuration, actualExpirePendingTaskDuration, actualExpireCompletedTaskDuration := fakeTaskController.ConvergeTasksArgsForCall(0)
+			_, _, actualKickTaskDuration, actualExpirePendingTaskDuration, actualExpireCompletedTaskDuration := fakeTaskController.ConvergeTasksArgsForCall(0)
 			Expect(actualKickTaskDuration).To(Equal(kickTaskDuration))
 			Expect(actualExpirePendingTaskDuration).To(Equal(expirePendingTaskDuration))
 			Expect(actualExpireCompletedTaskDuration).To(Equal(expireCompletedTaskDuration))
@@ -98,7 +100,7 @@ var _ = Describe("ConvergerProcess", func() {
 			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(2))
 			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(2))
 
-			_, actualKickTaskDuration, actualExpirePendingTaskDuration, actualExpireCompletedTaskDuration = fakeTaskController.ConvergeTasksArgsForCall(1)
+			_, _, actualKickTaskDuration, actualExpirePendingTaskDuration, actualExpireCompletedTaskDuration = fakeTaskController.ConvergeTasksArgsForCall(1)
 			Expect(actualKickTaskDuration).To(Equal(kickTaskDuration))
 			Expect(actualExpirePendingTaskDuration).To(Equal(expirePendingTaskDuration))
 			Expect(actualExpireCompletedTaskDuration).To(Equal(expireCompletedTaskDuration))
@@ -117,7 +119,7 @@ var _ = Describe("ConvergerProcess", func() {
 			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(1))
 			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(1))
 
-			_, actualKickTaskDuration, actualExpirePendingTaskDuration, actualExpireCompletedTaskDuration := fakeTaskController.ConvergeTasksArgsForCall(0)
+			_, _, actualKickTaskDuration, actualExpirePendingTaskDuration, actualExpireCompletedTaskDuration := fakeTaskController.ConvergeTasksArgsForCall(0)
 			Expect(actualKickTaskDuration).To(Equal(kickTaskDuration))
 			Expect(actualExpirePendingTaskDuration).To(Equal(expirePendingTaskDuration))
 			Expect(actualExpireCompletedTaskDuration).To(Equal(expireCompletedTaskDuration))
@@ -150,6 +152,30 @@ var _ = Describe("ConvergerProcess", func() {
 			fakeClock.WaitForWatcherAndIncrement(convergeRepeatInterval + aBit)
 			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(2))
 			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(2))
+		})
+	})
+
+	Describe("converging when database is unresponsive", func() {
+		var (
+			finishChan chan struct{}
+		)
+
+		BeforeEach(func() {
+			finishChan = make(chan struct{})
+			fakeLrpConvergenceController.ConvergeLRPsStub = func(context.Context, lager.Logger) {
+				<-finishChan
+			}
+		})
+
+		It("is still able to shutdown when signaled", func() {
+			fakeClock.WaitForWatcherAndIncrement(convergeRepeatInterval + aBit)
+
+			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(1))
+			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(1))
+
+			ginkgomon.Interrupt(process)
+			Eventually(process.Wait()).Should(Receive())
+			close(finishChan)
 		})
 	})
 })

@@ -28,9 +28,9 @@ type MockBBSServer struct {
 	Server *ghttp.Server
 }
 
-func (m *MockBBSServer) SetGetV1EventsResponse(actualLRPGroup *bbsmodels.ActualLRPGroup) {
-	lrpEvent := bbsmodels.NewActualLRPCreatedEvent(actualLRPGroup)
-	m.Server.RouteToHandler("GET", "/v1/events", func(w http.ResponseWriter, req *http.Request) {
+func (m *MockBBSServer) SetPostV1EventsResponse(actualLRP *bbsmodels.ActualLRP) {
+	lrpEvent := bbsmodels.NewActualLRPInstanceCreatedEvent(actualLRP)
+	m.Server.RouteToHandler("POST", "/v1/events/lrp_instances.r1", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("Content-Type", "text/event-stream; charset=utf-8")
 		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Add("Connection", "keep-alive")
@@ -53,10 +53,10 @@ func (m *MockBBSServer) SetGetV1EventsResponse(actualLRPGroup *bbsmodels.ActualL
 	})
 }
 
-func (m *MockBBSServer) SetPostV1ActualLRPGroupsList(actualLRPGroups []*bbsmodels.ActualLRPGroup) {
-	m.Server.RouteToHandler("POST", "/v1/actual_lrp_groups/list", func(w http.ResponseWriter, req *http.Request) {
-		actualLRPResponse := bbsmodels.ActualLRPGroupsResponse{
-			ActualLrpGroups: actualLRPGroups,
+func (m *MockBBSServer) SetPostV1ActualLRPsList(actualLRPs []*bbsmodels.ActualLRP) {
+	m.Server.RouteToHandler("POST", "/v1/actual_lrps/list", func(w http.ResponseWriter, req *http.Request) {
+		actualLRPResponse := bbsmodels.ActualLRPsResponse{
+			ActualLrps: actualLRPs,
 		}
 		data, _ := proto.Marshal(&actualLRPResponse)
 		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
