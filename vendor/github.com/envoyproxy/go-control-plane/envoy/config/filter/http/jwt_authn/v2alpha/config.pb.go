@@ -3,15 +3,20 @@
 
 package envoy_config_filter_http_jwt_authn_v2alpha
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-import route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	fmt "fmt"
+	io "io"
+	math "math"
 
-import io "io"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+	types "github.com/gogo/protobuf/types"
+
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -157,25 +162,21 @@ func (m *JwtProvider) Reset()         { *m = JwtProvider{} }
 func (m *JwtProvider) String() string { return proto.CompactTextString(m) }
 func (*JwtProvider) ProtoMessage()    {}
 func (*JwtProvider) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{0}
+	return fileDescriptor_3d4e20dc3096b50e, []int{0}
 }
 func (m *JwtProvider) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *JwtProvider) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JwtProvider.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *JwtProvider) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JwtProvider.Merge(dst, src)
+func (m *JwtProvider) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JwtProvider.Merge(m, src)
 }
 func (m *JwtProvider) XXX_Size() int {
 	return m.Size()
@@ -369,25 +370,21 @@ func (m *RemoteJwks) Reset()         { *m = RemoteJwks{} }
 func (m *RemoteJwks) String() string { return proto.CompactTextString(m) }
 func (*RemoteJwks) ProtoMessage()    {}
 func (*RemoteJwks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{1}
+	return fileDescriptor_3d4e20dc3096b50e, []int{1}
 }
 func (m *RemoteJwks) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *RemoteJwks) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RemoteJwks.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *RemoteJwks) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoteJwks.Merge(dst, src)
+func (m *RemoteJwks) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoteJwks.Merge(m, src)
 }
 func (m *RemoteJwks) XXX_Size() int {
 	return m.Size()
@@ -429,25 +426,21 @@ func (m *JwtHeader) Reset()         { *m = JwtHeader{} }
 func (m *JwtHeader) String() string { return proto.CompactTextString(m) }
 func (*JwtHeader) ProtoMessage()    {}
 func (*JwtHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{2}
+	return fileDescriptor_3d4e20dc3096b50e, []int{2}
 }
 func (m *JwtHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *JwtHeader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JwtHeader.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *JwtHeader) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JwtHeader.Merge(dst, src)
+func (m *JwtHeader) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JwtHeader.Merge(m, src)
 }
 func (m *JwtHeader) XXX_Size() int {
 	return m.Size()
@@ -487,25 +480,21 @@ func (m *ProviderWithAudiences) Reset()         { *m = ProviderWithAudiences{} }
 func (m *ProviderWithAudiences) String() string { return proto.CompactTextString(m) }
 func (*ProviderWithAudiences) ProtoMessage()    {}
 func (*ProviderWithAudiences) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{3}
+	return fileDescriptor_3d4e20dc3096b50e, []int{3}
 }
 func (m *ProviderWithAudiences) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ProviderWithAudiences) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProviderWithAudiences.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *ProviderWithAudiences) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProviderWithAudiences.Merge(dst, src)
+func (m *ProviderWithAudiences) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProviderWithAudiences.Merge(m, src)
 }
 func (m *ProviderWithAudiences) XXX_Size() int {
 	return m.Size()
@@ -587,25 +576,21 @@ func (m *JwtRequirement) Reset()         { *m = JwtRequirement{} }
 func (m *JwtRequirement) String() string { return proto.CompactTextString(m) }
 func (*JwtRequirement) ProtoMessage()    {}
 func (*JwtRequirement) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{4}
+	return fileDescriptor_3d4e20dc3096b50e, []int{4}
 }
 func (m *JwtRequirement) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *JwtRequirement) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JwtRequirement.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *JwtRequirement) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JwtRequirement.Merge(dst, src)
+func (m *JwtRequirement) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JwtRequirement.Merge(m, src)
 }
 func (m *JwtRequirement) XXX_Size() int {
 	return m.Size()
@@ -827,25 +812,21 @@ func (m *JwtRequirementOrList) Reset()         { *m = JwtRequirementOrList{} }
 func (m *JwtRequirementOrList) String() string { return proto.CompactTextString(m) }
 func (*JwtRequirementOrList) ProtoMessage()    {}
 func (*JwtRequirementOrList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{5}
+	return fileDescriptor_3d4e20dc3096b50e, []int{5}
 }
 func (m *JwtRequirementOrList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *JwtRequirementOrList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JwtRequirementOrList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *JwtRequirementOrList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JwtRequirementOrList.Merge(dst, src)
+func (m *JwtRequirementOrList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JwtRequirementOrList.Merge(m, src)
 }
 func (m *JwtRequirementOrList) XXX_Size() int {
 	return m.Size()
@@ -877,25 +858,21 @@ func (m *JwtRequirementAndList) Reset()         { *m = JwtRequirementAndList{} }
 func (m *JwtRequirementAndList) String() string { return proto.CompactTextString(m) }
 func (*JwtRequirementAndList) ProtoMessage()    {}
 func (*JwtRequirementAndList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{6}
+	return fileDescriptor_3d4e20dc3096b50e, []int{6}
 }
 func (m *JwtRequirementAndList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *JwtRequirementAndList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JwtRequirementAndList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *JwtRequirementAndList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JwtRequirementAndList.Merge(dst, src)
+func (m *JwtRequirementAndList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JwtRequirementAndList.Merge(m, src)
 }
 func (m *JwtRequirementAndList) XXX_Size() int {
 	return m.Size()
@@ -957,25 +934,21 @@ func (m *RequirementRule) Reset()         { *m = RequirementRule{} }
 func (m *RequirementRule) String() string { return proto.CompactTextString(m) }
 func (*RequirementRule) ProtoMessage()    {}
 func (*RequirementRule) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{7}
+	return fileDescriptor_3d4e20dc3096b50e, []int{7}
 }
 func (m *RequirementRule) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *RequirementRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RequirementRule.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *RequirementRule) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RequirementRule.Merge(dst, src)
+func (m *RequirementRule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RequirementRule.Merge(m, src)
 }
 func (m *RequirementRule) XXX_Size() int {
 	return m.Size()
@@ -994,6 +967,77 @@ func (m *RequirementRule) GetMatch() *route.RouteMatch {
 }
 
 func (m *RequirementRule) GetRequires() *JwtRequirement {
+	if m != nil {
+		return m.Requires
+	}
+	return nil
+}
+
+// This message specifies Jwt requirements based on stream_info.filterState.
+// This FilterState should use `Router::StringAccessor` object to set a string value.
+// Other HTTP filters can use it to specify Jwt requirements dynamically.
+//
+// Example:
+//
+// .. code-block:: yaml
+//
+//    name: jwt_selector
+//    requires:
+//      issuer_1:
+//        provider_name: issuer1
+//      issuer_2:
+//        provider_name: issuer2
+//
+// If a filter set "jwt_selector" with "issuer_1" to FilterState for a request,
+// jwt_authn filter will use JwtRequirement{"provider_name": "issuer1"} to verify.
+type FilterStateRule struct {
+	// The filter state name to retrieve the `Router::StringAccessor` object.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// A map of string keys to requirements. The string key is the string value
+	// in the FilterState with the name specified in the *name* field above.
+	Requires             map[string]*JwtRequirement `protobuf:"bytes,3,rep,name=requires,proto3" json:"requires,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
+}
+
+func (m *FilterStateRule) Reset()         { *m = FilterStateRule{} }
+func (m *FilterStateRule) String() string { return proto.CompactTextString(m) }
+func (*FilterStateRule) ProtoMessage()    {}
+func (*FilterStateRule) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3d4e20dc3096b50e, []int{8}
+}
+func (m *FilterStateRule) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FilterStateRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
+}
+func (m *FilterStateRule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FilterStateRule.Merge(m, src)
+}
+func (m *FilterStateRule) XXX_Size() int {
+	return m.Size()
+}
+func (m *FilterStateRule) XXX_DiscardUnknown() {
+	xxx_messageInfo_FilterStateRule.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FilterStateRule proto.InternalMessageInfo
+
+func (m *FilterStateRule) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *FilterStateRule) GetRequires() map[string]*JwtRequirement {
 	if m != nil {
 		return m.Requires
 	}
@@ -1091,35 +1135,36 @@ type JwtAuthentication struct {
 	//           - provider_name: provider1
 	//           - provider_name: provider2
 	//
-	Rules                []*RequirementRule `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
-	XXX_unrecognized     []byte             `json:"-"`
-	XXX_sizecache        int32              `json:"-"`
+	Rules []*RequirementRule `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
+	// This message specifies Jwt requirements based on stream_info.filterState.
+	// Other HTTP filters can use it to specify Jwt requirements dynamically.
+	// The *rules* field above is checked first, if it could not find any matches,
+	// check this one.
+	FilterStateRules     *FilterStateRule `protobuf:"bytes,3,opt,name=filter_state_rules,json=filterStateRules,proto3" json:"filter_state_rules,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *JwtAuthentication) Reset()         { *m = JwtAuthentication{} }
 func (m *JwtAuthentication) String() string { return proto.CompactTextString(m) }
 func (*JwtAuthentication) ProtoMessage()    {}
 func (*JwtAuthentication) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_460934e04afde9a5, []int{8}
+	return fileDescriptor_3d4e20dc3096b50e, []int{9}
 }
 func (m *JwtAuthentication) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *JwtAuthentication) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JwtAuthentication.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *JwtAuthentication) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JwtAuthentication.Merge(dst, src)
+func (m *JwtAuthentication) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JwtAuthentication.Merge(m, src)
 }
 func (m *JwtAuthentication) XXX_Size() int {
 	return m.Size()
@@ -1144,6 +1189,13 @@ func (m *JwtAuthentication) GetRules() []*RequirementRule {
 	return nil
 }
 
+func (m *JwtAuthentication) GetFilterStateRules() *FilterStateRule {
+	if m != nil {
+		return m.FilterStateRules
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*JwtProvider)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.JwtProvider")
 	proto.RegisterType((*RemoteJwks)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.RemoteJwks")
@@ -1153,9 +1205,87 @@ func init() {
 	proto.RegisterType((*JwtRequirementOrList)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.JwtRequirementOrList")
 	proto.RegisterType((*JwtRequirementAndList)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.JwtRequirementAndList")
 	proto.RegisterType((*RequirementRule)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.RequirementRule")
+	proto.RegisterType((*FilterStateRule)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.FilterStateRule")
+	proto.RegisterMapType((map[string]*JwtRequirement)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.FilterStateRule.RequiresEntry")
 	proto.RegisterType((*JwtAuthentication)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.JwtAuthentication")
 	proto.RegisterMapType((map[string]*JwtProvider)(nil), "envoy.config.filter.http.jwt_authn.v2alpha.JwtAuthentication.ProvidersEntry")
 }
+
+func init() {
+	proto.RegisterFile("envoy/config/filter/http/jwt_authn/v2alpha/config.proto", fileDescriptor_3d4e20dc3096b50e)
+}
+
+var fileDescriptor_3d4e20dc3096b50e = []byte{
+	// 1071 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0xcd, 0x6f, 0x1b, 0x45,
+	0x14, 0xcf, 0xda, 0x71, 0x13, 0x3f, 0xe7, 0xab, 0x43, 0x92, 0x2e, 0xa1, 0x35, 0xae, 0x11, 0x52,
+	0xc4, 0x61, 0x57, 0x32, 0x94, 0x56, 0xad, 0x84, 0x62, 0xd3, 0x56, 0x6e, 0xd4, 0x10, 0x33, 0x15,
+	0x1f, 0xe5, 0xb2, 0x9a, 0x78, 0xc7, 0xf6, 0x24, 0xeb, 0x9d, 0x65, 0x76, 0xd6, 0xae, 0xaf, 0x7c,
+	0x5c, 0x38, 0x21, 0xfe, 0x0d, 0xae, 0x1c, 0x10, 0xa7, 0x1e, 0x39, 0x72, 0xe4, 0x88, 0xc2, 0xa9,
+	0xff, 0x05, 0xda, 0x99, 0x59, 0x7f, 0x24, 0x16, 0xe0, 0x16, 0x71, 0xb1, 0x66, 0xde, 0x7b, 0xbf,
+	0xdf, 0xfb, 0x98, 0xdf, 0xbe, 0x04, 0x6e, 0xd3, 0x70, 0xc0, 0x47, 0x6e, 0x9b, 0x87, 0x1d, 0xd6,
+	0x75, 0x3b, 0x2c, 0x90, 0x54, 0xb8, 0x3d, 0x29, 0x23, 0xf7, 0x74, 0x28, 0x3d, 0x92, 0xc8, 0x5e,
+	0xe8, 0x0e, 0x6a, 0x24, 0x88, 0x7a, 0xc4, 0x04, 0x39, 0x91, 0xe0, 0x92, 0xa3, 0x77, 0x14, 0xd0,
+	0x31, 0x36, 0x0d, 0x74, 0x52, 0xa0, 0x33, 0x06, 0x3a, 0x06, 0xb8, 0x77, 0x5d, 0x27, 0x21, 0x11,
+	0x73, 0x07, 0x35, 0xb7, 0xcd, 0x05, 0x75, 0x4f, 0x48, 0x4c, 0x35, 0xd3, 0x5e, 0xe5, 0xb2, 0x37,
+	0xe5, 0xf1, 0x12, 0xc1, 0x4c, 0x44, 0x79, 0x26, 0x42, 0xf0, 0x44, 0x52, 0xfd, 0x9b, 0xf9, 0xbb,
+	0x9c, 0x77, 0x03, 0xea, 0xaa, 0xdb, 0x49, 0xd2, 0x71, 0xfd, 0x44, 0x10, 0xc9, 0x78, 0x68, 0xfc,
+	0x6f, 0x5c, 0xf4, 0xd3, 0x7e, 0x24, 0x47, 0xc6, 0x79, 0x6d, 0x40, 0x02, 0xe6, 0x13, 0x49, 0xdd,
+	0xec, 0x60, 0x1c, 0xdb, 0x5d, 0xde, 0xe5, 0xea, 0xe8, 0xa6, 0x27, 0x6d, 0xad, 0x7e, 0xb3, 0x0c,
+	0xa5, 0xc3, 0xa1, 0x6c, 0x09, 0x3e, 0x60, 0x3e, 0x15, 0xe8, 0x26, 0x5c, 0x61, 0x71, 0x9c, 0x50,
+	0x61, 0x5b, 0x15, 0x6b, 0xbf, 0xd8, 0x28, 0xfe, 0xf2, 0xe2, 0x79, 0x7e, 0x59, 0xe4, 0x2a, 0x16,
+	0x36, 0x0e, 0x74, 0x1d, 0x8a, 0x24, 0xf1, 0x19, 0x0d, 0xdb, 0x34, 0xb6, 0x73, 0x95, 0xfc, 0x7e,
+	0x11, 0x4f, 0x0c, 0xe8, 0x29, 0x94, 0x04, 0xed, 0x73, 0x49, 0xbd, 0xd3, 0xe1, 0x59, 0x6c, 0xe7,
+	0x2b, 0xd6, 0x7e, 0xa9, 0xf6, 0xbe, 0xf3, 0xef, 0xc7, 0xeb, 0x60, 0x05, 0x3f, 0x1c, 0x9e, 0xc5,
+	0xcd, 0x25, 0x0c, 0x62, 0x7c, 0x43, 0x1f, 0x00, 0x04, 0xbc, 0x4d, 0x02, 0xcd, 0xbc, 0xac, 0x98,
+	0x6f, 0x18, 0x66, 0x12, 0x31, 0x67, 0x50, 0x73, 0xd2, 0x71, 0x3b, 0xf7, 0x89, 0x24, 0x4f, 0x78,
+	0x22, 0xda, 0xb4, 0xb9, 0x84, 0x8b, 0x0a, 0xa2, 0xf0, 0x36, 0xac, 0x74, 0xb8, 0x18, 0x12, 0xe1,
+	0xdb, 0x85, 0x8a, 0xb5, 0xbf, 0x8a, 0xb3, 0x2b, 0xfa, 0x1c, 0xd6, 0x3a, 0x82, 0xf7, 0xbd, 0x1e,
+	0x25, 0x3e, 0x15, 0xb1, 0x7d, 0xa5, 0x92, 0xdf, 0x2f, 0xd5, 0x6e, 0x2d, 0x52, 0xf5, 0xe1, 0x50,
+	0x36, 0x15, 0x1a, 0x97, 0x52, 0x2a, 0x7d, 0x8e, 0xd1, 0x9b, 0xa0, 0xae, 0x5e, 0x44, 0x04, 0xe9,
+	0xc7, 0xf6, 0x8a, 0x1a, 0x17, 0xa4, 0xa6, 0x96, 0xb2, 0xa0, 0xf7, 0x60, 0xd7, 0x54, 0xe1, 0x45,
+	0x64, 0x14, 0x70, 0xe2, 0x9b, 0x2a, 0xec, 0xd5, 0xf4, 0x01, 0xf0, 0xb6, 0xf1, 0xb6, 0xb4, 0x53,
+	0xf3, 0x22, 0x07, 0x5e, 0xcb, 0xa2, 0x59, 0xe8, 0xf5, 0xa9, 0x24, 0x3e, 0x91, 0xc4, 0x2e, 0x2a,
+	0xc8, 0x55, 0xe3, 0x7a, 0x14, 0x1e, 0x19, 0x47, 0xa3, 0x0c, 0x3b, 0xe9, 0xd0, 0xbc, 0x58, 0x8d,
+	0xc5, 0x8b, 0x23, 0xda, 0x66, 0x1d, 0x46, 0x05, 0x2a, 0xfc, 0xfc, 0xe2, 0x79, 0xde, 0xaa, 0x7e,
+	0x6b, 0x01, 0x4c, 0xe6, 0x8e, 0x6e, 0xc1, 0x6a, 0xa6, 0x59, 0xa5, 0x83, 0x52, 0x6d, 0x6f, 0xce,
+	0x9c, 0x9b, 0x52, 0x46, 0x9f, 0x08, 0x86, 0x57, 0x7a, 0xfa, 0x80, 0x0e, 0x60, 0xa3, 0x4d, 0xda,
+	0x3d, 0xea, 0x65, 0x82, 0xb5, 0x73, 0x0a, 0xfc, 0xba, 0xa3, 0x15, 0xeb, 0x64, 0x8a, 0x75, 0xee,
+	0x9b, 0x00, 0xbc, 0xae, 0x00, 0xd9, 0xb5, 0x7a, 0x04, 0xc5, 0xf1, 0x20, 0xd1, 0x0d, 0x58, 0x0e,
+	0x49, 0x9f, 0x5e, 0x56, 0xa2, 0x32, 0xa3, 0x9b, 0xb0, 0x36, 0x20, 0x41, 0x42, 0xbd, 0x48, 0xd0,
+	0x0e, 0x7b, 0xa6, 0x72, 0x15, 0x71, 0x49, 0xd9, 0x5a, 0xca, 0x54, 0xfd, 0x02, 0x76, 0x32, 0x65,
+	0x7f, 0xc6, 0x64, 0xaf, 0x3e, 0x56, 0xe9, 0x5b, 0xb0, 0x1e, 0x19, 0x87, 0x37, 0xc9, 0x81, 0xd7,
+	0x32, 0xe3, 0x47, 0x69, 0x82, 0xbf, 0x15, 0x7a, 0xf5, 0xcf, 0x3c, 0x6c, 0x1c, 0x0e, 0x25, 0xa6,
+	0x5f, 0x26, 0x4c, 0xd0, 0x3e, 0x0d, 0x25, 0x7a, 0x7b, 0x2e, 0x6b, 0x73, 0xe9, 0x02, 0xef, 0x08,
+	0x76, 0xc7, 0x61, 0x24, 0xf4, 0xbd, 0xe9, 0x24, 0xe9, 0xb8, 0xea, 0x8b, 0xe8, 0x6e, 0x6e, 0x7f,
+	0xcd, 0x25, 0xbc, 0x9d, 0xa5, 0xa8, 0x87, 0xfe, 0xa4, 0x6f, 0x0a, 0x6b, 0x42, 0x17, 0x1c, 0x7b,
+	0x24, 0x1c, 0x99, 0xcf, 0xf3, 0x60, 0x41, 0xa1, 0x4f, 0xf5, 0x7c, 0x2c, 0x1e, 0xb3, 0x58, 0x36,
+	0x97, 0x70, 0x29, 0xe3, 0xad, 0x87, 0x23, 0xd4, 0x99, 0x4e, 0x13, 0x04, 0xe6, 0x5b, 0xad, 0xbf,
+	0x7c, 0x9a, 0x7a, 0xe8, 0x5f, 0xca, 0x13, 0x04, 0xe8, 0x18, 0xae, 0x91, 0x20, 0xe0, 0x43, 0xaf,
+	0xcf, 0xe2, 0x98, 0x85, 0x5d, 0x8f, 0x0b, 0xaf, 0x43, 0x58, 0x40, 0xf5, 0x17, 0x5e, 0xaa, 0xed,
+	0x5e, 0x52, 0xde, 0x83, 0x74, 0x57, 0xa6, 0xf3, 0x51, 0xc0, 0x23, 0x8d, 0x3b, 0x16, 0x0f, 0x15,
+	0xaa, 0xb1, 0x09, 0xeb, 0xe3, 0xc2, 0xe5, 0x28, 0xa2, 0xd5, 0xaf, 0x2c, 0xd8, 0x9e, 0xd7, 0x31,
+	0x3a, 0x1d, 0xb7, 0x98, 0x1a, 0x63, 0xdb, 0x52, 0x2b, 0xe3, 0xee, 0xcb, 0xb7, 0xd8, 0x80, 0x54,
+	0xe0, 0x85, 0x1f, 0xac, 0xdc, 0x6a, 0x0e, 0xcf, 0x70, 0x57, 0xbf, 0xb6, 0x60, 0x67, 0xee, 0x3c,
+	0xfe, 0xd7, 0x2a, 0x7e, 0xb4, 0x60, 0x73, 0x2a, 0x12, 0x27, 0x01, 0x45, 0x07, 0x50, 0xe8, 0x13,
+	0xd9, 0xee, 0x99, 0x2d, 0x51, 0x9e, 0xdd, 0x12, 0xfa, 0x8f, 0x1a, 0x4e, 0x7f, 0x8f, 0xd2, 0x28,
+	0x43, 0xfe, 0x9d, 0x95, 0xdb, 0xb2, 0xb0, 0x06, 0xa2, 0x4f, 0x61, 0x35, 0x9b, 0xb8, 0x91, 0xff,
+	0x2b, 0x54, 0x8f, 0xc7, 0x5c, 0xd5, 0xef, 0x73, 0xb0, 0xf9, 0x50, 0x41, 0x9f, 0x48, 0x22, 0xa9,
+	0xaa, 0xf6, 0x1f, 0x16, 0x0a, 0x9d, 0x2a, 0x25, 0xaf, 0x06, 0xf9, 0x68, 0x91, 0x52, 0x2e, 0x64,
+	0x73, 0x4c, 0x5d, 0xf1, 0x83, 0x50, 0x8a, 0xd1, 0xa4, 0xb2, 0xbd, 0x21, 0xac, 0xcf, 0xb8, 0xd0,
+	0x16, 0xe4, 0xcf, 0xe8, 0xc8, 0xac, 0xa0, 0xf4, 0x88, 0x5a, 0x50, 0x50, 0x6b, 0xec, 0x3f, 0x98,
+	0x88, 0x26, 0xba, 0x9b, 0xbb, 0x63, 0x55, 0x7f, 0xca, 0xc3, 0xd5, 0xc3, 0xa1, 0xac, 0x27, 0xb2,
+	0x47, 0x43, 0xc9, 0xda, 0x6a, 0xe5, 0xa2, 0x53, 0x28, 0x66, 0xab, 0x22, 0xd3, 0xcf, 0xe3, 0x05,
+	0xf3, 0xcd, 0x32, 0x8e, 0x57, 0x92, 0xe9, 0x7c, 0x42, 0x8f, 0x3e, 0x86, 0x82, 0x48, 0x02, 0xb3,
+	0x4d, 0x4b, 0xb5, 0x7b, 0x8b, 0xfd, 0x5b, 0x30, 0x23, 0x3d, 0xac, 0x99, 0x10, 0x03, 0xa4, 0x71,
+	0x5e, 0x9c, 0x4e, 0xde, 0xd3, 0xfc, 0x7a, 0xaf, 0xdd, 0x7b, 0x85, 0xe7, 0xc3, 0x5b, 0x9d, 0x59,
+	0x43, 0xbc, 0x97, 0xc0, 0xc6, 0x6c, 0x6b, 0x73, 0x5e, 0xee, 0x68, 0xf6, 0xe5, 0x6e, 0x2f, 0x38,
+	0xc9, 0x8c, 0x7f, 0xea, 0xd9, 0x1a, 0x4f, 0x7f, 0x3d, 0x2f, 0x5b, 0xbf, 0x9d, 0x97, 0xad, 0xdf,
+	0xcf, 0xcb, 0xd6, 0x1f, 0xe7, 0x65, 0x0b, 0xee, 0x30, 0xae, 0x79, 0x23, 0xc1, 0x9f, 0x8d, 0x16,
+	0x48, 0xd1, 0x28, 0x7d, 0xa8, 0xa2, 0x5a, 0xe9, 0x36, 0x6c, 0x59, 0x27, 0x57, 0xd4, 0x5a, 0x7c,
+	0xf7, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xa6, 0xce, 0x65, 0x11, 0x37, 0x0b, 0x00, 0x00,
+}
+
 func (m *JwtProvider) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1597,7 +1727,7 @@ func (m *RequirementRule) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *JwtAuthentication) Marshal() (dAtA []byte, err error) {
+func (m *FilterStateRule) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -1607,16 +1737,27 @@ func (m *JwtAuthentication) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *JwtAuthentication) MarshalTo(dAtA []byte) (int, error) {
+func (m *FilterStateRule) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Providers) > 0 {
-		for k, _ := range m.Providers {
-			dAtA[i] = 0xa
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if len(m.Requires) > 0 {
+		keysForRequires := make([]string, 0, len(m.Requires))
+		for k, _ := range m.Requires {
+			keysForRequires = append(keysForRequires, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRequires)
+		for _, k := range keysForRequires {
+			dAtA[i] = 0x1a
 			i++
-			v := m.Providers[k]
+			v := m.Requires[string(k)]
 			msgSize := 0
 			if v != nil {
 				msgSize = v.Size()
@@ -1640,6 +1781,60 @@ func (m *JwtAuthentication) MarshalTo(dAtA []byte) (int, error) {
 			}
 		}
 	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *JwtAuthentication) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *JwtAuthentication) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Providers) > 0 {
+		keysForProviders := make([]string, 0, len(m.Providers))
+		for k, _ := range m.Providers {
+			keysForProviders = append(keysForProviders, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProviders)
+		for _, k := range keysForProviders {
+			dAtA[i] = 0xa
+			i++
+			v := m.Providers[string(k)]
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovConfig(uint64(msgSize))
+			}
+			mapSize := 1 + len(k) + sovConfig(uint64(len(k))) + msgSize
+			i = encodeVarintConfig(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintConfig(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintConfig(dAtA, i, uint64(v.Size()))
+				n14, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n14
+			}
+		}
+	}
 	if len(m.Rules) > 0 {
 		for _, msg := range m.Rules {
 			dAtA[i] = 0x12
@@ -1651,6 +1846,16 @@ func (m *JwtAuthentication) MarshalTo(dAtA []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if m.FilterStateRules != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(m.FilterStateRules.Size()))
+		n15, err := m.FilterStateRules.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n15
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -1930,6 +2135,35 @@ func (m *RequirementRule) Size() (n int) {
 	return n
 }
 
+func (m *FilterStateRule) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	if len(m.Requires) > 0 {
+		for k, v := range m.Requires {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovConfig(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovConfig(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovConfig(uint64(mapEntrySize))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *JwtAuthentication) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1954,6 +2188,10 @@ func (m *JwtAuthentication) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovConfig(uint64(l))
 		}
+	}
+	if m.FilterStateRules != nil {
+		l = m.FilterStateRules.Size()
+		n += 1 + l + sovConfig(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1989,7 +2227,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2017,7 +2255,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2027,6 +2265,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2046,7 +2287,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2056,6 +2297,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2075,7 +2319,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2084,6 +2328,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2107,7 +2354,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2116,6 +2363,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2139,7 +2389,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2159,7 +2409,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2168,6 +2418,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2190,7 +2443,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2200,6 +2453,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2219,7 +2475,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2229,6 +2485,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2248,7 +2507,7 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2258,6 +2517,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2270,6 +2532,9 @@ func (m *JwtProvider) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -2300,7 +2565,7 @@ func (m *RemoteJwks) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2328,7 +2593,7 @@ func (m *RemoteJwks) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2337,6 +2602,9 @@ func (m *RemoteJwks) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2361,7 +2629,7 @@ func (m *RemoteJwks) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2370,6 +2638,9 @@ func (m *RemoteJwks) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2387,6 +2658,9 @@ func (m *RemoteJwks) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -2417,7 +2691,7 @@ func (m *JwtHeader) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2445,7 +2719,7 @@ func (m *JwtHeader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2455,6 +2729,9 @@ func (m *JwtHeader) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2474,7 +2751,7 @@ func (m *JwtHeader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2484,6 +2761,9 @@ func (m *JwtHeader) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2496,6 +2776,9 @@ func (m *JwtHeader) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -2526,7 +2809,7 @@ func (m *ProviderWithAudiences) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2554,7 +2837,7 @@ func (m *ProviderWithAudiences) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2564,6 +2847,9 @@ func (m *ProviderWithAudiences) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2583,7 +2869,7 @@ func (m *ProviderWithAudiences) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2593,6 +2879,9 @@ func (m *ProviderWithAudiences) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2605,6 +2894,9 @@ func (m *ProviderWithAudiences) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -2635,7 +2927,7 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2663,7 +2955,7 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2673,6 +2965,9 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2692,7 +2987,7 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2701,6 +2996,9 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2724,7 +3022,7 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2733,6 +3031,9 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2756,7 +3057,7 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2765,6 +3066,9 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2788,7 +3092,7 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2797,6 +3101,9 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2813,6 +3120,9 @@ func (m *JwtRequirement) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -2843,7 +3153,7 @@ func (m *JwtRequirementOrList) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2871,7 +3181,7 @@ func (m *JwtRequirementOrList) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2880,6 +3190,9 @@ func (m *JwtRequirementOrList) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2895,6 +3208,9 @@ func (m *JwtRequirementOrList) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -2925,7 +3241,7 @@ func (m *JwtRequirementAndList) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2953,7 +3269,7 @@ func (m *JwtRequirementAndList) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2962,6 +3278,9 @@ func (m *JwtRequirementAndList) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2977,6 +3296,9 @@ func (m *JwtRequirementAndList) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -3007,7 +3329,7 @@ func (m *RequirementRule) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3035,7 +3357,7 @@ func (m *RequirementRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3044,6 +3366,9 @@ func (m *RequirementRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3068,7 +3393,7 @@ func (m *RequirementRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3077,6 +3402,9 @@ func (m *RequirementRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3094,6 +3422,224 @@ func (m *RequirementRule) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FilterStateRule) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowConfig
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FilterStateRule: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FilterStateRule: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Requires", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Requires == nil {
+				m.Requires = make(map[string]*JwtRequirement)
+			}
+			var mapkey string
+			var mapvalue *JwtRequirement
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowConfig
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowConfig
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthConfig
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthConfig
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowConfig
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthConfig
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthConfig
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &JwtRequirement{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipConfig(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthConfig
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Requires[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipConfig(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -3124,7 +3670,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3152,7 +3698,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3161,6 +3707,9 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3181,7 +3730,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					wire |= (uint64(b) & 0x7F) << shift
+					wire |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -3198,7 +3747,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						stringLenmapkey |= (uint64(b) & 0x7F) << shift
+						stringLenmapkey |= uint64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -3208,6 +3757,9 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthConfig
 					}
 					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthConfig
+					}
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
@@ -3224,7 +3776,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						mapmsglen |= (int(b) & 0x7F) << shift
+						mapmsglen |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -3233,7 +3785,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthConfig
 					}
 					postmsgIndex := iNdEx + mapmsglen
-					if mapmsglen < 0 {
+					if postmsgIndex < 0 {
 						return ErrInvalidLengthConfig
 					}
 					if postmsgIndex > l {
@@ -3275,7 +3827,7 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3284,11 +3836,50 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthConfig
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
 			m.Rules = append(m.Rules, &RequirementRule{})
 			if err := m.Rules[len(m.Rules)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FilterStateRules", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.FilterStateRules == nil {
+				m.FilterStateRules = &FilterStateRule{}
+			}
+			if err := m.FilterStateRules.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3299,6 +3890,9 @@ func (m *JwtAuthentication) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -3368,8 +3962,11 @@ func skipConfig(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthConfig
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthConfig
 			}
 			return iNdEx, nil
@@ -3400,6 +3997,9 @@ func skipConfig(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthConfig
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -3418,73 +4018,3 @@ var (
 	ErrInvalidLengthConfig = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowConfig   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/config/filter/http/jwt_authn/v2alpha/config.proto", fileDescriptor_config_460934e04afde9a5)
-}
-
-var fileDescriptor_config_460934e04afde9a5 = []byte{
-	// 985 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0x4f, 0x6f, 0x1b, 0x45,
-	0x14, 0xcf, 0xda, 0x71, 0x13, 0xbf, 0x4d, 0xd2, 0x76, 0x48, 0xd2, 0x25, 0xb4, 0xc6, 0x35, 0x42,
-	0x8a, 0x38, 0xec, 0x4a, 0x86, 0xd2, 0xaa, 0x48, 0x28, 0xb6, 0x5a, 0x64, 0xac, 0x9a, 0x98, 0x41,
-	0xfc, 0xbd, 0xac, 0x26, 0xbb, 0xe3, 0x78, 0x92, 0xf5, 0xce, 0x32, 0x3b, 0xeb, 0xed, 0x5e, 0xf9,
-	0x73, 0xe1, 0xc8, 0xd7, 0xe0, 0x0b, 0x20, 0x4e, 0x3d, 0xc2, 0x8d, 0x8f, 0x80, 0xc2, 0xa9, 0xdf,
-	0x02, 0xed, 0xec, 0xac, 0x1d, 0x37, 0x06, 0xe1, 0x22, 0x71, 0xb1, 0x66, 0xde, 0x7b, 0xbf, 0xdf,
-	0x9b, 0xf9, 0xf9, 0x37, 0x6f, 0xe1, 0x3e, 0x0d, 0xa7, 0x3c, 0x73, 0x3c, 0x1e, 0x8e, 0xd8, 0xa9,
-	0x33, 0x62, 0x81, 0xa4, 0xc2, 0x19, 0x4b, 0x19, 0x39, 0x67, 0xa9, 0x74, 0x49, 0x22, 0xc7, 0xa1,
-	0x33, 0x6d, 0x93, 0x20, 0x1a, 0x13, 0x5d, 0x64, 0x47, 0x82, 0x4b, 0x8e, 0xde, 0x52, 0x40, 0x5b,
-	0xc7, 0x0a, 0xa0, 0x9d, 0x03, 0xed, 0x19, 0xd0, 0xd6, 0xc0, 0x83, 0xdb, 0x45, 0x13, 0x12, 0x31,
-	0x67, 0xda, 0x76, 0x3c, 0x2e, 0xa8, 0x73, 0x42, 0x62, 0x5a, 0x30, 0x1d, 0x34, 0xaf, 0x66, 0x73,
-	0x1e, 0x37, 0x11, 0x4c, 0x57, 0x34, 0x16, 0x2a, 0x04, 0x4f, 0x24, 0x2d, 0x7e, 0xcb, 0xfc, 0x29,
-	0xe7, 0xa7, 0x01, 0x75, 0xd4, 0xee, 0x24, 0x19, 0x39, 0x7e, 0x22, 0x88, 0x64, 0x3c, 0xd4, 0xf9,
-	0xd7, 0x5e, 0xcc, 0xd3, 0x49, 0x24, 0xb3, 0xbf, 0x03, 0xa7, 0x82, 0x44, 0x11, 0x15, 0xb1, 0xce,
-	0xdf, 0x9a, 0x92, 0x80, 0xf9, 0x44, 0x52, 0xa7, 0x5c, 0x14, 0x89, 0xd6, 0x77, 0xeb, 0x60, 0xf6,
-	0x53, 0x39, 0x14, 0x7c, 0xca, 0x7c, 0x2a, 0xd0, 0x5d, 0xb8, 0xc6, 0xe2, 0x38, 0xa1, 0xc2, 0x32,
-	0x9a, 0xc6, 0x61, 0xbd, 0x5b, 0xff, 0xe5, 0xf9, 0xb3, 0xea, 0xba, 0xa8, 0x34, 0x0d, 0xac, 0x13,
-	0xe8, 0x36, 0xd4, 0x49, 0xe2, 0x33, 0x1a, 0x7a, 0x34, 0xb6, 0x2a, 0xcd, 0xea, 0x61, 0x1d, 0xcf,
-	0x03, 0xe8, 0x4b, 0x30, 0x05, 0x9d, 0x70, 0x49, 0xdd, 0xb3, 0xf4, 0x3c, 0xb6, 0xaa, 0x4d, 0xe3,
-	0xd0, 0x6c, 0xbf, 0x6b, 0xff, 0x7b, 0xa1, 0x6d, 0xac, 0xe0, 0xfd, 0xf4, 0x3c, 0xee, 0xad, 0x61,
-	0x10, 0xb3, 0x1d, 0x7a, 0x1f, 0x20, 0xe0, 0x1e, 0x09, 0x0a, 0xe6, 0x75, 0xc5, 0x7c, 0x47, 0x33,
-	0x93, 0x88, 0xd9, 0xd3, 0xb6, 0x9d, 0x0b, 0x6f, 0x3f, 0x22, 0x92, 0x7c, 0xc2, 0x13, 0xe1, 0xd1,
-	0xde, 0x1a, 0xae, 0x2b, 0x88, 0xc2, 0x5b, 0xb0, 0x31, 0xe2, 0x22, 0x25, 0xc2, 0xb7, 0x6a, 0x4d,
-	0xe3, 0x70, 0x13, 0x97, 0x5b, 0xf4, 0x05, 0x6c, 0x8d, 0x04, 0x9f, 0xb8, 0x63, 0x4a, 0x7c, 0x2a,
-	0x62, 0xeb, 0x5a, 0xb3, 0x7a, 0x68, 0xb6, 0xef, 0xad, 0x72, 0xea, 0x7e, 0x2a, 0x7b, 0x0a, 0x8d,
-	0xcd, 0x9c, 0xaa, 0x58, 0xc7, 0xe8, 0x75, 0x50, 0x5b, 0x37, 0x22, 0x82, 0x4c, 0x62, 0x6b, 0x43,
-	0xc9, 0x05, 0x79, 0x68, 0xa8, 0x22, 0xe8, 0x1d, 0xd8, 0xd7, 0xa7, 0x70, 0x23, 0x92, 0x05, 0x9c,
-	0xf8, 0xfa, 0x14, 0xd6, 0x66, 0xfe, 0x07, 0xe0, 0x5d, 0x9d, 0x1d, 0x16, 0xc9, 0x82, 0x17, 0xd9,
-	0xf0, 0x4a, 0x59, 0xcd, 0x42, 0x77, 0x42, 0x25, 0xf1, 0x89, 0x24, 0x56, 0x5d, 0x41, 0x6e, 0xea,
-	0xd4, 0x87, 0xe1, 0x40, 0x27, 0xba, 0x0d, 0xd8, 0xcb, 0x45, 0x73, 0x63, 0x25, 0x8b, 0x1b, 0x47,
-	0xd4, 0x63, 0x23, 0x46, 0x05, 0xaa, 0xfd, 0xfc, 0xfc, 0x59, 0xd5, 0x68, 0x7d, 0x6f, 0x00, 0xcc,
-	0x75, 0x47, 0xf7, 0x60, 0xb3, 0x74, 0xaf, 0xf2, 0x81, 0xd9, 0x3e, 0x58, 0xa2, 0x73, 0x4f, 0xca,
-	0xe8, 0x53, 0xc1, 0xf0, 0xc6, 0xb8, 0x58, 0xa0, 0x23, 0xd8, 0xf1, 0x88, 0x37, 0xa6, 0x6e, 0x69,
-	0x5d, 0xab, 0xa2, 0xc0, 0xaf, 0xda, 0x85, 0x3d, 0xed, 0xd2, 0x9e, 0xf6, 0x23, 0x5d, 0x80, 0xb7,
-	0x15, 0xa0, 0xdc, 0xb6, 0x06, 0x50, 0x9f, 0x09, 0x89, 0xee, 0xc0, 0x7a, 0x48, 0x26, 0xf4, 0xaa,
-	0x13, 0x55, 0x18, 0xdd, 0x85, 0xad, 0x29, 0x09, 0x12, 0xea, 0x46, 0x82, 0x8e, 0xd8, 0x53, 0xd5,
-	0xab, 0x8e, 0x4d, 0x15, 0x1b, 0xaa, 0x50, 0xeb, 0x2b, 0xd8, 0x2b, 0x9d, 0xfd, 0x39, 0x93, 0xe3,
-	0xce, 0xcc, 0xa5, 0x6f, 0xc0, 0x76, 0xa4, 0x13, 0xee, 0xbc, 0x07, 0xde, 0x2a, 0x83, 0x1f, 0xe5,
-	0x0d, 0xfe, 0xd1, 0xe8, 0xad, 0x3f, 0xab, 0xb0, 0xd3, 0x4f, 0x25, 0xa6, 0x5f, 0x27, 0x4c, 0xd0,
-	0x09, 0x0d, 0x25, 0x7a, 0x73, 0x29, 0x6b, 0x6f, 0xed, 0x05, 0xde, 0x0c, 0xf6, 0x67, 0x65, 0x24,
-	0xf4, 0xdd, 0xcb, 0x4d, 0x72, 0xb9, 0x3a, 0xab, 0xf8, 0x6e, 0xe9, 0xfd, 0x7a, 0x6b, 0x78, 0xb7,
-	0x6c, 0xd1, 0x09, 0xfd, 0xf9, 0xbd, 0x29, 0x6c, 0x89, 0xe2, 0xc0, 0xb1, 0x4b, 0xc2, 0x4c, 0x3f,
-	0xcf, 0xa3, 0x15, 0x8d, 0x7e, 0xe9, 0xce, 0xc7, 0xe2, 0x09, 0x8b, 0x65, 0x6f, 0x0d, 0x9b, 0x25,
-	0x6f, 0x27, 0xcc, 0xd0, 0xe8, 0x72, 0x9b, 0x20, 0xd0, 0x6f, 0xb5, 0xf3, 0xf2, 0x6d, 0x3a, 0xa1,
-	0x7f, 0xa5, 0x4f, 0x10, 0xa0, 0x63, 0xb8, 0x45, 0x82, 0x80, 0xa7, 0xee, 0x84, 0xc5, 0x31, 0x0b,
-	0x4f, 0x5d, 0x2e, 0xdc, 0x11, 0x61, 0x01, 0x2d, 0x5e, 0xb8, 0xd9, 0xde, 0xbf, 0xe2, 0xbc, 0xc7,
-	0xf9, 0xd4, 0xcc, 0xf5, 0x51, 0xc0, 0x41, 0x81, 0x3b, 0x16, 0x1f, 0x28, 0x54, 0xf7, 0x3a, 0x6c,
-	0xcf, 0x0e, 0x2e, 0xb3, 0x88, 0xb6, 0xbe, 0x31, 0x60, 0x77, 0xd9, 0x8d, 0xd1, 0xd9, 0xec, 0x8a,
-	0x79, 0x30, 0xb6, 0x0c, 0x35, 0x32, 0x1e, 0xbe, 0xfc, 0x15, 0xbb, 0x90, 0x1b, 0xbc, 0xf6, 0xa3,
-	0x51, 0xd9, 0xac, 0xe0, 0x05, 0xee, 0xd6, 0xb7, 0x06, 0xec, 0x2d, 0xd5, 0xe3, 0x7f, 0x3d, 0xc5,
-	0x4f, 0x06, 0x5c, 0xbf, 0x54, 0x89, 0x93, 0x80, 0xa2, 0x23, 0xa8, 0x4d, 0x88, 0xf4, 0xc6, 0x7a,
-	0x4a, 0x34, 0x16, 0xa7, 0x44, 0xf1, 0x79, 0xc3, 0xf9, 0xef, 0x20, 0xaf, 0xd2, 0xe4, 0x3f, 0x18,
-	0x95, 0x1b, 0x06, 0x2e, 0x80, 0xe8, 0x33, 0xd8, 0x2c, 0x15, 0xd7, 0xf6, 0xff, 0x0f, 0xa7, 0xc7,
-	0x33, 0xae, 0xd6, 0x6f, 0x15, 0xb8, 0xd9, 0x4f, 0x65, 0x27, 0x91, 0x63, 0x1a, 0x4a, 0xe6, 0xa9,
-	0xf9, 0x82, 0xce, 0xa0, 0x5e, 0xbe, 0x8b, 0x52, 0xac, 0x27, 0x2b, 0xb6, 0x5b, 0x64, 0x9c, 0xbd,
-	0xbf, 0xf8, 0x71, 0x28, 0x45, 0x86, 0xe7, 0xf4, 0xe8, 0x63, 0xa8, 0x89, 0x24, 0xd0, 0xa3, 0xc3,
-	0x6c, 0xbf, 0xb7, 0xda, 0x37, 0x70, 0x41, 0x67, 0x5c, 0x30, 0x1d, 0x24, 0xb0, 0xb3, 0xd8, 0x0f,
-	0xdd, 0x80, 0xea, 0x39, 0xcd, 0xf4, 0xf8, 0xca, 0x97, 0x68, 0x00, 0x35, 0x35, 0x02, 0xb5, 0x9a,
-	0xf7, 0x57, 0xbc, 0x5e, 0xc9, 0x8f, 0x0b, 0x96, 0x87, 0x95, 0x07, 0x46, 0xb7, 0xf7, 0xeb, 0x45,
-	0xc3, 0xf8, 0xfd, 0xa2, 0x61, 0xfc, 0x71, 0xd1, 0x30, 0xe0, 0x01, 0xe3, 0x05, 0x67, 0x24, 0xf8,
-	0xd3, 0x6c, 0x05, 0xfa, 0xa1, 0x71, 0x72, 0x4d, 0xbd, 0xc3, 0xb7, 0xff, 0x0a, 0x00, 0x00, 0xff,
-	0xff, 0x21, 0x63, 0x39, 0x1d, 0xb2, 0x09, 0x00, 0x00,
-}

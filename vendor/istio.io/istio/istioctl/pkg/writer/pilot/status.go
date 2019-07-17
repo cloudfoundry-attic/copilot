@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	v2 "istio.io/istio/pilot/pkg/proxy/envoy/v2"
 )
@@ -91,8 +92,15 @@ func statusPrintln(w io.Writer, status *writerStatus) error {
 	listenerSynced := xdsStatus(status.ListenerSent, status.ListenerAcked)
 	routeSynced := xdsStatus(status.RouteSent, status.RouteAcked)
 	endpointSynced := xdsStatus(status.EndpointSent, status.EndpointAcked)
+	version := status.IstioVersion
+	if version == "" {
+		// If we can't find an Istio version (talking to a 1.1 pilot), fallback to the proxy version
+		// This is misleading, as the proxy version isn't always the same as the Istio version,
+		// but it is better than not providing any information.
+		version = status.ProxyVersion + "*"
+	}
 	fmt.Fprintf(w, "%v\t%v\t%v\t%v (%v%%)\t%v\t%v\t%v\n",
-		status.ProxyID, clusterSynced, listenerSynced, endpointSynced, status.EndpointPercent, routeSynced, status.pilot, status.ProxyVersion)
+		status.ProxyID, clusterSynced, listenerSynced, endpointSynced, status.EndpointPercent, routeSynced, status.pilot, version)
 	return nil
 }
 
@@ -103,5 +111,17 @@ func xdsStatus(sent, acked string) string {
 	if sent == acked {
 		return "SYNCED"
 	}
-	return "STALE"
+	timeSent, _ := parseTime(sent)
+	timeAcked, _ := parseTime(acked)
+	if timeAcked.Equal(time.Time{}) {
+		return "STALE (Never Acknowledged)"
+	}
+	timeDiff := timeSent.Sub(timeAcked)
+	return fmt.Sprintf("STALE (%v)", timeDiff.String())
+}
+
+func parseTime(s string) (time.Time, error) {
+	s = strings.Split(s, " m=+")[0]
+	layout := "2006-01-02 15:04:05 +0000 MST"
+	return time.Parse(layout, s)
 }

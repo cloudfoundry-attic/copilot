@@ -3,22 +3,23 @@
 
 package v2
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-import core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-import v21 "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-import _type "github.com/envoyproxy/go-control-plane/envoy/type"
-import _ "github.com/gogo/protobuf/gogoproto"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	fmt "fmt"
+	io "io"
+	math "math"
+	time "time"
 
-import time "time"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	types "github.com/gogo/protobuf/types"
 
-import github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-
-import io "io"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v21 "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	_type "github.com/envoyproxy/go-control-plane/envoy/type"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -54,6 +55,7 @@ var HttpConnectionManager_CodecType_name = map[int32]string{
 	1: "HTTP1",
 	2: "HTTP2",
 }
+
 var HttpConnectionManager_CodecType_value = map[string]int32{
 	"AUTO":  0,
 	"HTTP1": 1,
@@ -63,8 +65,9 @@ var HttpConnectionManager_CodecType_value = map[string]int32{
 func (x HttpConnectionManager_CodecType) String() string {
 	return proto.EnumName(HttpConnectionManager_CodecType_name, int32(x))
 }
+
 func (HttpConnectionManager_CodecType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 0}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 0}
 }
 
 // How to handle the :ref:`config_http_conn_man_headers_x-forwarded-client-cert` (XFCC) HTTP
@@ -95,6 +98,7 @@ var HttpConnectionManager_ForwardClientCertDetails_name = map[int32]string{
 	3: "SANITIZE_SET",
 	4: "ALWAYS_FORWARD_ONLY",
 }
+
 var HttpConnectionManager_ForwardClientCertDetails_value = map[string]int32{
 	"SANITIZE":            0,
 	"FORWARD_ONLY":        1,
@@ -106,8 +110,9 @@ var HttpConnectionManager_ForwardClientCertDetails_value = map[string]int32{
 func (x HttpConnectionManager_ForwardClientCertDetails) String() string {
 	return proto.EnumName(HttpConnectionManager_ForwardClientCertDetails_name, int32(x))
 }
+
 func (HttpConnectionManager_ForwardClientCertDetails) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 1}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 1}
 }
 
 type HttpConnectionManager_Tracing_OperationName int32
@@ -123,6 +128,7 @@ var HttpConnectionManager_Tracing_OperationName_name = map[int32]string{
 	0: "INGRESS",
 	1: "EGRESS",
 }
+
 var HttpConnectionManager_Tracing_OperationName_value = map[string]int32{
 	"INGRESS": 0,
 	"EGRESS":  1,
@@ -131,11 +137,12 @@ var HttpConnectionManager_Tracing_OperationName_value = map[string]int32{
 func (x HttpConnectionManager_Tracing_OperationName) String() string {
 	return proto.EnumName(HttpConnectionManager_Tracing_OperationName_name, int32(x))
 }
+
 func (HttpConnectionManager_Tracing_OperationName) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 0, 0}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 0, 0}
 }
 
-// [#comment:next free field: 29]
+// [#comment:next free field: 33]
 type HttpConnectionManager struct {
 	// Supplies the type of codec that the connection manager should use.
 	CodecType HttpConnectionManager_CodecType `protobuf:"varint,1,opt,name=codec_type,json=codecType,proto3,enum=envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_CodecType" json:"codec_type,omitempty"`
@@ -146,6 +153,7 @@ type HttpConnectionManager struct {
 	// Types that are valid to be assigned to RouteSpecifier:
 	//	*HttpConnectionManager_Rds
 	//	*HttpConnectionManager_RouteConfig
+	//	*HttpConnectionManager_ScopedRoutes
 	RouteSpecifier isHttpConnectionManager_RouteSpecifier `protobuf_oneof:"route_specifier"`
 	// A list of individual HTTP filters that make up the filter chain for
 	// requests made to the connection manager. Order matters as the filters are
@@ -166,6 +174,12 @@ type HttpConnectionManager struct {
 	// An optional override that the connection manager will write to the server
 	// header in responses. If not set, the default is *envoy*.
 	ServerName string `protobuf:"bytes,10,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
+	// The maximum request headers size for incoming connections.
+	// If unconfigured, the default max request headers allowed is 60 KiB.
+	// Requests that exceed this limit will receive a 431 response.
+	// The max configurable limit is 96 KiB, based on current implementation
+	// constraints.
+	MaxRequestHeadersKb *types.UInt32Value `protobuf:"bytes,29,opt,name=max_request_headers_kb,json=maxRequestHeadersKb,proto3" json:"max_request_headers_kb,omitempty"`
 	// The idle timeout for connections managed by the connection manager. The
 	// idle timeout is defined as the period in which there are no active
 	// requests. If not set, there is no idle timeout. When the idle timeout is
@@ -217,10 +231,16 @@ type HttpConnectionManager struct {
 	DrainTimeout *time.Duration `protobuf:"bytes,12,opt,name=drain_timeout,json=drainTimeout,proto3,stdduration" json:"drain_timeout,omitempty"`
 	// The delayed close timeout is for downstream connections managed by the HTTP connection manager.
 	// It is defined as a grace period after connection close processing has been locally initiated
-	// during which Envoy will flush the write buffers for the connection and await the peer to close
-	// (i.e., a TCP FIN/RST is received by Envoy from the downstream connection).
+	// during which Envoy will wait for the peer to close (i.e., a TCP FIN/RST is received by Envoy
+	// from the downstream connection) prior to Envoy closing the socket associated with that
+	// connection.
+	// NOTE: This timeout is enforced even when the socket associated with the downstream connection
+	// is pending a flush of the write buffer. However, any progress made writing data to the socket
+	// will restart the timer associated with this timeout. This means that the total grace period for
+	// a socket in this state will be
+	// <total_time_waiting_for_write_buffer_flushes>+<delayed_close_timeout>.
 	//
-	// Delaying Envoy's connection close and giving the peer the opportunity to initate the close
+	// Delaying Envoy's connection close and giving the peer the opportunity to initiate the close
 	// sequence mitigates a race condition that exists when downstream clients do not drain/process
 	// data in a connection's receive buffer after a remote close has been detected via a socket
 	// write(). This race leads to such clients failing to process the response code sent by Envoy,
@@ -230,8 +250,15 @@ type HttpConnectionManager struct {
 	//
 	// The default timeout is 1000 ms if this option is not specified.
 	//
-	// A value of 0 will completely disable delayed close processing, and the downstream connection's
-	// socket will be closed immediately after the write flush is completed.
+	// .. NOTE::
+	//    To be useful in avoiding the race condition described above, this timeout must be set
+	//    to *at least* <max round trip time expected between clients and Envoy>+<100ms to account for
+	//    a reasonsable "worst" case processing time for a full iteration of Envoy's event loop>.
+	//
+	// .. WARNING::
+	//    A value of 0 will completely disable delayed close processing. When disabled, the downstream
+	//    connection's socket will be closed immediately after the write flush is completed or will
+	//    never close if the write flush does not complete.
 	DelayedCloseTimeout *time.Duration `protobuf:"bytes,26,opt,name=delayed_close_timeout,json=delayedCloseTimeout,proto3,stdduration" json:"delayed_close_timeout,omitempty"`
 	// Configuration for :ref:`HTTP access logs <arch_overview_access_logs>`
 	// emitted by the connection manager.
@@ -272,6 +299,11 @@ type HttpConnectionManager struct {
 	// true. Generating a random UUID4 is expensive so in high throughput scenarios where this feature
 	// is not desired it can be disabled.
 	GenerateRequestId *types.BoolValue `protobuf:"bytes,15,opt,name=generate_request_id,json=generateRequestId,proto3" json:"generate_request_id,omitempty"`
+	// Whether the connection manager will keep the :ref:`x-request-id
+	// <config_http_conn_man_headers_x-request-id>` header if passed for a request that is edge
+	// (Edge request is the request from external clients to front Envoy) and not reset it, which
+	// is the current Envoy behaviour. This defaults to false.
+	PreserveExternalRequestId bool `protobuf:"varint,32,opt,name=preserve_external_request_id,json=preserveExternalRequestId,proto3" json:"preserve_external_request_id,omitempty"`
 	// How to handle the :ref:`config_http_conn_man_headers_x-forwarded-client-cert` (XFCC) HTTP
 	// header.
 	ForwardClientCertDetails HttpConnectionManager_ForwardClientCertDetails `protobuf:"varint,16,opt,name=forward_client_cert_details,json=forwardClientCertDetails,proto3,enum=envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_ForwardClientCertDetails" json:"forward_client_cert_details,omitempty"`
@@ -300,26 +332,31 @@ type HttpConnectionManager struct {
 	// :ref:`http_connection_manager.represent_ipv4_remote_address_as_ipv4_mapped_ipv6
 	// <config_http_conn_man_runtime_represent_ipv4_remote_address_as_ipv4_mapped_ipv6>` for runtime
 	// control.
+	// [#not-implemented-hide:]
 	RepresentIpv4RemoteAddressAsIpv4MappedIpv6 bool                                   `protobuf:"varint,20,opt,name=represent_ipv4_remote_address_as_ipv4_mapped_ipv6,json=representIpv4RemoteAddressAsIpv4MappedIpv6,proto3" json:"represent_ipv4_remote_address_as_ipv4_mapped_ipv6,omitempty"`
 	UpgradeConfigs                             []*HttpConnectionManager_UpgradeConfig `protobuf:"bytes,23,rep,name=upgrade_configs,json=upgradeConfigs,proto3" json:"upgrade_configs,omitempty"`
-	// If true, the order of encoder filters will be reversed to that of filters
-	// configured in the HTTP filter chain. Otherwise, it will keep the existing
-	// order.
-	// Note: this is a bug fix for Envoy, which is designed to have the reversed
-	// order of encode filters to that of decode ones, (see
-	// https://github.com/envoyproxy/envoy/issues/4599 for details). When we remove this field, envoy
-	// will have the same behavior when it sets true.
-	BugfixReverseEncodeOrder *types.BoolValue `protobuf:"bytes,27,opt,name=bugfix_reverse_encode_order,json=bugfixReverseEncodeOrder,proto3" json:"bugfix_reverse_encode_order,omitempty"` // Deprecated: Do not use.
-	XXX_NoUnkeyedLiteral     struct{}         `json:"-"`
-	XXX_unrecognized         []byte           `json:"-"`
-	XXX_sizecache            int32            `json:"-"`
+	// Should paths be normalized according to RFC 3986 before any processing of
+	// requests by HTTP filters or routing? This affects the upstream *:path* header
+	// as well. For paths that fail this check, Envoy will respond with 400 to
+	// paths that are malformed. This defaults to false currently but will default
+	// true in the future. When not specified, this value may be overridden by the
+	// runtime variable
+	// :ref:`http_connection_manager.normalize_path<config_http_conn_man_runtime_normalize_path>`.
+	// See `Normalization and Comparison <https://tools.ietf.org/html/rfc3986#section-6>`
+	// for details of normalization.
+	// Note that Envoy does not perform
+	// `case normalization <https://tools.ietf.org/html/rfc3986#section-6.2.2.1>`
+	NormalizePath        *types.BoolValue `protobuf:"bytes,30,opt,name=normalize_path,json=normalizePath,proto3" json:"normalize_path,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *HttpConnectionManager) Reset()         { *m = HttpConnectionManager{} }
 func (m *HttpConnectionManager) String() string { return proto.CompactTextString(m) }
 func (*HttpConnectionManager) ProtoMessage()    {}
 func (*HttpConnectionManager) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0}
+	return fileDescriptor_8fe65268985a88f7, []int{0}
 }
 func (m *HttpConnectionManager) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -336,8 +373,8 @@ func (m *HttpConnectionManager) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return b[:n], nil
 	}
 }
-func (dst *HttpConnectionManager) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpConnectionManager.Merge(dst, src)
+func (m *HttpConnectionManager) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpConnectionManager.Merge(m, src)
 }
 func (m *HttpConnectionManager) XXX_Size() int {
 	return m.Size()
@@ -360,9 +397,13 @@ type HttpConnectionManager_Rds struct {
 type HttpConnectionManager_RouteConfig struct {
 	RouteConfig *v2.RouteConfiguration `protobuf:"bytes,4,opt,name=route_config,json=routeConfig,proto3,oneof"`
 }
+type HttpConnectionManager_ScopedRoutes struct {
+	ScopedRoutes *ScopedRoutes `protobuf:"bytes,31,opt,name=scoped_routes,json=scopedRoutes,proto3,oneof"`
+}
 
-func (*HttpConnectionManager_Rds) isHttpConnectionManager_RouteSpecifier()         {}
-func (*HttpConnectionManager_RouteConfig) isHttpConnectionManager_RouteSpecifier() {}
+func (*HttpConnectionManager_Rds) isHttpConnectionManager_RouteSpecifier()          {}
+func (*HttpConnectionManager_RouteConfig) isHttpConnectionManager_RouteSpecifier()  {}
+func (*HttpConnectionManager_ScopedRoutes) isHttpConnectionManager_RouteSpecifier() {}
 
 func (m *HttpConnectionManager) GetRouteSpecifier() isHttpConnectionManager_RouteSpecifier {
 	if m != nil {
@@ -395,6 +436,13 @@ func (m *HttpConnectionManager) GetRds() *Rds {
 func (m *HttpConnectionManager) GetRouteConfig() *v2.RouteConfiguration {
 	if x, ok := m.GetRouteSpecifier().(*HttpConnectionManager_RouteConfig); ok {
 		return x.RouteConfig
+	}
+	return nil
+}
+
+func (m *HttpConnectionManager) GetScopedRoutes() *ScopedRoutes {
+	if x, ok := m.GetRouteSpecifier().(*HttpConnectionManager_ScopedRoutes); ok {
+		return x.ScopedRoutes
 	}
 	return nil
 }
@@ -439,6 +487,13 @@ func (m *HttpConnectionManager) GetServerName() string {
 		return m.ServerName
 	}
 	return ""
+}
+
+func (m *HttpConnectionManager) GetMaxRequestHeadersKb() *types.UInt32Value {
+	if m != nil {
+		return m.MaxRequestHeadersKb
+	}
+	return nil
 }
 
 func (m *HttpConnectionManager) GetIdleTimeout() *time.Duration {
@@ -525,6 +580,13 @@ func (m *HttpConnectionManager) GetGenerateRequestId() *types.BoolValue {
 	return nil
 }
 
+func (m *HttpConnectionManager) GetPreserveExternalRequestId() bool {
+	if m != nil {
+		return m.PreserveExternalRequestId
+	}
+	return false
+}
+
 func (m *HttpConnectionManager) GetForwardClientCertDetails() HttpConnectionManager_ForwardClientCertDetails {
 	if m != nil {
 		return m.ForwardClientCertDetails
@@ -560,10 +622,9 @@ func (m *HttpConnectionManager) GetUpgradeConfigs() []*HttpConnectionManager_Upg
 	return nil
 }
 
-// Deprecated: Do not use.
-func (m *HttpConnectionManager) GetBugfixReverseEncodeOrder() *types.BoolValue {
+func (m *HttpConnectionManager) GetNormalizePath() *types.BoolValue {
 	if m != nil {
-		return m.BugfixReverseEncodeOrder
+		return m.NormalizePath
 	}
 	return nil
 }
@@ -573,6 +634,7 @@ func (*HttpConnectionManager) XXX_OneofFuncs() (func(msg proto.Message, b *proto
 	return _HttpConnectionManager_OneofMarshaler, _HttpConnectionManager_OneofUnmarshaler, _HttpConnectionManager_OneofSizer, []interface{}{
 		(*HttpConnectionManager_Rds)(nil),
 		(*HttpConnectionManager_RouteConfig)(nil),
+		(*HttpConnectionManager_ScopedRoutes)(nil),
 	}
 }
 
@@ -588,6 +650,11 @@ func _HttpConnectionManager_OneofMarshaler(msg proto.Message, b *proto.Buffer) e
 	case *HttpConnectionManager_RouteConfig:
 		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.RouteConfig); err != nil {
+			return err
+		}
+	case *HttpConnectionManager_ScopedRoutes:
+		_ = b.EncodeVarint(31<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ScopedRoutes); err != nil {
 			return err
 		}
 	case nil:
@@ -616,6 +683,14 @@ func _HttpConnectionManager_OneofUnmarshaler(msg proto.Message, tag, wire int, b
 		err := b.DecodeMessage(msg)
 		m.RouteSpecifier = &HttpConnectionManager_RouteConfig{msg}
 		return true, err
+	case 31: // route_specifier.scoped_routes
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScopedRoutes)
+		err := b.DecodeMessage(msg)
+		m.RouteSpecifier = &HttpConnectionManager_ScopedRoutes{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -633,6 +708,11 @@ func _HttpConnectionManager_OneofSizer(msg proto.Message) (n int) {
 	case *HttpConnectionManager_RouteConfig:
 		s := proto.Size(x.RouteConfig)
 		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *HttpConnectionManager_ScopedRoutes:
+		s := proto.Size(x.ScopedRoutes)
+		n += 2 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case nil:
@@ -670,17 +750,20 @@ type HttpConnectionManager_Tracing struct {
 	// analog for the runtime variable 'tracing.global_enabled' in the
 	// :ref:`HTTP Connection Manager <config_http_conn_man_runtime>`.
 	// Default: 100%
-	OverallSampling      *_type.Percent `protobuf:"bytes,5,opt,name=overall_sampling,json=overallSampling,proto3" json:"overall_sampling,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	OverallSampling *_type.Percent `protobuf:"bytes,5,opt,name=overall_sampling,json=overallSampling,proto3" json:"overall_sampling,omitempty"`
+	// Whether to annotate spans with additional data. If true, spans will include logs for stream
+	// events.
+	Verbose              bool     `protobuf:"varint,6,opt,name=verbose,proto3" json:"verbose,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *HttpConnectionManager_Tracing) Reset()         { *m = HttpConnectionManager_Tracing{} }
 func (m *HttpConnectionManager_Tracing) String() string { return proto.CompactTextString(m) }
 func (*HttpConnectionManager_Tracing) ProtoMessage()    {}
 func (*HttpConnectionManager_Tracing) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 0}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 0}
 }
 func (m *HttpConnectionManager_Tracing) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -697,8 +780,8 @@ func (m *HttpConnectionManager_Tracing) XXX_Marshal(b []byte, deterministic bool
 		return b[:n], nil
 	}
 }
-func (dst *HttpConnectionManager_Tracing) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpConnectionManager_Tracing.Merge(dst, src)
+func (m *HttpConnectionManager_Tracing) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpConnectionManager_Tracing.Merge(m, src)
 }
 func (m *HttpConnectionManager_Tracing) XXX_Size() int {
 	return m.Size()
@@ -744,6 +827,13 @@ func (m *HttpConnectionManager_Tracing) GetOverallSampling() *_type.Percent {
 	return nil
 }
 
+func (m *HttpConnectionManager_Tracing) GetVerbose() bool {
+	if m != nil {
+		return m.Verbose
+	}
+	return false
+}
+
 type HttpConnectionManager_InternalAddressConfig struct {
 	// Whether unix socket addresses should be considered internal.
 	UnixSockets          bool     `protobuf:"varint,1,opt,name=unix_sockets,json=unixSockets,proto3" json:"unix_sockets,omitempty"`
@@ -760,7 +850,7 @@ func (m *HttpConnectionManager_InternalAddressConfig) String() string {
 }
 func (*HttpConnectionManager_InternalAddressConfig) ProtoMessage() {}
 func (*HttpConnectionManager_InternalAddressConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 1}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 1}
 }
 func (m *HttpConnectionManager_InternalAddressConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -777,8 +867,8 @@ func (m *HttpConnectionManager_InternalAddressConfig) XXX_Marshal(b []byte, dete
 		return b[:n], nil
 	}
 }
-func (dst *HttpConnectionManager_InternalAddressConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpConnectionManager_InternalAddressConfig.Merge(dst, src)
+func (m *HttpConnectionManager_InternalAddressConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpConnectionManager_InternalAddressConfig.Merge(m, src)
 }
 func (m *HttpConnectionManager_InternalAddressConfig) XXX_Size() int {
 	return m.Size()
@@ -796,6 +886,7 @@ func (m *HttpConnectionManager_InternalAddressConfig) GetUnixSockets() bool {
 	return false
 }
 
+// [#comment:next free field: 7]
 type HttpConnectionManager_SetCurrentClientCertDetails struct {
 	// Whether to forward the subject of the client cert. Defaults to false.
 	Subject *types.BoolValue `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
@@ -803,6 +894,11 @@ type HttpConnectionManager_SetCurrentClientCertDetails struct {
 	// XFCC header comma separated from other values with the value Cert="PEM".
 	// Defaults to false.
 	Cert bool `protobuf:"varint,3,opt,name=cert,proto3" json:"cert,omitempty"`
+	// Whether to forward the entire client cert chain (including the leaf cert) in URL encoded PEM
+	// format. This will appear in the XFCC header comma separated from other values with the value
+	// Chain="PEM".
+	// Defaults to false.
+	Chain bool `protobuf:"varint,6,opt,name=chain,proto3" json:"chain,omitempty"`
 	// Whether to forward the DNS type Subject Alternative Names of the client cert.
 	// Defaults to false.
 	Dns bool `protobuf:"varint,4,opt,name=dns,proto3" json:"dns,omitempty"`
@@ -822,7 +918,7 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) String() string {
 }
 func (*HttpConnectionManager_SetCurrentClientCertDetails) ProtoMessage() {}
 func (*HttpConnectionManager_SetCurrentClientCertDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 2}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 2}
 }
 func (m *HttpConnectionManager_SetCurrentClientCertDetails) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -839,8 +935,8 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) XXX_Marshal(b []byte
 		return b[:n], nil
 	}
 }
-func (dst *HttpConnectionManager_SetCurrentClientCertDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpConnectionManager_SetCurrentClientCertDetails.Merge(dst, src)
+func (m *HttpConnectionManager_SetCurrentClientCertDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpConnectionManager_SetCurrentClientCertDetails.Merge(m, src)
 }
 func (m *HttpConnectionManager_SetCurrentClientCertDetails) XXX_Size() int {
 	return m.Size()
@@ -861,6 +957,13 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) GetSubject() *types.
 func (m *HttpConnectionManager_SetCurrentClientCertDetails) GetCert() bool {
 	if m != nil {
 		return m.Cert
+	}
+	return false
+}
+
+func (m *HttpConnectionManager_SetCurrentClientCertDetails) GetChain() bool {
+	if m != nil {
+		return m.Chain
 	}
 	return false
 }
@@ -902,7 +1005,7 @@ type HttpConnectionManager_UpgradeConfig struct {
 	// HTTP connections will be used for this upgrade type.
 	Filters []*HttpFilter `protobuf:"bytes,2,rep,name=filters,proto3" json:"filters,omitempty"`
 	// Determines if upgrades are enabled or disabled by default. Defaults to true.
-	// This can be overriden on a per-route basis with :ref:`cluster
+	// This can be overridden on a per-route basis with :ref:`cluster
 	// <envoy_api_field_route.RouteAction.upgrade_configs>` as documented in the
 	// :ref:`upgrade documentation <arch_overview_websocket>`.
 	Enabled              *types.BoolValue `protobuf:"bytes,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
@@ -915,7 +1018,7 @@ func (m *HttpConnectionManager_UpgradeConfig) Reset()         { *m = HttpConnect
 func (m *HttpConnectionManager_UpgradeConfig) String() string { return proto.CompactTextString(m) }
 func (*HttpConnectionManager_UpgradeConfig) ProtoMessage()    {}
 func (*HttpConnectionManager_UpgradeConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{0, 3}
+	return fileDescriptor_8fe65268985a88f7, []int{0, 3}
 }
 func (m *HttpConnectionManager_UpgradeConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -932,8 +1035,8 @@ func (m *HttpConnectionManager_UpgradeConfig) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (dst *HttpConnectionManager_UpgradeConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpConnectionManager_UpgradeConfig.Merge(dst, src)
+func (m *HttpConnectionManager_UpgradeConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpConnectionManager_UpgradeConfig.Merge(m, src)
 }
 func (m *HttpConnectionManager_UpgradeConfig) XXX_Size() int {
 	return m.Size()
@@ -982,7 +1085,7 @@ func (m *Rds) Reset()         { *m = Rds{} }
 func (m *Rds) String() string { return proto.CompactTextString(m) }
 func (*Rds) ProtoMessage()    {}
 func (*Rds) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{1}
+	return fileDescriptor_8fe65268985a88f7, []int{1}
 }
 func (m *Rds) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -999,8 +1102,8 @@ func (m *Rds) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Rds) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Rds.Merge(dst, src)
+func (m *Rds) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Rds.Merge(m, src)
 }
 func (m *Rds) XXX_Size() int {
 	return m.Size()
@@ -1025,26 +1128,733 @@ func (m *Rds) GetRouteConfigName() string {
 	return ""
 }
 
+// This message is used to work around the limitations with 'oneof' and repeated fields.
+type ScopedRouteConfigurationsList struct {
+	ScopedRouteConfigurations []*v2.ScopedRouteConfiguration `protobuf:"bytes,1,rep,name=scoped_route_configurations,json=scopedRouteConfigurations,proto3" json:"scoped_route_configurations,omitempty"`
+	XXX_NoUnkeyedLiteral      struct{}                       `json:"-"`
+	XXX_unrecognized          []byte                         `json:"-"`
+	XXX_sizecache             int32                          `json:"-"`
+}
+
+func (m *ScopedRouteConfigurationsList) Reset()         { *m = ScopedRouteConfigurationsList{} }
+func (m *ScopedRouteConfigurationsList) String() string { return proto.CompactTextString(m) }
+func (*ScopedRouteConfigurationsList) ProtoMessage()    {}
+func (*ScopedRouteConfigurationsList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{2}
+}
+func (m *ScopedRouteConfigurationsList) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRouteConfigurationsList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRouteConfigurationsList.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRouteConfigurationsList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRouteConfigurationsList.Merge(m, src)
+}
+func (m *ScopedRouteConfigurationsList) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRouteConfigurationsList) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRouteConfigurationsList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRouteConfigurationsList proto.InternalMessageInfo
+
+func (m *ScopedRouteConfigurationsList) GetScopedRouteConfigurations() []*v2.ScopedRouteConfiguration {
+	if m != nil {
+		return m.ScopedRouteConfigurations
+	}
+	return nil
+}
+
+type ScopedRoutes struct {
+	// The name assigned to the scoped routing configuration.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The algorithm to use for constructing a scope key for each request.
+	ScopeKeyBuilder *ScopedRoutes_ScopeKeyBuilder `protobuf:"bytes,2,opt,name=scope_key_builder,json=scopeKeyBuilder,proto3" json:"scope_key_builder,omitempty"`
+	// Configuration source specifier for RDS.
+	// This config source is used to subscribe to RouteConfiguration resources specified in
+	// ScopedRouteConfiguration messages.
+	RdsConfigSource core.ConfigSource `protobuf:"bytes,3,opt,name=rds_config_source,json=rdsConfigSource,proto3" json:"rds_config_source"`
+	// Types that are valid to be assigned to ConfigSpecifier:
+	//	*ScopedRoutes_ScopedRouteConfigurationsList
+	//	*ScopedRoutes_ScopedRds
+	ConfigSpecifier      isScopedRoutes_ConfigSpecifier `protobuf_oneof:"config_specifier"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
+}
+
+func (m *ScopedRoutes) Reset()         { *m = ScopedRoutes{} }
+func (m *ScopedRoutes) String() string { return proto.CompactTextString(m) }
+func (*ScopedRoutes) ProtoMessage()    {}
+func (*ScopedRoutes) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{3}
+}
+func (m *ScopedRoutes) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRoutes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRoutes.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRoutes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRoutes.Merge(m, src)
+}
+func (m *ScopedRoutes) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRoutes) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRoutes.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRoutes proto.InternalMessageInfo
+
+type isScopedRoutes_ConfigSpecifier interface {
+	isScopedRoutes_ConfigSpecifier()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ScopedRoutes_ScopedRouteConfigurationsList struct {
+	ScopedRouteConfigurationsList *ScopedRouteConfigurationsList `protobuf:"bytes,4,opt,name=scoped_route_configurations_list,json=scopedRouteConfigurationsList,proto3,oneof"`
+}
+type ScopedRoutes_ScopedRds struct {
+	ScopedRds *ScopedRds `protobuf:"bytes,5,opt,name=scoped_rds,json=scopedRds,proto3,oneof"`
+}
+
+func (*ScopedRoutes_ScopedRouteConfigurationsList) isScopedRoutes_ConfigSpecifier() {}
+func (*ScopedRoutes_ScopedRds) isScopedRoutes_ConfigSpecifier()                     {}
+
+func (m *ScopedRoutes) GetConfigSpecifier() isScopedRoutes_ConfigSpecifier {
+	if m != nil {
+		return m.ConfigSpecifier
+	}
+	return nil
+}
+
+func (m *ScopedRoutes) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ScopedRoutes) GetScopeKeyBuilder() *ScopedRoutes_ScopeKeyBuilder {
+	if m != nil {
+		return m.ScopeKeyBuilder
+	}
+	return nil
+}
+
+func (m *ScopedRoutes) GetRdsConfigSource() core.ConfigSource {
+	if m != nil {
+		return m.RdsConfigSource
+	}
+	return core.ConfigSource{}
+}
+
+func (m *ScopedRoutes) GetScopedRouteConfigurationsList() *ScopedRouteConfigurationsList {
+	if x, ok := m.GetConfigSpecifier().(*ScopedRoutes_ScopedRouteConfigurationsList); ok {
+		return x.ScopedRouteConfigurationsList
+	}
+	return nil
+}
+
+func (m *ScopedRoutes) GetScopedRds() *ScopedRds {
+	if x, ok := m.GetConfigSpecifier().(*ScopedRoutes_ScopedRds); ok {
+		return x.ScopedRds
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ScopedRoutes) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ScopedRoutes_OneofMarshaler, _ScopedRoutes_OneofUnmarshaler, _ScopedRoutes_OneofSizer, []interface{}{
+		(*ScopedRoutes_ScopedRouteConfigurationsList)(nil),
+		(*ScopedRoutes_ScopedRds)(nil),
+	}
+}
+
+func _ScopedRoutes_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ScopedRoutes)
+	// config_specifier
+	switch x := m.ConfigSpecifier.(type) {
+	case *ScopedRoutes_ScopedRouteConfigurationsList:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ScopedRouteConfigurationsList); err != nil {
+			return err
+		}
+	case *ScopedRoutes_ScopedRds:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ScopedRds); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ScopedRoutes.ConfigSpecifier has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ScopedRoutes_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ScopedRoutes)
+	switch tag {
+	case 4: // config_specifier.scoped_route_configurations_list
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScopedRouteConfigurationsList)
+		err := b.DecodeMessage(msg)
+		m.ConfigSpecifier = &ScopedRoutes_ScopedRouteConfigurationsList{msg}
+		return true, err
+	case 5: // config_specifier.scoped_rds
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScopedRds)
+		err := b.DecodeMessage(msg)
+		m.ConfigSpecifier = &ScopedRoutes_ScopedRds{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ScopedRoutes_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ScopedRoutes)
+	// config_specifier
+	switch x := m.ConfigSpecifier.(type) {
+	case *ScopedRoutes_ScopedRouteConfigurationsList:
+		s := proto.Size(x.ScopedRouteConfigurationsList)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ScopedRoutes_ScopedRds:
+		s := proto.Size(x.ScopedRds)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// Specifies the mechanism for constructing "scope keys" based on HTTP request attributes. These
+// keys are matched against a set of :ref:`Key<envoy_api_msg_ScopedRouteConfiguration.Key>`
+// objects assembled from :ref:`ScopedRouteConfiguration<envoy_api_msg_ScopedRouteConfiguration>`
+// messages distributed via SRDS (the Scoped Route Discovery Service) or assigned statically via
+// :ref:`scoped_route_configurations_list<envoy_api_field_config.filter.network.http_connection_manager.v2.ScopedRoutes.scoped_route_configurations_list>`.
+//
+// Upon receiving a request's headers, the Router will build a key using the algorithm specified
+// by this message. This key will be used to look up the routing table (i.e., the
+// :ref:`RouteConfiguration<envoy_api_msg_RouteConfiguration>`) to use for the request.
+type ScopedRoutes_ScopeKeyBuilder struct {
+	// The final scope key consists of the ordered union of these fragments.
+	Fragments            []*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder `protobuf:"bytes,1,rep,name=fragments,proto3" json:"fragments,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                        `json:"-"`
+	XXX_unrecognized     []byte                                          `json:"-"`
+	XXX_sizecache        int32                                           `json:"-"`
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder) Reset()         { *m = ScopedRoutes_ScopeKeyBuilder{} }
+func (m *ScopedRoutes_ScopeKeyBuilder) String() string { return proto.CompactTextString(m) }
+func (*ScopedRoutes_ScopeKeyBuilder) ProtoMessage()    {}
+func (*ScopedRoutes_ScopeKeyBuilder) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{3, 0}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder.Merge(m, src)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder proto.InternalMessageInfo
+
+func (m *ScopedRoutes_ScopeKeyBuilder) GetFragments() []*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder {
+	if m != nil {
+		return m.Fragments
+	}
+	return nil
+}
+
+// Specifies the mechanism for constructing key fragments which are composed into scope keys.
+type ScopedRoutes_ScopeKeyBuilder_FragmentBuilder struct {
+	// Types that are valid to be assigned to Type:
+	//	*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_
+	Type                 isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_Type `protobuf_oneof:"type"`
+	XXX_NoUnkeyedLiteral struct{}                                            `json:"-"`
+	XXX_unrecognized     []byte                                              `json:"-"`
+	XXX_sizecache        int32                                               `json:"-"`
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) Reset() {
+	*m = ScopedRoutes_ScopeKeyBuilder_FragmentBuilder{}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) String() string {
+	return proto.CompactTextString(m)
+}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) ProtoMessage() {}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{3, 0, 0}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder.Merge(m, src)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder proto.InternalMessageInfo
+
+type isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_Type interface {
+	isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_Type()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ struct {
+	HeaderValueExtractor *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor `protobuf:"bytes,1,opt,name=header_value_extractor,json=headerValueExtractor,proto3,oneof"`
+}
+
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_) isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_Type() {
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) GetType() isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_Type {
+	if m != nil {
+		return m.Type
+	}
+	return nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) GetHeaderValueExtractor() *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor {
+	if x, ok := m.GetType().(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_); ok {
+		return x.HeaderValueExtractor
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_OneofMarshaler, _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_OneofUnmarshaler, _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_OneofSizer, []interface{}{
+		(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_)(nil),
+	}
+}
+
+func _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder)
+	// type
+	switch x := m.Type.(type) {
+	case *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HeaderValueExtractor); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ScopedRoutes_ScopeKeyBuilder_FragmentBuilder.Type has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder)
+	switch tag {
+	case 1: // type.header_value_extractor
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor)
+		err := b.DecodeMessage(msg)
+		m.Type = &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder)
+	// type
+	switch x := m.Type.(type) {
+	case *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_:
+		s := proto.Size(x.HeaderValueExtractor)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// Specifies how the value of a header should be extracted.
+// The following example maps the structure of a header to the fields in this message.
+//
+// .. code::
+//
+//              <0> <1>   <-- index
+//    X-Header: a=b;c=d
+//    |         || |
+//    |         || \----> <element_separator>
+//    |         ||
+//    |         |\----> <element.separator>
+//    |         |
+//    |         \----> <element.key>
+//    |
+//    \----> <name>
+//
+//    Each 'a=b' key-value pair constitutes an 'element' of the header field.
+type ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor struct {
+	// The name of the header field to extract the value from.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The element separator (e.g., ';' separates 'a;b;c;d').
+	// Default: empty string. This causes the entirety of the header field to be extracted.
+	// If this field is set to an empty string and 'index' is used in the oneof below, 'index'
+	// must be set to 0.
+	ElementSeparator string `protobuf:"bytes,2,opt,name=element_separator,json=elementSeparator,proto3" json:"element_separator,omitempty"`
+	// Types that are valid to be assigned to ExtractType:
+	//	*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index
+	//	*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element
+	ExtractType          isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ExtractType `protobuf_oneof:"extract_type"`
+	XXX_NoUnkeyedLiteral struct{}                                                                        `json:"-"`
+	XXX_unrecognized     []byte                                                                          `json:"-"`
+	XXX_sizecache        int32                                                                           `json:"-"`
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) Reset() {
+	*m = ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor{}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) String() string {
+	return proto.CompactTextString(m)
+}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) ProtoMessage() {}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{3, 0, 0, 0}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor.Merge(m, src)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor proto.InternalMessageInfo
+
+type isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ExtractType interface {
+	isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ExtractType()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index struct {
+	Index uint32 `protobuf:"varint,3,opt,name=index,proto3,oneof"`
+}
+type ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element struct {
+	Element *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement `protobuf:"bytes,4,opt,name=element,proto3,oneof"`
+}
+
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index) isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ExtractType() {
+}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element) isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ExtractType() {
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) GetExtractType() isScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_ExtractType {
+	if m != nil {
+		return m.ExtractType
+	}
+	return nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) GetElementSeparator() string {
+	if m != nil {
+		return m.ElementSeparator
+	}
+	return ""
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) GetIndex() uint32 {
+	if x, ok := m.GetExtractType().(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index); ok {
+		return x.Index
+	}
+	return 0
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) GetElement() *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement {
+	if x, ok := m.GetExtractType().(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element); ok {
+		return x.Element
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_OneofMarshaler, _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_OneofUnmarshaler, _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_OneofSizer, []interface{}{
+		(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index)(nil),
+		(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element)(nil),
+	}
+}
+
+func _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor)
+	// extract_type
+	switch x := m.ExtractType.(type) {
+	case *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index:
+		_ = b.EncodeVarint(3<<3 | proto.WireVarint)
+		_ = b.EncodeVarint(uint64(x.Index))
+	case *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Element); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor.ExtractType has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor)
+	switch tag {
+	case 3: // extract_type.index
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.ExtractType = &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index{uint32(x)}
+		return true, err
+	case 4: // extract_type.element
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement)
+		err := b.DecodeMessage(msg)
+		m.ExtractType = &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor)
+	// extract_type
+	switch x := m.ExtractType.(type) {
+	case *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(x.Index))
+	case *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element:
+		s := proto.Size(x.Element)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// Specifies a header field's key value pair to match on.
+type ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement struct {
+	// The separator between key and value (e.g., '=' separates 'k=v;...').
+	// If an element is an empty string, the element is ignored.
+	// If an element contains no separator, the whole element is parsed as key and the
+	// fragment value is an empty string.
+	// If there are multiple values for a matched key, the first value is returned.
+	Separator string `protobuf:"bytes,1,opt,name=separator,proto3" json:"separator,omitempty"`
+	// The key to match on.
+	Key                  string   `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) Reset() {
+	*m = ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement{}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) String() string {
+	return proto.CompactTextString(m)
+}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) ProtoMessage() {}
+func (*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{3, 0, 0, 0, 0}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement.Merge(m, src)
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement proto.InternalMessageInfo
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) GetSeparator() string {
+	if m != nil {
+		return m.Separator
+	}
+	return ""
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+type ScopedRds struct {
+	// Configuration source specifier for scoped RDS.
+	ScopedRdsConfigSource core.ConfigSource `protobuf:"bytes,1,opt,name=scoped_rds_config_source,json=scopedRdsConfigSource,proto3" json:"scoped_rds_config_source"`
+	XXX_NoUnkeyedLiteral  struct{}          `json:"-"`
+	XXX_unrecognized      []byte            `json:"-"`
+	XXX_sizecache         int32             `json:"-"`
+}
+
+func (m *ScopedRds) Reset()         { *m = ScopedRds{} }
+func (m *ScopedRds) String() string { return proto.CompactTextString(m) }
+func (*ScopedRds) ProtoMessage()    {}
+func (*ScopedRds) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fe65268985a88f7, []int{4}
+}
+func (m *ScopedRds) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScopedRds) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScopedRds.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScopedRds) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScopedRds.Merge(m, src)
+}
+func (m *ScopedRds) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScopedRds) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScopedRds.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScopedRds proto.InternalMessageInfo
+
+func (m *ScopedRds) GetScopedRdsConfigSource() core.ConfigSource {
+	if m != nil {
+		return m.ScopedRdsConfigSource
+	}
+	return core.ConfigSource{}
+}
+
 type HttpFilter struct {
-	// The name of the filter to instantiate. The name must match a supported
-	// filter. The built-in filters are:
-	//
-	// [#comment:TODO(mattklein123): Auto generate the following list]
-	// * :ref:`envoy.buffer <config_http_filters_buffer>`
-	// * :ref:`envoy.cors <config_http_filters_cors>`
-	// * :ref:`envoy.fault <config_http_filters_fault_injection>`
-	// * :ref:`envoy.gzip <config_http_filters_gzip>`
-	// * :ref:`envoy.http_dynamo_filter <config_http_filters_dynamo>`
-	// * :ref:`envoy.grpc_http1_bridge <config_http_filters_grpc_bridge>`
-	// * :ref:`envoy.grpc_json_transcoder <config_http_filters_grpc_json_transcoder>`
-	// * :ref:`envoy.grpc_web <config_http_filters_grpc_web>`
-	// * :ref:`envoy.health_check <config_http_filters_health_check>`
-	// * :ref:`envoy.header_to_metadata <config_http_filters_header_to_metadata>`
-	// * :ref:`envoy.ip_tagging <config_http_filters_ip_tagging>`
-	// * :ref:`envoy.lua <config_http_filters_lua>`
-	// * :ref:`envoy.rate_limit <config_http_filters_rate_limit>`
-	// * :ref:`envoy.router <config_http_filters_router>`
-	// * :ref:`envoy.squash <config_http_filters_squash>`
+	// The name of the filter to instantiate. The name must match a
+	// :ref:`supported filter <config_http_filters>`.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Filter specific configuration which depends on the filter being instantiated. See the supported
 	// filters for further documentation.
@@ -1062,7 +1872,7 @@ func (m *HttpFilter) Reset()         { *m = HttpFilter{} }
 func (m *HttpFilter) String() string { return proto.CompactTextString(m) }
 func (*HttpFilter) ProtoMessage()    {}
 func (*HttpFilter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_http_connection_manager_911052550b5d3bdd, []int{2}
+	return fileDescriptor_8fe65268985a88f7, []int{5}
 }
 func (m *HttpFilter) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1079,8 +1889,8 @@ func (m *HttpFilter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *HttpFilter) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpFilter.Merge(dst, src)
+func (m *HttpFilter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpFilter.Merge(m, src)
 }
 func (m *HttpFilter) XXX_Size() int {
 	return m.Size()
@@ -1210,17 +2020,171 @@ func _HttpFilter_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
+	proto.RegisterEnum("envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_CodecType", HttpConnectionManager_CodecType_name, HttpConnectionManager_CodecType_value)
+	proto.RegisterEnum("envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_ForwardClientCertDetails", HttpConnectionManager_ForwardClientCertDetails_name, HttpConnectionManager_ForwardClientCertDetails_value)
+	proto.RegisterEnum("envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_Tracing_OperationName", HttpConnectionManager_Tracing_OperationName_name, HttpConnectionManager_Tracing_OperationName_value)
 	proto.RegisterType((*HttpConnectionManager)(nil), "envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager")
 	proto.RegisterType((*HttpConnectionManager_Tracing)(nil), "envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager.Tracing")
 	proto.RegisterType((*HttpConnectionManager_InternalAddressConfig)(nil), "envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager.InternalAddressConfig")
 	proto.RegisterType((*HttpConnectionManager_SetCurrentClientCertDetails)(nil), "envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager.SetCurrentClientCertDetails")
 	proto.RegisterType((*HttpConnectionManager_UpgradeConfig)(nil), "envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager.UpgradeConfig")
 	proto.RegisterType((*Rds)(nil), "envoy.config.filter.network.http_connection_manager.v2.Rds")
+	proto.RegisterType((*ScopedRouteConfigurationsList)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRouteConfigurationsList")
+	proto.RegisterType((*ScopedRoutes)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRoutes")
+	proto.RegisterType((*ScopedRoutes_ScopeKeyBuilder)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRoutes.ScopeKeyBuilder")
+	proto.RegisterType((*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRoutes.ScopeKeyBuilder.FragmentBuilder")
+	proto.RegisterType((*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRoutes.ScopeKeyBuilder.FragmentBuilder.HeaderValueExtractor")
+	proto.RegisterType((*ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRoutes.ScopeKeyBuilder.FragmentBuilder.HeaderValueExtractor.KvElement")
+	proto.RegisterType((*ScopedRds)(nil), "envoy.config.filter.network.http_connection_manager.v2.ScopedRds")
 	proto.RegisterType((*HttpFilter)(nil), "envoy.config.filter.network.http_connection_manager.v2.HttpFilter")
-	proto.RegisterEnum("envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_CodecType", HttpConnectionManager_CodecType_name, HttpConnectionManager_CodecType_value)
-	proto.RegisterEnum("envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_ForwardClientCertDetails", HttpConnectionManager_ForwardClientCertDetails_name, HttpConnectionManager_ForwardClientCertDetails_value)
-	proto.RegisterEnum("envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager_Tracing_OperationName", HttpConnectionManager_Tracing_OperationName_name, HttpConnectionManager_Tracing_OperationName_value)
 }
+
+func init() {
+	proto.RegisterFile("envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto", fileDescriptor_8fe65268985a88f7)
+}
+
+var fileDescriptor_8fe65268985a88f7 = []byte{
+	// 2204 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x58, 0xcb, 0x6f, 0x23, 0x49,
+	0x19, 0x77, 0xc7, 0xce, 0xc4, 0xfe, 0x6c, 0xc7, 0x4e, 0xe5, 0x31, 0x1d, 0x67, 0x26, 0x31, 0x91,
+	0xd8, 0x8d, 0x66, 0x91, 0x33, 0xf1, 0x0e, 0x83, 0x78, 0x08, 0xb0, 0x93, 0x0c, 0xce, 0xcc, 0x6c,
+	0x12, 0xda, 0x0e, 0xc3, 0xee, 0x80, 0x9a, 0x4a, 0x77, 0xd9, 0x69, 0x62, 0x77, 0x37, 0x55, 0xd5,
+	0x9e, 0x84, 0x0b, 0x68, 0xe1, 0x80, 0x10, 0xe2, 0xb0, 0x48, 0x08, 0x89, 0x0b, 0x12, 0x07, 0x6e,
+	0x20, 0x6e, 0x68, 0x4f, 0x7b, 0x42, 0x7b, 0xe4, 0xc6, 0x8d, 0xc7, 0xdc, 0xf6, 0x7f, 0x00, 0x09,
+	0xd5, 0xa3, 0xfd, 0xc8, 0x6b, 0x46, 0xb3, 0x59, 0xf6, 0xe4, 0xea, 0xef, 0xf1, 0xab, 0xaf, 0xea,
+	0x7b, 0x96, 0xa1, 0x45, 0xfc, 0x7e, 0x70, 0xba, 0xee, 0x04, 0x7e, 0xdb, 0xeb, 0xac, 0xb7, 0xbd,
+	0x2e, 0x27, 0x74, 0xdd, 0x27, 0xfc, 0x59, 0x40, 0x8f, 0xd7, 0x8f, 0x38, 0x0f, 0x6d, 0x27, 0xf0,
+	0x7d, 0xe2, 0x70, 0x2f, 0xf0, 0xed, 0x1e, 0xf6, 0x71, 0x87, 0xd0, 0xf5, 0x7e, 0xf5, 0x32, 0x56,
+	0x25, 0xa4, 0x01, 0x0f, 0xd0, 0x7d, 0x89, 0x5a, 0x51, 0xa8, 0x15, 0x85, 0x5a, 0xd1, 0xa8, 0x95,
+	0xcb, 0x54, 0xfb, 0xd5, 0xd2, 0x67, 0x95, 0x35, 0x38, 0xf4, 0xc4, 0x1e, 0x4e, 0x40, 0x89, 0xb6,
+	0xcc, 0x66, 0x41, 0x44, 0x1d, 0xa2, 0xe0, 0x4b, 0xe5, 0xf3, 0x62, 0x92, 0xe1, 0x04, 0x5d, 0x2d,
+	0xb1, 0x30, 0x26, 0x41, 0x5d, 0xa6, 0xe9, 0x37, 0xc7, 0xe8, 0x6c, 0xc8, 0xb8, 0x7b, 0xd1, 0x3d,
+	0x60, 0xc7, 0x21, 0x8c, 0x75, 0x83, 0x8e, 0x10, 0x1e, 0x7c, 0x68, 0x0d, 0x53, 0x69, 0xf0, 0xd3,
+	0x90, 0xac, 0x87, 0x84, 0x3a, 0xc4, 0xe7, 0x9a, 0xb3, 0xd8, 0x09, 0x82, 0x4e, 0x57, 0xdb, 0x74,
+	0x18, 0xb5, 0xd7, 0xb1, 0x7f, 0xaa, 0x59, 0xcb, 0x67, 0x59, 0x6e, 0x44, 0xb1, 0xb8, 0x05, 0xcd,
+	0xbf, 0x75, 0x96, 0xcf, 0x38, 0x8d, 0x1c, 0x7e, 0x99, 0xf6, 0x33, 0x8a, 0xc3, 0x90, 0xd0, 0xc1,
+	0xe9, 0xfa, 0xb8, 0xeb, 0xb9, 0x98, 0x93, 0xf5, 0x78, 0xa1, 0x19, 0x73, 0x9d, 0xa0, 0x13, 0xc8,
+	0xe5, 0xba, 0x58, 0x29, 0xea, 0xea, 0x7f, 0x6f, 0xc3, 0x7c, 0x83, 0xf3, 0x70, 0x73, 0xe0, 0x8b,
+	0xb7, 0x94, 0x2b, 0xd0, 0xbb, 0x06, 0x80, 0x13, 0xb8, 0xc4, 0xb1, 0xc5, 0xf1, 0x4c, 0xa3, 0x6c,
+	0xac, 0x4d, 0x57, 0x9f, 0x54, 0x5e, 0xcd, 0xab, 0x95, 0x0b, 0xf7, 0xa8, 0x6c, 0x0a, 0xfc, 0xd6,
+	0x69, 0x48, 0xea, 0xf0, 0xfe, 0x47, 0x1f, 0x24, 0x27, 0xdf, 0x35, 0x26, 0x8a, 0x86, 0x95, 0x71,
+	0x62, 0x32, 0xba, 0x03, 0x59, 0xc6, 0x31, 0xb7, 0x43, 0x4a, 0xda, 0xde, 0x89, 0x39, 0x51, 0x36,
+	0xd6, 0x32, 0xf5, 0x8c, 0x90, 0x4d, 0xd1, 0x89, 0xb2, 0x61, 0x81, 0xe0, 0xee, 0x4b, 0x26, 0xda,
+	0x83, 0x24, 0x75, 0x99, 0x99, 0x2c, 0x1b, 0x6b, 0xd9, 0xea, 0x97, 0x5f, 0xd5, 0x50, 0xcb, 0x65,
+	0x8d, 0x84, 0x25, 0x90, 0xd0, 0x36, 0xe4, 0x68, 0x10, 0x71, 0x62, 0x2b, 0x10, 0x33, 0x25, 0x91,
+	0xcb, 0x1a, 0x19, 0x87, 0x9e, 0x94, 0x17, 0x12, 0x9b, 0x52, 0x40, 0xbb, 0xb1, 0x91, 0xb0, 0xb2,
+	0x74, 0x48, 0x45, 0xc7, 0x90, 0x67, 0x4e, 0x10, 0x12, 0xd7, 0x96, 0x54, 0x66, 0xae, 0x48, 0x9c,
+	0xad, 0x57, 0xb5, 0xb0, 0x29, 0xc1, 0xe4, 0xbe, 0xc2, 0xd4, 0x1c, 0x1b, 0xf9, 0x46, 0x04, 0x72,
+	0x52, 0x55, 0xc1, 0x31, 0x73, 0xb2, 0x9c, 0x5c, 0xcb, 0x56, 0xeb, 0x1f, 0xc7, 0x6d, 0x0f, 0xa4,
+	0xb4, 0x95, 0x3d, 0x1a, 0xac, 0x19, 0xfa, 0x3a, 0x4c, 0x63, 0xd7, 0xb5, 0x23, 0x46, 0xa8, 0x8d,
+	0x3b, 0xc4, 0xe7, 0xe6, 0x0d, 0x79, 0xa8, 0x52, 0x45, 0x85, 0x67, 0x25, 0x0e, 0xcf, 0x4a, 0x3d,
+	0x08, 0xba, 0xdf, 0xc2, 0xdd, 0x88, 0x58, 0x39, 0xec, 0xba, 0x07, 0x8c, 0xd0, 0x9a, 0x90, 0x47,
+	0x01, 0x4c, 0x71, 0x8a, 0x1d, 0xcf, 0xef, 0x98, 0x53, 0x52, 0xf5, 0xe0, 0x7a, 0x43, 0xab, 0xa5,
+	0xc0, 0xad, 0x78, 0x17, 0xf4, 0x14, 0xe6, 0x25, 0x48, 0x5c, 0x25, 0xec, 0x20, 0x14, 0xf2, 0xcc,
+	0x4c, 0xcb, 0xed, 0x5f, 0x1f, 0x77, 0xab, 0x28, 0x28, 0x12, 0x79, 0x63, 0x5f, 0xcb, 0xef, 0x29,
+	0x71, 0x6b, 0x56, 0xa0, 0x9c, 0x21, 0xa2, 0xef, 0xc2, 0x82, 0x20, 0x57, 0xcf, 0xa3, 0x67, 0xae,
+	0x44, 0xaf, 0x9e, 0x45, 0x9f, 0x3b, 0xba, 0x80, 0x8a, 0x56, 0x20, 0xcb, 0x08, 0xed, 0x13, 0x6a,
+	0xfb, 0xb8, 0x47, 0x4c, 0x10, 0x69, 0x60, 0x81, 0x22, 0xed, 0xe2, 0x1e, 0x41, 0x04, 0x16, 0x7a,
+	0xf8, 0xc4, 0xa6, 0xe4, 0x07, 0x11, 0x61, 0xdc, 0x3e, 0x22, 0xd8, 0x25, 0x94, 0xd9, 0xc7, 0x87,
+	0xe6, 0x6d, 0xb9, 0xff, 0xad, 0x73, 0x7e, 0x39, 0xd8, 0xf1, 0xf9, 0x9b, 0x55, 0xe9, 0x99, 0x3a,
+	0x92, 0x09, 0x75, 0x67, 0xa2, 0x9c, 0xd0, 0x0b, 0xf3, 0x7b, 0xd6, 0x6c, 0x0f, 0x9f, 0x58, 0x0a,
+	0xae, 0xa1, 0xd0, 0x1e, 0x1d, 0xa2, 0x3a, 0xe4, 0x3c, 0xb7, 0x4b, 0x6c, 0xee, 0xf5, 0x48, 0x10,
+	0x71, 0x33, 0x2b, 0xc1, 0x17, 0xcf, 0x81, 0x6f, 0xe9, 0x54, 0xa8, 0xa7, 0x7e, 0xf3, 0xcf, 0x15,
+	0xc3, 0xca, 0x0a, 0xa5, 0x96, 0xd2, 0x41, 0x7b, 0x30, 0xcb, 0x38, 0x25, 0xb8, 0x67, 0x8f, 0x41,
+	0x99, 0x2f, 0x07, 0x35, 0xa3, 0x74, 0x77, 0x46, 0x00, 0x1b, 0x50, 0x88, 0xcf, 0x1d, 0x83, 0xdd,
+	0x7a, 0x39, 0xb0, 0x69, 0xad, 0x17, 0x23, 0x6d, 0x41, 0xde, 0xa5, 0xd8, 0xf3, 0x07, 0x38, 0xb9,
+	0x97, 0xc3, 0xc9, 0x49, 0xad, 0x18, 0xa5, 0x09, 0xf3, 0x2e, 0xe9, 0xe2, 0x53, 0xe2, 0xda, 0x4e,
+	0x37, 0x60, 0xc3, 0x23, 0x96, 0x5e, 0x0e, 0x6d, 0x56, 0x6b, 0x6f, 0x0a, 0xe5, 0x18, 0xf4, 0x21,
+	0x80, 0x6a, 0x3e, 0x76, 0x37, 0xe8, 0x98, 0x79, 0x99, 0xd5, 0x6f, 0x5c, 0x98, 0x31, 0xc3, 0x1e,
+	0xd5, 0xaf, 0x56, 0x6a, 0xf2, 0xe3, 0x71, 0xd0, 0xb1, 0x32, 0x38, 0x5e, 0xa2, 0x06, 0xa0, 0x88,
+	0x11, 0x9b, 0x92, 0x5e, 0xc0, 0x89, 0x8d, 0x5d, 0x97, 0x12, 0xc6, 0xcc, 0xe9, 0x17, 0x26, 0x70,
+	0x31, 0x62, 0xc4, 0x92, 0x4a, 0x35, 0xa5, 0x83, 0xd6, 0x61, 0xee, 0xa4, 0xdd, 0xb6, 0xfd, 0xa8,
+	0x67, 0x73, 0x1a, 0x31, 0x4e, 0x5c, 0xfb, 0x28, 0x08, 0x99, 0x39, 0x5b, 0x36, 0xd6, 0xf2, 0xd6,
+	0xcc, 0x49, 0xbb, 0xbd, 0x1b, 0xf5, 0x5a, 0x8a, 0xd3, 0x08, 0x42, 0x86, 0x7e, 0x6b, 0xc0, 0x4d,
+	0xcf, 0xe7, 0x84, 0xfa, 0xb8, 0x1b, 0xef, 0x1c, 0x97, 0xd7, 0x45, 0x69, 0x80, 0x73, 0xbd, 0x65,
+	0x60, 0x47, 0x6f, 0xa6, 0x2d, 0x56, 0x25, 0xd9, 0x9a, 0xf7, 0x2e, 0x22, 0xa3, 0xd7, 0xa0, 0xc0,
+	0x8e, 0xbd, 0xd0, 0x16, 0x67, 0x12, 0x4d, 0xd5, 0x77, 0xcd, 0xf9, 0xb2, 0xb1, 0x96, 0xb6, 0xf2,
+	0x82, 0xfc, 0xed, 0x76, 0xbb, 0x26, 0x89, 0xa8, 0x08, 0xc9, 0xbe, 0x87, 0xcd, 0x05, 0x99, 0x86,
+	0x62, 0x89, 0x1e, 0xc2, 0x6c, 0x87, 0xf8, 0x84, 0x62, 0x4e, 0x06, 0x49, 0xe8, 0xb9, 0x66, 0xe1,
+	0x85, 0x77, 0x3a, 0x13, 0xab, 0xe9, 0x5c, 0xdb, 0x71, 0xd1, 0xd7, 0xe0, 0x56, 0x48, 0x89, 0x4c,
+	0x6e, 0x9b, 0x9c, 0xe8, 0xbb, 0x1a, 0x01, 0x2d, 0x4b, 0x93, 0x16, 0x63, 0x99, 0x6d, 0x2d, 0x32,
+	0x04, 0xf8, 0xb3, 0x01, 0x4b, 0xed, 0x80, 0x3e, 0xc3, 0x54, 0x44, 0xa0, 0x47, 0x7c, 0x6e, 0x3b,
+	0x84, 0x72, 0xdb, 0x25, 0x1c, 0x7b, 0x5d, 0x66, 0x16, 0x65, 0x2b, 0x6f, 0x5f, 0xef, 0x45, 0x3f,
+	0x50, 0x1b, 0x6e, 0xca, 0xfd, 0x36, 0x09, 0xe5, 0x5b, 0x6a, 0xb7, 0xb1, 0xce, 0x6e, 0xb6, 0x2f,
+	0x91, 0x42, 0x7f, 0x32, 0x60, 0x85, 0x11, 0x6e, 0x3b, 0x11, 0xa5, 0xd2, 0xe0, 0x0b, 0xec, 0x9e,
+	0x91, 0xb7, 0xe9, 0x5d, 0xaf, 0xdd, 0x4d, 0xc2, 0x37, 0xd5, 0x9e, 0xe7, 0x8c, 0xb2, 0x96, 0xd8,
+	0xe5, 0x4c, 0xf4, 0x39, 0x40, 0x21, 0x0d, 0x4e, 0x4e, 0xed, 0x8d, 0xbb, 0x77, 0xc5, 0x8e, 0xdc,
+	0xf3, 0x23, 0x62, 0x22, 0xe9, 0x9c, 0xa2, 0xe4, 0x6c, 0xdc, 0xbd, 0xbb, 0xa9, 0xe9, 0x88, 0xc0,
+	0x06, 0x25, 0xd2, 0x65, 0x3e, 0xb7, 0xbd, 0xb0, 0x7f, 0xef, 0x4c, 0xfa, 0xd9, 0x98, 0x29, 0x72,
+	0x4f, 0x04, 0x9e, 0x2b, 0xd6, 0xf7, 0xcd, 0x39, 0x09, 0x76, 0x67, 0xa0, 0xb8, 0x13, 0xf6, 0xef,
+	0x8d, 0x25, 0x60, 0x8d, 0x09, 0xd2, 0x5b, 0x52, 0x65, 0x27, 0xec, 0xdf, 0x47, 0x3f, 0x35, 0xa0,
+	0x10, 0x85, 0x1d, 0x8a, 0xdd, 0x78, 0x6a, 0x61, 0xe6, 0x4d, 0x59, 0x2c, 0x9e, 0x5e, 0xef, 0xb5,
+	0x1d, 0xa8, 0x4d, 0x74, 0x3e, 0x4d, 0x47, 0xa3, 0x9f, 0x0c, 0xd5, 0x60, 0xda, 0x0f, 0x68, 0x0f,
+	0x77, 0xbd, 0x1f, 0x12, 0x3b, 0xc4, 0xfc, 0xc8, 0x5c, 0x7e, 0x61, 0x26, 0xe4, 0x07, 0x1a, 0xfb,
+	0x98, 0x1f, 0x95, 0xfe, 0x9d, 0x84, 0x29, 0xdd, 0xc3, 0xd1, 0xaf, 0x0d, 0x98, 0x0e, 0x42, 0xa2,
+	0xaa, 0xa4, 0x6a, 0x81, 0x6a, 0x1c, 0x75, 0x3e, 0x91, 0x99, 0xa1, 0xb2, 0x17, 0xef, 0x25, 0x7a,
+	0xeb, 0x58, 0x00, 0xe7, 0x83, 0x51, 0x16, 0xfa, 0x02, 0x98, 0x67, 0x5b, 0x6e, 0x3b, 0xa0, 0x36,
+	0xc7, 0x1d, 0x66, 0x4e, 0x94, 0x93, 0x6b, 0x19, 0x6b, 0x9e, 0x8e, 0xf5, 0xd0, 0x07, 0x01, 0x6d,
+	0xe1, 0x0e, 0x43, 0x5f, 0x81, 0x82, 0x8e, 0x70, 0x86, 0x7b, 0x61, 0x57, 0x4c, 0x41, 0x6a, 0x6e,
+	0x9d, 0xd5, 0x27, 0x12, 0x33, 0x77, 0x65, 0x5f, 0x3d, 0x29, 0xac, 0x69, 0x25, 0xdb, 0xd4, 0xa2,
+	0x42, 0x9b, 0x62, 0xdf, 0x0d, 0x7a, 0x43, 0xed, 0xd4, 0x15, 0xda, 0x4a, 0x76, 0xa0, 0xfd, 0x55,
+	0x28, 0x06, 0x7d, 0x42, 0x71, 0xb7, 0x3b, 0x54, 0x9f, 0xbc, 0x5c, 0xbd, 0xa0, 0x85, 0x07, 0xfa,
+	0x26, 0x4c, 0xf5, 0x09, 0x3d, 0x0c, 0x18, 0x91, 0x43, 0x5f, 0xda, 0x8a, 0x3f, 0x57, 0x2b, 0x90,
+	0x1f, 0xbb, 0x3a, 0x94, 0x85, 0xa9, 0x9d, 0xdd, 0x6f, 0x58, 0xdb, 0xcd, 0x66, 0x31, 0x81, 0x00,
+	0x6e, 0x6c, 0xab, 0xb5, 0x51, 0x4a, 0xfd, 0xec, 0xf7, 0xcb, 0x89, 0xd2, 0x97, 0x60, 0xfe, 0xc2,
+	0xfa, 0x8c, 0x3e, 0x03, 0xb9, 0xc8, 0xf7, 0x4e, 0x6c, 0x16, 0x38, 0xc7, 0x84, 0x33, 0xe9, 0xed,
+	0xb4, 0x95, 0x15, 0xb4, 0xa6, 0x22, 0x95, 0xfe, 0x60, 0xc0, 0xd2, 0x15, 0xb9, 0x8b, 0xee, 0xc1,
+	0x14, 0x8b, 0x0e, 0xbf, 0x4f, 0x1c, 0x2e, 0xb5, 0xaf, 0x8e, 0xbd, 0x58, 0x14, 0x21, 0x48, 0x89,
+	0x92, 0x23, 0x9d, 0x91, 0xb6, 0xe4, 0x1a, 0xcd, 0xc1, 0xa4, 0x73, 0x84, 0x3d, 0x5f, 0x9f, 0x56,
+	0x7d, 0x88, 0x1e, 0xe0, 0xfa, 0x4c, 0xde, 0x7b, 0xda, 0x12, 0x4b, 0x41, 0x89, 0xa8, 0x27, 0xaf,
+	0x32, 0x6d, 0x89, 0xe5, 0xc3, 0x54, 0x7a, 0xa2, 0x98, 0x2c, 0xfd, 0xd5, 0x80, 0xfc, 0x58, 0xba,
+	0xc8, 0xe3, 0xe9, 0x24, 0x1d, 0xbc, 0xad, 0x32, 0x56, 0x56, 0xd3, 0xe4, 0xc3, 0xe7, 0x3b, 0x30,
+	0x15, 0x8f, 0xf0, 0x13, 0xd7, 0x36, 0xc2, 0xc7, 0x90, 0xe2, 0x72, 0x88, 0x8f, 0x0f, 0xbb, 0xc4,
+	0xd5, 0x61, 0x77, 0xe5, 0xe5, 0x68, 0xd1, 0xd5, 0x0d, 0xc8, 0x0c, 0x1e, 0x6c, 0x28, 0x0d, 0xa9,
+	0xda, 0x41, 0x6b, 0xaf, 0x98, 0x40, 0x19, 0x98, 0x6c, 0xb4, 0x5a, 0xfb, 0x1b, 0x45, 0x23, 0x5e,
+	0x56, 0x8b, 0x13, 0xca, 0xc3, 0xab, 0x3f, 0x02, 0xf3, 0xb2, 0xc6, 0x80, 0x72, 0x90, 0x6e, 0xd6,
+	0x76, 0x77, 0x5a, 0x3b, 0xef, 0x6c, 0x17, 0x13, 0xa8, 0x08, 0xb9, 0x07, 0x7b, 0xd6, 0x93, 0x9a,
+	0xb5, 0x65, 0xef, 0xed, 0x3e, 0x7e, 0xbb, 0x68, 0x20, 0x04, 0xd3, 0xb5, 0xfd, 0xfd, 0xed, 0xdd,
+	0x2d, 0x5b, 0x33, 0x8a, 0x13, 0x42, 0x2a, 0xd6, 0xb1, 0x9b, 0xdb, 0xad, 0x62, 0x12, 0xdd, 0x84,
+	0xd9, 0xda, 0xe3, 0x27, 0xb5, 0xb7, 0x9b, 0xf6, 0x98, 0x7a, 0x4a, 0x19, 0x50, 0x37, 0xa1, 0xa0,
+	0xde, 0x70, 0x2c, 0x24, 0x8e, 0xd7, 0xf6, 0x08, 0x45, 0x93, 0x7f, 0xf9, 0xe8, 0x83, 0xa4, 0xf1,
+	0x30, 0x95, 0x5e, 0x2a, 0xde, 0x5a, 0x7d, 0xcf, 0x80, 0xa4, 0xe5, 0x32, 0xd4, 0x82, 0xfc, 0xd8,
+	0xbf, 0x0c, 0x3a, 0x68, 0x56, 0x2e, 0x98, 0xdb, 0x95, 0x13, 0x9b, 0x52, 0xac, 0x3e, 0xfd, 0xe1,
+	0x3f, 0x56, 0xe4, 0xd4, 0x3c, 0xf9, 0x73, 0x59, 0x20, 0x72, 0xce, 0x08, 0x17, 0x7d, 0x1e, 0x66,
+	0x46, 0x5f, 0x90, 0xaa, 0x74, 0x9d, 0x7b, 0xc4, 0x16, 0x46, 0x5e, 0x8b, 0x22, 0x6d, 0x56, 0x7f,
+	0x65, 0xc0, 0xed, 0x91, 0x57, 0xde, 0xd8, 0xeb, 0x92, 0x3d, 0xf6, 0x18, 0x47, 0x14, 0x96, 0x46,
+	0xdf, 0x94, 0x1a, 0x3f, 0x16, 0x31, 0x0d, 0x19, 0x32, 0xaf, 0x8d, 0x1b, 0x7f, 0x19, 0xa2, 0x2e,
+	0x70, 0xef, 0x19, 0x13, 0x69, 0xc3, 0x5a, 0x64, 0x97, 0xed, 0xbb, 0xfa, 0x3e, 0x40, 0x6e, 0xf4,
+	0xed, 0x89, 0x6e, 0x43, 0x6a, 0x50, 0x8b, 0xc7, 0x0e, 0x24, 0xc9, 0xe8, 0x17, 0x06, 0xcc, 0x48,
+	0x34, 0xfb, 0x98, 0x9c, 0xda, 0x87, 0x91, 0xd7, 0x75, 0x09, 0x95, 0xa7, 0xcf, 0x56, 0x5b, 0xd7,
+	0xf1, 0xf8, 0x55, 0x1f, 0x8f, 0xc8, 0x69, 0x5d, 0x61, 0xeb, 0x83, 0x28, 0x47, 0x14, 0xd8, 0x38,
+	0x13, 0x3d, 0x85, 0x19, 0xea, 0xc6, 0xc3, 0x66, 0xec, 0xe5, 0xe4, 0xab, 0x79, 0xb9, 0x40, 0x5d,
+	0x36, 0x2a, 0x80, 0x7e, 0x67, 0x40, 0xf9, 0x0a, 0x87, 0xd8, 0x5d, 0x8f, 0x71, 0x5d, 0xa3, 0x0f,
+	0xae, 0xe1, 0xe8, 0xe7, 0x23, 0xa2, 0x91, 0xb0, 0x6e, 0xb3, 0x2b, 0x43, 0xe6, 0x10, 0x20, 0xb6,
+	0xd0, 0x65, 0xba, 0xe0, 0xd7, 0x3e, 0xa6, 0x2d, 0xf2, 0xbf, 0x92, 0x0c, 0x8b, 0x3f, 0x4a, 0xff,
+	0x99, 0x84, 0xc2, 0x19, 0xa7, 0xa0, 0x5f, 0x1a, 0x90, 0x69, 0x53, 0xdc, 0xe9, 0x11, 0x9f, 0xc7,
+	0x91, 0xe9, 0x7e, 0x12, 0xee, 0xaf, 0x3c, 0xd0, 0xbb, 0x8c, 0x87, 0x83, 0x8a, 0xeb, 0xa1, 0x09,
+	0xa5, 0xbf, 0xa7, 0xa0, 0x70, 0x46, 0x54, 0x8c, 0xcc, 0x0b, 0xaa, 0x83, 0xdb, 0x7d, 0x51, 0xf4,
+	0xc4, 0xe0, 0x4d, 0xb1, 0xc3, 0x03, 0xaa, 0x0b, 0xc1, 0xe9, 0xff, 0xc3, 0xe2, 0x8a, 0x9a, 0x12,
+	0x64, 0xd9, 0xdd, 0x8e, 0x0d, 0x68, 0x24, 0xac, 0xb9, 0xa3, 0x0b, 0xe8, 0xa5, 0x1f, 0x27, 0x61,
+	0xee, 0x22, 0x85, 0x17, 0xe5, 0xe5, 0x1b, 0x30, 0x43, 0xba, 0xa4, 0x27, 0x87, 0x0f, 0x12, 0x62,
+	0x8a, 0xc5, 0x29, 0x65, 0x51, 0xb2, 0x8a, 0x9a, 0xd1, 0x8c, 0xe9, 0x68, 0x01, 0x26, 0x3d, 0xdf,
+	0x25, 0x27, 0x32, 0x53, 0xf2, 0x8d, 0x84, 0xa5, 0x3e, 0x45, 0xc0, 0x4f, 0x69, 0x61, 0x1d, 0xd7,
+	0x3f, 0x31, 0x3e, 0xb5, 0x2b, 0xaa, 0x3c, 0xea, 0x6f, 0x2b, 0x5b, 0x1a, 0x09, 0x2b, 0x36, 0xab,
+	0xf4, 0x4d, 0xc8, 0x0c, 0xe8, 0xe8, 0x75, 0xc8, 0x0c, 0x0f, 0x7b, 0xee, 0x62, 0x86, 0x3c, 0xb4,
+	0x04, 0xc9, 0x63, 0x72, 0x7a, 0xbe, 0x48, 0x0b, 0x6a, 0x7d, 0x1a, 0x72, 0x3a, 0x30, 0x64, 0xe3,
+	0xae, 0xe7, 0x21, 0x25, 0x7e, 0x75, 0x4b, 0xa9, 0x2f, 0x42, 0x31, 0x2e, 0x2f, 0x67, 0xba, 0xcd,
+	0x6a, 0x04, 0x99, 0x41, 0xce, 0xa0, 0x23, 0x30, 0x87, 0xa9, 0x68, 0x5f, 0x4b, 0xdf, 0x99, 0x1f,
+	0x24, 0xe1, 0xa8, 0xd8, 0xea, 0x1f, 0x0d, 0x80, 0xe1, 0x00, 0xf0, 0xa2, 0xc8, 0xd8, 0x80, 0x1b,
+	0xfa, 0x2d, 0xae, 0xaa, 0xf4, 0xcd, 0x73, 0x53, 0x41, 0x53, 0xfe, 0x15, 0xdd, 0x48, 0x58, 0x5a,
+	0x10, 0x7d, 0x11, 0x72, 0xe2, 0x06, 0xdc, 0xf1, 0xff, 0x48, 0xe7, 0xce, 0x29, 0xd6, 0xfc, 0xd3,
+	0x46, 0xc2, 0xca, 0x4a, 0x59, 0x65, 0x61, 0x3d, 0x0f, 0x59, 0x7d, 0x74, 0x41, 0x7d, 0x98, 0x4a,
+	0x27, 0x8b, 0xa9, 0x3a, 0xff, 0xf0, 0xf9, 0xb2, 0xf1, 0xb7, 0xe7, 0xcb, 0xc6, 0xbf, 0x9e, 0x2f,
+	0x1b, 0xb0, 0xe5, 0x05, 0xea, 0x22, 0xe4, 0x7b, 0xea, 0x15, 0xe3, 0xab, 0x5e, 0xba, 0x70, 0xda,
+	0x97, 0xff, 0xb1, 0xed, 0x1b, 0xef, 0x4c, 0xf4, 0xab, 0x87, 0x37, 0xa4, 0x9d, 0x6f, 0xfe, 0x2f,
+	0x00, 0x00, 0xff, 0xff, 0x0d, 0xa7, 0x2b, 0x94, 0x0a, 0x19, 0x00, 0x00,
+}
+
 func (m *HttpConnectionManager) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1484,29 +2448,53 @@ func (m *HttpConnectionManager) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n13
 	}
-	if m.BugfixReverseEncodeOrder != nil {
-		dAtA[i] = 0xda
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.BugfixReverseEncodeOrder.Size()))
-		n14, err := m.BugfixReverseEncodeOrder.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n14
-	}
 	if m.RequestTimeout != nil {
 		dAtA[i] = 0xe2
 		i++
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(github_com_gogo_protobuf_types.SizeOfStdDuration(*m.RequestTimeout)))
-		n15, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.RequestTimeout, dAtA[i:])
+		n14, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.RequestTimeout, dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
+	if m.MaxRequestHeadersKb != nil {
+		dAtA[i] = 0xea
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.MaxRequestHeadersKb.Size()))
+		n15, err := m.MaxRequestHeadersKb.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n15
+	}
+	if m.NormalizePath != nil {
+		dAtA[i] = 0xf2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.NormalizePath.Size()))
+		n16, err := m.NormalizePath.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n16
+	}
+	if m.PreserveExternalRequestId {
+		dAtA[i] = 0x80
+		i++
+		dAtA[i] = 0x2
+		i++
+		if m.PreserveExternalRequestId {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -1520,11 +2508,11 @@ func (m *HttpConnectionManager_Rds) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.Rds.Size()))
-		n16, err := m.Rds.MarshalTo(dAtA[i:])
+		n17, err := m.Rds.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	return i, nil
 }
@@ -1534,11 +2522,27 @@ func (m *HttpConnectionManager_RouteConfig) MarshalTo(dAtA []byte) (int, error) 
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.RouteConfig.Size()))
-		n17, err := m.RouteConfig.MarshalTo(dAtA[i:])
+		n18, err := m.RouteConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n18
+	}
+	return i, nil
+}
+func (m *HttpConnectionManager_ScopedRoutes) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.ScopedRoutes != nil {
+		dAtA[i] = 0xfa
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ScopedRoutes.Size()))
+		n19, err := m.ScopedRoutes.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n19
 	}
 	return i, nil
 }
@@ -1581,31 +2585,41 @@ func (m *HttpConnectionManager_Tracing) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ClientSampling.Size()))
-		n18, err := m.ClientSampling.MarshalTo(dAtA[i:])
+		n20, err := m.ClientSampling.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n18
+		i += n20
 	}
 	if m.RandomSampling != nil {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.RandomSampling.Size()))
-		n19, err := m.RandomSampling.MarshalTo(dAtA[i:])
+		n21, err := m.RandomSampling.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n21
 	}
 	if m.OverallSampling != nil {
 		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.OverallSampling.Size()))
-		n20, err := m.OverallSampling.MarshalTo(dAtA[i:])
+		n22, err := m.OverallSampling.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n20
+		i += n22
+	}
+	if m.Verbose {
+		dAtA[i] = 0x30
+		i++
+		if m.Verbose {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -1663,11 +2677,11 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) MarshalTo(dAtA []byt
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.Subject.Size()))
-		n21, err := m.Subject.MarshalTo(dAtA[i:])
+		n23, err := m.Subject.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n21
+		i += n23
 	}
 	if m.Cert {
 		dAtA[i] = 0x18
@@ -1693,6 +2707,16 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) MarshalTo(dAtA []byt
 		dAtA[i] = 0x28
 		i++
 		if m.Uri {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.Chain {
+		dAtA[i] = 0x30
+		i++
+		if m.Chain {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
@@ -1742,11 +2766,11 @@ func (m *HttpConnectionManager_UpgradeConfig) MarshalTo(dAtA []byte) (int, error
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.Enabled.Size()))
-		n22, err := m.Enabled.MarshalTo(dAtA[i:])
+		n24, err := m.Enabled.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n22
+		i += n24
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -1772,17 +2796,328 @@ func (m *Rds) MarshalTo(dAtA []byte) (int, error) {
 	dAtA[i] = 0xa
 	i++
 	i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ConfigSource.Size()))
-	n23, err := m.ConfigSource.MarshalTo(dAtA[i:])
+	n25, err := m.ConfigSource.MarshalTo(dAtA[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n23
+	i += n25
 	if len(m.RouteConfigName) > 0 {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(len(m.RouteConfigName)))
 		i += copy(dAtA[i:], m.RouteConfigName)
 	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRouteConfigurationsList) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRouteConfigurationsList) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ScopedRouteConfigurations) > 0 {
+		for _, msg := range m.ScopedRouteConfigurations {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintHttpConnectionManager(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRoutes) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRoutes) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if m.ScopeKeyBuilder != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ScopeKeyBuilder.Size()))
+		n26, err := m.ScopeKeyBuilder.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n26
+	}
+	dAtA[i] = 0x1a
+	i++
+	i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.RdsConfigSource.Size()))
+	n27, err := m.RdsConfigSource.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n27
+	if m.ConfigSpecifier != nil {
+		nn28, err := m.ConfigSpecifier.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn28
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRoutes_ScopedRouteConfigurationsList) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.ScopedRouteConfigurationsList != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ScopedRouteConfigurationsList.Size()))
+		n29, err := m.ScopedRouteConfigurationsList.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n29
+	}
+	return i, nil
+}
+func (m *ScopedRoutes_ScopedRds) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.ScopedRds != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ScopedRds.Size()))
+		n30, err := m.ScopedRds.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n30
+	}
+	return i, nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Fragments) > 0 {
+		for _, msg := range m.Fragments {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintHttpConnectionManager(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type != nil {
+		nn31, err := m.Type.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn31
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.HeaderValueExtractor != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.HeaderValueExtractor.Size()))
+		n32, err := m.HeaderValueExtractor.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n32
+	}
+	return i, nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if len(m.ElementSeparator) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(len(m.ElementSeparator)))
+		i += copy(dAtA[i:], m.ElementSeparator)
+	}
+	if m.ExtractType != nil {
+		nn33, err := m.ExtractType.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn33
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	dAtA[i] = 0x18
+	i++
+	i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.Index))
+	return i, nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.Element != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.Element.Size()))
+		n34, err := m.Element.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n34
+	}
+	return i, nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Separator) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(len(m.Separator)))
+		i += copy(dAtA[i:], m.Separator)
+	}
+	if len(m.Key) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(len(m.Key)))
+		i += copy(dAtA[i:], m.Key)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ScopedRds) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScopedRds) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.ScopedRdsConfigSource.Size()))
+	n35, err := m.ScopedRdsConfigSource.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n35
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -1811,11 +3146,11 @@ func (m *HttpFilter) MarshalTo(dAtA []byte) (int, error) {
 		i += copy(dAtA[i:], m.Name)
 	}
 	if m.ConfigType != nil {
-		nn24, err := m.ConfigType.MarshalTo(dAtA[i:])
+		nn36, err := m.ConfigType.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn24
+		i += nn36
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -1829,11 +3164,11 @@ func (m *HttpFilter_Config) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.Config.Size()))
-		n25, err := m.Config.MarshalTo(dAtA[i:])
+		n37, err := m.Config.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n25
+		i += n37
 	}
 	return i, nil
 }
@@ -1843,11 +3178,11 @@ func (m *HttpFilter_TypedConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintHttpConnectionManager(dAtA, i, uint64(m.TypedConfig.Size()))
-		n26, err := m.TypedConfig.MarshalTo(dAtA[i:])
+		n38, err := m.TypedConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n26
+		i += n38
 	}
 	return i, nil
 }
@@ -1965,13 +3300,20 @@ func (m *HttpConnectionManager) Size() (n int) {
 		l = github_com_gogo_protobuf_types.SizeOfStdDuration(*m.DelayedCloseTimeout)
 		n += 2 + l + sovHttpConnectionManager(uint64(l))
 	}
-	if m.BugfixReverseEncodeOrder != nil {
-		l = m.BugfixReverseEncodeOrder.Size()
-		n += 2 + l + sovHttpConnectionManager(uint64(l))
-	}
 	if m.RequestTimeout != nil {
 		l = github_com_gogo_protobuf_types.SizeOfStdDuration(*m.RequestTimeout)
 		n += 2 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.MaxRequestHeadersKb != nil {
+		l = m.MaxRequestHeadersKb.Size()
+		n += 2 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.NormalizePath != nil {
+		l = m.NormalizePath.Size()
+		n += 2 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.PreserveExternalRequestId {
+		n += 3
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2003,6 +3345,18 @@ func (m *HttpConnectionManager_RouteConfig) Size() (n int) {
 	}
 	return n
 }
+func (m *HttpConnectionManager_ScopedRoutes) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScopedRoutes != nil {
+		l = m.ScopedRoutes.Size()
+		n += 2 + l + sovHttpConnectionManager(uint64(l))
+	}
+	return n
+}
 func (m *HttpConnectionManager_Tracing) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2029,6 +3383,9 @@ func (m *HttpConnectionManager_Tracing) Size() (n int) {
 	if m.OverallSampling != nil {
 		l = m.OverallSampling.Size()
 		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.Verbose {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2068,6 +3425,9 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Size() (n int) {
 		n += 2
 	}
 	if m.Uri {
+		n += 2
+	}
+	if m.Chain {
 		n += 2
 	}
 	if m.XXX_unrecognized != nil {
@@ -2114,6 +3474,196 @@ func (m *Rds) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovHttpConnectionManager(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRouteConfigurationsList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ScopedRouteConfigurations) > 0 {
+		for _, e := range m.ScopedRouteConfigurations {
+			l = e.Size()
+			n += 1 + l + sovHttpConnectionManager(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRoutes) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.ScopeKeyBuilder != nil {
+		l = m.ScopeKeyBuilder.Size()
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	l = m.RdsConfigSource.Size()
+	n += 1 + l + sovHttpConnectionManager(uint64(l))
+	if m.ConfigSpecifier != nil {
+		n += m.ConfigSpecifier.Size()
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRoutes_ScopedRouteConfigurationsList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScopedRouteConfigurationsList != nil {
+		l = m.ScopedRouteConfigurationsList.Size()
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	return n
+}
+func (m *ScopedRoutes_ScopedRds) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScopedRds != nil {
+		l = m.ScopedRds.Size()
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	return n
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Fragments) > 0 {
+		for _, e := range m.Fragments {
+			l = e.Size()
+			n += 1 + l + sovHttpConnectionManager(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Type != nil {
+		n += m.Type.Size()
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.HeaderValueExtractor != nil {
+		l = m.HeaderValueExtractor.Size()
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	return n
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	l = len(m.ElementSeparator)
+	if l > 0 {
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.ExtractType != nil {
+		n += m.ExtractType.Size()
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovHttpConnectionManager(uint64(m.Index))
+	return n
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Element != nil {
+		l = m.Element.Size()
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	return n
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Separator)
+	if l > 0 {
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovHttpConnectionManager(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ScopedRds) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.ScopedRdsConfigSource.Size()
+	n += 1 + l + sovHttpConnectionManager(uint64(l))
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -2192,7 +3742,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2220,7 +3770,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CodecType |= (HttpConnectionManager_CodecType(b) & 0x7F) << shift
+				m.CodecType |= HttpConnectionManager_CodecType(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2239,7 +3789,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2249,6 +3799,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2268,7 +3821,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2277,6 +3830,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2300,7 +3856,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2309,6 +3865,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2332,7 +3891,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2341,6 +3900,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2363,7 +3925,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2372,6 +3934,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2396,7 +3961,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2405,6 +3970,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2429,7 +3997,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2438,6 +4006,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2462,7 +4033,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2471,6 +4042,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2495,7 +4069,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2505,6 +4079,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2524,7 +4101,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2533,6 +4110,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2557,7 +4137,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2566,6 +4146,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2590,7 +4173,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2599,6 +4182,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2621,7 +4207,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2630,6 +4216,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2654,7 +4243,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2663,6 +4252,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2687,7 +4279,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ForwardClientCertDetails |= (HttpConnectionManager_ForwardClientCertDetails(b) & 0x7F) << shift
+				m.ForwardClientCertDetails |= HttpConnectionManager_ForwardClientCertDetails(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2706,7 +4298,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2715,6 +4307,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2739,7 +4334,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2759,7 +4354,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.XffNumTrustedHops |= (uint32(b) & 0x7F) << shift
+				m.XffNumTrustedHops |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2778,7 +4373,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2798,7 +4393,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2818,7 +4413,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2828,6 +4423,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2847,7 +4445,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2856,6 +4454,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2878,7 +4479,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2887,6 +4488,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2911,7 +4515,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2920,6 +4524,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2944,7 +4551,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2953,6 +4560,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2960,39 +4570,6 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				m.DelayedCloseTimeout = new(time.Duration)
 			}
 			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(m.DelayedCloseTimeout, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 27:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BugfixReverseEncodeOrder", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowHttpConnectionManager
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthHttpConnectionManager
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.BugfixReverseEncodeOrder == nil {
-				m.BugfixReverseEncodeOrder = &types.BoolValue{}
-			}
-			if err := m.BugfixReverseEncodeOrder.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3010,7 +4587,7 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3019,6 +4596,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3029,6 +4609,133 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 29:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxRequestHeadersKb", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.MaxRequestHeadersKb == nil {
+				m.MaxRequestHeadersKb = &types.UInt32Value{}
+			}
+			if err := m.MaxRequestHeadersKb.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 30:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NormalizePath", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.NormalizePath == nil {
+				m.NormalizePath = &types.BoolValue{}
+			}
+			if err := m.NormalizePath.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 31:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopedRoutes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ScopedRoutes{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.RouteSpecifier = &HttpConnectionManager_ScopedRoutes{v}
+			iNdEx = postIndex
+		case 32:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PreserveExternalRequestId", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.PreserveExternalRequestId = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
@@ -3036,6 +4743,9 @@ func (m *HttpConnectionManager) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3066,7 +4776,7 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3094,7 +4804,7 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OperationName |= (HttpConnectionManager_Tracing_OperationName(b) & 0x7F) << shift
+				m.OperationName |= HttpConnectionManager_Tracing_OperationName(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3113,7 +4823,7 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3123,6 +4833,9 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3142,7 +4855,7 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3151,6 +4864,9 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3175,7 +4891,7 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3184,6 +4900,9 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3208,7 +4927,7 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3217,6 +4936,9 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3227,6 +4949,26 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Verbose", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Verbose = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
@@ -3234,6 +4976,9 @@ func (m *HttpConnectionManager_Tracing) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3264,7 +5009,7 @@ func (m *HttpConnectionManager_InternalAddressConfig) Unmarshal(dAtA []byte) err
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3292,7 +5037,7 @@ func (m *HttpConnectionManager_InternalAddressConfig) Unmarshal(dAtA []byte) err
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3305,6 +5050,9 @@ func (m *HttpConnectionManager_InternalAddressConfig) Unmarshal(dAtA []byte) err
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3335,7 +5083,7 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3363,7 +5111,7 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3372,6 +5120,9 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3396,7 +5147,7 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3416,7 +5167,7 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3436,12 +5187,32 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 			m.Uri = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Chain", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Chain = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
@@ -3449,6 +5220,9 @@ func (m *HttpConnectionManager_SetCurrentClientCertDetails) Unmarshal(dAtA []byt
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3479,7 +5253,7 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3507,7 +5281,7 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3517,6 +5291,9 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3536,7 +5313,7 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3545,6 +5322,9 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3567,7 +5347,7 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3576,6 +5356,9 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3593,6 +5376,9 @@ func (m *HttpConnectionManager_UpgradeConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3623,7 +5409,7 @@ func (m *Rds) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3651,7 +5437,7 @@ func (m *Rds) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3660,6 +5446,9 @@ func (m *Rds) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3681,7 +5470,7 @@ func (m *Rds) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3691,6 +5480,9 @@ func (m *Rds) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3703,6 +5495,877 @@ func (m *Rds) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRouteConfigurationsList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScopedRouteConfigurationsList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScopedRouteConfigurationsList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopedRouteConfigurations", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ScopedRouteConfigurations = append(m.ScopedRouteConfigurations, &v2.ScopedRouteConfiguration{})
+			if err := m.ScopedRouteConfigurations[len(m.ScopedRouteConfigurations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRoutes) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScopedRoutes: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScopedRoutes: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopeKeyBuilder", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScopeKeyBuilder == nil {
+				m.ScopeKeyBuilder = &ScopedRoutes_ScopeKeyBuilder{}
+			}
+			if err := m.ScopeKeyBuilder.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RdsConfigSource", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.RdsConfigSource.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopedRouteConfigurationsList", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ScopedRouteConfigurationsList{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ConfigSpecifier = &ScopedRoutes_ScopedRouteConfigurationsList{v}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopedRds", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ScopedRds{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ConfigSpecifier = &ScopedRoutes_ScopedRds{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScopeKeyBuilder: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScopeKeyBuilder: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Fragments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Fragments = append(m.Fragments, &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder{})
+			if err := m.Fragments[len(m.Fragments)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FragmentBuilder: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FragmentBuilder: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HeaderValueExtractor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Type = &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HeaderValueExtractor: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HeaderValueExtractor: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ElementSeparator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ElementSeparator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var v uint32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ExtractType = &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index{v}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Element", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ExtractType = &ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Element{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_KvElement) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: KvElement: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: KvElement: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Separator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Separator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScopedRds) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowHttpConnectionManager
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScopedRds: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScopedRds: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopedRdsConfigSource", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowHttpConnectionManager
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ScopedRdsConfigSource.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipHttpConnectionManager(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3733,7 +6396,7 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3761,7 +6424,7 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3771,6 +6434,9 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3790,7 +6456,7 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3799,6 +6465,9 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3822,7 +6491,7 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3831,6 +6500,9 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3847,6 +6519,9 @@ func (m *HttpFilter) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthHttpConnectionManager
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttpConnectionManager
 			}
 			if (iNdEx + skippy) > l {
@@ -3916,8 +6591,11 @@ func skipHttpConnectionManager(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthHttpConnectionManager
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthHttpConnectionManager
 			}
 			return iNdEx, nil
@@ -3948,6 +6626,9 @@ func skipHttpConnectionManager(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthHttpConnectionManager
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -3966,118 +6647,3 @@ var (
 	ErrInvalidLengthHttpConnectionManager = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowHttpConnectionManager   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto", fileDescriptor_http_connection_manager_911052550b5d3bdd)
-}
-
-var fileDescriptor_http_connection_manager_911052550b5d3bdd = []byte{
-	// 1706 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x57, 0xcd, 0x6f, 0x23, 0x49,
-	0x15, 0x4f, 0xdb, 0xce, 0xc4, 0x79, 0x76, 0x1c, 0xa7, 0x92, 0x4c, 0x7a, 0x9c, 0x25, 0x31, 0x91,
-	0x80, 0x68, 0x41, 0x76, 0x62, 0x66, 0x07, 0xf1, 0x21, 0x84, 0x9d, 0x64, 0x70, 0x46, 0xb3, 0x49,
-	0xd4, 0xf6, 0x30, 0xfb, 0xc1, 0xaa, 0x54, 0xe9, 0x2e, 0x3b, 0xcd, 0xd8, 0x5d, 0x4d, 0x55, 0xb5,
-	0x27, 0x39, 0x21, 0xad, 0x38, 0x20, 0x6e, 0x70, 0x40, 0x48, 0x1c, 0xf9, 0x03, 0x10, 0x9c, 0x10,
-	0xa7, 0x3d, 0xc1, 0x9e, 0x10, 0x7f, 0x01, 0xa0, 0xb9, 0xed, 0x7f, 0x81, 0xea, 0xa3, 0x9d, 0x38,
-	0x5f, 0x33, 0x1a, 0xb2, 0xb7, 0xea, 0xf7, 0xde, 0xef, 0xf7, 0x3e, 0xea, 0xf5, 0xab, 0x2a, 0xe8,
-	0xd2, 0x68, 0xc4, 0xce, 0xea, 0x3e, 0x8b, 0x7a, 0x61, 0xbf, 0xde, 0x0b, 0x07, 0x92, 0xf2, 0x7a,
-	0x44, 0xe5, 0x4b, 0xc6, 0x5f, 0xd4, 0x4f, 0xa4, 0x8c, 0xb1, 0xcf, 0xa2, 0x88, 0xfa, 0x32, 0x64,
-	0x11, 0x1e, 0x92, 0x88, 0xf4, 0x29, 0xaf, 0x8f, 0x1a, 0x37, 0xa9, 0x6a, 0x31, 0x67, 0x92, 0xa1,
-	0x47, 0x9a, 0xb5, 0x66, 0x58, 0x6b, 0x86, 0xb5, 0x66, 0x59, 0x6b, 0x37, 0x41, 0x47, 0x8d, 0xca,
-	0xd7, 0x4c, 0x34, 0x24, 0x0e, 0x95, 0x0f, 0x9f, 0x71, 0x6a, 0x23, 0xc3, 0x82, 0x25, 0xdc, 0xa7,
-	0x86, 0xbe, 0x52, 0xbd, 0x6a, 0xa6, 0x15, 0x3e, 0x1b, 0x58, 0x8b, 0xfb, 0x13, 0x16, 0x3c, 0x10,
-	0x56, 0xbe, 0x75, 0x5d, 0xba, 0xc4, 0xf7, 0xa9, 0x10, 0x03, 0xd6, 0x57, 0xb6, 0xe3, 0x0f, 0x8b,
-	0x70, 0x0d, 0x42, 0x9e, 0xc5, 0xb4, 0x1e, 0x53, 0xee, 0xd3, 0x48, 0x5a, 0xcd, 0x83, 0x3e, 0x63,
-	0xfd, 0x81, 0x75, 0x7d, 0x9c, 0xf4, 0xea, 0x24, 0x3a, 0xb3, 0xaa, 0xb5, 0xcb, 0xaa, 0x20, 0xe1,
-	0x44, 0x25, 0x6b, 0xf5, 0xef, 0x5c, 0xd6, 0x0b, 0xc9, 0x13, 0x5f, 0xde, 0x84, 0x7e, 0xc9, 0x49,
-	0x1c, 0x53, 0x9e, 0x26, 0xb1, 0x32, 0x22, 0x83, 0x30, 0x20, 0x92, 0xd6, 0xd3, 0x85, 0x55, 0x2c,
-	0xf5, 0x59, 0x9f, 0xe9, 0x65, 0x5d, 0xad, 0x8c, 0x74, 0xe3, 0x9f, 0xab, 0xb0, 0xdc, 0x96, 0x32,
-	0xde, 0x19, 0x97, 0xfc, 0x7d, 0x53, 0x71, 0xf4, 0xa9, 0x03, 0xe0, 0xb3, 0x80, 0xfa, 0x58, 0xa5,
-	0xe7, 0x3a, 0x55, 0x67, 0xb3, 0xd4, 0x78, 0x5e, 0x7b, 0xbb, 0xcd, 0xab, 0x5d, 0xeb, 0xa3, 0xb6,
-	0xa3, 0xf8, 0xbb, 0x67, 0x31, 0x6d, 0xc1, 0xdf, 0xbe, 0xf8, 0x2c, 0x3b, 0xfd, 0xa9, 0x93, 0x29,
-	0x3b, 0xde, 0xac, 0x9f, 0x8a, 0xd1, 0xbb, 0x50, 0x10, 0x92, 0x48, 0x1c, 0x73, 0xda, 0x0b, 0x4f,
-	0xdd, 0x4c, 0xd5, 0xd9, 0x9c, 0x6d, 0xcd, 0x2a, 0xdb, 0x1c, 0xcf, 0x54, 0x1d, 0x0f, 0x94, 0xf6,
-	0x48, 0x2b, 0xd1, 0x21, 0x64, 0x79, 0x20, 0xdc, 0x6c, 0xd5, 0xd9, 0x2c, 0x34, 0xbe, 0xff, 0xb6,
-	0x81, 0x7a, 0x81, 0x68, 0x4f, 0x79, 0x8a, 0x09, 0xed, 0x41, 0x91, 0xb3, 0x44, 0x52, 0x6c, 0x48,
-	0xdc, 0x9c, 0x66, 0xae, 0x5a, 0x66, 0x12, 0x87, 0xda, 0x5e, 0x59, 0xec, 0x68, 0x03, 0xbb, 0x8d,
-	0xed, 0x29, 0xaf, 0xc0, 0xcf, 0xa5, 0x88, 0x42, 0x51, 0xfb, 0x33, 0x31, 0x08, 0x77, 0xba, 0x9a,
-	0xdd, 0x2c, 0x34, 0x5a, 0xff, 0x4f, 0x25, 0x1f, 0x6b, 0x6b, 0xaf, 0x70, 0x32, 0x5e, 0x0b, 0xf4,
-	0x23, 0x28, 0x91, 0x20, 0xc0, 0x89, 0xa0, 0x1c, 0x93, 0x3e, 0x8d, 0xa4, 0x7b, 0x4f, 0xc7, 0x5b,
-	0xa9, 0x99, 0x8e, 0xa9, 0xa5, 0x1d, 0x53, 0x6b, 0x31, 0x36, 0xf8, 0x09, 0x19, 0x24, 0xd4, 0x2b,
-	0x92, 0x20, 0x78, 0x26, 0x28, 0x6f, 0x2a, 0x7b, 0xc4, 0x60, 0x46, 0x72, 0xe2, 0x87, 0x51, 0xdf,
-	0x9d, 0xd1, 0xd0, 0x67, 0x77, 0xbb, 0xdb, 0x5d, 0x43, 0xee, 0xa5, 0x5e, 0xd0, 0xc7, 0xb0, 0xac,
-	0x49, 0xd2, 0xff, 0x13, 0xb3, 0x58, 0xd9, 0x0b, 0x37, 0xaf, 0xdd, 0x7f, 0x63, 0xb2, 0xd2, 0xea,
-	0x57, 0xd6, 0xcc, 0xdb, 0x47, 0xd6, 0xfe, 0xd0, 0x98, 0x7b, 0x8b, 0x8a, 0xe5, 0x92, 0x10, 0x7d,
-	0x02, 0xf7, 0x95, 0xb8, 0x71, 0x95, 0x7d, 0xf6, 0x56, 0xf6, 0xc6, 0x65, 0xf6, 0xa5, 0x93, 0x6b,
-	0xa4, 0x68, 0x1d, 0x0a, 0x82, 0xf2, 0x11, 0xe5, 0x38, 0x22, 0x43, 0xea, 0x82, 0xea, 0x4c, 0x0f,
-	0x8c, 0xe8, 0x80, 0x0c, 0x29, 0x6a, 0x41, 0x31, 0x0c, 0x06, 0x14, 0xcb, 0x70, 0x48, 0x59, 0x22,
-	0xdd, 0x82, 0xf6, 0xfa, 0xe0, 0xca, 0x6e, 0xec, 0xda, 0xb6, 0x69, 0xe5, 0x7e, 0xff, 0x9f, 0x75,
-	0xc7, 0x2b, 0x28, 0x50, 0xd7, 0x60, 0xd0, 0x2e, 0xcc, 0x05, 0x9c, 0x84, 0xd1, 0x98, 0xa4, 0xf8,
-	0x66, 0x24, 0x45, 0x8d, 0x4a, 0x59, 0x9e, 0x00, 0x98, 0xc1, 0x85, 0x07, 0xac, 0xef, 0xce, 0xe9,
-	0xf6, 0xfb, 0xe6, 0xb5, 0x5b, 0x7b, 0x3e, 0xdf, 0x46, 0x8d, 0x5a, 0x53, 0x7f, 0x3c, 0x65, 0x7d,
-	0x6f, 0x96, 0xa4, 0x4b, 0xd4, 0x06, 0x94, 0x08, 0x8a, 0x39, 0x1d, 0x32, 0x49, 0x31, 0x09, 0x02,
-	0x4e, 0x85, 0x70, 0x4b, 0xaf, 0xed, 0xb4, 0x72, 0x22, 0xa8, 0xa7, 0x41, 0x4d, 0x83, 0x41, 0x4f,
-	0x60, 0xb1, 0x4f, 0x23, 0xca, 0x89, 0x54, 0x74, 0x3f, 0x4f, 0xa8, 0x90, 0x38, 0x0c, 0xdc, 0xf9,
-	0xd7, 0x52, 0x2d, 0xa4, 0x30, 0xcf, 0xa0, 0xf6, 0x03, 0xf4, 0x67, 0x07, 0x56, 0x7b, 0x8c, 0xbf,
-	0x24, 0x3c, 0xc0, 0xfe, 0x20, 0xa4, 0x91, 0xc4, 0x3e, 0xe5, 0x12, 0x07, 0x54, 0x92, 0x70, 0x20,
-	0xdc, 0xb2, 0x1e, 0x5e, 0xbd, 0xbb, 0x6d, 0xe7, 0xc7, 0xc6, 0xe1, 0x8e, 0xf6, 0xb7, 0x43, 0xb9,
-	0xdc, 0x35, 0xde, 0x26, 0x66, 0x99, 0xdb, 0xbb, 0xc1, 0x0a, 0xfd, 0xc9, 0x81, 0x75, 0x41, 0x25,
-	0xf6, 0x13, 0xce, 0x75, 0xc0, 0xd7, 0xc4, 0xbd, 0xa0, 0x8b, 0x11, 0xde, 0x6d, 0xdc, 0x1d, 0x2a,
-	0x77, 0x8c, 0xcf, 0x2b, 0x41, 0x79, 0xab, 0xe2, 0x66, 0x25, 0xfa, 0x16, 0xa0, 0x98, 0xb3, 0xd3,
-	0x33, 0xbc, 0xbd, 0xb5, 0xa5, 0x3c, 0xca, 0x30, 0x4a, 0xa8, 0x8b, 0xaa, 0xce, 0x66, 0xde, 0x2b,
-	0x6b, 0xcd, 0xf6, 0xd6, 0xd6, 0x8e, 0x95, 0xa3, 0x3a, 0x2c, 0x9d, 0xf6, 0x7a, 0x38, 0x4a, 0x86,
-	0x58, 0xf2, 0x44, 0x48, 0x1a, 0xe0, 0x13, 0x16, 0x0b, 0x77, 0xb1, 0xea, 0x6c, 0xce, 0x79, 0x0b,
-	0xa7, 0xbd, 0xde, 0x41, 0x32, 0xec, 0x1a, 0x4d, 0x9b, 0xc5, 0x02, 0x51, 0xd8, 0xe6, 0x34, 0xe6,
-	0x54, 0xa8, 0x32, 0x84, 0xf1, 0xe8, 0xe1, 0xa5, 0x2e, 0xc3, 0x44, 0x18, 0xf1, 0x50, 0x1d, 0x78,
-	0x81, 0x5a, 0x3f, 0x72, 0x97, 0xb4, 0xf7, 0x77, 0xc7, 0xc0, 0xfd, 0x78, 0xf4, 0x70, 0xa2, 0xcf,
-	0x9a, 0x42, 0x89, 0xde, 0xd7, 0x90, 0xfd, 0x78, 0xf4, 0x08, 0x7d, 0x1d, 0xe6, 0xc5, 0x8b, 0x30,
-	0xc6, 0x2a, 0x38, 0x25, 0x8d, 0x02, 0x77, 0x59, 0x93, 0xcc, 0x29, 0xf1, 0x07, 0xbd, 0x5e, 0x53,
-	0x0b, 0x51, 0x19, 0xb2, 0xa3, 0x90, 0xb8, 0xf7, 0xf5, 0x8f, 0xad, 0x96, 0xe8, 0x97, 0x0e, 0xcc,
-	0x27, 0x71, 0x9f, 0x93, 0x20, 0x3d, 0x12, 0x84, 0xbb, 0xa2, 0xff, 0xa6, 0x8f, 0xef, 0x76, 0x87,
-	0x9e, 0x19, 0x27, 0xe6, 0xfc, 0xf0, 0x4a, 0xc9, 0xc5, 0x4f, 0x81, 0x0e, 0x61, 0x51, 0x48, 0x4e,
-	0xc9, 0x10, 0x4f, 0xcc, 0x17, 0xf7, 0xcd, 0x46, 0xc3, 0x82, 0xc1, 0xee, 0x5f, 0x98, 0x32, 0x7f,
-	0x70, 0x60, 0x25, 0x8c, 0x24, 0xe5, 0x11, 0x19, 0x8c, 0x8b, 0x6d, 0xcf, 0xbc, 0x07, 0x9a, 0xd5,
-	0xbf, 0xdb, 0xfc, 0xf6, 0xad, 0x33, 0xbb, 0x45, 0x36, 0xcf, 0xe5, 0xf0, 0x3a, 0x31, 0xea, 0xc0,
-	0x72, 0x40, 0x07, 0xe4, 0x8c, 0xaa, 0x5f, 0x9b, 0x89, 0xf3, 0x84, 0x2b, 0x6f, 0x96, 0xf0, 0xa2,
-	0x45, 0xef, 0x28, 0x70, 0x9a, 0xf2, 0x27, 0xb0, 0x7a, 0x9c, 0xf4, 0x7b, 0xe1, 0x29, 0xe6, 0x74,
-	0x44, 0xb9, 0xa0, 0x98, 0x46, 0xea, 0xd6, 0x81, 0x19, 0x0f, 0x28, 0x77, 0x57, 0x5f, 0x37, 0x84,
-	0x5a, 0x19, 0xd7, 0xf1, 0x5c, 0x43, 0xe1, 0x19, 0x86, 0x3d, 0x4d, 0x70, 0xa8, 0xf0, 0xa8, 0x0d,
-	0xf3, 0xe9, 0x48, 0x4b, 0xa3, 0x7d, 0xe7, 0xcd, 0xa2, 0x2d, 0x59, 0x9c, 0x0d, 0xb4, 0xf2, 0x8f,
-	0x2c, 0xcc, 0xd8, 0x73, 0x13, 0xfd, 0xce, 0x81, 0x12, 0x8b, 0xa9, 0xb1, 0x37, 0xc7, 0x8e, 0xb9,
-	0x95, 0xf9, 0x5f, 0xca, 0x39, 0x5d, 0x3b, 0x4c, 0x7d, 0xa9, 0xf3, 0x6c, 0x62, 0xaa, 0xcd, 0xb1,
-	0x8b, 0x2a, 0xf4, 0x1d, 0x70, 0xd3, 0x74, 0x4f, 0x28, 0x09, 0x28, 0x17, 0xb8, 0xc7, 0x38, 0x96,
-	0xa4, 0x2f, 0xdc, 0x4c, 0x35, 0xbb, 0x39, 0xeb, 0x2d, 0x5b, 0x7d, 0xdb, 0xa8, 0x1f, 0x33, 0xde,
-	0x25, 0x7d, 0x81, 0x7e, 0x00, 0xf3, 0x76, 0xec, 0x09, 0x32, 0x8c, 0x07, 0xea, 0xe6, 0x61, 0xae,
-	0x6f, 0x8b, 0x36, 0x23, 0x75, 0xf5, 0xac, 0x1d, 0x99, 0x9b, 0xb5, 0x57, 0x32, 0xb6, 0x1d, 0x6b,
-	0xaa, 0xd0, 0x9c, 0x44, 0x01, 0x1b, 0x9e, 0xa3, 0x73, 0xb7, 0xa0, 0x8d, 0xed, 0x18, 0xfd, 0x43,
-	0x28, 0xb3, 0x11, 0xe5, 0x64, 0x30, 0x38, 0x87, 0x4f, 0xdf, 0x0c, 0x9f, 0xb7, 0xc6, 0x29, 0x7e,
-	0xa3, 0x06, 0x73, 0x13, 0x05, 0x42, 0x05, 0x98, 0xd9, 0x3f, 0xf8, 0xb1, 0xb7, 0xd7, 0xe9, 0x94,
-	0xa7, 0x10, 0xc0, 0xbd, 0x3d, 0xb3, 0x76, 0x2a, 0xb9, 0x5f, 0xfd, 0x71, 0x6d, 0xaa, 0xf2, 0x3d,
-	0x58, 0xbe, 0xb6, 0xef, 0xd1, 0x57, 0xa1, 0x98, 0x44, 0xe1, 0x29, 0x16, 0xcc, 0x7f, 0x41, 0xa5,
-	0xd0, 0x7b, 0x9a, 0xf7, 0x0a, 0x4a, 0xd6, 0x31, 0xa2, 0xca, 0x6f, 0x1c, 0x58, 0xbd, 0x65, 0x6c,
-	0xa3, 0x87, 0x30, 0x23, 0x92, 0xe3, 0x9f, 0x51, 0x5f, 0x6a, 0xf4, 0xed, 0xe7, 0x67, 0x6a, 0x8a,
-	0x10, 0xe4, 0xd4, 0x69, 0xa3, 0x4b, 0x9e, 0xf7, 0xf4, 0x5a, 0x4d, 0xbd, 0x20, 0x12, 0xba, 0x8e,
-	0x79, 0x4f, 0x2d, 0x95, 0x24, 0xe1, 0xa1, 0x2e, 0x4d, 0xde, 0x53, 0xcb, 0x27, 0xb9, 0x7c, 0xa6,
-	0x9c, 0xad, 0xfc, 0xdd, 0x81, 0xb9, 0x89, 0x41, 0xa5, 0x13, 0xb1, 0xe3, 0x71, 0xfc, 0x64, 0x98,
-	0xf5, 0x0a, 0x56, 0xa6, 0xef, 0xf3, 0x3f, 0x85, 0x99, 0xf4, 0x1a, 0x9c, 0xb9, 0xb3, 0x6b, 0x70,
-	0x4a, 0xa9, 0xca, 0x40, 0x23, 0x72, 0x3c, 0xa0, 0x81, 0x6d, 0xa3, 0x5b, 0xcb, 0x60, 0x4d, 0x37,
-	0xb6, 0x61, 0x76, 0xfc, 0x0e, 0x41, 0x79, 0xc8, 0x35, 0x9f, 0x75, 0x0f, 0xcb, 0x53, 0x68, 0x16,
-	0xa6, 0xdb, 0xdd, 0xee, 0xd1, 0x76, 0xd9, 0x49, 0x97, 0x8d, 0x72, 0xc6, 0xec, 0xe5, 0xc6, 0x2f,
-	0xc0, 0xbd, 0xe9, 0xf4, 0x47, 0x45, 0xc8, 0x77, 0x9a, 0x07, 0xfb, 0xdd, 0xfd, 0x8f, 0xf6, 0xca,
-	0x53, 0xa8, 0x0c, 0xc5, 0xc7, 0x87, 0xde, 0xf3, 0xa6, 0xb7, 0x8b, 0x0f, 0x0f, 0x9e, 0x7e, 0x58,
-	0x76, 0x10, 0x82, 0x52, 0xf3, 0xe8, 0x68, 0xef, 0x60, 0x17, 0x5b, 0x45, 0x39, 0xa3, 0xac, 0x52,
-	0x0c, 0xee, 0xec, 0x75, 0xcb, 0x59, 0xb4, 0x02, 0x8b, 0xcd, 0xa7, 0xcf, 0x9b, 0x1f, 0x76, 0xf0,
-	0x04, 0x3c, 0x67, 0x02, 0x68, 0xb9, 0x30, 0x6f, 0x9e, 0x26, 0x22, 0xa6, 0x7e, 0xd8, 0x0b, 0x29,
-	0x47, 0xd3, 0x7f, 0xfd, 0xe2, 0xb3, 0xac, 0xb3, 0xf1, 0x5b, 0x07, 0xb2, 0x5e, 0x20, 0x50, 0x17,
-	0xe6, 0x26, 0x5e, 0xc7, 0xb6, 0x31, 0xd6, 0xaf, 0xb9, 0xf5, 0x9a, 0xed, 0xeb, 0x68, 0xb3, 0x56,
-	0xe9, 0xf3, 0x7f, 0xaf, 0x4f, 0xe9, 0x5f, 0xfd, 0xd7, 0xfa, 0x57, 0x2f, 0xfa, 0x17, 0xb4, 0xe8,
-	0x3d, 0x58, 0xb8, 0xf8, 0x24, 0x32, 0x43, 0xe8, 0xca, 0xab, 0x6c, 0xfe, 0xc2, 0xf3, 0x47, 0xfd,
-	0x1a, 0x1b, 0x7f, 0x71, 0x00, 0xce, 0x37, 0x0c, 0x7d, 0x05, 0x72, 0xe3, 0xe9, 0x35, 0x01, 0xd4,
-	0x62, 0xf4, 0x1e, 0xdc, 0xb3, 0xa7, 0x4f, 0x46, 0xc7, 0xbc, 0x72, 0x65, 0x17, 0x3b, 0xfa, 0x45,
-	0xac, 0x86, 0x70, 0x7b, 0xca, 0xb3, 0xc6, 0xe8, 0xbb, 0x50, 0x54, 0x6d, 0x17, 0x4c, 0x3e, 0xd7,
-	0x96, 0xae, 0x80, 0x9b, 0xd1, 0x99, 0x7a, 0xa2, 0x69, 0x5b, 0x13, 0x63, 0x6b, 0x0e, 0x0a, 0x36,
-	0x21, 0x25, 0x7d, 0x92, 0xcb, 0x67, 0xcb, 0xb9, 0xd6, 0x07, 0x9f, 0xbf, 0x5a, 0x73, 0xfe, 0xf5,
-	0x6a, 0xcd, 0xf9, 0xef, 0xab, 0x35, 0x07, 0x76, 0x43, 0x66, 0x4a, 0xa7, 0x2f, 0x3a, 0x6f, 0xd9,
-	0xb5, 0x47, 0xce, 0x47, 0x99, 0x51, 0xe3, 0xf8, 0x9e, 0x8e, 0xe5, 0xdb, 0xff, 0x0b, 0x00, 0x00,
-	0xff, 0xff, 0xeb, 0xea, 0x36, 0x16, 0x60, 0x11, 0x00, 0x00,
-}

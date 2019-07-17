@@ -1,10 +1,11 @@
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  creationTimestamp: null
-  name: hello
+
 spec:
   replicas: 7
+  selector:
+    matchLabels:
+      app: hello  
+      tier: backend
+      track: stable
   strategy: {}
   template:
     metadata:
@@ -33,13 +34,13 @@ spec:
         - --binaryPath
         - /usr/local/bin/envoy
         - --serviceCluster
-        - hello.default
+        - hello.$(POD_NAMESPACE)
         - --drainDuration
-        - 2s
+        - 45s
         - --parentShutdownDuration
-        - 3s
+        - 1m0s
         - --discoveryAddress
-        - istio-pilot:15007
+        - istio-pilot:15010
         - --zipkinAddress
         - ""
         - --connectTimeout
@@ -94,6 +95,7 @@ spec:
         resources:
           requests:
             cpu: 10m
+            memory: 30Mi
         securityContext:
           readOnlyRootFilesystem: true
           runAsUser: 1337
@@ -144,6 +146,8 @@ spec:
             cpu: 10m
             memory: 10Mi
         securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
           capabilities:
             add:
             - NET_ADMIN

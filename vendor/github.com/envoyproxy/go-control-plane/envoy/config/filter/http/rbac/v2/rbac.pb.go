@@ -3,14 +3,17 @@
 
 package v2
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2alpha"
-import _ "github.com/gogo/protobuf/gogoproto"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	fmt "fmt"
+	io "io"
+	math "math"
 
-import io "io"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+
+	v2 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -27,21 +30,21 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type RBAC struct {
 	// Specify the RBAC rules to be applied globally.
 	// If absent, no enforcing RBAC policy will be applied.
-	Rules *v2alpha.RBAC `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
+	Rules *v2.RBAC `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
 	// Shadow rules are not enforced by the filter (i.e., returning a 403)
 	// but will emit stats and logs and can be used for rule testing.
 	// If absent, no shadow RBAC policy will be applied.
-	ShadowRules          *v2alpha.RBAC `protobuf:"bytes,2,opt,name=shadow_rules,json=shadowRules,proto3" json:"shadow_rules,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	ShadowRules          *v2.RBAC `protobuf:"bytes,2,opt,name=shadow_rules,json=shadowRules,proto3" json:"shadow_rules,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *RBAC) Reset()         { *m = RBAC{} }
 func (m *RBAC) String() string { return proto.CompactTextString(m) }
 func (*RBAC) ProtoMessage()    {}
 func (*RBAC) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rbac_da48957dcb6c4c47, []int{0}
+	return fileDescriptor_15d628c6558085a7, []int{0}
 }
 func (m *RBAC) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -58,8 +61,8 @@ func (m *RBAC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *RBAC) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RBAC.Merge(dst, src)
+func (m *RBAC) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RBAC.Merge(m, src)
 }
 func (m *RBAC) XXX_Size() int {
 	return m.Size()
@@ -70,14 +73,14 @@ func (m *RBAC) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RBAC proto.InternalMessageInfo
 
-func (m *RBAC) GetRules() *v2alpha.RBAC {
+func (m *RBAC) GetRules() *v2.RBAC {
 	if m != nil {
 		return m.Rules
 	}
 	return nil
 }
 
-func (m *RBAC) GetShadowRules() *v2alpha.RBAC {
+func (m *RBAC) GetShadowRules() *v2.RBAC {
 	if m != nil {
 		return m.ShadowRules
 	}
@@ -97,7 +100,7 @@ func (m *RBACPerRoute) Reset()         { *m = RBACPerRoute{} }
 func (m *RBACPerRoute) String() string { return proto.CompactTextString(m) }
 func (*RBACPerRoute) ProtoMessage()    {}
 func (*RBACPerRoute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rbac_da48957dcb6c4c47, []int{1}
+	return fileDescriptor_15d628c6558085a7, []int{1}
 }
 func (m *RBACPerRoute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -114,8 +117,8 @@ func (m *RBACPerRoute) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (dst *RBACPerRoute) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RBACPerRoute.Merge(dst, src)
+func (m *RBACPerRoute) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RBACPerRoute.Merge(m, src)
 }
 func (m *RBACPerRoute) XXX_Size() int {
 	return m.Size()
@@ -137,6 +140,32 @@ func init() {
 	proto.RegisterType((*RBAC)(nil), "envoy.config.filter.http.rbac.v2.RBAC")
 	proto.RegisterType((*RBACPerRoute)(nil), "envoy.config.filter.http.rbac.v2.RBACPerRoute")
 }
+
+func init() {
+	proto.RegisterFile("envoy/config/filter/http/rbac/v2/rbac.proto", fileDescriptor_15d628c6558085a7)
+}
+
+var fileDescriptor_15d628c6558085a7 = []byte{
+	// 270 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x90, 0x41, 0x4b, 0xc3, 0x30,
+	0x18, 0x86, 0x49, 0xa9, 0x32, 0xb3, 0x1d, 0xa4, 0x08, 0x4a, 0x0f, 0x75, 0xec, 0x20, 0x82, 0x90,
+	0x48, 0xbd, 0x09, 0x1e, 0xac, 0x37, 0x41, 0x28, 0x39, 0xee, 0x22, 0x69, 0x9b, 0x75, 0x81, 0xb2,
+	0xaf, 0xa4, 0x59, 0xe6, 0xfe, 0xa1, 0x47, 0x7f, 0x82, 0xf4, 0x97, 0x48, 0x92, 0x7a, 0x28, 0x3b,
+	0xf4, 0x94, 0x8f, 0x2f, 0xcf, 0xfb, 0x24, 0xbc, 0xf8, 0x41, 0xec, 0x0c, 0x1c, 0x69, 0x09, 0xbb,
+	0x8d, 0xac, 0xe9, 0x46, 0x36, 0x5a, 0x28, 0xba, 0xd5, 0xba, 0xa5, 0xaa, 0xe0, 0x25, 0x35, 0xa9,
+	0x3b, 0x49, 0xab, 0x40, 0x43, 0xb4, 0x74, 0x30, 0xf1, 0x30, 0xf1, 0x30, 0xb1, 0x30, 0x71, 0x90,
+	0x49, 0xe3, 0xdb, 0x91, 0xee, 0x54, 0x11, 0x5f, 0x1b, 0xde, 0xc8, 0x8a, 0x6b, 0x41, 0xff, 0x87,
+	0xe1, 0xe2, 0xaa, 0x86, 0x1a, 0xdc, 0x48, 0xed, 0xe4, 0xb7, 0xab, 0x03, 0x0e, 0x59, 0xf6, 0xfa,
+	0x16, 0x3d, 0xe2, 0x33, 0xb5, 0x6f, 0x44, 0x77, 0x83, 0x96, 0xe8, 0x7e, 0x9e, 0xc6, 0x64, 0xf4,
+	0x93, 0xe1, 0x75, 0x62, 0x51, 0xe6, 0xc1, 0xe8, 0x05, 0x2f, 0xba, 0x2d, 0xaf, 0xe0, 0xf0, 0xe9,
+	0x83, 0xc1, 0x64, 0x70, 0xee, 0x79, 0x66, 0xf1, 0xd5, 0x1a, 0x2f, 0xec, 0x32, 0x17, 0x8a, 0xc1,
+	0x5e, 0x8b, 0xe8, 0x19, 0x87, 0x16, 0x1e, 0x34, 0x77, 0x64, 0xaa, 0x09, 0xaf, 0x74, 0x99, 0xf7,
+	0x70, 0x86, 0x2e, 0x03, 0x36, 0xab, 0x64, 0xc7, 0x8b, 0x46, 0x54, 0xd9, 0xc7, 0x77, 0x9f, 0xa0,
+	0x9f, 0x3e, 0x41, 0xbf, 0x7d, 0x82, 0x30, 0x91, 0xe0, 0x6d, 0xad, 0x82, 0xaf, 0xe3, 0xa4, 0x38,
+	0xbb, 0x60, 0x05, 0x2f, 0x73, 0xdb, 0x4e, 0x8e, 0xd6, 0x81, 0x49, 0x8b, 0x73, 0x57, 0xd5, 0xd3,
+	0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x50, 0x48, 0xa0, 0x27, 0xcb, 0x01, 0x00, 0x00,
+}
+
 func (m *RBAC) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -282,7 +311,7 @@ func (m *RBAC) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -310,7 +339,7 @@ func (m *RBAC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -319,11 +348,14 @@ func (m *RBAC) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthRbac
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRbac
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Rules == nil {
-				m.Rules = &v2alpha.RBAC{}
+				m.Rules = &v2.RBAC{}
 			}
 			if err := m.Rules.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -343,7 +375,7 @@ func (m *RBAC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -352,11 +384,14 @@ func (m *RBAC) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthRbac
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRbac
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ShadowRules == nil {
-				m.ShadowRules = &v2alpha.RBAC{}
+				m.ShadowRules = &v2.RBAC{}
 			}
 			if err := m.ShadowRules.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -369,6 +404,9 @@ func (m *RBAC) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthRbac
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthRbac
 			}
 			if (iNdEx + skippy) > l {
@@ -399,7 +437,7 @@ func (m *RBACPerRoute) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -427,7 +465,7 @@ func (m *RBACPerRoute) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -436,6 +474,9 @@ func (m *RBACPerRoute) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthRbac
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRbac
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -453,6 +494,9 @@ func (m *RBACPerRoute) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthRbac
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthRbac
 			}
 			if (iNdEx + skippy) > l {
@@ -522,8 +566,11 @@ func skipRbac(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthRbac
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthRbac
 			}
 			return iNdEx, nil
@@ -554,6 +601,9 @@ func skipRbac(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthRbac
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -572,28 +622,3 @@ var (
 	ErrInvalidLengthRbac = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowRbac   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/config/filter/http/rbac/v2/rbac.proto", fileDescriptor_rbac_da48957dcb6c4c47)
-}
-
-var fileDescriptor_rbac_da48957dcb6c4c47 = []byte{
-	// 271 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0x41, 0x4b, 0xc3, 0x30,
-	0x14, 0xc7, 0xc9, 0xa8, 0x32, 0xb2, 0x1d, 0xa4, 0x08, 0xca, 0x0e, 0x75, 0x0c, 0x11, 0x41, 0x78,
-	0x81, 0x8a, 0x17, 0x6f, 0xd6, 0x9b, 0xa7, 0x91, 0xe3, 0x2e, 0x92, 0xae, 0x59, 0x1b, 0x08, 0x7b,
-	0x25, 0xcd, 0xa2, 0x3b, 0xfa, 0xed, 0x3c, 0xfa, 0x11, 0xa4, 0x9f, 0x44, 0x92, 0x54, 0x70, 0xa7,
-	0x79, 0xea, 0x9f, 0xd7, 0xdf, 0xff, 0x97, 0xc7, 0xa3, 0x77, 0x72, 0xeb, 0x70, 0xcf, 0xd6, 0xb8,
-	0xdd, 0xa8, 0x9a, 0x6d, 0x94, 0xb6, 0xd2, 0xb0, 0xc6, 0xda, 0x96, 0x99, 0x52, 0xac, 0x99, 0xcb,
-	0xc3, 0x17, 0x5a, 0x83, 0x16, 0xd3, 0x79, 0x80, 0x21, 0xc2, 0x10, 0x61, 0xf0, 0x30, 0x04, 0xc8,
-	0xe5, 0xb3, 0xeb, 0x03, 0xdd, 0xa0, 0x10, 0xba, 0x6d, 0xc4, 0x1f, 0xcf, 0xec, 0xc2, 0x09, 0xad,
-	0x2a, 0x61, 0x25, 0xfb, 0x0d, 0xc3, 0x8f, 0xf3, 0x1a, 0x6b, 0x0c, 0x91, 0xf9, 0x14, 0xa7, 0x8b,
-	0x0f, 0x42, 0x13, 0x5e, 0x3c, 0x3d, 0xa7, 0x0f, 0xf4, 0xc4, 0xec, 0xb4, 0xec, 0x2e, 0xc9, 0x9c,
-	0xdc, 0x4e, 0xf2, 0x2b, 0x38, 0xd8, 0x67, 0xd8, 0x21, 0xbc, 0x06, 0x9e, 0xe7, 0x91, 0x4e, 0x0b,
-	0x3a, 0xed, 0x1a, 0x51, 0xe1, 0xdb, 0x6b, 0x6c, 0x8f, 0xfe, 0xd7, 0x9e, 0xc4, 0x12, 0xf7, 0x9d,
-	0xc5, 0x8a, 0x4e, 0xfd, 0x70, 0x29, 0x0d, 0xc7, 0x9d, 0x95, 0xe9, 0x23, 0x4d, 0x7c, 0x63, 0x70,
-	0xdd, 0xc0, 0xb1, 0xcb, 0x44, 0x65, 0xe8, 0xbc, 0x24, 0x63, 0x72, 0x36, 0xe2, 0xe3, 0x4a, 0x75,
-	0xa2, 0xd4, 0xb2, 0x2a, 0x8a, 0xcf, 0x3e, 0x23, 0x5f, 0x7d, 0x46, 0xbe, 0xfb, 0x8c, 0x50, 0x50,
-	0x18, 0x6d, 0xad, 0xc1, 0xf7, 0xfd, 0x51, 0xf1, 0x92, 0xac, 0x46, 0x2e, 0x2f, 0x4f, 0xc3, 0xa9,
-	0xee, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x92, 0x41, 0x9c, 0xd7, 0xd0, 0x01, 0x00, 0x00,
-}

@@ -26,14 +26,17 @@ import (
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
+	xdsutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 
 	meshconfig "istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
-	"istio.io/istio/pkg/log"
+	"istio.io/istio/pkg/features/pilot"
+	"istio.io/pkg/log"
 )
 
 const (
@@ -244,6 +247,11 @@ func IsProxyVersionGE11(node *model.Proxy) bool {
 	return ver >= "1.1"
 }
 
+// IsXDSMarshalingToAnyEnabled controls whether "marshaling to Any" feature is enabled.
+func IsXDSMarshalingToAnyEnabled(node *model.Proxy) bool {
+	return IsProxyVersionGE11(node) && !pilot.DisableXDSMarshalingToAny()
+}
+
 // ResolveHostsInNetworksConfig will go through the Gateways addresses for all
 // networks in the config and if it's not an IP address it will try to lookup
 // that hostname and replace it with the IP address in the config
@@ -256,6 +264,9 @@ func ResolveHostsInNetworksConfig(config *meshconfig.MeshNetworks) {
 			gwIP := net.ParseIP(gw.GetAddress())
 			if gwIP == nil {
 				addrs, err := net.LookupHost(gw.GetAddress())
+				if err != nil {
+					log.Warnf("error resolving host %#v: %v", gw.GetAddress(), err)
+				}
 				if err == nil && len(addrs) > 0 {
 					gw.Gw = &meshconfig.Network_IstioNetworkGateway_Address{
 						Address: addrs[0],
@@ -278,6 +289,14 @@ func ConvertLocality(locality string) *core.Locality {
 		Zone:    zone,
 		SubZone: subzone,
 	}
+}
+
+// IsLocalityEmpty checks if a locality is empty (checking region is good enough, based on how its initialized)
+func IsLocalityEmpty(locality *core.Locality) bool {
+	if locality == nil || (len(locality.GetRegion()) == 0) {
+		return true
+	}
+	return false
 }
 
 func LocalityMatch(proxyLocality *core.Locality, ruleLocality string) bool {
@@ -332,13 +351,13 @@ func CloneCluster(cluster *xdsapi.Cluster) xdsapi.Cluster {
 }
 
 // return a shallow copy ClusterLoadAssignment
-func CloneClusterLoadAssignment(endpoint *xdsapi.ClusterLoadAssignment) xdsapi.ClusterLoadAssignment {
+func CloneClusterLoadAssignment(original *xdsapi.ClusterLoadAssignment) xdsapi.ClusterLoadAssignment {
 	out := xdsapi.ClusterLoadAssignment{}
-	if endpoint == nil {
+	if original == nil {
 		return out
 	}
 
-	out = *endpoint
+	out = *original
 	out.Endpoints = cloneLocalityLbEndpoints(out.Endpoints)
 
 	return out
@@ -376,4 +395,14 @@ func BuildConfigInfoMetadata(config model.ConfigMeta) *core.Metadata {
 			},
 		},
 	}
+}
+
+// IsHTTPFilterChain returns true if the filter chain contains a HTTP connection manager filter
+func IsHTTPFilterChain(filterChain listener.FilterChain) bool {
+	for _, f := range filterChain.Filters {
+		if f.Name == xdsutil.HTTPConnectionManager {
+			return true
+		}
+	}
+	return false
 }

@@ -28,7 +28,9 @@ mkdir -vp "$WORK_DIR/istio"
 cp -R "./istio-${CB_VERSION}/install" "$WORK_DIR/istio/install"
 
 pushd "$WORK_DIR"
-    git clone -b master https://github.com/istio/cni.git
+    git clone -b "${CB_BRANCH}" https://github.com/istio/cni.git
+    sed -i "s|hub: gcr.io/istio-release|hub: ${CB_DOCKER_HUB}|g" cni/deployments/kubernetes/install/helm/istio-cni/values.yaml
+    sed -i "s|tag: .*-latest-daily|tag: ${CB_VERSION}|g" cni/deployments/kubernetes/install/helm/istio-cni/values.yaml
 popd
 
 
@@ -42,13 +44,12 @@ CHARTS=(
 # Prepare helm setup
 mkdir -vp "$HELM_DIR"
 $HELM init --client-only
-$HELM repo add istio.io https://storage.googleapis.com/istio-prerelease/daily-build/master-latest-daily/charts
 
 # Create a package for each charts and build the repo index.
 mkdir -vp "$HELM_BUILD_DIR"
 for CHART_PATH in "${CHARTS[@]}"
 do
-    $HELM package -u "$CHART_PATH" -d "$HELM_BUILD_DIR"
+    $HELM package "$CHART_PATH" -d "$HELM_BUILD_DIR"
 done
 
 $HELM repo index "$HELM_BUILD_DIR"

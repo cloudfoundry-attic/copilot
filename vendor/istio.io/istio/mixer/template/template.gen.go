@@ -27,12 +27,11 @@ import (
 	istio_adapter_model_v1beta1 "istio.io/api/mixer/adapter/model/v1beta1"
 	istio_policy_v1beta1 "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/pkg/adapter"
-	"istio.io/istio/mixer/pkg/attribute"
-	"istio.io/istio/mixer/pkg/lang/ast"
 	"istio.io/istio/mixer/pkg/lang/compiled"
 	"istio.io/istio/mixer/pkg/runtime/lang"
 	"istio.io/istio/mixer/pkg/template"
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/attribute"
+	"istio.io/pkg/log"
 
 	"istio.io/istio/mixer/adapter/kubernetesenv/template"
 
@@ -108,6 +107,11 @@ func (w *wrapperAttr) Names() []string {
 // Done indicates the bag can be reclaimed.
 func (w *wrapperAttr) Done() {
 	w.done()
+}
+
+// ReferenceTracker implements the interface.
+func (w *wrapperAttr) ReferenceTracker() attribute.ReferenceTracker {
+	return nil
 }
 
 // String provides a dump of an attribute Bag that avoids affecting the
@@ -494,7 +498,7 @@ var (
 			// See template.CreateOutputExpressionsFn for more details.
 			CreateOutputExpressions: func(
 				instanceParam proto.Message,
-				finder ast.AttributeDescriptorFinder,
+				finder attribute.AttributeDescriptorFinder,
 				expb lang.Compiler) (map[string]compiled.Expression, error) {
 				var err error
 				var expType istio_policy_v1beta1.ValueType
@@ -1113,6 +1117,24 @@ var (
 								return nil, fmt.Errorf("failed to evaluate expression for field '%s': %v", path+"DestinationUid", e)
 							}
 							return nil, fmt.Errorf("error type checking for field '%s': Evaluated expression type %v want %v", path+"DestinationUid", t, istio_policy_v1beta1.STRING)
+						}
+					}
+
+					if param.DestinationServiceNamespace != "" {
+						if t, e := tEvalFn(param.DestinationServiceNamespace); e != nil || t != istio_policy_v1beta1.STRING {
+							if e != nil {
+								return nil, fmt.Errorf("failed to evaluate expression for field '%s': %v", path+"DestinationServiceNamespace", e)
+							}
+							return nil, fmt.Errorf("error type checking for field '%s': Evaluated expression type %v want %v", path+"DestinationServiceNamespace", t, istio_policy_v1beta1.STRING)
+						}
+					}
+
+					if param.DestinationServiceName != "" {
+						if t, e := tEvalFn(param.DestinationServiceName); e != nil || t != istio_policy_v1beta1.STRING {
+							if e != nil {
+								return nil, fmt.Errorf("failed to evaluate expression for field '%s': %v", path+"DestinationServiceName", e)
+							}
+							return nil, fmt.Errorf("error type checking for field '%s': Evaluated expression type %v want %v", path+"DestinationServiceName", t, istio_policy_v1beta1.STRING)
 						}
 					}
 
@@ -3013,6 +3035,14 @@ type builder_edge_Template struct {
 
 	bldDestinationUid compiled.Expression
 
+	// builder for field destination_service_namespace: string.
+
+	bldDestinationServiceNamespace compiled.Expression
+
+	// builder for field destination_service_name: string.
+
+	bldDestinationServiceName compiled.Expression
+
 	// builder for field context_protocol: string.
 
 	bldContextProtocol compiled.Expression
@@ -3173,6 +3203,36 @@ func newBuilder_edge_Template(
 
 	}
 
+	if param.DestinationServiceNamespace == "" {
+		b.bldDestinationServiceNamespace = nil
+	} else {
+		b.bldDestinationServiceNamespace, expType, err = expb.Compile(param.DestinationServiceNamespace)
+		if err != nil {
+			return nil, template.NewErrorPath("DestinationServiceNamespace", err)
+		}
+
+		if expType != istio_policy_v1beta1.STRING {
+			err = fmt.Errorf("instance field type mismatch: expected='%v', actual='%v', expression='%s'", istio_policy_v1beta1.STRING, expType, param.DestinationServiceNamespace)
+			return nil, template.NewErrorPath("DestinationServiceNamespace", err)
+		}
+
+	}
+
+	if param.DestinationServiceName == "" {
+		b.bldDestinationServiceName = nil
+	} else {
+		b.bldDestinationServiceName, expType, err = expb.Compile(param.DestinationServiceName)
+		if err != nil {
+			return nil, template.NewErrorPath("DestinationServiceName", err)
+		}
+
+		if expType != istio_policy_v1beta1.STRING {
+			err = fmt.Errorf("instance field type mismatch: expected='%v', actual='%v', expression='%s'", istio_policy_v1beta1.STRING, expType, param.DestinationServiceName)
+			return nil, template.NewErrorPath("DestinationServiceName", err)
+		}
+
+	}
+
 	if param.ContextProtocol == "" {
 		b.bldContextProtocol = nil
 	} else {
@@ -3318,6 +3378,26 @@ func (b *builder_edge_Template) build(
 			return nil, template.NewErrorPath("DestinationUid", err)
 		}
 		r.DestinationUid = vString
+
+	}
+
+	if b.bldDestinationServiceNamespace != nil {
+
+		vString, err = b.bldDestinationServiceNamespace.EvaluateString(attrs)
+		if err != nil {
+			return nil, template.NewErrorPath("DestinationServiceNamespace", err)
+		}
+		r.DestinationServiceNamespace = vString
+
+	}
+
+	if b.bldDestinationServiceName != nil {
+
+		vString, err = b.bldDestinationServiceName.EvaluateString(attrs)
+		if err != nil {
+			return nil, template.NewErrorPath("DestinationServiceName", err)
+		}
+		r.DestinationServiceName = vString
 
 	}
 

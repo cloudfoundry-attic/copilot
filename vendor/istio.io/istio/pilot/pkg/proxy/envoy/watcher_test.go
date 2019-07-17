@@ -26,8 +26,6 @@ import (
 	"time"
 
 	"github.com/howeyc/fsnotify"
-
-	"istio.io/istio/pilot/pkg/model"
 )
 
 type TestAgent struct {
@@ -46,7 +44,7 @@ func TestRunSendConfig(t *testing.T) {
 	agent := &TestAgent{
 		configCh: make(chan interface{}),
 	}
-	watcher := NewWatcher([]CertSource{{Directory: "random"}}, agent.ConfigCh())
+	watcher := NewWatcher([]string{"/random"}, agent.ConfigCh())
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// watcher starts agent and schedules a config update
@@ -109,12 +107,20 @@ func TestWatchCerts_Multiple(t *testing.T) {
 }
 
 func TestWatchCerts(t *testing.T) {
-	name, err := ioutil.TempDir(os.TempDir(), "certs")
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "certs")
 	if err != nil {
-		t.Errorf("failed to create a temp dir: %v", err)
+		t.Fatalf("failed to create a temp dir: %v", err)
+	}
+	// create a temp file
+	tmpFile, err := ioutil.TempFile(tmpDir, "test.file")
+	if err != nil {
+		t.Fatalf("failed to create a temp file in testdata/certs: %v", err)
 	}
 	defer func() {
-		if err := os.RemoveAll(name); err != nil {
+		if err := tmpFile.Close(); err != nil {
+			t.Errorf("failed to close file %s: %v", tmpFile.Name(), err)
+		}
+		if err := os.RemoveAll(tmpDir); err != nil {
 			t.Errorf("failed to remove temp dir: %v", err)
 		}
 	}()
@@ -124,27 +130,53 @@ func TestWatchCerts(t *testing.T) {
 		called <- true
 	}
 
+	// test modify file event
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	go watchCerts(ctx, []string{name}, watchFileEvents, 50*time.Millisecond, callbackFunc)
+	go watchCerts(ctx, []string{tmpFile.Name()}, watchFileEvents, 50*time.Millisecond, callbackFunc)
 
 	// sleep one second to make sure the watcher is set up before change is made
 	time.Sleep(time.Second)
 
-	// make a change to the watched dir
-	if _, err := ioutil.TempFile(name, "test.file"); err != nil {
-		t.Errorf("failed to create a temp file in testdata/certs: %v", err)
+	// modify file
+	if _, err := tmpFile.Write([]byte("foo")); err != nil {
+		t.Fatalf("failed to update file %s: %v", tmpFile.Name(), err)
+	}
+
+	if err := tmpFile.Sync(); err != nil {
+		t.Fatalf("failed to sync file %s: %v", tmpFile.Name(), err)
 	}
 
 	select {
 	case <-called:
 		// expected
-		cancel()
+		break
 	case <-time.After(time.Second):
-		t.Errorf("The callback is not called within time limit " + time.Now().String())
-		cancel()
+		t.Fatalf("The callback is not called within time limit " + time.Now().String() + " when file was modified")
 	}
 
+	// test delete file event
+	go watchCerts(ctx, []string{tmpFile.Name()}, watchFileEvents, 50*time.Millisecond, callbackFunc)
+
+	// sleep one second to make sure the watcher is set up before change is made
+	time.Sleep(time.Second)
+
+	// delete the file
+	err = os.Remove(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("failed to delete file %s: %v", tmpFile.Name(), err)
+	}
+
+	select {
+	case <-called:
+		// expected
+		break
+	case <-time.After(time.Second):
+		t.Fatalf("The callback is not called within time limit " + time.Now().String() + " when file was deleted")
+	}
+
+	// call with nil
 	// should terminate immediately
 	go watchCerts(ctx, nil, watchFileEvents, 50*time.Millisecond, callbackFunc)
 }
@@ -161,10 +193,14 @@ func TestGenerateCertHash(t *testing.T) {
 	}()
 
 	h := sha256.New()
-	authFiles := []string{model.CertChainFilename, model.KeyFilename, model.RootCertFilename}
+	authFiles := []string{
+		path.Join(name, "cert.pem"),
+		path.Join(name, "key.pem"),
+		path.Join(name, "root-cert.pem"),
+	}
 	for _, file := range authFiles {
 		content := []byte(file)
-		if err := ioutil.WriteFile(path.Join(name, file), content, 0644); err != nil {
+		if err := ioutil.WriteFile(file, content, 0644); err != nil {
 			t.Errorf("failed to write file %s (error %v)", file, err)
 		}
 		if _, err := h.Write(content); err != nil {
@@ -174,13 +210,13 @@ func TestGenerateCertHash(t *testing.T) {
 	expectedHash := h.Sum(nil)
 
 	h2 := sha256.New()
-	generateCertHash(h2, name, append(authFiles, "missing-file"))
+	generateCertHash(h2, append(authFiles, path.Join(name, "missing-file")))
 	actualHash := h2.Sum(nil)
 	if !bytes.Equal(actualHash, expectedHash) {
 		t.Errorf("Actual hash value (%v) is different than the expected hash value (%v)", actualHash, expectedHash)
 	}
 
-	generateCertHash(h2, "", nil)
+	generateCertHash(h2, nil)
 	emptyHash := h2.Sum(nil)
 	if !bytes.Equal(emptyHash, expectedHash) {
 		t.Error("hash should not be affected by empty directory")

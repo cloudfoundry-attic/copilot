@@ -3,17 +3,19 @@
 
 package endpoint
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-import _ "github.com/gogo/protobuf/gogoproto"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	bytes "bytes"
+	fmt "fmt"
+	io "io"
+	math "math"
 
-import bytes "bytes"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
 
-import io "io"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -55,7 +57,7 @@ func (m *Endpoint) Reset()         { *m = Endpoint{} }
 func (m *Endpoint) String() string { return proto.CompactTextString(m) }
 func (*Endpoint) ProtoMessage()    {}
 func (*Endpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_endpoint_b31e45b01d8125cc, []int{0}
+	return fileDescriptor_a9d2a3e4ee06324f, []int{0}
 }
 func (m *Endpoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -72,8 +74,8 @@ func (m *Endpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Endpoint) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Endpoint.Merge(dst, src)
+func (m *Endpoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Endpoint.Merge(m, src)
 }
 func (m *Endpoint) XXX_Size() int {
 	return m.Size()
@@ -116,7 +118,7 @@ func (m *Endpoint_HealthCheckConfig) Reset()         { *m = Endpoint_HealthCheck
 func (m *Endpoint_HealthCheckConfig) String() string { return proto.CompactTextString(m) }
 func (*Endpoint_HealthCheckConfig) ProtoMessage()    {}
 func (*Endpoint_HealthCheckConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_endpoint_b31e45b01d8125cc, []int{0, 0}
+	return fileDescriptor_a9d2a3e4ee06324f, []int{0, 0}
 }
 func (m *Endpoint_HealthCheckConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -133,8 +135,8 @@ func (m *Endpoint_HealthCheckConfig) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (dst *Endpoint_HealthCheckConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Endpoint_HealthCheckConfig.Merge(dst, src)
+func (m *Endpoint_HealthCheckConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Endpoint_HealthCheckConfig.Merge(m, src)
 }
 func (m *Endpoint_HealthCheckConfig) XXX_Size() int {
 	return m.Size()
@@ -170,20 +172,14 @@ type LbEndpoint struct {
 	// :ref:`RouteAction <envoy_api_msg_route.RouteAction>` metadata_match field
 	// to subset the endpoints considered in cluster load balancing.
 	Metadata *core.Metadata `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	// The optional load balancing weight of the upstream host, in the range 1 -
-	// 128. Envoy uses the load balancing weight in some of the built in load
+	// The optional load balancing weight of the upstream host; at least 1.
+	// Envoy uses the load balancing weight in some of the built in load
 	// balancers. The load balancing weight for an endpoint is divided by the sum
 	// of the weights of all endpoints in the endpoint's locality to produce a
 	// percentage of traffic for the endpoint. This percentage is then further
 	// weighted by the endpoint's locality's load balancing weight from
 	// LocalityLbEndpoints. If unspecified, each host is presumed to have equal
 	// weight in a locality.
-	//
-	// .. attention::
-	//
-	//   The limit of 128 is somewhat arbitrary, but is applied due to performance
-	//   concerns with the current implementation and can be removed when
-	//   `this issue <https://github.com/envoyproxy/envoy/issues/1285>`_ is fixed.
 	LoadBalancingWeight  *types.UInt32Value `protobuf:"bytes,4,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
@@ -194,7 +190,7 @@ func (m *LbEndpoint) Reset()         { *m = LbEndpoint{} }
 func (m *LbEndpoint) String() string { return proto.CompactTextString(m) }
 func (*LbEndpoint) ProtoMessage()    {}
 func (*LbEndpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_endpoint_b31e45b01d8125cc, []int{1}
+	return fileDescriptor_a9d2a3e4ee06324f, []int{1}
 }
 func (m *LbEndpoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -211,8 +207,8 @@ func (m *LbEndpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *LbEndpoint) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LbEndpoint.Merge(dst, src)
+func (m *LbEndpoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LbEndpoint.Merge(m, src)
 }
 func (m *LbEndpoint) XXX_Size() int {
 	return m.Size()
@@ -361,7 +357,7 @@ type LocalityLbEndpoints struct {
 	Locality *core.Locality `protobuf:"bytes,1,opt,name=locality,proto3" json:"locality,omitempty"`
 	// The group of endpoints belonging to the locality specified.
 	LbEndpoints []LbEndpoint `protobuf:"bytes,2,rep,name=lb_endpoints,json=lbEndpoints,proto3" json:"lb_endpoints"`
-	// Optional: Per priority/region/zone/sub_zone weight - range 1-128. The load
+	// Optional: Per priority/region/zone/sub_zone weight; at least 1. The load
 	// balancing weight for a locality is divided by the sum of the weights of all
 	// localities  at the same priority level to produce the effective percentage
 	// of traffic for the locality.
@@ -369,14 +365,8 @@ type LocalityLbEndpoints struct {
 	// Locality weights are only considered when :ref:`locality weighted load
 	// balancing <arch_overview_load_balancing_locality_weighted_lb>` is
 	// configured. These weights are ignored otherwise. If no weights are
-	// specificed when locality weighted load balancing is enabled, the cluster is
-	// assumed to have a weight of 1.
-	//
-	// .. attention::
-	//
-	//   The limit of 128 is somewhat arbitrary, but is applied due to performance
-	//   concerns with the current implementation and can be removed when
-	//   `this issue <https://github.com/envoyproxy/envoy/issues/1285>`_ is fixed.
+	// specified when locality weighted load balancing is enabled, the locality is
+	// assigned no load.
 	LoadBalancingWeight *types.UInt32Value `protobuf:"bytes,3,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 	// Optional: the priority for this LocalityLbEndpoints. If unspecified this will
 	// default to the highest priority (0).
@@ -387,17 +377,24 @@ type LocalityLbEndpoints struct {
 	// next highest priority group.
 	//
 	// Priorities should range from 0 (highest) to N (lowest) without skipping.
-	Priority             uint32   `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Priority uint32 `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty"`
+	// Optional: Per locality proximity value which indicates how close this
+	// locality is from the source locality. This value only provides ordering
+	// information (lower the value, closer it is to the source locality).
+	// This will be consumed by load balancing schemes that need proximity order
+	// to determine where to route the requests.
+	// [#not-implemented-hide:]
+	Proximity            *types.UInt32Value `protobuf:"bytes,6,opt,name=proximity,proto3" json:"proximity,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *LocalityLbEndpoints) Reset()         { *m = LocalityLbEndpoints{} }
 func (m *LocalityLbEndpoints) String() string { return proto.CompactTextString(m) }
 func (*LocalityLbEndpoints) ProtoMessage()    {}
 func (*LocalityLbEndpoints) Descriptor() ([]byte, []int) {
-	return fileDescriptor_endpoint_b31e45b01d8125cc, []int{2}
+	return fileDescriptor_a9d2a3e4ee06324f, []int{2}
 }
 func (m *LocalityLbEndpoints) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -414,8 +411,8 @@ func (m *LocalityLbEndpoints) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (dst *LocalityLbEndpoints) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LocalityLbEndpoints.Merge(dst, src)
+func (m *LocalityLbEndpoints) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LocalityLbEndpoints.Merge(m, src)
 }
 func (m *LocalityLbEndpoints) XXX_Size() int {
 	return m.Size()
@@ -454,12 +451,66 @@ func (m *LocalityLbEndpoints) GetPriority() uint32 {
 	return 0
 }
 
+func (m *LocalityLbEndpoints) GetProximity() *types.UInt32Value {
+	if m != nil {
+		return m.Proximity
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Endpoint)(nil), "envoy.api.v2.endpoint.Endpoint")
 	proto.RegisterType((*Endpoint_HealthCheckConfig)(nil), "envoy.api.v2.endpoint.Endpoint.HealthCheckConfig")
 	proto.RegisterType((*LbEndpoint)(nil), "envoy.api.v2.endpoint.LbEndpoint")
 	proto.RegisterType((*LocalityLbEndpoints)(nil), "envoy.api.v2.endpoint.LocalityLbEndpoints")
 }
+
+func init() {
+	proto.RegisterFile("envoy/api/v2/endpoint/endpoint.proto", fileDescriptor_a9d2a3e4ee06324f)
+}
+
+var fileDescriptor_a9d2a3e4ee06324f = []byte{
+	// 603 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x52, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0xad, 0xe3, 0xb4, 0x24, 0x9b, 0x06, 0x54, 0x97, 0x0a, 0x2b, 0x54, 0x69, 0x29, 0x05, 0x45,
+	0x39, 0xac, 0x45, 0x8a, 0x84, 0x84, 0x84, 0x10, 0x2e, 0x48, 0x05, 0x15, 0x54, 0x2d, 0x02, 0x24,
+	0x38, 0x58, 0x6b, 0x7b, 0x63, 0xaf, 0x70, 0xbc, 0x96, 0xbd, 0x49, 0xc9, 0x8d, 0xcf, 0xe1, 0x1b,
+	0x38, 0x71, 0xec, 0x91, 0x3b, 0x12, 0x82, 0x88, 0x0b, 0x5f, 0x51, 0xb4, 0x6b, 0xaf, 0x93, 0x36,
+	0xa9, 0x7a, 0xe0, 0x36, 0xde, 0x79, 0x6f, 0xe6, 0xbd, 0xe7, 0x01, 0xbb, 0x24, 0x1e, 0xb1, 0xb1,
+	0x85, 0x13, 0x6a, 0x8d, 0x7a, 0x16, 0x89, 0xfd, 0x84, 0xd1, 0x98, 0x97, 0x05, 0x4c, 0x52, 0xc6,
+	0x99, 0xb1, 0x21, 0x51, 0x10, 0x27, 0x14, 0x8e, 0x7a, 0x50, 0x35, 0x5b, 0x5b, 0x67, 0xc8, 0x1e,
+	0x4b, 0x89, 0x85, 0x7d, 0x3f, 0x25, 0x59, 0x96, 0xf3, 0x5a, 0x9b, 0xf3, 0x00, 0x17, 0x67, 0xa4,
+	0xe8, 0xee, 0xce, 0x77, 0x43, 0x82, 0x23, 0x1e, 0x3a, 0x5e, 0x48, 0xbc, 0x8f, 0x05, 0xaa, 0x1d,
+	0x30, 0x16, 0x44, 0xc4, 0x92, 0x5f, 0xee, 0xb0, 0x6f, 0x1d, 0xa7, 0x38, 0x49, 0x48, 0xaa, 0x76,
+	0xdc, 0x18, 0xe1, 0x88, 0xfa, 0x98, 0x13, 0x4b, 0x15, 0x45, 0xe3, 0x7a, 0xc0, 0x02, 0x26, 0x4b,
+	0x4b, 0x54, 0xf9, 0xeb, 0xce, 0x1f, 0x0d, 0xd4, 0x9e, 0x15, 0x06, 0x8c, 0xfb, 0xe0, 0x4a, 0x21,
+	0xd8, 0xd4, 0xb6, 0xb5, 0x4e, 0xa3, 0xd7, 0x82, 0x67, 0x9c, 0x0a, 0x4d, 0xf0, 0x49, 0x8e, 0x40,
+	0x0a, 0x6a, 0x60, 0xb0, 0x3e, 0xab, 0xd3, 0xf1, 0x58, 0xdc, 0xa7, 0x81, 0x59, 0x91, 0x13, 0xee,
+	0xc1, 0x85, 0x59, 0x41, 0xb5, 0x13, 0x1e, 0x48, 0xea, 0xbe, 0x60, 0xee, 0x4b, 0x22, 0x5a, 0x0b,
+	0xcf, 0x3f, 0xb5, 0x1e, 0x83, 0xb5, 0x39, 0x9c, 0xd1, 0x05, 0x20, 0x61, 0x29, 0x77, 0x46, 0x38,
+	0x1a, 0x12, 0x29, 0xb8, 0x69, 0x37, 0xbe, 0xfe, 0xfd, 0xa6, 0xaf, 0x74, 0xab, 0xe6, 0xe9, 0xa9,
+	0x8e, 0xea, 0xa2, 0xfd, 0x56, 0x74, 0x77, 0x7e, 0x57, 0x00, 0x38, 0x74, 0x4b, 0xa3, 0x8f, 0x40,
+	0x4d, 0x29, 0x29, 0x9c, 0x6e, 0x5d, 0xa2, 0xf3, 0x60, 0x09, 0x95, 0x14, 0xe3, 0x0e, 0x68, 0xaa,
+	0xda, 0x89, 0xf1, 0x80, 0x98, 0xcb, 0xdb, 0x5a, 0xa7, 0x7e, 0xb0, 0x84, 0x56, 0xd5, 0xf3, 0x2b,
+	0x3c, 0x20, 0xc6, 0x53, 0xd0, 0x2c, 0x82, 0xc9, 0x38, 0xe6, 0xc3, 0x4c, 0x46, 0x72, 0xf5, 0xfc,
+	0x2a, 0x19, 0x6a, 0xee, 0xee, 0xb5, 0x84, 0xa1, 0xd5, 0x70, 0xe6, 0xcb, 0x78, 0x00, 0x6a, 0x03,
+	0xc2, 0xb1, 0x8f, 0x39, 0x36, 0x75, 0xa9, 0xf5, 0xe6, 0x82, 0x01, 0x2f, 0x0b, 0x08, 0x2a, 0xc1,
+	0xc6, 0x07, 0xb0, 0x11, 0x31, 0xec, 0x3b, 0x2e, 0x8e, 0x70, 0xec, 0xd1, 0x38, 0x70, 0x8e, 0x09,
+	0x0d, 0x42, 0x6e, 0x56, 0xe5, 0x94, 0x4d, 0x98, 0x5f, 0x12, 0x54, 0x97, 0x04, 0xdf, 0x3c, 0x8f,
+	0xf9, 0x5e, 0x4f, 0x06, 0x66, 0xd7, 0x45, 0x90, 0xd5, 0x6e, 0xa5, 0xa3, 0xa1, 0x75, 0x31, 0xc5,
+	0x56, 0x43, 0xde, 0xc9, 0x19, 0xf6, 0x1a, 0xb8, 0x16, 0xb2, 0x8c, 0x3b, 0xd4, 0x27, 0x31, 0xa7,
+	0x7d, 0x4a, 0xd2, 0x9d, 0x1f, 0x15, 0xb0, 0x7e, 0xc8, 0x3c, 0x1c, 0x51, 0x3e, 0x9e, 0x66, 0x2d,
+	0x0d, 0x44, 0xc5, 0x73, 0x11, 0xf6, 0x22, 0x03, 0x8a, 0x89, 0x4a, 0xb0, 0xf1, 0x02, 0xac, 0x46,
+	0xae, 0xa3, 0x22, 0x15, 0xf1, 0xe9, 0x9d, 0x46, 0xef, 0xd6, 0x05, 0x7f, 0x6a, 0xba, 0xd2, 0xae,
+	0x9e, 0xfc, 0xdc, 0x5a, 0x42, 0x8d, 0x68, 0x46, 0xc4, 0x85, 0x61, 0xe8, 0xff, 0x1f, 0x86, 0x71,
+	0x17, 0xd4, 0x92, 0x94, 0xb2, 0x54, 0x38, 0x5c, 0x96, 0x77, 0x08, 0x04, 0x63, 0xb9, 0xab, 0x9b,
+	0x9f, 0x35, 0x54, 0xf6, 0x8c, 0x87, 0xa0, 0x9e, 0xa4, 0xec, 0x13, 0x1d, 0x08, 0xe0, 0xca, 0xe5,
+	0x8b, 0xd1, 0x14, 0x6e, 0x1f, 0x7d, 0x99, 0xb4, 0xb5, 0x93, 0x49, 0x5b, 0xfb, 0x3e, 0x69, 0x6b,
+	0xbf, 0x26, 0x6d, 0x0d, 0xdc, 0xa6, 0x2c, 0x8f, 0x42, 0x80, 0xc6, 0x8b, 0x53, 0xb1, 0x9b, 0x2a,
+	0x82, 0x23, 0x31, 0xff, 0x48, 0x7b, 0x5f, 0x5e, 0xb1, 0xbb, 0x22, 0x57, 0xee, 0xfd, 0x0b, 0x00,
+	0x00, 0xff, 0xff, 0x21, 0x66, 0xa0, 0x4a, 0xf4, 0x04, 0x00, 0x00,
+}
+
 func (this *Endpoint) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -641,6 +692,9 @@ func (this *LocalityLbEndpoints) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Priority != that1.Priority {
+		return false
+	}
+	if !this.Proximity.Equal(that1.Proximity) {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -842,6 +896,16 @@ func (m *LocalityLbEndpoints) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintEndpoint(dAtA, i, uint64(m.Priority))
 	}
+	if m.Proximity != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintEndpoint(dAtA, i, uint64(m.Proximity.Size()))
+		n9, err := m.Proximity.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -963,6 +1027,10 @@ func (m *LocalityLbEndpoints) Size() (n int) {
 	if m.Priority != 0 {
 		n += 1 + sovEndpoint(uint64(m.Priority))
 	}
+	if m.Proximity != nil {
+		l = m.Proximity.Size()
+		n += 1 + l + sovEndpoint(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -997,7 +1065,7 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1025,7 +1093,7 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1034,6 +1102,9 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1058,7 +1129,7 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1067,6 +1138,9 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1084,6 +1158,9 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEndpoint
 			}
 			if (iNdEx + skippy) > l {
@@ -1114,7 +1191,7 @@ func (m *Endpoint_HealthCheckConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1142,7 +1219,7 @@ func (m *Endpoint_HealthCheckConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PortValue |= (uint32(b) & 0x7F) << shift
+				m.PortValue |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1154,6 +1231,9 @@ func (m *Endpoint_HealthCheckConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEndpoint
 			}
 			if (iNdEx + skippy) > l {
@@ -1184,7 +1264,7 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1212,7 +1292,7 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1221,6 +1301,9 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1244,7 +1327,7 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HealthStatus |= (core.HealthStatus(b) & 0x7F) << shift
+				m.HealthStatus |= core.HealthStatus(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1263,7 +1346,7 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1272,6 +1355,9 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1296,7 +1382,7 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1305,6 +1391,9 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1329,7 +1418,7 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1339,6 +1428,9 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1351,6 +1443,9 @@ func (m *LbEndpoint) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEndpoint
 			}
 			if (iNdEx + skippy) > l {
@@ -1381,7 +1476,7 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1409,7 +1504,7 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1418,6 +1513,9 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1442,7 +1540,7 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1451,6 +1549,9 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1473,7 +1574,7 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1482,6 +1583,9 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthEndpoint
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1506,11 +1610,47 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Priority |= (uint32(b) & 0x7F) << shift
+				m.Priority |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Proximity", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEndpoint
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Proximity == nil {
+				m.Proximity = &types.UInt32Value{}
+			}
+			if err := m.Proximity.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipEndpoint(dAtA[iNdEx:])
@@ -1518,6 +1658,9 @@ func (m *LocalityLbEndpoints) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEndpoint
 			}
 			if (iNdEx + skippy) > l {
@@ -1587,8 +1730,11 @@ func skipEndpoint(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthEndpoint
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthEndpoint
 			}
 			return iNdEx, nil
@@ -1619,6 +1765,9 @@ func skipEndpoint(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthEndpoint
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -1637,48 +1786,3 @@ var (
 	ErrInvalidLengthEndpoint = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowEndpoint   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/api/v2/endpoint/endpoint.proto", fileDescriptor_endpoint_b31e45b01d8125cc)
-}
-
-var fileDescriptor_endpoint_b31e45b01d8125cc = []byte{
-	// 584 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x52, 0xc1, 0x6e, 0xd3, 0x40,
-	0x10, 0xed, 0xd6, 0x49, 0x9b, 0x6e, 0x12, 0x50, 0x1c, 0x2a, 0xac, 0x50, 0x25, 0x25, 0x14, 0x14,
-	0xe5, 0xb0, 0x16, 0x29, 0x12, 0x27, 0x84, 0xea, 0x82, 0x14, 0x50, 0x41, 0xc8, 0x08, 0x90, 0x38,
-	0x60, 0xad, 0xed, 0x8d, 0xbd, 0xc2, 0xf1, 0x5a, 0xf6, 0x26, 0x25, 0xb7, 0x7e, 0x0b, 0x27, 0xbe,
-	0x81, 0x13, 0xc7, 0x1e, 0xf9, 0x02, 0x84, 0xa2, 0x5e, 0xf8, 0x8a, 0x22, 0xaf, 0xbd, 0x6e, 0xda,
-	0xa4, 0xe2, 0xc2, 0x6d, 0x3d, 0xf3, 0xde, 0xcc, 0x7b, 0xcf, 0x03, 0xf7, 0x48, 0x38, 0x65, 0x33,
-	0x1d, 0x47, 0x54, 0x9f, 0x0e, 0x74, 0x12, 0xba, 0x11, 0xa3, 0x21, 0x2f, 0x1e, 0x28, 0x8a, 0x19,
-	0x67, 0xea, 0xb6, 0x40, 0x21, 0x1c, 0x51, 0x34, 0x1d, 0x20, 0xd9, 0x6c, 0x75, 0x2e, 0x91, 0x1d,
-	0x16, 0x13, 0x1d, 0xbb, 0x6e, 0x4c, 0x92, 0x24, 0xe3, 0xb5, 0x76, 0x96, 0x01, 0x36, 0x4e, 0x48,
-	0xde, 0xdd, 0x5b, 0xee, 0xfa, 0x04, 0x07, 0xdc, 0xb7, 0x1c, 0x9f, 0x38, 0x9f, 0x73, 0x54, 0xdb,
-	0x63, 0xcc, 0x0b, 0x88, 0x2e, 0xbe, 0xec, 0xc9, 0x48, 0x3f, 0x8e, 0x71, 0x14, 0x91, 0x58, 0xee,
-	0xb8, 0x3d, 0xc5, 0x01, 0x75, 0x31, 0x27, 0xba, 0x7c, 0xe4, 0x8d, 0x5b, 0x1e, 0xf3, 0x98, 0x78,
-	0xea, 0xe9, 0x2b, 0xab, 0x76, 0xcf, 0x00, 0xac, 0x3c, 0xcf, 0x0d, 0xa8, 0x8f, 0xe0, 0x66, 0x2e,
-	0x58, 0x03, 0xbb, 0xa0, 0x57, 0x1d, 0xb4, 0xd0, 0x25, 0xa7, 0xa9, 0x26, 0x74, 0x90, 0x21, 0x4c,
-	0x09, 0x55, 0x31, 0x6c, 0x2e, 0xea, 0xb4, 0x1c, 0x16, 0x8e, 0xa8, 0xa7, 0xad, 0x8b, 0x09, 0x0f,
-	0xd1, 0xca, 0xac, 0x90, 0xdc, 0x89, 0x86, 0x82, 0x7a, 0x98, 0x32, 0x0f, 0x05, 0xd1, 0x6c, 0xf8,
-	0x57, 0x4b, 0xad, 0xa7, 0xb0, 0xb1, 0x84, 0x53, 0xfb, 0x10, 0x46, 0x2c, 0xe6, 0xd6, 0x14, 0x07,
-	0x13, 0x22, 0x04, 0xd7, 0x8d, 0xea, 0xf7, 0x3f, 0x3f, 0x94, 0x8d, 0x7e, 0x49, 0x3b, 0x3f, 0x57,
-	0xcc, 0xad, 0xb4, 0xfd, 0x3e, 0xed, 0x76, 0xcf, 0xd6, 0x21, 0x3c, 0xb2, 0x0b, 0xa3, 0x4f, 0x60,
-	0x45, 0x2a, 0xc9, 0x9d, 0x76, 0xfe, 0xa1, 0x73, 0xb8, 0x66, 0x16, 0x14, 0xf5, 0x19, 0xac, 0xe7,
-	0x8e, 0x13, 0x8e, 0xf9, 0x24, 0x11, 0x5e, 0x6f, 0x5c, 0x9d, 0x21, 0xd2, 0xca, 0x64, 0xbf, 0x15,
-	0x30, 0xb3, 0xe6, 0x2f, 0x7c, 0xa9, 0x8f, 0x61, 0x65, 0x4c, 0x38, 0x76, 0x31, 0xc7, 0x9a, 0x22,
-	0x44, 0xdc, 0x59, 0x31, 0xe0, 0x55, 0x0e, 0x31, 0x0b, 0xb0, 0xfa, 0x09, 0x6e, 0x07, 0x0c, 0xbb,
-	0x96, 0x8d, 0x03, 0x1c, 0x3a, 0x34, 0xf4, 0xac, 0x63, 0x42, 0x3d, 0x9f, 0x6b, 0x25, 0x31, 0x65,
-	0x07, 0x65, 0x27, 0x82, 0xe4, 0x89, 0xa0, 0x77, 0x2f, 0x42, 0xbe, 0x3f, 0x10, 0x49, 0x18, 0xb5,
-	0x34, 0xa1, 0xcd, 0x7e, 0x59, 0x3b, 0x01, 0x3d, 0x60, 0x36, 0xd3, 0x41, 0x86, 0x9c, 0xf3, 0x41,
-	0x8c, 0x51, 0xef, 0xc3, 0xba, 0xb4, 0x6a, 0x85, 0x78, 0x4c, 0xb4, 0xf2, 0x2e, 0xe8, 0x6d, 0x0d,
-	0xd7, 0xcc, 0x9a, 0x2c, 0xbf, 0xc6, 0x63, 0x62, 0x34, 0xe0, 0x4d, 0x9f, 0x25, 0xdc, 0xa2, 0x2e,
-	0x09, 0x39, 0x1d, 0x51, 0x12, 0x77, 0xbf, 0xae, 0xc3, 0xe6, 0x11, 0x73, 0x70, 0x40, 0xf9, 0xec,
-	0x22, 0x6e, 0x61, 0x35, 0xc8, 0xcb, 0x79, 0xde, 0xab, 0xac, 0x4a, 0xa6, 0x59, 0x80, 0xd5, 0x97,
-	0xb0, 0x16, 0xd8, 0x96, 0x5c, 0x9b, 0x06, 0xad, 0xf4, 0xaa, 0x83, 0xbb, 0xd7, 0xfc, 0xac, 0x8b,
-	0x95, 0x46, 0xe9, 0xf4, 0x57, 0x67, 0xcd, 0xac, 0x06, 0x0b, 0x22, 0xae, 0x8d, 0x4d, 0xf9, 0x3f,
-	0xb1, 0x3d, 0x80, 0x95, 0x28, 0xa6, 0x2c, 0x4e, 0x4d, 0x96, 0xc5, 0x35, 0xc2, 0x94, 0x54, 0xee,
-	0x2b, 0xda, 0x09, 0x30, 0x8b, 0x9e, 0x71, 0xf0, 0x6d, 0xde, 0x06, 0xa7, 0xf3, 0x36, 0xf8, 0x39,
-	0x6f, 0x83, 0xdf, 0xf3, 0x36, 0x80, 0xf7, 0x28, 0xcb, 0x1c, 0x45, 0x31, 0xfb, 0x32, 0x5b, 0x6d,
-	0xee, 0x0d, 0xf8, 0x58, 0x1c, 0xa0, 0xbd, 0x21, 0x34, 0xee, 0xff, 0x0d, 0x00, 0x00, 0xff, 0xff,
-	0xbd, 0xfb, 0xa3, 0xef, 0xaf, 0x04, 0x00, 0x00,
-}

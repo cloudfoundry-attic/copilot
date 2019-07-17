@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"code.cloudfoundry.org/tlsconfig"
 	"code.cloudfoundry.org/tlsconfig/certtest"
@@ -20,6 +21,8 @@ import (
 type buildResult struct {
 	name string
 	err  error
+
+	expectedErrPrefix string
 }
 
 func TestE2E(t *testing.T) {
@@ -92,12 +95,12 @@ func TestE2EFromFile(t *testing.T) {
 		t.Fatalf("failed to write CA file: %v", err)
 	}
 
-	serverCertFile, serverKeyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca)
+	serverCertFile, serverKeyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca, false)
 	if err != nil {
 		t.Fatalf("failed to generate certificate keypair: %v", err)
 	}
 
-	clientCertFile, clientKeyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca)
+	clientCertFile, clientKeyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca, false)
 	if err != nil {
 		t.Fatalf("failed to generate certificate keypair: %v", err)
 	}
@@ -281,7 +284,7 @@ func TestLoadKeypairFails(t *testing.T) {
 		t.Fatalf("failed to build CA: %v", err)
 	}
 
-	certFile, keyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca)
+	certFile, keyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca, false)
 	if err != nil {
 		t.Fatalf("failed to generate certificate keypair: %v", err)
 	}
@@ -297,26 +300,47 @@ func TestLoadKeypairFails(t *testing.T) {
 		t.Fatalf("failed to write invalid file: %v", err)
 	}
 
+	expiredCertFile, expiredKeyFile, err := generateKeypairToTempFilesFromCA(tempDir, ca, true)
+	if err != nil {
+		t.Fatalf("failed to generate expired certificate keypair: %v", err)
+	}
+
 	keypairs := []struct {
-		name     string
-		certFile string
-		keyFile  string
+		name      string
+		certFile  string
+		keyFile   string
+		errPrefix string
 	}{
-		{name: "cert file missing", certFile: "does not exist", keyFile: keyFile},
-		{name: "cert file invalid", certFile: invalidFile.Name(), keyFile: keyFile},
-		{name: "key file missing", certFile: certFile, keyFile: "does not exist"},
-		{name: "key file invalid", certFile: certFile, keyFile: invalidFile.Name()},
+		{name: "cert file missing", certFile: "does not exist", keyFile: keyFile, errPrefix: "failed to load keypair"},
+		{name: "cert file invalid", certFile: invalidFile.Name(), keyFile: keyFile, errPrefix: "failed to load keypair"},
+		{name: "key file missing", certFile: certFile, keyFile: "does not exist", errPrefix: "failed to load keypair"},
+		{name: "key file invalid", certFile: certFile, keyFile: invalidFile.Name(), errPrefix: "failed to load keypair"},
+		{
+			name:      "cert expired",
+			certFile:  expiredCertFile,
+			keyFile:   expiredKeyFile,
+			errPrefix: "failed to load keypair: the certificate has expired or is not yet valid",
+		},
 	}
 
 	var buildResults []buildResult
 	for _, keypair := range keypairs {
 		_, err := tlsconfig.Build(tlsconfig.WithIdentityFromFile(keypair.certFile, keypair.keyFile)).Client()
-		buildResults = append(buildResults, buildResult{keypair.name + " (client)", err})
+		buildResults = append(buildResults, buildResult{
+			name: keypair.name + " (client)",
+			err:  err,
+
+			expectedErrPrefix: keypair.errPrefix,
+		})
 		_, err = tlsconfig.Build(tlsconfig.WithIdentityFromFile(keypair.certFile, keypair.keyFile)).Server()
-		buildResults = append(buildResults, buildResult{keypair.name + " (server)", err})
+		buildResults = append(buildResults, buildResult{
+			name: keypair.name + " (server)",
+			err:  err,
+
+			expectedErrPrefix: keypair.errPrefix,
+		})
 	}
 
-	errStr := "failed to load keypair"
 	for _, br := range buildResults {
 		br := br // capture variable
 		t.Run(br.name, func(t *testing.T) {
@@ -325,8 +349,8 @@ func TestLoadKeypairFails(t *testing.T) {
 			if br.err == nil {
 				t.Fatal("building config should have errored")
 			}
-			if !strings.HasPrefix(br.err.Error(), errStr) {
-				t.Fatalf("unexpected error prefix returned; have: %v, want: '%s'", br.err, errStr)
+			if !strings.HasPrefix(br.err.Error(), br.expectedErrPrefix) {
+				t.Fatalf("unexpected error prefix returned; have: %v, want: '%s'", br.err, br.expectedErrPrefix)
 			}
 		})
 	}
@@ -442,8 +466,16 @@ func writeCAToTempFile(tempDir string, ca *certtest.Authority) (string, error) {
 	return caFile.Name(), nil
 }
 
-func generateKeypairToTempFilesFromCA(tempDir string, ca *certtest.Authority) (string, string, error) {
-	cert, err := ca.BuildSignedCertificate("cert")
+func generateKeypairToTempFilesFromCA(tempDir string, ca *certtest.Authority, expired bool) (string, string, error) {
+	var (
+		cert *certtest.Certificate
+		err  error
+	)
+	if expired {
+		cert, err = ca.BuildSignedCertificateWithExpiry("cert", time.Now().Add(-10000))
+	} else {
+		cert, err = ca.BuildSignedCertificate("cert")
+	}
 	if err != nil {
 		return "", "", fmt.Errorf("failed to make certificate keypair: %s", err)
 	}

@@ -206,7 +206,7 @@ func TestGateway(t *testing.T) {
 	// Issues a GET echo request with 0 size body, forward some random source.uid
 	attrs := mixerpb.Attributes{
 		Attributes: map[string]*mixerpb.Attributes_AttributeValue{
-			"source.uid": &mixerpb.Attributes_AttributeValue{Value: &mixerpb.Attributes_AttributeValue_StringValue{
+			"source.uid": {Value: &mixerpb.Attributes_AttributeValue_StringValue{
 				StringValue: "in-mesh-app",
 			}},
 		},
@@ -231,13 +231,17 @@ func (mock) ID(*core.Node) string {
 func (mock) GetProxyServiceInstances(_ *model.Proxy) ([]*model.ServiceInstance, error) {
 	return nil, nil
 }
+func (mock) GetProxyWorkloadLabels(proxy *model.Proxy) (model.LabelsCollection, error) {
+	return nil, nil
+}
 func (mock) GetService(_ model.Hostname) (*model.Service, error) { return nil, nil }
 func (mock) InstancesByPort(_ model.Hostname, _ int, _ model.LabelsCollection) ([]*model.ServiceInstance, error) {
 	return nil, nil
 }
-func (mock) ManagementPorts(_ string) model.PortList          { return nil }
-func (mock) Services() ([]*model.Service, error)              { return nil, nil }
-func (mock) WorkloadHealthCheckInfo(_ string) model.ProbeList { return nil }
+func (mock) ManagementPorts(_ string) model.PortList                               { return nil }
+func (mock) Services() ([]*model.Service, error)                                   { return nil, nil }
+func (mock) WorkloadHealthCheckInfo(_ string) model.ProbeList                      { return nil }
+func (mock) GetIstioServiceAccounts(hostname model.Hostname, ports []int) []string { return nil }
 
 const (
 	id = "id"

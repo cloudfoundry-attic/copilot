@@ -19,13 +19,12 @@ import (
 
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/gogo/protobuf/types"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"istio.io/istio/pilot/pkg/model"
 )
 
 // clusters aggregate a DiscoveryResponse for pushing.
-func (con *XdsConnection) clusters(response []*xdsapi.Cluster) *xdsapi.DiscoveryResponse {
+func (conn *XdsConnection) clusters(response []*xdsapi.Cluster) *xdsapi.DiscoveryResponse {
 	out := &xdsapi.DiscoveryResponse{
 		// All resources for CDS ought to be of the type ClusterLoadAssignment
 		TypeUrl: ClusterType,
@@ -59,30 +58,30 @@ func (s *DiscoveryServer) pushCds(con *XdsConnection, push *model.PushContext, v
 	err = con.send(response)
 	if err != nil {
 		adsLog.Warnf("CDS: Send failure %s: %v", con.ConID, err)
-		pushes.With(prometheus.Labels{"type": "cds_senderr"}).Add(1)
+		cdsSendErrPushes.Add(1)
 		return err
 	}
-	pushes.With(prometheus.Labels{"type": "cds"}).Add(1)
+	cdsPushes.Add(1)
 
 	// The response can't be easily read due to 'any' marshaling.
-	adsLog.Infof("CDS: PUSH %s for %s %q, Clusters: %d, Services %d", version,
-		con.ConID, con.PeerAddr, len(rawClusters), len(push.Services(nil)))
+	adsLog.Infof("CDS: PUSH for node:%s clusters:%d services:%d version:%s",
+		con.modelNode.ID, len(rawClusters), len(push.Services(nil)), version)
 	return nil
 }
 
 func (s *DiscoveryServer) generateRawClusters(node *model.Proxy, push *model.PushContext) ([]*xdsapi.Cluster, error) {
 	rawClusters, err := s.ConfigGenerator.BuildClusters(s.Env, node, push)
 	if err != nil {
-		adsLog.Warnf("CDS: Failed to generate clusters for node %s: %v", node.ID, err)
-		pushes.With(prometheus.Labels{"type": "cds_builderr"}).Add(1)
+		adsLog.Warnf("CDS: Failed to generate clusters for node:%s: %v", node.ID, err)
+		cdsBuildErrPushes.Add(1)
 		return nil, err
 	}
 
 	for _, c := range rawClusters {
 		if err = c.Validate(); err != nil {
 			retErr := fmt.Errorf("CDS: Generated invalid cluster for node %v: %v", node, err)
-			adsLog.Errorf("CDS: Generated invalid cluster for node %s: %v, %v", node.ID, err, c)
-			pushes.With(prometheus.Labels{"type": "cds_builderr"}).Add(1)
+			adsLog.Errorf("CDS: Generated invalid cluster for node:%s: %v, %v", node.ID, err, c)
+			cdsBuildErrPushes.Add(1)
 			totalXDSInternalErrors.Add(1)
 			// Generating invalid clusters is a bug.
 			// Panic instead of trying to recover from that, since we can't
@@ -91,4 +90,47 @@ func (s *DiscoveryServer) generateRawClusters(node *model.Proxy, push *model.Pus
 		}
 	}
 	return rawClusters, nil
+}
+
+// Set the token path for SDS if SDS_TOKEN_PATH is defined in the proxy metadata
+func SetTokenPathForSdsFromProxyMetadata(c *xdsapi.Cluster, node *model.Proxy) {
+	if sdsTokenPath, found := node.Metadata[model.NodeMetadataSdsTokenPath]; found && len(sdsTokenPath) > 0 {
+		// Set the SDS token path in the TLS certificate config
+		if c.GetTlsContext() != nil && c.GetTlsContext().GetCommonTlsContext() != nil &&
+			c.GetTlsContext().GetCommonTlsContext().GetTlsCertificateSdsSecretConfigs() != nil {
+			for _, sc := range c.GetTlsContext().GetCommonTlsContext().GetTlsCertificateSdsSecretConfigs() {
+				if sc.GetSdsConfig() != nil && sc.GetSdsConfig().GetApiConfigSource() != nil &&
+					sc.GetSdsConfig().GetApiConfigSource().GetGrpcServices() != nil {
+					for _, svc := range sc.GetSdsConfig().GetApiConfigSource().GetGrpcServices() {
+						// If no call-credential in the cluster, no need to set SDS token path
+						if svc.GetGoogleGrpc() != nil && svc.GetGoogleGrpc().GetCallCredentials() != nil &&
+							svc.GetGoogleGrpc().GetCredentialsFactoryName() == model.FileBasedMetadataPlugName {
+							adsLog.Debugf("Set SDS token path in TLS context based on the proxy metadata")
+							svc.GetGoogleGrpc().CallCredentials =
+								model.ConstructgRPCCallCredentials(sdsTokenPath, model.K8sSAJwtTokenHeaderKey)
+						}
+					}
+				}
+			}
+		}
+
+		// Set the SDS token path in the TLS validation context
+		if c.GetTlsContext() != nil && c.GetTlsContext().GetCommonTlsContext() != nil &&
+			c.GetTlsContext().GetCommonTlsContext().GetCombinedValidationContext() != nil &&
+			c.GetTlsContext().GetCommonTlsContext().GetCombinedValidationContext().GetValidationContextSdsSecretConfig() != nil {
+			sc := c.GetTlsContext().GetCommonTlsContext().GetCombinedValidationContext().GetValidationContextSdsSecretConfig()
+			if sc.GetSdsConfig() != nil && sc.GetSdsConfig().GetApiConfigSource() != nil &&
+				sc.GetSdsConfig().GetApiConfigSource().GetGrpcServices() != nil {
+				for _, svc := range sc.GetSdsConfig().GetApiConfigSource().GetGrpcServices() {
+					// If no call-credential in the cluster, no need to set SDS token path
+					if svc.GetGoogleGrpc() != nil && svc.GetGoogleGrpc().GetCallCredentials() != nil &&
+						svc.GetGoogleGrpc().GetCredentialsFactoryName() == model.FileBasedMetadataPlugName {
+						adsLog.Debugf("Set SDS token path in validation context based on the proxy metadata")
+						svc.GetGoogleGrpc().CallCredentials =
+							model.ConstructgRPCCallCredentials(sdsTokenPath, model.K8sSAJwtTokenHeaderKey)
+					}
+				}
+			}
+		}
+	}
 }

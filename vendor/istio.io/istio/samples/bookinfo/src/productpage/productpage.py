@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 
+from __future__ import print_function
 from flask import Flask, request, session, render_template, redirect, url_for
 from flask import _request_ctx_stack as stack
 from jaeger_client import Tracer, ConstSampler
@@ -30,6 +31,7 @@ from json2html import *
 import logging
 import requests
 import os
+import asyncio
 
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
 # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
@@ -57,26 +59,28 @@ Bootstrap(app)
 
 servicesDomain = "" if (os.environ.get("SERVICES_DOMAIN") == None) else "." + os.environ.get("SERVICES_DOMAIN")
 
+flood_factor = 0 if (os.environ.get("FLOOD_FACTOR") == None) else int(os.environ.get("FLOOD_FACTOR"))
+
 details = {
-    "name" : "http://details{0}:9080".format(servicesDomain),
+    "name" : "http://{0}{1}:9080".format(detailsHostname, servicesDomain),
     "endpoint" : "details",
     "children" : []
 }
 
 ratings = {
-    "name" : "http://ratings{0}:9080".format(servicesDomain),
+    "name" : "http://{0}{1}:9080".format(ratingsHostname, servicesDomain),
     "endpoint" : "ratings",
     "children" : []
 }
 
 reviews = {
-    "name" : "http://reviews{0}:9080".format(servicesDomain),
+    "name" : "http://{0}{1}:9080".format(reviewsHostname, servicesDomain),
     "endpoint" : "reviews",
     "children" : [ratings]
 }
 
 productpage = {
-    "name" : "http://details{0}:9080".format(servicesDomain),
+    "name" : "http://{0}{1}:9080".format(detailsHostname, servicesDomain),
     "endpoint" : "details",
     "children" : [details, reviews]
 }
@@ -222,6 +226,20 @@ def logout():
     session.pop('user', None)
     return response
 
+# a helper function for asyncio.gather, does not return a value
+async def getProductReviewsIgnoreResponse(product_id, headers):
+    getProductReviews(product_id, headers)
+
+# flood reviews with unnecessary requests to demonstrate Istio rate limiting, asynchoronously
+async def floodReviewsAsynchronously(product_id, headers):
+    # the response is disregarded
+    await asyncio.gather(*(getProductReviewsIgnoreResponse(product_id, headers) for _ in range(flood_factor)))
+
+# flood reviews with unnecessary requests to demonstrate Istio rate limiting
+def floodReviews(product_id, headers):
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(floodReviewsAsynchronously(product_id, headers))
+    loop.close()
 
 @app.route('/productpage')
 @trace()
@@ -231,6 +249,10 @@ def front():
     user = session.get('user', '')
     product = getProduct(product_id)
     detailsStatus, details = getProductDetails(product_id, headers)
+
+    if flood_factor > 0:
+        floodReviews(product_id, headers)
+
     reviewsStatus, reviews = getProductReviews(product_id, headers)
     return render_template(
         'productpage.html',
@@ -344,12 +366,12 @@ class Writer(object):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "usage: %s port" % (sys.argv[0])
+        print("usage: %s port" % (sys.argv[0]))
         sys.exit(-1)
 
     p = int(sys.argv[1])
     sys.stderr = Writer('stderr.log')
     sys.stdout = Writer('stdout.log')
-    print "start at port %s" % (p)
+    print("start at port %s" % (p))
     app.run(host='0.0.0.0', port=p, debug=True, threaded=True)
 

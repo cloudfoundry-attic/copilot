@@ -3,16 +3,17 @@
 
 package cluster
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import _ "github.com/gogo/protobuf/gogoproto"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	bytes "bytes"
+	fmt "fmt"
+	io "io"
+	math "math"
 
-import bytes "bytes"
-
-import io "io"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -28,7 +29,8 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // See the :ref:`architecture overview <arch_overview_outlier_detection>` for
 // more information on outlier detection.
 type OutlierDetection struct {
-	// The number of consecutive 5xx responses before a consecutive 5xx ejection
+	// The number of consecutive 5xx responses or local origin errors that are mapped
+	// to 5xx error codes before a consecutive 5xx ejection
 	// occurs. Defaults to 5.
 	Consecutive_5Xx *types.UInt32Value `protobuf:"bytes,1,opt,name=consecutive_5xx,json=consecutive5xx,proto3" json:"consecutive_5xx,omitempty"`
 	// The time interval between ejection analysis sweeps. This can result in
@@ -69,24 +71,50 @@ type OutlierDetection struct {
 	// double. That is, if the desired factor is 1.9, the runtime value should
 	// be 1900. Defaults to 1900.
 	SuccessRateStdevFactor *types.UInt32Value `protobuf:"bytes,9,opt,name=success_rate_stdev_factor,json=successRateStdevFactor,proto3" json:"success_rate_stdev_factor,omitempty"`
-	// The number of consecutive gateway failures (502, 503, 504 status or
-	// connection errors that are mapped to one of those status codes) before a
-	// consecutive gateway failure ejection occurs. Defaults to 5.
+	// The number of consecutive gateway failures (502, 503, 504 status codes)
+	// before a consecutive gateway failure ejection occurs. Defaults to 5.
 	ConsecutiveGatewayFailure *types.UInt32Value `protobuf:"bytes,10,opt,name=consecutive_gateway_failure,json=consecutiveGatewayFailure,proto3" json:"consecutive_gateway_failure,omitempty"`
 	// The % chance that a host will be actually ejected when an outlier status
 	// is detected through consecutive gateway failures. This setting can be
 	// used to disable ejection or to ramp it up slowly. Defaults to 0.
 	EnforcingConsecutiveGatewayFailure *types.UInt32Value `protobuf:"bytes,11,opt,name=enforcing_consecutive_gateway_failure,json=enforcingConsecutiveGatewayFailure,proto3" json:"enforcing_consecutive_gateway_failure,omitempty"`
-	XXX_NoUnkeyedLiteral               struct{}           `json:"-"`
-	XXX_unrecognized                   []byte             `json:"-"`
-	XXX_sizecache                      int32              `json:"-"`
+	// Determines whether to distinguish local origin failures from external errors. If set to true
+	// the following configuration parameters are taken into account:
+	// :ref:`consecutive_local_origin_failure<envoy_api_field_cluster.OutlierDetection.consecutive_local_origin_failure>`,
+	// :ref:`enforcing_consecutive_local_origin_failure<envoy_api_field_cluster.OutlierDetection.enforcing_consecutive_local_origin_failure>`
+	// and
+	// :ref:`enforcing_local_origin_success_rate<envoy_api_field_cluster.OutlierDetection.enforcing_local_origin_success_rate>`.
+	// Defaults to false.
+	SplitExternalLocalOriginErrors bool `protobuf:"varint,12,opt,name=split_external_local_origin_errors,json=splitExternalLocalOriginErrors,proto3" json:"split_external_local_origin_errors,omitempty"`
+	// The number of consecutive locally originated failures before ejection
+	// occurs. Defaults to 5. Parameter takes effect only when
+	// :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>`
+	// is set to true.
+	ConsecutiveLocalOriginFailure *types.UInt32Value `protobuf:"bytes,13,opt,name=consecutive_local_origin_failure,json=consecutiveLocalOriginFailure,proto3" json:"consecutive_local_origin_failure,omitempty"`
+	// The % chance that a host will be actually ejected when an outlier status
+	// is detected through consecutive locally originated failures. This setting can be
+	// used to disable ejection or to ramp it up slowly. Defaults to 100.
+	// Parameter takes effect only when
+	// :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>`
+	// is set to true.
+	EnforcingConsecutiveLocalOriginFailure *types.UInt32Value `protobuf:"bytes,14,opt,name=enforcing_consecutive_local_origin_failure,json=enforcingConsecutiveLocalOriginFailure,proto3" json:"enforcing_consecutive_local_origin_failure,omitempty"`
+	// The % chance that a host will be actually ejected when an outlier status
+	// is detected through success rate statistics for locally originated errors.
+	// This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100.
+	// Parameter takes effect only when
+	// :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>`
+	// is set to true.
+	EnforcingLocalOriginSuccessRate *types.UInt32Value `protobuf:"bytes,15,opt,name=enforcing_local_origin_success_rate,json=enforcingLocalOriginSuccessRate,proto3" json:"enforcing_local_origin_success_rate,omitempty"`
+	XXX_NoUnkeyedLiteral            struct{}           `json:"-"`
+	XXX_unrecognized                []byte             `json:"-"`
+	XXX_sizecache                   int32              `json:"-"`
 }
 
 func (m *OutlierDetection) Reset()         { *m = OutlierDetection{} }
 func (m *OutlierDetection) String() string { return proto.CompactTextString(m) }
 func (*OutlierDetection) ProtoMessage()    {}
 func (*OutlierDetection) Descriptor() ([]byte, []int) {
-	return fileDescriptor_outlier_detection_0c8d6ce7b5a7bd59, []int{0}
+	return fileDescriptor_56cd87362a3f00c9, []int{0}
 }
 func (m *OutlierDetection) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -103,8 +131,8 @@ func (m *OutlierDetection) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (dst *OutlierDetection) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OutlierDetection.Merge(dst, src)
+func (m *OutlierDetection) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutlierDetection.Merge(m, src)
 }
 func (m *OutlierDetection) XXX_Size() int {
 	return m.Size()
@@ -192,9 +220,88 @@ func (m *OutlierDetection) GetEnforcingConsecutiveGatewayFailure() *types.UInt32
 	return nil
 }
 
+func (m *OutlierDetection) GetSplitExternalLocalOriginErrors() bool {
+	if m != nil {
+		return m.SplitExternalLocalOriginErrors
+	}
+	return false
+}
+
+func (m *OutlierDetection) GetConsecutiveLocalOriginFailure() *types.UInt32Value {
+	if m != nil {
+		return m.ConsecutiveLocalOriginFailure
+	}
+	return nil
+}
+
+func (m *OutlierDetection) GetEnforcingConsecutiveLocalOriginFailure() *types.UInt32Value {
+	if m != nil {
+		return m.EnforcingConsecutiveLocalOriginFailure
+	}
+	return nil
+}
+
+func (m *OutlierDetection) GetEnforcingLocalOriginSuccessRate() *types.UInt32Value {
+	if m != nil {
+		return m.EnforcingLocalOriginSuccessRate
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*OutlierDetection)(nil), "envoy.api.v2.cluster.OutlierDetection")
 }
+
+func init() {
+	proto.RegisterFile("envoy/api/v2/cluster/outlier_detection.proto", fileDescriptor_56cd87362a3f00c9)
+}
+
+var fileDescriptor_56cd87362a3f00c9 = []byte{
+	// 668 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x95, 0xdd, 0x6e, 0xd3, 0x30,
+	0x1c, 0xc5, 0x49, 0xf7, 0xc1, 0xe6, 0xc1, 0x36, 0x59, 0x65, 0x4b, 0x37, 0x28, 0x53, 0x11, 0x68,
+	0x9a, 0x50, 0x22, 0x75, 0xda, 0x03, 0xac, 0x5b, 0xc7, 0x87, 0x80, 0x4d, 0x2d, 0x0c, 0x21, 0x40,
+	0x96, 0x97, 0xfe, 0x1b, 0x8c, 0x92, 0x38, 0xd8, 0x4e, 0x96, 0x72, 0xc3, 0x05, 0x2f, 0x83, 0xc6,
+	0x1b, 0x70, 0xc5, 0x25, 0x97, 0x3c, 0x02, 0xea, 0x1d, 0x3c, 0x05, 0x4a, 0xd2, 0x8f, 0xb4, 0x0b,
+	0xa2, 0xbd, 0xb3, 0xea, 0x73, 0x7e, 0xe7, 0xf8, 0x1f, 0xa7, 0x41, 0xf7, 0xc1, 0x0b, 0x79, 0xc7,
+	0xa4, 0x3e, 0x33, 0xc3, 0xaa, 0x69, 0x39, 0x81, 0x54, 0x20, 0x4c, 0x1e, 0x28, 0x87, 0x81, 0x20,
+	0x2d, 0x50, 0x60, 0x29, 0xc6, 0x3d, 0xc3, 0x17, 0x5c, 0x71, 0x5c, 0x4c, 0xd4, 0x06, 0xf5, 0x99,
+	0x11, 0x56, 0x8d, 0x9e, 0x7a, 0xa3, 0x6c, 0x73, 0x6e, 0x3b, 0x60, 0x26, 0x9a, 0xb3, 0xa0, 0x6d,
+	0xb6, 0x02, 0x41, 0x87, 0xae, 0xcb, 0xfb, 0xe7, 0x82, 0xfa, 0x3e, 0x08, 0xd9, 0xdb, 0x5f, 0x0f,
+	0xa9, 0xc3, 0x5a, 0x54, 0x81, 0xd9, 0x5f, 0xf4, 0x36, 0x8a, 0x36, 0xb7, 0x79, 0xb2, 0x34, 0xe3,
+	0x55, 0xfa, 0x6b, 0xe5, 0xeb, 0x12, 0x5a, 0x3d, 0x4e, 0x0b, 0x1e, 0xf6, 0xfb, 0xe1, 0x3a, 0x5a,
+	0xb1, 0xb8, 0x27, 0xc1, 0x0a, 0x14, 0x0b, 0x81, 0xec, 0x45, 0x91, 0xae, 0x6d, 0x69, 0xdb, 0x4b,
+	0xd5, 0x9b, 0x46, 0x9a, 0x6e, 0xf4, 0xd3, 0x8d, 0x17, 0x8f, 0x3c, 0xb5, 0x5b, 0x3d, 0xa5, 0x4e,
+	0x00, 0x8d, 0xe5, 0x8c, 0x69, 0x2f, 0x8a, 0xf0, 0x3e, 0x5a, 0x60, 0x9e, 0x02, 0x11, 0x52, 0x47,
+	0x2f, 0x24, 0xfe, 0xd2, 0x25, 0xff, 0x61, 0xef, 0x74, 0x35, 0xf4, 0xed, 0xf7, 0xf7, 0x99, 0xb9,
+	0x0b, 0xad, 0xb0, 0x73, 0xa5, 0x31, 0xb0, 0xe1, 0x26, 0xc2, 0x67, 0x54, 0x02, 0x81, 0xf7, 0x69,
+	0x35, 0xa2, 0x98, 0x0b, 0xfa, 0xcc, 0x34, 0xb0, 0xd5, 0x18, 0x50, 0xef, 0xf9, 0x9f, 0x33, 0x17,
+	0xf0, 0x2b, 0x54, 0x74, 0x69, 0x34, 0x64, 0xfa, 0x20, 0x2c, 0xf0, 0x94, 0x3e, 0xfb, 0xff, 0x33,
+	0xd6, 0x16, 0x63, 0xf2, 0xec, 0x4e, 0x41, 0x6f, 0x35, 0xb0, 0x4b, 0xa3, 0x3e, 0xf7, 0x24, 0x45,
+	0x60, 0x0b, 0x95, 0xc0, 0x6b, 0x73, 0x61, 0x31, 0xcf, 0x26, 0xe3, 0x33, 0x9c, 0x9b, 0x8e, 0xbf,
+	0x3e, 0x20, 0x1d, 0x8c, 0xce, 0xf5, 0x2d, 0x5a, 0x1b, 0x86, 0xc8, 0xc0, 0xb2, 0x40, 0x4a, 0x22,
+	0xa8, 0x02, 0x7d, 0x7e, 0xba, 0x84, 0xe2, 0x00, 0xd3, 0x4c, 0x29, 0x0d, 0xaa, 0xe2, 0xf1, 0x6c,
+	0x64, 0xa1, 0xc4, 0x65, 0x1e, 0x73, 0x03, 0x97, 0xbc, 0xe3, 0x52, 0x49, 0xfd, 0xea, 0x04, 0x17,
+	0x61, 0x5d, 0x0e, 0x71, 0x4f, 0x53, 0xf7, 0xc3, 0xd8, 0x8c, 0x5f, 0xa3, 0xcd, 0x11, 0xb4, 0x80,
+	0x0f, 0x01, 0x48, 0x45, 0x42, 0xee, 0x04, 0x2e, 0xe8, 0x0b, 0x13, 0xb0, 0xf5, 0x0c, 0xbb, 0x91,
+	0xda, 0x4f, 0x13, 0x37, 0x7e, 0x89, 0x4a, 0x23, 0x70, 0xa9, 0x5a, 0x10, 0x92, 0x36, 0xb5, 0x14,
+	0x17, 0xfa, 0xe2, 0x04, 0xe8, 0xb5, 0x0c, 0xba, 0x19, 0x9b, 0x8f, 0x12, 0x2f, 0x7e, 0x83, 0x36,
+	0xb3, 0x8f, 0xd2, 0xa6, 0x0a, 0xce, 0x69, 0x87, 0xb4, 0x29, 0x73, 0x02, 0x01, 0x3a, 0x9a, 0x00,
+	0x5d, 0xca, 0x00, 0x1e, 0xa4, 0xfe, 0xa3, 0xd4, 0x8e, 0x3f, 0xa2, 0xbb, 0xf9, 0x57, 0x66, 0x3c,
+	0x67, 0x69, 0xba, 0x87, 0x5b, 0xc9, 0xbb, 0x3e, 0x63, 0xd9, 0x8f, 0x51, 0x45, 0xfa, 0x0e, 0x53,
+	0x04, 0x22, 0x05, 0xc2, 0xa3, 0x0e, 0x71, 0xb8, 0x45, 0x1d, 0xc2, 0x05, 0xb3, 0x99, 0x47, 0x40,
+	0x08, 0x2e, 0xa4, 0x7e, 0x6d, 0x4b, 0xdb, 0x5e, 0x68, 0x94, 0x13, 0x65, 0xbd, 0x27, 0x7c, 0x12,
+	0xeb, 0x8e, 0x13, 0x59, 0x3d, 0x51, 0x61, 0x40, 0x5b, 0xd9, 0xf6, 0x23, 0xa0, 0xfe, 0x11, 0xae,
+	0x4f, 0x30, 0xaa, 0x5b, 0x19, 0x4a, 0x26, 0xa5, 0x5f, 0xf9, 0xb3, 0x86, 0x76, 0xf2, 0xe7, 0x95,
+	0x9b, 0xb8, 0x3c, 0xdd, 0xd0, 0xee, 0xe5, 0x0d, 0x2d, 0xa7, 0x45, 0x80, 0xee, 0x0c, 0x4b, 0x8c,
+	0x04, 0x8f, 0xbc, 0x8f, 0x2b, 0xd3, 0xa5, 0xdf, 0x1e, 0x30, 0x33, 0x91, 0x99, 0x57, 0xb3, 0xf6,
+	0xe9, 0x4b, 0xb7, 0xac, 0xfd, 0xe8, 0x96, 0xb5, 0x9f, 0xdd, 0xb2, 0xf6, 0xab, 0x5b, 0xd6, 0x50,
+	0x85, 0x71, 0x23, 0xf9, 0x8e, 0xf8, 0x82, 0x47, 0x1d, 0x23, 0xef, 0x93, 0x52, 0xbb, 0x31, 0xfe,
+	0x07, 0x7f, 0x12, 0xf7, 0x38, 0xd1, 0x2e, 0x0a, 0x6b, 0xf5, 0x44, 0xbf, 0xef, 0x33, 0xe3, 0xb4,
+	0x6a, 0x1c, 0xa4, 0xfa, 0x67, 0xcd, 0x3f, 0xff, 0xda, 0x38, 0x9b, 0x4f, 0x8e, 0xb0, 0xfb, 0x37,
+	0x00, 0x00, 0xff, 0xff, 0xa1, 0x50, 0xfe, 0x0e, 0xea, 0x06, 0x00, 0x00,
+}
+
 func (this *OutlierDetection) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -245,6 +352,18 @@ func (this *OutlierDetection) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.EnforcingConsecutiveGatewayFailure.Equal(that1.EnforcingConsecutiveGatewayFailure) {
+		return false
+	}
+	if this.SplitExternalLocalOriginErrors != that1.SplitExternalLocalOriginErrors {
+		return false
+	}
+	if !this.ConsecutiveLocalOriginFailure.Equal(that1.ConsecutiveLocalOriginFailure) {
+		return false
+	}
+	if !this.EnforcingConsecutiveLocalOriginFailure.Equal(that1.EnforcingConsecutiveLocalOriginFailure) {
+		return false
+	}
+	if !this.EnforcingLocalOriginSuccessRate.Equal(that1.EnforcingLocalOriginSuccessRate) {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -377,6 +496,46 @@ func (m *OutlierDetection) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n11
 	}
+	if m.SplitExternalLocalOriginErrors {
+		dAtA[i] = 0x60
+		i++
+		if m.SplitExternalLocalOriginErrors {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.ConsecutiveLocalOriginFailure != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintOutlierDetection(dAtA, i, uint64(m.ConsecutiveLocalOriginFailure.Size()))
+		n12, err := m.ConsecutiveLocalOriginFailure.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n12
+	}
+	if m.EnforcingConsecutiveLocalOriginFailure != nil {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintOutlierDetection(dAtA, i, uint64(m.EnforcingConsecutiveLocalOriginFailure.Size()))
+		n13, err := m.EnforcingConsecutiveLocalOriginFailure.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	if m.EnforcingLocalOriginSuccessRate != nil {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintOutlierDetection(dAtA, i, uint64(m.EnforcingLocalOriginSuccessRate.Size()))
+		n14, err := m.EnforcingLocalOriginSuccessRate.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -442,6 +601,21 @@ func (m *OutlierDetection) Size() (n int) {
 		l = m.EnforcingConsecutiveGatewayFailure.Size()
 		n += 1 + l + sovOutlierDetection(uint64(l))
 	}
+	if m.SplitExternalLocalOriginErrors {
+		n += 2
+	}
+	if m.ConsecutiveLocalOriginFailure != nil {
+		l = m.ConsecutiveLocalOriginFailure.Size()
+		n += 1 + l + sovOutlierDetection(uint64(l))
+	}
+	if m.EnforcingConsecutiveLocalOriginFailure != nil {
+		l = m.EnforcingConsecutiveLocalOriginFailure.Size()
+		n += 1 + l + sovOutlierDetection(uint64(l))
+	}
+	if m.EnforcingLocalOriginSuccessRate != nil {
+		l = m.EnforcingLocalOriginSuccessRate.Size()
+		n += 1 + l + sovOutlierDetection(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -476,7 +650,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -504,7 +678,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -513,6 +687,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -537,7 +714,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -546,6 +723,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -570,7 +750,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -579,6 +759,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -603,7 +786,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -612,6 +795,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -636,7 +822,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -645,6 +831,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -669,7 +858,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -678,6 +867,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -702,7 +894,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -711,6 +903,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -735,7 +930,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -744,6 +939,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -768,7 +966,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -777,6 +975,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -801,7 +1002,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -810,6 +1011,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -834,7 +1038,7 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -843,6 +1047,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthOutlierDetection
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -853,6 +1060,134 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SplitExternalLocalOriginErrors", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOutlierDetection
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SplitExternalLocalOriginErrors = bool(v != 0)
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsecutiveLocalOriginFailure", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOutlierDetection
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ConsecutiveLocalOriginFailure == nil {
+				m.ConsecutiveLocalOriginFailure = &types.UInt32Value{}
+			}
+			if err := m.ConsecutiveLocalOriginFailure.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnforcingConsecutiveLocalOriginFailure", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOutlierDetection
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.EnforcingConsecutiveLocalOriginFailure == nil {
+				m.EnforcingConsecutiveLocalOriginFailure = &types.UInt32Value{}
+			}
+			if err := m.EnforcingConsecutiveLocalOriginFailure.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnforcingLocalOriginSuccessRate", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOutlierDetection
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.EnforcingLocalOriginSuccessRate == nil {
+				m.EnforcingLocalOriginSuccessRate = &types.UInt32Value{}
+			}
+			if err := m.EnforcingLocalOriginSuccessRate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipOutlierDetection(dAtA[iNdEx:])
@@ -860,6 +1195,9 @@ func (m *OutlierDetection) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthOutlierDetection
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOutlierDetection
 			}
 			if (iNdEx + skippy) > l {
@@ -929,8 +1267,11 @@ func skipOutlierDetection(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthOutlierDetection
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthOutlierDetection
 			}
 			return iNdEx, nil
@@ -961,6 +1302,9 @@ func skipOutlierDetection(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthOutlierDetection
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -979,46 +1323,3 @@ var (
 	ErrInvalidLengthOutlierDetection = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowOutlierDetection   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/api/v2/cluster/outlier_detection.proto", fileDescriptor_outlier_detection_0c8d6ce7b5a7bd59)
-}
-
-var fileDescriptor_outlier_detection_0c8d6ce7b5a7bd59 = []byte{
-	// 549 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x94, 0xdd, 0x6a, 0x13, 0x41,
-	0x14, 0xc7, 0xdd, 0xf4, 0x7b, 0x0a, 0x5a, 0x86, 0xd0, 0x6c, 0x5a, 0x09, 0x12, 0x10, 0xa4, 0xc8,
-	0x2e, 0xa4, 0xf4, 0x01, 0x9a, 0x36, 0x55, 0x2f, 0xb4, 0x25, 0xd1, 0x88, 0xa8, 0x0c, 0x93, 0xcd,
-	0xc9, 0x3a, 0xb2, 0xbb, 0xb3, 0xce, 0xc7, 0x76, 0xe3, 0x13, 0x49, 0x1f, 0xc1, 0x2b, 0x2f, 0xbd,
-	0xf4, 0x11, 0x24, 0x77, 0x3e, 0x83, 0x37, 0xb2, 0x3b, 0xf9, 0xd8, 0xb4, 0x01, 0x93, 0xbb, 0x61,
-	0xcf, 0xfc, 0x7e, 0xff, 0xb3, 0x33, 0x87, 0x41, 0x4f, 0x21, 0x4a, 0xf8, 0xd0, 0xa5, 0x31, 0x73,
-	0x93, 0x86, 0xeb, 0x05, 0x5a, 0x2a, 0x10, 0x2e, 0xd7, 0x2a, 0x60, 0x20, 0x48, 0x1f, 0x14, 0x78,
-	0x8a, 0xf1, 0xc8, 0x89, 0x05, 0x57, 0x1c, 0x97, 0xf3, 0xdd, 0x0e, 0x8d, 0x99, 0x93, 0x34, 0x9c,
-	0xf1, 0xee, 0x83, 0x9a, 0xcf, 0xb9, 0x1f, 0x80, 0x9b, 0xef, 0xe9, 0xe9, 0x81, 0xdb, 0xd7, 0x82,
-	0xce, 0xa8, 0xbb, 0xf5, 0x6b, 0x41, 0xe3, 0x18, 0x84, 0x1c, 0xd7, 0x2b, 0x09, 0x0d, 0x58, 0x9f,
-	0x2a, 0x70, 0x27, 0x8b, 0x71, 0xa1, 0xec, 0x73, 0x9f, 0xe7, 0x4b, 0x37, 0x5b, 0x99, 0xaf, 0xf5,
-	0xbf, 0x5b, 0x68, 0xef, 0xd2, 0x34, 0x78, 0x3e, 0xe9, 0x0f, 0xb7, 0xd0, 0x03, 0x8f, 0x47, 0x12,
-	0x3c, 0xad, 0x58, 0x02, 0xe4, 0x24, 0x4d, 0x6d, 0xeb, 0x91, 0xf5, 0x64, 0xb7, 0xf1, 0xd0, 0x31,
-	0xe9, 0xce, 0x24, 0xdd, 0x79, 0xf3, 0x22, 0x52, 0xc7, 0x8d, 0x2e, 0x0d, 0x34, 0xb4, 0xef, 0x17,
-	0xa0, 0x93, 0x34, 0xc5, 0xa7, 0x68, 0x9b, 0x45, 0x0a, 0x44, 0x42, 0x03, 0xbb, 0x94, 0xf3, 0xd5,
-	0x3b, 0xfc, 0xf9, 0xf8, 0xef, 0x9a, 0xe8, 0xfb, 0x9f, 0x1f, 0x6b, 0x1b, 0x37, 0x56, 0xe9, 0xe8,
-	0x5e, 0x7b, 0x8a, 0xe1, 0x0e, 0xc2, 0x3d, 0x2a, 0x81, 0xc0, 0x67, 0xd3, 0x1a, 0x51, 0x2c, 0x04,
-	0x7b, 0x6d, 0x15, 0xd9, 0x5e, 0x26, 0x68, 0x8d, 0xf9, 0xd7, 0x2c, 0x04, 0xfc, 0x0e, 0x95, 0x43,
-	0x9a, 0xce, 0x9c, 0x31, 0x08, 0x0f, 0x22, 0x65, 0xaf, 0xff, 0xff, 0x1f, 0x9b, 0x3b, 0x99, 0x79,
-	0xfd, 0xa8, 0x64, 0xf7, 0xdb, 0x38, 0xa4, 0xe9, 0xc4, 0x7b, 0x65, 0x14, 0xd8, 0x43, 0x55, 0x88,
-	0x06, 0x5c, 0x78, 0x2c, 0xf2, 0xc9, 0xed, 0x33, 0xdc, 0x58, 0xcd, 0x5f, 0x99, 0x9a, 0xce, 0xe6,
-	0xcf, 0xf5, 0x23, 0xda, 0x9f, 0x85, 0x48, 0xed, 0x79, 0x20, 0x25, 0x11, 0x54, 0x81, 0xbd, 0xb9,
-	0x5a, 0x42, 0x79, 0xaa, 0xe9, 0x18, 0x4b, 0x9b, 0xaa, 0xec, 0x78, 0x0e, 0x8a, 0x52, 0x12, 0xb2,
-	0x88, 0x85, 0x3a, 0x24, 0x9f, 0xb8, 0x54, 0xd2, 0xde, 0x5a, 0x62, 0x10, 0x2a, 0x72, 0xa6, 0x7b,
-	0x69, 0xe8, 0xe7, 0x19, 0x8c, 0xdf, 0xa3, 0xc3, 0x39, 0xb5, 0x80, 0x2f, 0x1a, 0xa4, 0x22, 0x09,
-	0x0f, 0x74, 0x08, 0xf6, 0xf6, 0x12, 0x6e, 0xbb, 0xe0, 0x6e, 0x1b, 0xbc, 0x9b, 0xd3, 0xf8, 0x2d,
-	0xaa, 0xce, 0xc9, 0xa5, 0xea, 0x43, 0x42, 0x06, 0xd4, 0x53, 0x5c, 0xd8, 0x3b, 0x4b, 0xa8, 0xf7,
-	0x0b, 0xea, 0x4e, 0x06, 0x5f, 0xe4, 0x2c, 0xfe, 0x80, 0x0e, 0x8b, 0x57, 0xe9, 0x53, 0x05, 0xd7,
-	0x74, 0x48, 0x06, 0x94, 0x05, 0x5a, 0x80, 0x8d, 0x96, 0x50, 0x57, 0x0b, 0x82, 0x67, 0x86, 0xbf,
-	0x30, 0x38, 0xfe, 0x8a, 0x1e, 0x2f, 0x1e, 0x99, 0xdb, 0x39, 0xbb, 0xab, 0x5d, 0x6e, 0x7d, 0xd1,
-	0xf8, 0xcc, 0x67, 0x37, 0x2f, 0xbf, 0x8d, 0x6a, 0xd6, 0xcf, 0x51, 0xcd, 0xfa, 0x35, 0xaa, 0x59,
-	0xbf, 0x47, 0x35, 0x0b, 0xd5, 0x19, 0x77, 0xf2, 0x77, 0x29, 0x16, 0x3c, 0x1d, 0x3a, 0x8b, 0x9e,
-	0xa8, 0x2b, 0xeb, 0xa6, 0xb4, 0xdf, 0xca, 0x0b, 0xa7, 0x31, 0x73, 0xba, 0x0d, 0xe7, 0xcc, 0x14,
-	0x5e, 0x75, 0x7a, 0x9b, 0x79, 0x57, 0xc7, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0xd0, 0xa8, 0x70,
-	0x30, 0x0a, 0x05, 0x00, 0x00,
-}

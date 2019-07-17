@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"istio.io/istio/pkg/mcp/rate"
 	"os"
 	"syscall"
 	"time"
@@ -28,7 +29,7 @@ import (
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/galley/pkg/runtime/groups"
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 	"istio.io/istio/pkg/mcp/monitoring"
 	"istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/mcp/snapshot"
@@ -170,17 +171,19 @@ $$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
 		func(s *grpc.Server) {
 			authChecker := server.NewAllowAllChecker()
 			reporter := monitoring.NewStatsContext("copilot/")
+			limiter := rate.NewRateLimiter(1000000000, 1000000000)
+
 			options := &source.Options{
 				Watcher:           cache,
 				Reporter:          reporter,
-				CollectionOptions: collectionOptions,
+				CollectionsOptions: collectionOptions,
+				ConnRateLimiter: limiter,
 			}
 			// TODO: Figure out sane NewConnectionsFreq and NewConnectionsBurstSize when we're doing scaling work.
 			// (https://www.pivotaltracker.com/story/show/162515083)
 			serverOptions := &source.ServerOptions{
-				NewConnectionFreq:      1000000000,
-				NewConnectionBurstSize: 1000000000,
 				AuthChecker:            authChecker,
+				RateLimiter: limiter.Create(),
 			}
 
 			mcpServer := source.NewServer(options, serverOptions)

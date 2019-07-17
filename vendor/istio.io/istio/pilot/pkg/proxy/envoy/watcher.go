@@ -20,12 +20,12 @@ import (
 	"hash"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/howeyc/fsnotify"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 const (
@@ -39,23 +39,14 @@ type Watcher interface {
 	Run(context.Context)
 }
 
-// CertSource is file source for certificates
-type CertSource struct {
-	// Directory containing certificates
-	Directory string
-	// Files for certificates
-	Files []string
-}
-
 type watcher struct {
-	certs   []CertSource
+	certs   []string
 	updates chan<- interface{}
 }
 
-// NewWatcher creates a new watcher instance from a proxy agent and a set of monitored certificate paths
-// (directories with files in them)
+// NewWatcher creates a new watcher instance from a proxy agent and a set of monitored certificate file paths
 func NewWatcher(
-	certs []CertSource,
+	certs []string,
 	updates chan<- interface{}) Watcher {
 	return &watcher{
 		certs:   certs,
@@ -68,12 +59,7 @@ func (w *watcher) Run(ctx context.Context) {
 	w.SendConfig()
 
 	// monitor certificates
-	certDirs := make([]string, 0, len(w.certs))
-	for _, cert := range w.certs {
-		certDirs = append(certDirs, cert.Directory)
-	}
-
-	go watchCerts(ctx, certDirs, watchFileEvents, defaultMinDelay, w.SendConfig)
+	go watchCerts(ctx, w.certs, watchFileEvents, defaultMinDelay, w.SendConfig)
 
 	<-ctx.Done()
 	log.Info("Watcher has successfully terminated")
@@ -81,9 +67,7 @@ func (w *watcher) Run(ctx context.Context) {
 
 func (w *watcher) SendConfig() {
 	h := sha256.New()
-	for _, cert := range w.certs {
-		generateCertHash(h, cert.Directory, cert.Files)
-	}
+	generateCertHash(h, w.certs)
 	w.updates <- h.Sum(nil)
 }
 
@@ -124,11 +108,11 @@ func watchFileEvents(ctx context.Context, wch <-chan *fsnotify.FileEvent, minDel
 	}
 }
 
-// watchCerts watches all certificate directories and calls the provided
+// watchCerts watches all certificates and calls the provided
 // `updateFunc` method when changes are detected. This method is blocking
 // so it should be run as a goroutine.
 // updateFunc will not be called more than one time per minDelay.
-func watchCerts(ctx context.Context, certsDirs []string, watchFileEventsFn watchFileEventsFn,
+func watchCerts(ctx context.Context, certs []string, watchFileEventsFn watchFileEventsFn,
 	minDelay time.Duration, updateFunc func()) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -141,26 +125,32 @@ func watchCerts(ctx context.Context, certsDirs []string, watchFileEventsFn watch
 		}
 	}()
 
-	// watch all directories
-	for _, d := range certsDirs {
-		if err := fw.Watch(d); err != nil {
-			log.Warnf("watching %s encounters an error %v", d, err)
+	// watch cert folders instead of files because
+	// watch breaks in kubernetes when secrets are updated.
+	// This happens because secrets are symbolic links pointing to files
+	// which are updated by kubernetes. On updating secrets, kubernetes
+	// deletes the existing file, which sends a DELETE file event and breaks the watch
+	certDirs := make(map[string]bool)
+	for _, c := range certs {
+		certDirs[filepath.Dir(c)] = true
+	}
+	for dir := range certDirs {
+		if err := fw.Watch(dir); err != nil {
+			log.Warnf("watching %s encountered an error %v", dir, err)
 			return
 		}
+		log.Infof("watching %s for changes", dir)
 	}
 	watchFileEventsFn(ctx, fw.Event, minDelay, updateFunc)
 }
 
-func generateCertHash(h hash.Hash, certsDir string, files []string) {
-	if _, err := os.Stat(certsDir); os.IsNotExist(err) {
-		return
-	}
-
-	for _, file := range files {
-		filename := path.Join(certsDir, file)
-		bs, err := ioutil.ReadFile(filename)
+func generateCertHash(h hash.Hash, certs []string) {
+	for _, cert := range certs {
+		if _, err := os.Stat(cert); os.IsNotExist(err) {
+			continue
+		}
+		bs, err := ioutil.ReadFile(cert)
 		if err != nil {
-			// log.Warnf("failed to read file %q", filename)
 			continue
 		}
 		if _, err := h.Write(bs); err != nil {

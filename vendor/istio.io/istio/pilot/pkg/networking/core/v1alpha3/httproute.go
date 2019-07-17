@@ -22,11 +22,14 @@ import (
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
+	meshconfig "istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	istio_route "istio.io/istio/pilot/pkg/networking/core/v1alpha3/route"
 	"istio.io/istio/pilot/pkg/networking/plugin"
 	"istio.io/istio/pilot/pkg/networking/util"
+	"istio.io/istio/pkg/features/pilot"
 	"istio.io/istio/pkg/proto"
+	"istio.io/pkg/log"
 )
 
 // BuildHTTPRoutes produces a list of routes for the proxy
@@ -37,7 +40,7 @@ func (configgen *ConfigGeneratorImpl) BuildHTTPRoutes(env *model.Environment, no
 	switch node.Type {
 	case model.SidecarProxy:
 		return configgen.buildSidecarOutboundHTTPRouteConfig(env, node, push, proxyInstances, routeName), nil
-	case model.Router, model.Ingress:
+	case model.Router:
 		return configgen.buildGatewayHTTPRouteConfig(env, node, push, proxyInstances, routeName)
 	}
 	return nil, nil
@@ -139,15 +142,12 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 			// Take all ports when listen port is 0 (http_proxy or uds)
 			// Expect virtualServices to resolve to right port
 			nameToServiceMap[svc.Hostname] = svc
-		} else {
-			if svcPort, exists := svc.Ports.GetByPort(listenerPort); exists {
-
-				nameToServiceMap[svc.Hostname] = &model.Service{
-					Hostname:     svc.Hostname,
-					Address:      svc.Address,
-					MeshExternal: svc.MeshExternal,
-					Ports:        []*model.Port{svcPort},
-				}
+		} else if svcPort, exists := svc.Ports.GetByPort(listenerPort); exists {
+			nameToServiceMap[svc.Hostname] = &model.Service{
+				Hostname:     svc.Hostname,
+				Address:      svc.Address,
+				MeshExternal: svc.MeshExternal,
+				Ports:        []*model.Port{svcPort},
 			}
 		}
 	}
@@ -161,28 +161,41 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 	// Get list of virtual services bound to the mesh gateway
 	virtualHostWrappers := istio_route.BuildSidecarVirtualHostsFromConfigAndRegistry(node, push, nameToServiceMap, proxyLabels, virtualServices, listenerPort)
 	vHostPortMap := make(map[int][]route.VirtualHost)
-
+	uniques := make(map[string]struct{})
 	for _, virtualHostWrapper := range virtualHostWrappers {
 		// If none of the routes matched by source, skip this virtual host
 		if len(virtualHostWrapper.Routes) == 0 {
 			continue
 		}
-
 		virtualHosts := make([]route.VirtualHost, 0, len(virtualHostWrapper.VirtualServiceHosts)+len(virtualHostWrapper.Services))
 		for _, host := range virtualHostWrapper.VirtualServiceHosts {
-			virtualHosts = append(virtualHosts, route.VirtualHost{
-				Name:    fmt.Sprintf("%s:%d", host, virtualHostWrapper.Port),
-				Domains: []string{host, fmt.Sprintf("%s:%d", host, virtualHostWrapper.Port)},
-				Routes:  virtualHostWrapper.Routes,
-			})
+			name := fmt.Sprintf("%s:%d", host, virtualHostWrapper.Port)
+			if _, found := uniques[name]; !found {
+				uniques[name] = struct{}{}
+				virtualHosts = append(virtualHosts, route.VirtualHost{
+					Name:    name,
+					Domains: []string{host, fmt.Sprintf("%s:%d", host, virtualHostWrapper.Port)},
+					Routes:  virtualHostWrapper.Routes,
+				})
+			} else {
+				push.Add(model.DuplicatedDomains, name, node, fmt.Sprintf("duplicate domain from virtual service: %s", name))
+				log.Debugf("Dropping duplicate route entry %v.", name)
+			}
 		}
 
 		for _, svc := range virtualHostWrapper.Services {
-			virtualHosts = append(virtualHosts, route.VirtualHost{
-				Name:    fmt.Sprintf("%s:%d", svc.Hostname, virtualHostWrapper.Port),
-				Domains: generateVirtualHostDomains(svc, virtualHostWrapper.Port, node),
-				Routes:  virtualHostWrapper.Routes,
-			})
+			name := fmt.Sprintf("%s:%d", svc.Hostname, virtualHostWrapper.Port)
+			if _, found := uniques[name]; !found {
+				uniques[name] = struct{}{}
+				virtualHosts = append(virtualHosts, route.VirtualHost{
+					Name:    name,
+					Domains: generateVirtualHostDomains(svc, virtualHostWrapper.Port, node),
+					Routes:  virtualHostWrapper.Routes,
+				})
+			} else {
+				push.Add(model.DuplicatedDomains, name, node, fmt.Sprintf("duplicate domain from virtual service: %s", name))
+				log.Debugf("Dropping duplicate route entry %v.", name)
+			}
 		}
 
 		vHostPortMap[virtualHostWrapper.Port] = append(vHostPortMap[virtualHostWrapper.Port], virtualHosts...)
@@ -196,6 +209,46 @@ func (configgen *ConfigGeneratorImpl) buildSidecarOutboundHTTPRouteConfig(env *m
 	}
 
 	util.SortVirtualHosts(virtualHosts)
+
+	if pilot.EnableFallthroughRoute() {
+		// This needs to be the last virtual host, as routes are evaluated in order.
+		if env.Mesh.OutboundTrafficPolicy.Mode == meshconfig.MeshConfig_OutboundTrafficPolicy_ALLOW_ANY {
+			virtualHosts = append(virtualHosts, route.VirtualHost{
+				Name:    "allow_any",
+				Domains: []string{"*"},
+				Routes: []route.Route{
+					{
+						Match: route.RouteMatch{
+							PathSpecifier: &route.RouteMatch_Prefix{Prefix: "/"},
+						},
+						Action: &route.Route_Route{
+							Route: &route.RouteAction{
+								ClusterSpecifier: &route.RouteAction_Cluster{Cluster: util.PassthroughCluster},
+							},
+						},
+					},
+				},
+			})
+		} else {
+			virtualHosts = append(virtualHosts, route.VirtualHost{
+				Name:    "block_all",
+				Domains: []string{"*"},
+				Routes: []route.Route{
+					{
+						Match: route.RouteMatch{
+							PathSpecifier: &route.RouteMatch_Prefix{Prefix: "/"},
+						},
+						Action: &route.Route_DirectResponse{
+							DirectResponse: &route.DirectResponseAction{
+								Status: 502,
+							},
+						},
+					},
+				},
+			})
+		}
+	}
+
 	out := &xdsapi.RouteConfiguration{
 		Name:             routeName,
 		VirtualHosts:     virtualHosts,
@@ -227,8 +280,7 @@ func generateVirtualHostDomains(service *model.Service, port int, node *model.Pr
 		// add a vhost match for the IP (if its non CIDR)
 		cidr := util.ConvertAddressToCidr(svcAddr)
 		if cidr.PrefixLen.Value == 32 {
-			domains = append(domains, svcAddr)
-			domains = append(domains, fmt.Sprintf("%s:%d", svcAddr, port))
+			domains = append(domains, svcAddr, fmt.Sprintf("%s:%d", svcAddr, port))
 		}
 	}
 	return domains
@@ -261,16 +313,14 @@ func generateAltVirtualHosts(hostname string, port int, proxyDomain string) []st
 	}
 
 	// adds the uniq piece foo, foo:80
-	vhosts = append(vhosts, uniqHostname)
-	vhosts = append(vhosts, fmt.Sprintf("%s:%d", uniqHostname, port))
+	vhosts = append(vhosts, uniqHostname, fmt.Sprintf("%s:%d", uniqHostname, port))
 
 	// adds all the other variants (foo.local, foo.local:80)
 	for i := len(sharedDNSDomain) - 1; i > 0; i-- {
 		if sharedDNSDomain[i] == '.' {
 			variant := fmt.Sprintf("%s.%s", uniqHostname, sharedDNSDomain[:i])
 			variantWithPort := fmt.Sprintf("%s:%d", variant, port)
-			vhosts = append(vhosts, variant)
-			vhosts = append(vhosts, variantWithPort)
+			vhosts = append(vhosts, variant, variantWithPort)
 		}
 	}
 	return vhosts

@@ -3,30 +3,28 @@
 
 package v2
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-import cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-import core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-import _type "github.com/envoyproxy/go-control-plane/envoy/type"
-import _ "github.com/gogo/googleapis/google/api"
-import _ "github.com/gogo/protobuf/gogoproto"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
-
-import time "time"
-
-import bytes "bytes"
-
 import (
-	context "golang.org/x/net/context"
+	bytes "bytes"
+	context "context"
+	fmt "fmt"
+	io "io"
+	math "math"
+	time "time"
+
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/googleapis/google/api"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+
+	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	_type "github.com/envoyproxy/go-control-plane/envoy/type"
 )
-
-import github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-
-import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -72,6 +70,7 @@ var Cluster_DiscoveryType_name = map[int32]string{
 	3: "EDS",
 	4: "ORIGINAL_DST",
 }
+
 var Cluster_DiscoveryType_value = map[string]int32{
 	"STATIC":       0,
 	"STRICT_DNS":   1,
@@ -83,8 +82,9 @@ var Cluster_DiscoveryType_value = map[string]int32{
 func (x Cluster_DiscoveryType) String() string {
 	return proto.EnumName(Cluster_DiscoveryType_name, int32(x))
 }
+
 func (Cluster_DiscoveryType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 0}
 }
 
 // Refer to :ref:`load balancer type <arch_overview_load_balancing_types>` architecture
@@ -115,6 +115,10 @@ const (
 	// Refer to the :ref:`Maglev load balancing policy<arch_overview_load_balancing_types_maglev>`
 	// for an explanation.
 	Cluster_MAGLEV Cluster_LbPolicy = 5
+	// This load balancer type must be specified if the configured cluster provides a cluster
+	// specific load balancer. Consult the configured cluster's documentation for whether to set
+	// this option or not.
+	Cluster_CLUSTER_PROVIDED Cluster_LbPolicy = 6
 )
 
 var Cluster_LbPolicy_name = map[int32]string{
@@ -124,21 +128,25 @@ var Cluster_LbPolicy_name = map[int32]string{
 	3: "RANDOM",
 	4: "ORIGINAL_DST_LB",
 	5: "MAGLEV",
+	6: "CLUSTER_PROVIDED",
 }
+
 var Cluster_LbPolicy_value = map[string]int32{
-	"ROUND_ROBIN":     0,
-	"LEAST_REQUEST":   1,
-	"RING_HASH":       2,
-	"RANDOM":          3,
-	"ORIGINAL_DST_LB": 4,
-	"MAGLEV":          5,
+	"ROUND_ROBIN":      0,
+	"LEAST_REQUEST":    1,
+	"RING_HASH":        2,
+	"RANDOM":           3,
+	"ORIGINAL_DST_LB":  4,
+	"MAGLEV":           5,
+	"CLUSTER_PROVIDED": 6,
 }
 
 func (x Cluster_LbPolicy) String() string {
 	return proto.EnumName(Cluster_LbPolicy_name, int32(x))
 }
+
 func (Cluster_LbPolicy) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 1}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 1}
 }
 
 // When V4_ONLY is selected, the DNS resolver will only perform a lookup for
@@ -164,6 +172,7 @@ var Cluster_DnsLookupFamily_name = map[int32]string{
 	1: "V4_ONLY",
 	2: "V6_ONLY",
 }
+
 var Cluster_DnsLookupFamily_value = map[string]int32{
 	"AUTO":    0,
 	"V4_ONLY": 1,
@@ -173,8 +182,9 @@ var Cluster_DnsLookupFamily_value = map[string]int32{
 func (x Cluster_DnsLookupFamily) String() string {
 	return proto.EnumName(Cluster_DnsLookupFamily_name, int32(x))
 }
+
 func (Cluster_DnsLookupFamily) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 2}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 2}
 }
 
 type Cluster_ClusterProtocolSelection int32
@@ -192,6 +202,7 @@ var Cluster_ClusterProtocolSelection_name = map[int32]string{
 	0: "USE_CONFIGURED_PROTOCOL",
 	1: "USE_DOWNSTREAM_PROTOCOL",
 }
+
 var Cluster_ClusterProtocolSelection_value = map[string]int32{
 	"USE_CONFIGURED_PROTOCOL": 0,
 	"USE_DOWNSTREAM_PROTOCOL": 1,
@@ -200,8 +211,9 @@ var Cluster_ClusterProtocolSelection_value = map[string]int32{
 func (x Cluster_ClusterProtocolSelection) String() string {
 	return proto.EnumName(Cluster_ClusterProtocolSelection_name, int32(x))
 }
+
 func (Cluster_ClusterProtocolSelection) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 3}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 3}
 }
 
 // If NO_FALLBACK is selected, a result
@@ -222,6 +234,7 @@ var Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_name = map[int32]string{
 	1: "ANY_ENDPOINT",
 	2: "DEFAULT_SUBSET",
 }
+
 var Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_value = map[string]int32{
 	"NO_FALLBACK":    0,
 	"ANY_ENDPOINT":   1,
@@ -231,8 +244,47 @@ var Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_value = map[string]int32{
 func (x Cluster_LbSubsetConfig_LbSubsetFallbackPolicy) String() string {
 	return proto.EnumName(Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_name, int32(x))
 }
+
 func (Cluster_LbSubsetConfig_LbSubsetFallbackPolicy) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 3, 0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 4, 0}
+}
+
+// Allows to override top level fallback policy per selector.
+type Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy int32
+
+const (
+	// If NOT_DEFINED top level config fallback policy is used instead.
+	Cluster_LbSubsetConfig_LbSubsetSelector_NOT_DEFINED Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy = 0
+	// If NO_FALLBACK is selected, a result equivalent to no healthy hosts is reported.
+	Cluster_LbSubsetConfig_LbSubsetSelector_NO_FALLBACK Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy = 1
+	// If ANY_ENDPOINT is selected, any cluster endpoint may be returned
+	// (subject to policy, health checks, etc).
+	Cluster_LbSubsetConfig_LbSubsetSelector_ANY_ENDPOINT Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy = 2
+	// If DEFAULT_SUBSET is selected, load balancing is performed over the
+	// endpoints matching the values from the default_subset field.
+	Cluster_LbSubsetConfig_LbSubsetSelector_DEFAULT_SUBSET Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy = 3
+)
+
+var Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy_name = map[int32]string{
+	0: "NOT_DEFINED",
+	1: "NO_FALLBACK",
+	2: "ANY_ENDPOINT",
+	3: "DEFAULT_SUBSET",
+}
+
+var Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy_value = map[string]int32{
+	"NOT_DEFINED":    0,
+	"NO_FALLBACK":    1,
+	"ANY_ENDPOINT":   2,
+	"DEFAULT_SUBSET": 3,
+}
+
+func (x Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy) String() string {
+	return proto.EnumName(Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy_name, int32(x))
+}
+
+func (Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 4, 0, 0}
 }
 
 // The hash function used to hash hosts onto the ketama ring.
@@ -251,6 +303,7 @@ var Cluster_RingHashLbConfig_HashFunction_name = map[int32]string{
 	0: "XX_HASH",
 	1: "MURMUR_HASH_2",
 }
+
 var Cluster_RingHashLbConfig_HashFunction_value = map[string]int32{
 	"XX_HASH":       0,
 	"MURMUR_HASH_2": 1,
@@ -259,30 +312,29 @@ var Cluster_RingHashLbConfig_HashFunction_value = map[string]int32{
 func (x Cluster_RingHashLbConfig_HashFunction) String() string {
 	return proto.EnumName(Cluster_RingHashLbConfig_HashFunction_name, int32(x))
 }
+
 func (Cluster_RingHashLbConfig_HashFunction) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 5, 0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 6, 0}
 }
 
 // Configuration for a single upstream cluster.
-// [#comment:next free field: 38]
+// [#comment:next free field: 40]
 type Cluster struct {
 	// Supplies the name of the cluster which must be unique across all clusters.
 	// The cluster name is used when emitting
 	// :ref:`statistics <config_cluster_manager_cluster_stats>` if :ref:`alt_stat_name
 	// <envoy_api_field_Cluster.alt_stat_name>` is not provided.
 	// Any ``:`` in the cluster name will be converted to ``_`` when emitting statistics.
-	// By default, the maximum length of a cluster name is limited to 60
-	// characters. This limit can be increased by setting the
-	// :option:`--max-obj-name-len` command line argument to the desired value.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// An optional alternative to the cluster name to be used while emitting stats.
 	// Any ``:`` in the name will be converted to ``_`` when emitting statistics. This should not be
 	// confused with :ref:`Router Filter Header
 	// <config_http_filters_router_x-envoy-upstream-alt-stat-name>`.
 	AltStatName string `protobuf:"bytes,28,opt,name=alt_stat_name,json=altStatName,proto3" json:"alt_stat_name,omitempty"`
-	// The :ref:`service discovery type <arch_overview_service_discovery_types>`
-	// to use for resolving the cluster.
-	Type Cluster_DiscoveryType `protobuf:"varint,2,opt,name=type,proto3,enum=envoy.api.v2.Cluster_DiscoveryType" json:"type,omitempty"`
+	// Types that are valid to be assigned to ClusterDiscoveryType:
+	//	*Cluster_Type
+	//	*Cluster_ClusterType
+	ClusterDiscoveryType isCluster_ClusterDiscoveryType `protobuf_oneof:"cluster_discovery_type"`
 	// Configuration to use for EDS updates for the Cluster.
 	EdsClusterConfig *Cluster_EdsClusterConfig `protobuf:"bytes,3,opt,name=eds_cluster_config,json=edsClusterConfig,proto3" json:"eds_cluster_config,omitempty"`
 	// The timeout for new network connections to hosts in the cluster.
@@ -310,7 +362,7 @@ type Cluster struct {
 	// :ref:`STRICT_DNS<envoy_api_enum_value_Cluster.DiscoveryType.STRICT_DNS>`
 	// or :ref:`LOGICAL_DNS<envoy_api_enum_value_Cluster.DiscoveryType.LOGICAL_DNS>` clusters.
 	// This field supersedes :ref:`hosts<envoy_api_field_Cluster.hosts>` field.
-	// [#comment:TODO(dio): Deprecate the hosts field and add it to DEPRECATED.md
+	// [#comment:TODO(dio): Deprecate the hosts field and add it to :ref:`deprecated log<deprecated>`
 	// once load_assignment is implemented.]
 	//
 	// .. attention::
@@ -357,7 +409,7 @@ type Cluster struct {
 	// for upstream connections. The key should match the extension filter name, such as
 	// "envoy.filters.network.thrift_proxy". See the extension's documentation for details on
 	// specific options.
-	ExtensionProtocolOptions map[string]*types.Struct `protobuf:"bytes,35,rep,name=extension_protocol_options,json=extensionProtocolOptions,proto3" json:"extension_protocol_options,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // Deprecated: Do not use.
+	ExtensionProtocolOptions map[string]*types.Struct `protobuf:"bytes,35,rep,name=extension_protocol_options,json=extensionProtocolOptions,proto3" json:"extension_protocol_options,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// The extension_protocol_options field is used to provide extension-specific protocol options
 	// for upstream connections. The key should match the extension filter name, such as
 	// "envoy.filters.network.thrift_proxy". See the extension's documentation for details on
@@ -373,6 +425,10 @@ type Cluster struct {
 	// and :ref:`LOGICAL_DNS<envoy_api_enum_value_Cluster.DiscoveryType.LOGICAL_DNS>`
 	// this setting is ignored.
 	DnsRefreshRate *time.Duration `protobuf:"bytes,16,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3,stdduration" json:"dns_refresh_rate,omitempty"`
+	// Optional configuration for setting cluster's DNS refresh rate. If the value is set to true,
+	// cluster's DNS refresh rate will be set to resource record's TTL which comes from DNS
+	// resolution.
+	RespectDnsTtl bool `protobuf:"varint,39,opt,name=respect_dns_ttl,json=respectDnsTtl,proto3" json:"respect_dns_ttl,omitempty"`
 	// The DNS IP address resolution policy. If this setting is not specified, the
 	// value defaults to
 	// :ref:`AUTO<envoy_api_enum_value_Cluster.DnsLookupFamily.AUTO>`.
@@ -469,25 +525,21 @@ func (m *Cluster) Reset()         { *m = Cluster{} }
 func (m *Cluster) String() string { return proto.CompactTextString(m) }
 func (*Cluster) ProtoMessage()    {}
 func (*Cluster) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0}
 }
 func (m *Cluster) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster.Merge(dst, src)
+func (m *Cluster) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster.Merge(m, src)
 }
 func (m *Cluster) XXX_Size() int {
 	return m.Size()
@@ -498,6 +550,12 @@ func (m *Cluster) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Cluster proto.InternalMessageInfo
 
+type isCluster_ClusterDiscoveryType interface {
+	isCluster_ClusterDiscoveryType()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
 type isCluster_LbConfig interface {
 	isCluster_LbConfig()
 	Equal(interface{}) bool
@@ -505,6 +563,12 @@ type isCluster_LbConfig interface {
 	Size() int
 }
 
+type Cluster_Type struct {
+	Type Cluster_DiscoveryType `protobuf:"varint,2,opt,name=type,proto3,enum=envoy.api.v2.Cluster_DiscoveryType,oneof"`
+}
+type Cluster_ClusterType struct {
+	ClusterType *Cluster_CustomClusterType `protobuf:"bytes,38,opt,name=cluster_type,json=clusterType,proto3,oneof"`
+}
 type Cluster_RingHashLbConfig_ struct {
 	RingHashLbConfig *Cluster_RingHashLbConfig `protobuf:"bytes,23,opt,name=ring_hash_lb_config,json=ringHashLbConfig,proto3,oneof"`
 }
@@ -515,10 +579,18 @@ type Cluster_LeastRequestLbConfig_ struct {
 	LeastRequestLbConfig *Cluster_LeastRequestLbConfig `protobuf:"bytes,37,opt,name=least_request_lb_config,json=leastRequestLbConfig,proto3,oneof"`
 }
 
-func (*Cluster_RingHashLbConfig_) isCluster_LbConfig()     {}
-func (*Cluster_OriginalDstLbConfig_) isCluster_LbConfig()  {}
-func (*Cluster_LeastRequestLbConfig_) isCluster_LbConfig() {}
+func (*Cluster_Type) isCluster_ClusterDiscoveryType()        {}
+func (*Cluster_ClusterType) isCluster_ClusterDiscoveryType() {}
+func (*Cluster_RingHashLbConfig_) isCluster_LbConfig()       {}
+func (*Cluster_OriginalDstLbConfig_) isCluster_LbConfig()    {}
+func (*Cluster_LeastRequestLbConfig_) isCluster_LbConfig()   {}
 
+func (m *Cluster) GetClusterDiscoveryType() isCluster_ClusterDiscoveryType {
+	if m != nil {
+		return m.ClusterDiscoveryType
+	}
+	return nil
+}
 func (m *Cluster) GetLbConfig() isCluster_LbConfig {
 	if m != nil {
 		return m.LbConfig
@@ -541,10 +613,17 @@ func (m *Cluster) GetAltStatName() string {
 }
 
 func (m *Cluster) GetType() Cluster_DiscoveryType {
-	if m != nil {
-		return m.Type
+	if x, ok := m.GetClusterDiscoveryType().(*Cluster_Type); ok {
+		return x.Type
 	}
 	return Cluster_STATIC
+}
+
+func (m *Cluster) GetClusterType() *Cluster_CustomClusterType {
+	if x, ok := m.GetClusterDiscoveryType().(*Cluster_ClusterType); ok {
+		return x.ClusterType
+	}
+	return nil
 }
 
 func (m *Cluster) GetEdsClusterConfig() *Cluster_EdsClusterConfig {
@@ -639,7 +718,6 @@ func (m *Cluster) GetHttp2ProtocolOptions() *core.Http2ProtocolOptions {
 	return nil
 }
 
-// Deprecated: Do not use.
 func (m *Cluster) GetExtensionProtocolOptions() map[string]*types.Struct {
 	if m != nil {
 		return m.ExtensionProtocolOptions
@@ -659,6 +737,13 @@ func (m *Cluster) GetDnsRefreshRate() *time.Duration {
 		return m.DnsRefreshRate
 	}
 	return nil
+}
+
+func (m *Cluster) GetRespectDnsTtl() bool {
+	if m != nil {
+		return m.RespectDnsTtl
+	}
+	return false
 }
 
 func (m *Cluster) GetDnsLookupFamily() Cluster_DnsLookupFamily {
@@ -776,6 +861,8 @@ func (m *Cluster) GetDrainConnectionsOnHostRemoval() bool {
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Cluster) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _Cluster_OneofMarshaler, _Cluster_OneofUnmarshaler, _Cluster_OneofSizer, []interface{}{
+		(*Cluster_Type)(nil),
+		(*Cluster_ClusterType)(nil),
 		(*Cluster_RingHashLbConfig_)(nil),
 		(*Cluster_OriginalDstLbConfig_)(nil),
 		(*Cluster_LeastRequestLbConfig_)(nil),
@@ -784,6 +871,20 @@ func (*Cluster) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error
 
 func _Cluster_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	m := msg.(*Cluster)
+	// cluster_discovery_type
+	switch x := m.ClusterDiscoveryType.(type) {
+	case *Cluster_Type:
+		_ = b.EncodeVarint(2<<3 | proto.WireVarint)
+		_ = b.EncodeVarint(uint64(x.Type))
+	case *Cluster_ClusterType:
+		_ = b.EncodeVarint(38<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ClusterType); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Cluster.ClusterDiscoveryType has unexpected type %T", x)
+	}
 	// lb_config
 	switch x := m.LbConfig.(type) {
 	case *Cluster_RingHashLbConfig_:
@@ -811,6 +912,21 @@ func _Cluster_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 func _Cluster_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
 	m := msg.(*Cluster)
 	switch tag {
+	case 2: // cluster_discovery_type.type
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.ClusterDiscoveryType = &Cluster_Type{Cluster_DiscoveryType(x)}
+		return true, err
+	case 38: // cluster_discovery_type.cluster_type
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Cluster_CustomClusterType)
+		err := b.DecodeMessage(msg)
+		m.ClusterDiscoveryType = &Cluster_ClusterType{msg}
+		return true, err
 	case 23: // lb_config.ring_hash_lb_config
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
@@ -842,6 +958,20 @@ func _Cluster_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer
 
 func _Cluster_OneofSizer(msg proto.Message) (n int) {
 	m := msg.(*Cluster)
+	// cluster_discovery_type
+	switch x := m.ClusterDiscoveryType.(type) {
+	case *Cluster_Type:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(x.Type))
+	case *Cluster_ClusterType:
+		s := proto.Size(x.ClusterType)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
 	// lb_config
 	switch x := m.LbConfig.(type) {
 	case *Cluster_RingHashLbConfig_:
@@ -866,6 +996,61 @@ func _Cluster_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
+// Extended cluster type.
+type Cluster_CustomClusterType struct {
+	// The type of the cluster to instantiate. The name must match a supported cluster type.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Cluster specific configuration which depends on the cluster being instantiated.
+	// See the supported cluster for further documentation.
+	TypedConfig          *types.Any `protobuf:"bytes,2,opt,name=typed_config,json=typedConfig,proto3" json:"typed_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
+}
+
+func (m *Cluster_CustomClusterType) Reset()         { *m = Cluster_CustomClusterType{} }
+func (m *Cluster_CustomClusterType) String() string { return proto.CompactTextString(m) }
+func (*Cluster_CustomClusterType) ProtoMessage()    {}
+func (*Cluster_CustomClusterType) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 0}
+}
+func (m *Cluster_CustomClusterType) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Cluster_CustomClusterType) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
+}
+func (m *Cluster_CustomClusterType) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_CustomClusterType.Merge(m, src)
+}
+func (m *Cluster_CustomClusterType) XXX_Size() int {
+	return m.Size()
+}
+func (m *Cluster_CustomClusterType) XXX_DiscardUnknown() {
+	xxx_messageInfo_Cluster_CustomClusterType.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Cluster_CustomClusterType proto.InternalMessageInfo
+
+func (m *Cluster_CustomClusterType) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Cluster_CustomClusterType) GetTypedConfig() *types.Any {
+	if m != nil {
+		return m.TypedConfig
+	}
+	return nil
+}
+
 // Only valid when discovery type is EDS.
 type Cluster_EdsClusterConfig struct {
 	// Configuration for the source of EDS updates for this Cluster.
@@ -883,25 +1068,21 @@ func (m *Cluster_EdsClusterConfig) Reset()         { *m = Cluster_EdsClusterConf
 func (m *Cluster_EdsClusterConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_EdsClusterConfig) ProtoMessage()    {}
 func (*Cluster_EdsClusterConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 1}
 }
 func (m *Cluster_EdsClusterConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_EdsClusterConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_EdsClusterConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_EdsClusterConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_EdsClusterConfig.Merge(dst, src)
+func (m *Cluster_EdsClusterConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_EdsClusterConfig.Merge(m, src)
 }
 func (m *Cluster_EdsClusterConfig) XXX_Size() int {
 	return m.Size()
@@ -972,7 +1153,18 @@ type Cluster_LbSubsetConfig struct {
 	// of hosts in the subset vs hosts in the original subset. This aims to even out the load
 	// going to an individual locality if said locality is disproportionally affected by the
 	// subset predicate.
-	ScaleLocalityWeight  bool     `protobuf:"varint,5,opt,name=scale_locality_weight,json=scaleLocalityWeight,proto3" json:"scale_locality_weight,omitempty"`
+	ScaleLocalityWeight bool `protobuf:"varint,5,opt,name=scale_locality_weight,json=scaleLocalityWeight,proto3" json:"scale_locality_weight,omitempty"`
+	// If true, when a fallback policy is configured and its corresponding subset fails to find
+	// a host this will cause any host to be selected instead.
+	//
+	// This is useful when using the default subset as the fallback policy, given the default
+	// subset might become empty. With this option enabled, if that happens the LB will attempt
+	// to select a host from the entire cluster.
+	PanicModeAny bool `protobuf:"varint,6,opt,name=panic_mode_any,json=panicModeAny,proto3" json:"panic_mode_any,omitempty"`
+	// If true, metadata specified for a metadata key will be matched against the corresponding
+	// endpoint metadata if the endpoint metadata matches the value exactly OR it is a list value
+	// and any of the elements in the list matches the criteria.
+	ListAsAny            bool     `protobuf:"varint,7,opt,name=list_as_any,json=listAsAny,proto3" json:"list_as_any,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -982,25 +1174,21 @@ func (m *Cluster_LbSubsetConfig) Reset()         { *m = Cluster_LbSubsetConfig{}
 func (m *Cluster_LbSubsetConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_LbSubsetConfig) ProtoMessage()    {}
 func (*Cluster_LbSubsetConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 3}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 4}
 }
 func (m *Cluster_LbSubsetConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_LbSubsetConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_LbSubsetConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_LbSubsetConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_LbSubsetConfig.Merge(dst, src)
+func (m *Cluster_LbSubsetConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_LbSubsetConfig.Merge(m, src)
 }
 func (m *Cluster_LbSubsetConfig) XXX_Size() int {
 	return m.Size()
@@ -1046,13 +1234,30 @@ func (m *Cluster_LbSubsetConfig) GetScaleLocalityWeight() bool {
 	return false
 }
 
+func (m *Cluster_LbSubsetConfig) GetPanicModeAny() bool {
+	if m != nil {
+		return m.PanicModeAny
+	}
+	return false
+}
+
+func (m *Cluster_LbSubsetConfig) GetListAsAny() bool {
+	if m != nil {
+		return m.ListAsAny
+	}
+	return false
+}
+
 // Specifications for subsets.
 type Cluster_LbSubsetConfig_LbSubsetSelector struct {
 	// List of keys to match with the weighted cluster metadata.
-	Keys                 []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Keys []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	// The behavior used when no endpoint subset matches the selected route's
+	// metadata.
+	FallbackPolicy       Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy `protobuf:"varint,2,opt,name=fallback_policy,json=fallbackPolicy,proto3,enum=envoy.api.v2.Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy" json:"fallback_policy,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                                               `json:"-"`
+	XXX_unrecognized     []byte                                                                 `json:"-"`
+	XXX_sizecache        int32                                                                  `json:"-"`
 }
 
 func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Reset() {
@@ -1061,25 +1266,21 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Reset() {
 func (m *Cluster_LbSubsetConfig_LbSubsetSelector) String() string { return proto.CompactTextString(m) }
 func (*Cluster_LbSubsetConfig_LbSubsetSelector) ProtoMessage()    {}
 func (*Cluster_LbSubsetConfig_LbSubsetSelector) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 3, 0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 4, 0}
 }
 func (m *Cluster_LbSubsetConfig_LbSubsetSelector) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_LbSubsetConfig_LbSubsetSelector) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_LbSubsetConfig_LbSubsetSelector.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_LbSubsetConfig_LbSubsetSelector) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_LbSubsetConfig_LbSubsetSelector.Merge(dst, src)
+func (m *Cluster_LbSubsetConfig_LbSubsetSelector) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_LbSubsetConfig_LbSubsetSelector.Merge(m, src)
 }
 func (m *Cluster_LbSubsetConfig_LbSubsetSelector) XXX_Size() int {
 	return m.Size()
@@ -1097,6 +1298,13 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) GetKeys() []string {
 	return nil
 }
 
+func (m *Cluster_LbSubsetConfig_LbSubsetSelector) GetFallbackPolicy() Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy {
+	if m != nil {
+		return m.FallbackPolicy
+	}
+	return Cluster_LbSubsetConfig_LbSubsetSelector_NOT_DEFINED
+}
+
 // Specific configuration for the LeastRequest load balancing policy.
 type Cluster_LeastRequestLbConfig struct {
 	// The number of random healthy hosts from which the host with the fewest active requests will
@@ -1111,25 +1319,21 @@ func (m *Cluster_LeastRequestLbConfig) Reset()         { *m = Cluster_LeastReque
 func (m *Cluster_LeastRequestLbConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_LeastRequestLbConfig) ProtoMessage()    {}
 func (*Cluster_LeastRequestLbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 4}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 5}
 }
 func (m *Cluster_LeastRequestLbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_LeastRequestLbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_LeastRequestLbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_LeastRequestLbConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_LeastRequestLbConfig.Merge(dst, src)
+func (m *Cluster_LeastRequestLbConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_LeastRequestLbConfig.Merge(m, src)
 }
 func (m *Cluster_LeastRequestLbConfig) XXX_Size() int {
 	return m.Size()
@@ -1150,47 +1354,42 @@ func (m *Cluster_LeastRequestLbConfig) GetChoiceCount() *types.UInt32Value {
 // Specific configuration for the :ref:`RingHash<arch_overview_load_balancing_types_ring_hash>`
 // load balancing policy.
 type Cluster_RingHashLbConfig struct {
-	// Minimum hash ring size, i.e. total virtual nodes. A larger size
-	// will provide better request distribution since each host in the
-	// cluster will have more virtual nodes. Defaults to 1024. In the case
-	// that total number of hosts is greater than the minimum, each host will
-	// be allocated a single virtual node. This field is limited to 8M to bound
-	// resource use.
+	// Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each
+	// provided host) the better the request distribution will reflect the desired weights. Defaults
+	// to 1024 entries, and limited to 8M entries. See also
+	// :ref:`maximum_ring_size<envoy_api_field_Cluster.RingHashLbConfig.maximum_ring_size>`.
 	MinimumRingSize *types.UInt64Value `protobuf:"bytes,1,opt,name=minimum_ring_size,json=minimumRingSize,proto3" json:"minimum_ring_size,omitempty"`
-	// Deprecated settings from v1 config.
-	// [#not-implemented-hide:] Hide from docs.
-	DeprecatedV1 *Cluster_RingHashLbConfig_DeprecatedV1 `protobuf:"bytes,2,opt,name=deprecated_v1,json=deprecatedV1,proto3" json:"deprecated_v1,omitempty"` // Deprecated: Do not use.
 	// The hash function used to hash hosts onto the ketama ring. The value defaults to
 	// :ref:`XX_HASH<envoy_api_enum_value_Cluster.RingHashLbConfig.HashFunction.XX_HASH>`.
-	HashFunction         Cluster_RingHashLbConfig_HashFunction `protobuf:"varint,3,opt,name=hash_function,json=hashFunction,proto3,enum=envoy.api.v2.Cluster_RingHashLbConfig_HashFunction" json:"hash_function,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                              `json:"-"`
-	XXX_unrecognized     []byte                                `json:"-"`
-	XXX_sizecache        int32                                 `json:"-"`
+	HashFunction Cluster_RingHashLbConfig_HashFunction `protobuf:"varint,3,opt,name=hash_function,json=hashFunction,proto3,enum=envoy.api.v2.Cluster_RingHashLbConfig_HashFunction" json:"hash_function,omitempty"`
+	// Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered
+	// to further constrain resource use. See also
+	// :ref:`minimum_ring_size<envoy_api_field_Cluster.RingHashLbConfig.minimum_ring_size>`.
+	MaximumRingSize      *types.UInt64Value `protobuf:"bytes,4,opt,name=maximum_ring_size,json=maximumRingSize,proto3" json:"maximum_ring_size,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *Cluster_RingHashLbConfig) Reset()         { *m = Cluster_RingHashLbConfig{} }
 func (m *Cluster_RingHashLbConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_RingHashLbConfig) ProtoMessage()    {}
 func (*Cluster_RingHashLbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 5}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 6}
 }
 func (m *Cluster_RingHashLbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_RingHashLbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_RingHashLbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_RingHashLbConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_RingHashLbConfig.Merge(dst, src)
+func (m *Cluster_RingHashLbConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_RingHashLbConfig.Merge(m, src)
 }
 func (m *Cluster_RingHashLbConfig) XXX_Size() int {
 	return m.Size()
@@ -1208,14 +1407,6 @@ func (m *Cluster_RingHashLbConfig) GetMinimumRingSize() *types.UInt64Value {
 	return nil
 }
 
-// Deprecated: Do not use.
-func (m *Cluster_RingHashLbConfig) GetDeprecatedV1() *Cluster_RingHashLbConfig_DeprecatedV1 {
-	if m != nil {
-		return m.DeprecatedV1
-	}
-	return nil
-}
-
 func (m *Cluster_RingHashLbConfig) GetHashFunction() Cluster_RingHashLbConfig_HashFunction {
 	if m != nil {
 		return m.HashFunction
@@ -1223,52 +1414,9 @@ func (m *Cluster_RingHashLbConfig) GetHashFunction() Cluster_RingHashLbConfig_Ha
 	return Cluster_RingHashLbConfig_XX_HASH
 }
 
-// [#not-implemented-hide:] Hide from docs.
-type Cluster_RingHashLbConfig_DeprecatedV1 struct {
-	// Defaults to false, meaning that `xxHash <https://github.com/Cyan4973/xxHash>`_
-	// is to hash hosts onto the ketama ring.
-	UseStdHash           *types.BoolValue `protobuf:"bytes,1,opt,name=use_std_hash,json=useStdHash,proto3" json:"use_std_hash,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
-}
-
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) Reset()         { *m = Cluster_RingHashLbConfig_DeprecatedV1{} }
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) String() string { return proto.CompactTextString(m) }
-func (*Cluster_RingHashLbConfig_DeprecatedV1) ProtoMessage()    {}
-func (*Cluster_RingHashLbConfig_DeprecatedV1) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 5, 0}
-}
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_RingHashLbConfig_DeprecatedV1.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Cluster_RingHashLbConfig_DeprecatedV1) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_RingHashLbConfig_DeprecatedV1.Merge(dst, src)
-}
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) XXX_Size() int {
-	return m.Size()
-}
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) XXX_DiscardUnknown() {
-	xxx_messageInfo_Cluster_RingHashLbConfig_DeprecatedV1.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Cluster_RingHashLbConfig_DeprecatedV1 proto.InternalMessageInfo
-
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) GetUseStdHash() *types.BoolValue {
+func (m *Cluster_RingHashLbConfig) GetMaximumRingSize() *types.UInt64Value {
 	if m != nil {
-		return m.UseStdHash
+		return m.MaximumRingSize
 	}
 	return nil
 }
@@ -1277,7 +1425,7 @@ func (m *Cluster_RingHashLbConfig_DeprecatedV1) GetUseStdHash() *types.BoolValue
 // :ref:`Original Destination <arch_overview_load_balancing_types_original_destination>`
 // load balancing policy.
 type Cluster_OriginalDstLbConfig struct {
-	// When true, :ref:`x-envoy-orignal-dst-host
+	// When true, :ref:`x-envoy-original-dst-host
 	// <config_http_conn_man_headers_x-envoy-original-dst-host>` can be used to override destination
 	// address.
 	//
@@ -1296,25 +1444,21 @@ func (m *Cluster_OriginalDstLbConfig) Reset()         { *m = Cluster_OriginalDst
 func (m *Cluster_OriginalDstLbConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_OriginalDstLbConfig) ProtoMessage()    {}
 func (*Cluster_OriginalDstLbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 6}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 7}
 }
 func (m *Cluster_OriginalDstLbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_OriginalDstLbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_OriginalDstLbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_OriginalDstLbConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_OriginalDstLbConfig.Merge(dst, src)
+func (m *Cluster_OriginalDstLbConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_OriginalDstLbConfig.Merge(m, src)
 }
 func (m *Cluster_OriginalDstLbConfig) XXX_Size() int {
 	return m.Size()
@@ -1357,35 +1501,51 @@ type Cluster_CommonLbConfig struct {
 	// Note: merging does not apply to cluster membership changes (e.g.: adds/removes); this is
 	// because merging those updates isn't currently safe. See
 	// https://github.com/envoyproxy/envoy/pull/3941.
-	UpdateMergeWindow    *types.Duration `protobuf:"bytes,4,opt,name=update_merge_window,json=updateMergeWindow,proto3" json:"update_merge_window,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	UpdateMergeWindow *types.Duration `protobuf:"bytes,4,opt,name=update_merge_window,json=updateMergeWindow,proto3" json:"update_merge_window,omitempty"`
+	// If set to true, Envoy will not consider new hosts when computing load balancing weights until
+	// they have been health checked for the first time. This will have no effect unless
+	// active health checking is also configured.
+	//
+	// Ignoring a host means that for any load balancing calculations that adjust weights based
+	// on the ratio of eligible hosts and total hosts (priority spillover, locality weighting and
+	// panic mode) Envoy will exclude these hosts in the denominator.
+	//
+	// For example, with hosts in two priorities P0 and P1, where P0 looks like
+	// {healthy, unhealthy (new), unhealthy (new)}
+	// and where P1 looks like
+	// {healthy, healthy}
+	// all traffic will still hit P0, as 1 / (3 - 2) = 1.
+	//
+	// Enabling this will allow scaling up the number of hosts for a given cluster without entering
+	// panic mode or triggering priority spillover, assuming the hosts pass the first health check.
+	//
+	// If panic mode is triggered, new hosts are still eligible for traffic; they simply do not
+	// contribute to the calculation when deciding whether panic mode is enabled or not.
+	IgnoreNewHostsUntilFirstHc bool     `protobuf:"varint,5,opt,name=ignore_new_hosts_until_first_hc,json=ignoreNewHostsUntilFirstHc,proto3" json:"ignore_new_hosts_until_first_hc,omitempty"`
+	XXX_NoUnkeyedLiteral       struct{} `json:"-"`
+	XXX_unrecognized           []byte   `json:"-"`
+	XXX_sizecache              int32    `json:"-"`
 }
 
 func (m *Cluster_CommonLbConfig) Reset()         { *m = Cluster_CommonLbConfig{} }
 func (m *Cluster_CommonLbConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_CommonLbConfig) ProtoMessage()    {}
 func (*Cluster_CommonLbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 7}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 8}
 }
 func (m *Cluster_CommonLbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_CommonLbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_CommonLbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_CommonLbConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_CommonLbConfig.Merge(dst, src)
+func (m *Cluster_CommonLbConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_CommonLbConfig.Merge(m, src)
 }
 func (m *Cluster_CommonLbConfig) XXX_Size() int {
 	return m.Size()
@@ -1447,6 +1607,13 @@ func (m *Cluster_CommonLbConfig) GetUpdateMergeWindow() *types.Duration {
 		return m.UpdateMergeWindow
 	}
 	return nil
+}
+
+func (m *Cluster_CommonLbConfig) GetIgnoreNewHostsUntilFirstHc() bool {
+	if m != nil {
+		return m.IgnoreNewHostsUntilFirstHc
+	}
+	return false
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
@@ -1548,25 +1715,21 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Reset() {
 func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) String() string { return proto.CompactTextString(m) }
 func (*Cluster_CommonLbConfig_ZoneAwareLbConfig) ProtoMessage()    {}
 func (*Cluster_CommonLbConfig_ZoneAwareLbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 7, 0}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 8, 0}
 }
 func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_CommonLbConfig_ZoneAwareLbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_CommonLbConfig_ZoneAwareLbConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_CommonLbConfig_ZoneAwareLbConfig.Merge(dst, src)
+func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_CommonLbConfig_ZoneAwareLbConfig.Merge(m, src)
 }
 func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) XXX_Size() int {
 	return m.Size()
@@ -1607,25 +1770,21 @@ func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) String() string {
 }
 func (*Cluster_CommonLbConfig_LocalityWeightedLbConfig) ProtoMessage() {}
 func (*Cluster_CommonLbConfig_LocalityWeightedLbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{0, 7, 1}
+	return fileDescriptor_e73f50fbb1daa302, []int{0, 8, 1}
 }
 func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cluster_CommonLbConfig_LocalityWeightedLbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *Cluster_CommonLbConfig_LocalityWeightedLbConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cluster_CommonLbConfig_LocalityWeightedLbConfig.Merge(dst, src)
+func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cluster_CommonLbConfig_LocalityWeightedLbConfig.Merge(m, src)
 }
 func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) XXX_Size() int {
 	return m.Size()
@@ -1650,25 +1809,21 @@ func (m *UpstreamBindConfig) Reset()         { *m = UpstreamBindConfig{} }
 func (m *UpstreamBindConfig) String() string { return proto.CompactTextString(m) }
 func (*UpstreamBindConfig) ProtoMessage()    {}
 func (*UpstreamBindConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{1}
+	return fileDescriptor_e73f50fbb1daa302, []int{1}
 }
 func (m *UpstreamBindConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpstreamBindConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpstreamBindConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *UpstreamBindConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpstreamBindConfig.Merge(dst, src)
+func (m *UpstreamBindConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpstreamBindConfig.Merge(m, src)
 }
 func (m *UpstreamBindConfig) XXX_Size() int {
 	return m.Size()
@@ -1698,25 +1853,21 @@ func (m *UpstreamConnectionOptions) Reset()         { *m = UpstreamConnectionOpt
 func (m *UpstreamConnectionOptions) String() string { return proto.CompactTextString(m) }
 func (*UpstreamConnectionOptions) ProtoMessage()    {}
 func (*UpstreamConnectionOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cds_512894ce0b5b5d8d, []int{2}
+	return fileDescriptor_e73f50fbb1daa302, []int{2}
 }
 func (m *UpstreamConnectionOptions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpstreamConnectionOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpstreamConnectionOptions.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalTo(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
-func (dst *UpstreamConnectionOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpstreamConnectionOptions.Merge(dst, src)
+func (m *UpstreamConnectionOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpstreamConnectionOptions.Merge(m, src)
 }
 func (m *UpstreamConnectionOptions) XXX_Size() int {
 	return m.Size()
@@ -1735,28 +1886,208 @@ func (m *UpstreamConnectionOptions) GetTcpKeepalive() *core.TcpKeepalive {
 }
 
 func init() {
+	proto.RegisterEnum("envoy.api.v2.Cluster_DiscoveryType", Cluster_DiscoveryType_name, Cluster_DiscoveryType_value)
+	proto.RegisterEnum("envoy.api.v2.Cluster_LbPolicy", Cluster_LbPolicy_name, Cluster_LbPolicy_value)
+	proto.RegisterEnum("envoy.api.v2.Cluster_DnsLookupFamily", Cluster_DnsLookupFamily_name, Cluster_DnsLookupFamily_value)
+	proto.RegisterEnum("envoy.api.v2.Cluster_ClusterProtocolSelection", Cluster_ClusterProtocolSelection_name, Cluster_ClusterProtocolSelection_value)
+	proto.RegisterEnum("envoy.api.v2.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy", Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_name, Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_value)
+	proto.RegisterEnum("envoy.api.v2.Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy", Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy_name, Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy_value)
+	proto.RegisterEnum("envoy.api.v2.Cluster_RingHashLbConfig_HashFunction", Cluster_RingHashLbConfig_HashFunction_name, Cluster_RingHashLbConfig_HashFunction_value)
 	proto.RegisterType((*Cluster)(nil), "envoy.api.v2.Cluster")
 	proto.RegisterMapType((map[string]*types.Struct)(nil), "envoy.api.v2.Cluster.ExtensionProtocolOptionsEntry")
 	proto.RegisterMapType((map[string]*types.Any)(nil), "envoy.api.v2.Cluster.TypedExtensionProtocolOptionsEntry")
+	proto.RegisterType((*Cluster_CustomClusterType)(nil), "envoy.api.v2.Cluster.CustomClusterType")
 	proto.RegisterType((*Cluster_EdsClusterConfig)(nil), "envoy.api.v2.Cluster.EdsClusterConfig")
 	proto.RegisterType((*Cluster_LbSubsetConfig)(nil), "envoy.api.v2.Cluster.LbSubsetConfig")
 	proto.RegisterType((*Cluster_LbSubsetConfig_LbSubsetSelector)(nil), "envoy.api.v2.Cluster.LbSubsetConfig.LbSubsetSelector")
 	proto.RegisterType((*Cluster_LeastRequestLbConfig)(nil), "envoy.api.v2.Cluster.LeastRequestLbConfig")
 	proto.RegisterType((*Cluster_RingHashLbConfig)(nil), "envoy.api.v2.Cluster.RingHashLbConfig")
-	proto.RegisterType((*Cluster_RingHashLbConfig_DeprecatedV1)(nil), "envoy.api.v2.Cluster.RingHashLbConfig.DeprecatedV1")
 	proto.RegisterType((*Cluster_OriginalDstLbConfig)(nil), "envoy.api.v2.Cluster.OriginalDstLbConfig")
 	proto.RegisterType((*Cluster_CommonLbConfig)(nil), "envoy.api.v2.Cluster.CommonLbConfig")
 	proto.RegisterType((*Cluster_CommonLbConfig_ZoneAwareLbConfig)(nil), "envoy.api.v2.Cluster.CommonLbConfig.ZoneAwareLbConfig")
 	proto.RegisterType((*Cluster_CommonLbConfig_LocalityWeightedLbConfig)(nil), "envoy.api.v2.Cluster.CommonLbConfig.LocalityWeightedLbConfig")
 	proto.RegisterType((*UpstreamBindConfig)(nil), "envoy.api.v2.UpstreamBindConfig")
 	proto.RegisterType((*UpstreamConnectionOptions)(nil), "envoy.api.v2.UpstreamConnectionOptions")
-	proto.RegisterEnum("envoy.api.v2.Cluster_DiscoveryType", Cluster_DiscoveryType_name, Cluster_DiscoveryType_value)
-	proto.RegisterEnum("envoy.api.v2.Cluster_LbPolicy", Cluster_LbPolicy_name, Cluster_LbPolicy_value)
-	proto.RegisterEnum("envoy.api.v2.Cluster_DnsLookupFamily", Cluster_DnsLookupFamily_name, Cluster_DnsLookupFamily_value)
-	proto.RegisterEnum("envoy.api.v2.Cluster_ClusterProtocolSelection", Cluster_ClusterProtocolSelection_name, Cluster_ClusterProtocolSelection_value)
-	proto.RegisterEnum("envoy.api.v2.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy", Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_name, Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_value)
-	proto.RegisterEnum("envoy.api.v2.Cluster_RingHashLbConfig_HashFunction", Cluster_RingHashLbConfig_HashFunction_name, Cluster_RingHashLbConfig_HashFunction_value)
 }
+
+func init() { proto.RegisterFile("envoy/api/v2/cds.proto", fileDescriptor_e73f50fbb1daa302) }
+
+var fileDescriptor_e73f50fbb1daa302 = []byte{
+	// 2738 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x59, 0x5d, 0x6f, 0x1b, 0xc7,
+	0xd5, 0xd6, 0x52, 0xb2, 0x2d, 0x8d, 0x44, 0x72, 0x35, 0x92, 0xed, 0x35, 0x65, 0xcb, 0x32, 0x63,
+	0x27, 0x7a, 0x8d, 0xf7, 0xa5, 0xde, 0xca, 0xf9, 0x42, 0xda, 0x24, 0xe0, 0x97, 0x2c, 0x39, 0x14,
+	0xa9, 0x0e, 0x49, 0x3b, 0x69, 0x10, 0x4c, 0x86, 0xbb, 0x43, 0x71, 0xa1, 0xe5, 0x2e, 0xb3, 0x33,
+	0x2b, 0x9b, 0xbe, 0x28, 0xdc, 0x5c, 0xb5, 0xd7, 0xbd, 0x69, 0x81, 0xfe, 0x80, 0xa2, 0x40, 0xfe,
+	0x40, 0xaf, 0x8a, 0x5e, 0xa5, 0x77, 0x05, 0x7a, 0xd3, 0xab, 0xb4, 0x30, 0x7a, 0xd3, 0x7f, 0x51,
+	0xcc, 0xc7, 0xd2, 0xfc, 0x58, 0x49, 0x4e, 0xd0, 0x2b, 0x71, 0xce, 0x79, 0xce, 0x73, 0x66, 0xcf,
+	0x9c, 0x39, 0x73, 0x66, 0x04, 0xae, 0x51, 0xff, 0x34, 0x18, 0xee, 0x90, 0x81, 0xbb, 0x73, 0xba,
+	0xbb, 0x63, 0x3b, 0xac, 0x30, 0x08, 0x03, 0x1e, 0xc0, 0x15, 0x29, 0x2f, 0x90, 0x81, 0x5b, 0x38,
+	0xdd, 0xcd, 0xdd, 0x9e, 0x44, 0x05, 0x21, 0xdd, 0x21, 0x8e, 0x13, 0x52, 0xa6, 0xe1, 0xb9, 0x9b,
+	0x13, 0x00, 0x12, 0xf1, 0xde, 0x8e, 0x4d, 0x43, 0x9e, 0xa8, 0x95, 0xe6, 0x1d, 0xc2, 0xa8, 0xd6,
+	0xde, 0x9b, 0xd5, 0xda, 0x81, 0xdf, 0x75, 0x8f, 0x31, 0x0b, 0xa2, 0xd0, 0xa6, 0x89, 0x24, 0x8e,
+	0xcb, 0xec, 0xe0, 0x94, 0x86, 0x43, 0xad, 0xbd, 0x3b, 0x4b, 0xd2, 0xa3, 0xc4, 0xe3, 0x3d, 0x6c,
+	0xf7, 0xa8, 0x7d, 0xa2, 0x51, 0x5b, 0xb3, 0x28, 0xa9, 0xb0, 0x03, 0x4f, 0x23, 0xee, 0x4f, 0x22,
+	0xbc, 0x88, 0x71, 0x1a, 0xee, 0xd8, 0x6e, 0x68, 0x47, 0x2e, 0xc7, 0x9d, 0x90, 0x92, 0x13, 0x1a,
+	0x6a, 0xec, 0xff, 0x26, 0x62, 0x83, 0x88, 0x7b, 0x2e, 0x0d, 0xb1, 0x43, 0x39, 0xb5, 0xb9, 0x1b,
+	0xf8, 0x1a, 0x3d, 0x19, 0x69, 0x1a, 0x47, 0x3a, 0x67, 0x29, 0x39, 0x1f, 0x0e, 0xe8, 0xce, 0x80,
+	0x86, 0x36, 0xf5, 0x47, 0x61, 0x3b, 0x0e, 0x82, 0x63, 0x8f, 0x4a, 0x13, 0xe2, 0xfb, 0x01, 0x27,
+	0x82, 0x2e, 0xb6, 0xbb, 0xa1, 0xb5, 0x72, 0xd4, 0x89, 0xba, 0x3b, 0xc4, 0x8f, 0x83, 0xb1, 0x39,
+	0xad, 0x72, 0xa2, 0x90, 0x8c, 0x4d, 0xe5, 0xe6, 0xb4, 0x9e, 0xf1, 0x30, 0xb2, 0xf9, 0x59, 0xd6,
+	0x4f, 0x43, 0x32, 0x18, 0xd0, 0x30, 0x76, 0x7c, 0xfd, 0x94, 0x78, 0xae, 0x43, 0x38, 0xdd, 0x89,
+	0x7f, 0x68, 0xc5, 0xfa, 0x71, 0x70, 0x1c, 0xc8, 0x9f, 0x3b, 0xe2, 0x97, 0x92, 0xe6, 0xbf, 0x29,
+	0x80, 0x2b, 0x65, 0x15, 0x1b, 0x78, 0x0b, 0x2c, 0xf8, 0xa4, 0x4f, 0x2d, 0x63, 0xcb, 0xd8, 0x5e,
+	0x2a, 0x2d, 0xfd, 0xf1, 0xdf, 0x7f, 0x9a, 0x5f, 0x08, 0x53, 0x5b, 0x06, 0x92, 0x62, 0x98, 0x07,
+	0x69, 0xe2, 0x71, 0xcc, 0x38, 0xe1, 0x58, 0xe2, 0x6e, 0x0a, 0x1c, 0x5a, 0x26, 0x1e, 0x6f, 0x72,
+	0xc2, 0xeb, 0x02, 0x53, 0x05, 0x0b, 0x22, 0x54, 0x56, 0x6a, 0xcb, 0xd8, 0xce, 0xec, 0xbe, 0x51,
+	0x18, 0xcf, 0xd3, 0x82, 0xf6, 0x53, 0xa8, 0xc4, 0xd9, 0xd1, 0x1a, 0x0e, 0x68, 0x09, 0x08, 0x3f,
+	0x97, 0xbe, 0x36, 0x52, 0xa6, 0xb1, 0x3f, 0x87, 0xa4, 0x39, 0xac, 0x81, 0x15, 0xbd, 0x60, 0x58,
+	0xd2, 0xbd, 0xb9, 0x65, 0x6c, 0x2f, 0xef, 0xbe, 0x95, 0x4c, 0x57, 0x8e, 0x18, 0x0f, 0xfa, 0x7a,
+	0x24, 0x28, 0xf7, 0xe7, 0xd0, 0xb2, 0xfd, 0x6a, 0x08, 0x5b, 0x00, 0x52, 0x87, 0xe1, 0x98, 0x51,
+	0xa5, 0xaf, 0x35, 0x2f, 0x39, 0xdf, 0x4c, 0xe6, 0xac, 0x3a, 0x4c, 0xff, 0x2c, 0x4b, 0x34, 0x32,
+	0xe9, 0x94, 0x04, 0x3e, 0x06, 0x59, 0x3b, 0xf0, 0x7d, 0x6a, 0x73, 0xcc, 0xdd, 0x3e, 0x0d, 0x22,
+	0x6e, 0x2d, 0x48, 0xca, 0x1b, 0x05, 0xb5, 0x44, 0x85, 0x78, 0x89, 0x0a, 0x15, 0xbd, 0xc0, 0x25,
+	0xf8, 0xed, 0x77, 0xb7, 0xe7, 0x7e, 0xf3, 0x8f, 0xdb, 0x86, 0xfc, 0xe6, 0x3f, 0x18, 0xa9, 0xfb,
+	0x73, 0x28, 0xa3, 0x59, 0x5a, 0x8a, 0x04, 0x76, 0xc1, 0x9d, 0x81, 0x9a, 0xa5, 0xaf, 0x32, 0x14,
+	0x77, 0xa2, 0x6e, 0x97, 0x86, 0xd8, 0x73, 0xfb, 0x22, 0xc9, 0x87, 0x9c, 0x32, 0xeb, 0x92, 0xf4,
+	0x74, 0x73, 0xc6, 0x53, 0xfb, 0xc0, 0xe7, 0x0f, 0x76, 0x1f, 0x13, 0x2f, 0xa2, 0xe8, 0xd6, 0x40,
+	0xce, 0x55, 0xb3, 0x94, 0x24, 0x49, 0x4d, 0x70, 0x94, 0x04, 0x05, 0x7c, 0x08, 0x96, 0xbc, 0x0e,
+	0x1e, 0x04, 0x9e, 0x6b, 0x0f, 0xad, 0xcb, 0x72, 0xbd, 0x36, 0x93, 0x83, 0x51, 0xeb, 0x1c, 0x49,
+	0xd4, 0xf8, 0x52, 0xa1, 0x45, 0x4f, 0x4b, 0xe1, 0xdb, 0xe0, 0x52, 0x2f, 0x60, 0x9c, 0x59, 0x57,
+	0xb6, 0xe6, 0xb7, 0x97, 0x77, 0x73, 0x93, 0x24, 0x62, 0x1b, 0x17, 0x8a, 0xaa, 0x1c, 0x95, 0x52,
+	0x96, 0x81, 0x14, 0x18, 0xd6, 0x40, 0xd6, 0x0b, 0x88, 0x83, 0x09, 0x63, 0xee, 0xb1, 0xdf, 0xa7,
+	0x3e, 0xb7, 0xee, 0xc8, 0x8f, 0x4a, 0x4e, 0x9a, 0x5a, 0x40, 0x9c, 0xe2, 0x08, 0x8a, 0x32, 0xde,
+	0xc4, 0x18, 0x96, 0x41, 0x7a, 0xbc, 0xa0, 0x30, 0x6b, 0x51, 0xce, 0x65, 0x33, 0x61, 0x2e, 0xfb,
+	0x12, 0x57, 0x16, 0x30, 0xb4, 0xd2, 0x7b, 0x35, 0x60, 0xf0, 0x73, 0xb0, 0xd1, 0x27, 0xcf, 0x70,
+	0x48, 0xbf, 0x8a, 0x28, 0xe3, 0x0c, 0x4f, 0x2e, 0x83, 0xb5, 0xf4, 0x1a, 0x31, 0xb7, 0xfa, 0xe4,
+	0x19, 0xd2, 0xf6, 0x47, 0xe3, 0xe1, 0x87, 0x47, 0xc0, 0x9c, 0xaa, 0x53, 0xcc, 0x02, 0x92, 0xf1,
+	0xde, 0xd4, 0x24, 0xe3, 0xb4, 0x56, 0xe8, 0x92, 0x06, 0xa3, 0xac, 0x3d, 0x29, 0x80, 0x7b, 0x60,
+	0x99, 0x7b, 0x4c, 0xcc, 0x90, 0xd3, 0x67, 0xdc, 0x5a, 0x4e, 0x22, 0x13, 0xb5, 0xbe, 0xd0, 0x1e,
+	0x30, 0x1e, 0x52, 0xd2, 0x6f, 0x79, 0xac, 0xac, 0xc0, 0x08, 0xf0, 0xd1, 0x6f, 0x78, 0x0c, 0x6e,
+	0xda, 0x41, 0xbf, 0x1f, 0xf8, 0xb8, 0xc7, 0xf9, 0x00, 0xc7, 0x25, 0x17, 0x07, 0x03, 0x59, 0xd0,
+	0xac, 0x5b, 0x49, 0x1b, 0x45, 0x85, 0x92, 0xf3, 0xc1, 0x91, 0x86, 0x37, 0x14, 0x1a, 0xdd, 0x50,
+	0x5c, 0x09, 0x2a, 0xf8, 0x39, 0xb8, 0x9a, 0xec, 0x21, 0x9d, 0xb4, 0xbd, 0x47, 0x1e, 0x7e, 0x34,
+	0xed, 0x62, 0xad, 0x97, 0x40, 0xfe, 0x05, 0xb8, 0x26, 0xc4, 0xbb, 0xb3, 0xec, 0x99, 0x73, 0xd9,
+	0x77, 0xa7, 0xd9, 0xd7, 0x7b, 0x09, 0x52, 0xf8, 0x15, 0xc8, 0xd1, 0x67, 0x9c, 0xfa, 0x4c, 0x6c,
+	0xc8, 0x19, 0x17, 0x6f, 0xc8, 0x6c, 0x7b, 0x70, 0x46, 0x2d, 0x89, 0xed, 0xa6, 0x38, 0xab, 0x3e,
+	0x0f, 0x87, 0xc8, 0xa2, 0x67, 0xa8, 0xe1, 0x2f, 0x0c, 0xb0, 0x25, 0xaa, 0x9f, 0x83, 0xcf, 0xf1,
+	0x7c, 0x57, 0x7a, 0x7e, 0x3f, 0xd9, 0xb3, 0xa8, 0x7e, 0xce, 0xf9, 0xee, 0x6f, 0xf1, 0xf3, 0x30,
+	0xb0, 0x09, 0x4c, 0xc7, 0x67, 0x38, 0xa4, 0xdd, 0x90, 0xb2, 0x1e, 0x0e, 0x09, 0xa7, 0x96, 0x79,
+	0x51, 0x95, 0xcb, 0x4c, 0x57, 0x38, 0xc7, 0x67, 0x48, 0x31, 0x20, 0xc2, 0x29, 0x7c, 0x13, 0x64,
+	0x43, 0xca, 0x06, 0xa2, 0x72, 0x0a, 0x72, 0xce, 0x3d, 0xeb, 0xad, 0x2d, 0x63, 0x7b, 0x11, 0xa5,
+	0xb5, 0xb8, 0xe2, 0xb3, 0x16, 0xf7, 0xe0, 0x17, 0x60, 0x55, 0xe8, 0xbd, 0x20, 0x38, 0x89, 0x06,
+	0xb8, 0x4b, 0xfa, 0xae, 0x37, 0xb4, 0x56, 0x65, 0xa5, 0xba, 0x77, 0xc6, 0xc9, 0xe2, 0xb3, 0x9a,
+	0x44, 0xef, 0x49, 0xf0, 0x44, 0xc1, 0xca, 0x3a, 0x93, 0x4a, 0xf8, 0x31, 0x48, 0xab, 0x6f, 0x63,
+	0x81, 0x77, 0x2a, 0xb6, 0x23, 0xbc, 0xa8, 0x7e, 0xa1, 0x15, 0xf9, 0x25, 0x1a, 0x0f, 0x9b, 0x60,
+	0x75, 0xa6, 0x9d, 0xb0, 0xd6, 0x12, 0x77, 0x8b, 0x9e, 0x5f, 0x43, 0xc1, 0x2b, 0x31, 0x1a, 0x99,
+	0xc1, 0x94, 0x04, 0xb6, 0x80, 0x69, 0x7b, 0x94, 0xf8, 0xd1, 0x00, 0xbb, 0x3e, 0xa7, 0xe1, 0x29,
+	0xf1, 0xac, 0xf5, 0xef, 0x1b, 0xf1, 0xac, 0xa6, 0x38, 0xd0, 0x0c, 0xb0, 0x01, 0xd6, 0x23, 0x5d,
+	0x05, 0x70, 0xc7, 0xf5, 0x9d, 0xf8, 0x10, 0xbc, 0x2a, 0x99, 0x6f, 0x25, 0x7c, 0x72, 0xc9, 0xf5,
+	0x1d, 0x7d, 0xf6, 0xc1, 0xd8, 0xf4, 0x95, 0x0c, 0xd6, 0x81, 0xe9, 0x75, 0x30, 0x8b, 0x3a, 0x8c,
+	0xf2, 0x98, 0xec, 0x9a, 0x24, 0xbb, 0x7b, 0xd6, 0x21, 0xd2, 0x94, 0x60, 0xcd, 0x99, 0xf1, 0x26,
+	0xc6, 0xf0, 0x09, 0x58, 0x0b, 0x5d, 0xff, 0x18, 0xf7, 0x08, 0xeb, 0x61, 0xaf, 0x13, 0x53, 0x5e,
+	0x3f, 0xef, 0x90, 0x46, 0xae, 0x7f, 0xbc, 0x4f, 0x58, 0xaf, 0xd6, 0x51, 0x24, 0xfb, 0x06, 0x32,
+	0xc3, 0x29, 0x19, 0xfc, 0x12, 0x5c, 0x0b, 0x42, 0xf7, 0xd8, 0xf5, 0x89, 0x87, 0x1d, 0xc6, 0xc7,
+	0xb8, 0xf3, 0x92, 0xfb, 0x7f, 0x92, 0xb9, 0x1b, 0xda, 0xa6, 0xc2, 0xf8, 0x18, 0xfd, 0x5a, 0x30,
+	0x2b, 0x86, 0x36, 0xb8, 0xee, 0x51, 0xc2, 0x78, 0x7c, 0x70, 0x8c, 0xb9, 0xb8, 0x27, 0x5d, 0xdc,
+	0x3f, 0x23, 0x22, 0xc2, 0x48, 0x1f, 0x16, 0x63, 0x3e, 0xd6, 0xbd, 0x04, 0xb9, 0x88, 0xb7, 0x2e,
+	0xd2, 0xaf, 0xd8, 0x37, 0xce, 0x8b, 0x77, 0x59, 0xa2, 0x63, 0x7b, 0xd1, 0x65, 0x8c, 0x8f, 0xe1,
+	0x21, 0x30, 0x79, 0x48, 0x7c, 0x36, 0x08, 0x42, 0x8e, 0x59, 0x60, 0x9f, 0x50, 0x6e, 0x59, 0x92,
+	0x2f, 0x9f, 0x90, 0x0c, 0xad, 0x18, 0xda, 0x94, 0x48, 0x94, 0xe5, 0x93, 0x02, 0xf8, 0x1e, 0x58,
+	0xec, 0x53, 0x4e, 0x1c, 0xc2, 0x89, 0x75, 0x43, 0xd2, 0x6c, 0x24, 0xd0, 0x1c, 0x6a, 0x08, 0x1a,
+	0x81, 0xe1, 0x17, 0x00, 0x8e, 0x6a, 0x1a, 0xa3, 0x9e, 0xde, 0x44, 0x39, 0xb9, 0xc9, 0x0b, 0x67,
+	0x7c, 0x99, 0xfa, 0x1b, 0x97, 0xaa, 0x66, 0x6c, 0x85, 0x56, 0x07, 0xd3, 0x22, 0x78, 0x0c, 0x36,
+	0x46, 0x79, 0x3f, 0xd6, 0x51, 0xc5, 0xd5, 0x73, 0x33, 0xe9, 0x68, 0x88, 0x8f, 0xcb, 0x57, 0x87,
+	0xf7, 0xe8, 0x6c, 0x8b, 0xce, 0x52, 0xc1, 0x36, 0xd8, 0xb6, 0xbd, 0x80, 0xd1, 0x31, 0x2f, 0x0c,
+	0x8b, 0x23, 0x35, 0x60, 0x1c, 0xeb, 0xd6, 0xa4, 0x4b, 0x5c, 0x2f, 0x0a, 0xa9, 0x75, 0x5b, 0x16,
+	0xbb, 0x37, 0x24, 0xfe, 0x15, 0x13, 0x6b, 0xf8, 0xfb, 0x01, 0xe3, 0xaa, 0x3d, 0xd9, 0x53, 0x50,
+	0xb8, 0x0f, 0xee, 0x38, 0x21, 0x71, 0xfd, 0x44, 0xda, 0x90, 0xf6, 0x03, 0x51, 0x1e, 0xb6, 0x24,
+	0xdf, 0x2d, 0x09, 0x9c, 0xe1, 0x43, 0x0a, 0x94, 0x3b, 0x01, 0xab, 0x33, 0x8d, 0xf2, 0x45, 0x1d,
+	0xff, 0x7b, 0x60, 0x45, 0x1d, 0x40, 0x3a, 0xe1, 0x52, 0x32, 0x5c, 0xeb, 0x33, 0x75, 0xa8, 0xe8,
+	0x0f, 0xd1, 0xb2, 0x44, 0xaa, 0xec, 0xca, 0x45, 0xc0, 0x9c, 0xee, 0xa0, 0xe1, 0x47, 0x00, 0xc8,
+	0x2e, 0x5c, 0x51, 0x19, 0x92, 0xea, 0x76, 0x42, 0x92, 0x28, 0x78, 0x53, 0x5e, 0x2e, 0xd1, 0x92,
+	0x68, 0xbb, 0x95, 0xfd, 0x1d, 0xb0, 0xc2, 0x68, 0x78, 0xea, 0xda, 0x54, 0xdd, 0x3e, 0x52, 0xea,
+	0xf6, 0xa1, 0x65, 0xe2, 0xf6, 0x91, 0x73, 0xc0, 0xad, 0x73, 0x4f, 0x3b, 0x68, 0x82, 0xf9, 0x13,
+	0x3a, 0x54, 0x9f, 0x8b, 0xc4, 0x4f, 0xf8, 0x7f, 0xe0, 0xd2, 0xa9, 0xe8, 0xdc, 0xf4, 0xb7, 0x5d,
+	0x9f, 0xf9, 0xb6, 0xa6, 0xbc, 0x7c, 0x21, 0x85, 0xfa, 0x20, 0xf5, 0xbe, 0x91, 0xeb, 0x82, 0xfc,
+	0xc5, 0x07, 0x6b, 0x82, 0xab, 0xfb, 0x93, 0xae, 0x92, 0xc3, 0x38, 0xe6, 0xe7, 0xcf, 0x97, 0x41,
+	0x66, 0xb2, 0x6a, 0xc2, 0x01, 0xc8, 0x76, 0x89, 0xe7, 0x75, 0x88, 0x7d, 0x12, 0x77, 0xee, 0x86,
+	0xdc, 0x2a, 0x3f, 0x7e, 0x9d, 0xa2, 0x3b, 0x1a, 0xee, 0x69, 0x8e, 0x84, 0xb6, 0x3e, 0xd3, 0x9d,
+	0xd0, 0xc1, 0x8f, 0x40, 0xc6, 0xa1, 0x5d, 0x12, 0x89, 0x8b, 0x9f, 0xb4, 0xbd, 0x28, 0x50, 0x69,
+	0x0d, 0x57, 0x9e, 0xe0, 0x97, 0xc0, 0xd4, 0x87, 0x84, 0xda, 0xdd, 0x41, 0xc8, 0xac, 0x79, 0x79,
+	0xce, 0xbe, 0xf3, 0xbd, 0xa6, 0xdc, 0xd4, 0xd6, 0x28, 0xcb, 0x26, 0xc6, 0x0c, 0xee, 0x82, 0xab,
+	0x5e, 0x60, 0x13, 0xcf, 0xe5, 0x43, 0xfc, 0x94, 0xba, 0xc7, 0x3d, 0x8e, 0xc9, 0x53, 0x12, 0x52,
+	0x79, 0x1b, 0x5b, 0x44, 0x6b, 0xb1, 0xf2, 0x89, 0xd4, 0x15, 0x85, 0x4a, 0xd8, 0x30, 0x9b, 0x78,
+	0x14, 0x4f, 0x59, 0xca, 0x7b, 0xd5, 0x22, 0x5a, 0x93, 0xca, 0xda, 0x84, 0x21, 0xbc, 0x0b, 0x32,
+	0x03, 0xe2, 0xbb, 0x36, 0xee, 0x07, 0x0e, 0xc5, 0xc4, 0x57, 0x97, 0xa6, 0x45, 0xb4, 0x22, 0xa5,
+	0x87, 0x81, 0x43, 0x8b, 0xfe, 0x10, 0x6e, 0x82, 0x65, 0xcf, 0x65, 0x1c, 0x13, 0x26, 0x21, 0x57,
+	0x24, 0x64, 0x49, 0x88, 0x8a, 0xac, 0xe8, 0x0f, 0x73, 0xbf, 0x4b, 0x01, 0x73, 0xfa, 0x9b, 0x20,
+	0x04, 0x0b, 0x27, 0x74, 0xc8, 0x2c, 0x63, 0x6b, 0x7e, 0x7b, 0x09, 0xc9, 0xdf, 0xf0, 0x57, 0xc6,
+	0xec, 0x5a, 0xab, 0x5b, 0x75, 0xeb, 0x07, 0x05, 0x6e, 0x46, 0xf0, 0xfa, 0x49, 0x90, 0xef, 0x81,
+	0xcd, 0xf3, 0xad, 0x61, 0x16, 0x2c, 0xd7, 0x1b, 0x2d, 0x5c, 0xa9, 0xee, 0x1d, 0xd4, 0xab, 0x15,
+	0x73, 0x4e, 0x09, 0xf0, 0x5e, 0xb1, 0x56, 0x2b, 0x15, 0xcb, 0x9f, 0x98, 0x06, 0x34, 0xc1, 0x4a,
+	0xb1, 0xfe, 0x19, 0xae, 0xd6, 0x2b, 0x47, 0x8d, 0x83, 0x7a, 0xcb, 0x4c, 0x41, 0x08, 0x32, 0x95,
+	0xea, 0x5e, 0xb1, 0x5d, 0x6b, 0xe1, 0x66, 0xbb, 0xd4, 0xac, 0xb6, 0xcc, 0xf9, 0x7c, 0x03, 0x5c,
+	0x4b, 0x4e, 0xd2, 0x69, 0xc2, 0xb9, 0x19, 0x42, 0x23, 0x81, 0x30, 0x95, 0xeb, 0x80, 0xf5, 0xa4,
+	0x73, 0x16, 0x3e, 0x02, 0x2b, 0x76, 0x2f, 0x10, 0xc5, 0xc4, 0x0e, 0x22, 0x9f, 0xeb, 0x7a, 0x74,
+	0xee, 0xe5, 0x4e, 0xd7, 0xc7, 0xfb, 0xa9, 0xed, 0x14, 0x5a, 0x56, 0xc6, 0x65, 0x61, 0x9b, 0xfb,
+	0x2e, 0x05, 0xcc, 0xe9, 0x5e, 0x04, 0x3e, 0x06, 0xab, 0x7d, 0xd7, 0x77, 0xfb, 0x51, 0x1f, 0xcb,
+	0xc6, 0x86, 0xb9, 0xcf, 0xe9, 0xb9, 0x5e, 0xde, 0x7d, 0x5b, 0x79, 0x59, 0x11, 0x5e, 0xae, 0xec,
+	0x5e, 0xb2, 0x5e, 0xbc, 0x78, 0xb1, 0x80, 0xb2, 0x9a, 0x44, 0xf0, 0x37, 0xdd, 0xe7, 0x14, 0x3a,
+	0x20, 0x2d, 0x7b, 0xa4, 0x6e, 0xe4, 0xab, 0xb3, 0x72, 0x5e, 0x26, 0xc5, 0x83, 0xd7, 0x6b, 0x91,
+	0x0a, 0x62, 0xb0, 0xa7, 0x4d, 0x27, 0xd6, 0x7c, 0xa5, 0x37, 0xa6, 0x91, 0xb3, 0x27, 0xcf, 0xa6,
+	0x66, 0xbf, 0xf0, 0x03, 0x66, 0xaf, 0x48, 0xe2, 0xd9, 0xe7, 0x0b, 0x60, 0x65, 0x7c, 0x06, 0x70,
+	0x19, 0x5c, 0xf9, 0xf4, 0x53, 0xbc, 0x5f, 0x6c, 0xee, 0x9b, 0x73, 0x70, 0x15, 0xa4, 0x0f, 0xdb,
+	0xe8, 0xb0, 0x8d, 0xa4, 0x00, 0xef, 0x9a, 0xc6, 0xa3, 0x85, 0xc5, 0x94, 0x39, 0x9f, 0xfb, 0x10,
+	0xac, 0x25, 0xf4, 0x63, 0xe2, 0x1e, 0x11, 0x31, 0xaa, 0x6e, 0xad, 0x3d, 0x4a, 0x1c, 0x1a, 0xca,
+	0x00, 0x2f, 0xa2, 0x74, 0xc4, 0xa8, 0xb8, 0xdb, 0xed, 0x4b, 0x61, 0xee, 0x9b, 0x4b, 0x20, 0x33,
+	0xd9, 0x0e, 0xc1, 0x4f, 0xc0, 0x75, 0x75, 0x28, 0x0f, 0xb1, 0xda, 0xd4, 0xbc, 0x27, 0xae, 0x27,
+	0x81, 0xe7, 0xe8, 0x35, 0x5a, 0xd3, 0xf1, 0x14, 0xa7, 0x5a, 0xe1, 0x48, 0x3d, 0xfc, 0xa1, 0xab,
+	0xda, 0xe6, 0x48, 0x98, 0xb4, 0x62, 0x0b, 0xe8, 0x82, 0xf5, 0xe7, 0x81, 0x4f, 0x55, 0xd9, 0x19,
+	0xeb, 0xcf, 0x54, 0xa5, 0x7c, 0xf7, 0x75, 0xfa, 0xb3, 0xc2, 0xcf, 0x02, 0x9f, 0xca, 0xda, 0x34,
+	0xea, 0x04, 0xe7, 0xd0, 0xea, 0xf3, 0x69, 0x21, 0xfc, 0x39, 0xd8, 0x98, 0x2a, 0x59, 0xd4, 0x19,
+	0xf3, 0xa8, 0xde, 0xb4, 0x3e, 0x7c, 0x2d, 0x8f, 0x93, 0xe5, 0x8d, 0x3a, 0x63, 0x8e, 0x2d, 0xef,
+	0x0c, 0x1d, 0x3c, 0x00, 0x6b, 0xd1, 0xc0, 0x21, 0x9c, 0xe2, 0x3e, 0x0d, 0x8f, 0x29, 0x7e, 0xea,
+	0xfa, 0x4e, 0xf0, 0xf4, 0xc2, 0x87, 0x2f, 0xb4, 0xaa, 0xac, 0x0e, 0x85, 0xd1, 0x13, 0x69, 0x03,
+	0xcb, 0xe0, 0xb6, 0x7b, 0xec, 0x07, 0x21, 0xc5, 0x3e, 0x7d, 0x2a, 0x1b, 0x1a, 0x86, 0x23, 0x9f,
+	0xbb, 0x1e, 0xee, 0xba, 0xa1, 0x68, 0x9a, 0x6c, 0x5d, 0x8d, 0x73, 0x0a, 0x56, 0xa7, 0x4f, 0x45,
+	0x3f, 0xc3, 0xda, 0x02, 0xb3, 0x27, 0x20, 0xfb, 0x76, 0xee, 0xb7, 0x06, 0x58, 0x9d, 0x09, 0x1d,
+	0xfc, 0x09, 0xc8, 0x86, 0x41, 0xc4, 0x45, 0xe2, 0x52, 0x9f, 0x74, 0x3c, 0x7a, 0xee, 0xaa, 0x66,
+	0x34, 0xb6, 0xaa, 0xa0, 0x70, 0x0f, 0x98, 0x7d, 0xd1, 0x71, 0xe9, 0xe7, 0x42, 0x99, 0xfa, 0xa9,
+	0x8b, 0x53, 0x1f, 0x65, 0xfa, 0xae, 0xaf, 0x63, 0x2d, 0x72, 0x3d, 0x97, 0x03, 0xd6, 0x59, 0x31,
+	0x2e, 0x6d, 0x80, 0x1b, 0xa3, 0x75, 0x8c, 0x9f, 0xd3, 0x07, 0xd4, 0x76, 0xbb, 0x2e, 0x0d, 0xf3,
+	0x4f, 0x40, 0x7a, 0xe2, 0x89, 0x14, 0x02, 0x70, 0xb9, 0xd9, 0x2a, 0xb6, 0x0e, 0xca, 0xe6, 0x1c,
+	0xcc, 0x00, 0xd0, 0x6c, 0xa1, 0x83, 0x72, 0x0b, 0x57, 0xea, 0x4d, 0xd3, 0x10, 0x75, 0xb1, 0xd6,
+	0x78, 0x78, 0x50, 0x2e, 0xd6, 0xa4, 0x20, 0x05, 0xaf, 0x80, 0xf9, 0x6a, 0xa5, 0x69, 0xce, 0x8b,
+	0x02, 0xd9, 0x40, 0x07, 0x0f, 0x0f, 0xea, 0x42, 0xd5, 0x6c, 0x99, 0x0b, 0xf9, 0x17, 0x06, 0x58,
+	0x8c, 0x1f, 0xf3, 0x84, 0x21, 0x6a, 0xb4, 0xeb, 0x15, 0x8c, 0x1a, 0xa5, 0x83, 0xba, 0xda, 0x7e,
+	0xb5, 0x6a, 0xb1, 0xd9, 0xc2, 0xa8, 0xfa, 0xd3, 0x76, 0xb5, 0x29, 0x2a, 0x6a, 0x1a, 0x2c, 0xa1,
+	0x83, 0xfa, 0x43, 0xb5, 0x41, 0x53, 0x62, 0x1e, 0xa8, 0x58, 0xaf, 0x34, 0x0e, 0xcd, 0x79, 0xb8,
+	0x06, 0xb2, 0xe3, 0xec, 0xb8, 0x56, 0x32, 0x17, 0x04, 0xe0, 0xb0, 0xf8, 0xb0, 0x56, 0x7d, 0x6c,
+	0x5e, 0x82, 0xeb, 0xc0, 0x2c, 0xd7, 0xda, 0xcd, 0x56, 0x15, 0xe1, 0x23, 0xd4, 0x78, 0x7c, 0x50,
+	0xa9, 0x56, 0xcc, 0xcb, 0xf9, 0x77, 0x40, 0x76, 0xea, 0x92, 0x0e, 0x17, 0xc1, 0x42, 0xb1, 0xdd,
+	0x6a, 0x98, 0x73, 0xa2, 0x1a, 0x3c, 0x7e, 0x1b, 0x37, 0xea, 0xb5, 0xcf, 0x4c, 0x43, 0x0e, 0xde,
+	0x55, 0x83, 0x54, 0xbe, 0x05, 0xac, 0xb3, 0xda, 0x7e, 0xb8, 0x01, 0xae, 0xb7, 0x9b, 0x55, 0x5c,
+	0x6e, 0xd4, 0xf7, 0x0e, 0x1e, 0xb6, 0x51, 0xb5, 0x22, 0xfc, 0xb5, 0x1a, 0xe5, 0x46, 0xcd, 0x9c,
+	0x8b, 0x95, 0x95, 0xc6, 0x93, 0x7a, 0xb3, 0x85, 0xaa, 0xc5, 0xc3, 0x57, 0x4a, 0xa3, 0x64, 0x81,
+	0x6b, 0xf1, 0x2a, 0x8f, 0xfe, 0x63, 0x21, 0x1f, 0x9c, 0x4b, 0xcb, 0xf2, 0x71, 0x54, 0xad, 0xcc,
+	0xa3, 0x85, 0xc5, 0x15, 0x33, 0xfd, 0x68, 0x61, 0x31, 0x6b, 0x9a, 0xf9, 0x27, 0x00, 0xb6, 0x67,
+	0x6f, 0xc3, 0x45, 0x90, 0x51, 0xff, 0x0d, 0xc1, 0xfa, 0x1f, 0x2f, 0x3a, 0xdf, 0xce, 0x7b, 0x4b,
+	0x48, 0x2b, 0x0b, 0x3d, 0xcc, 0x13, 0x70, 0xe3, 0xcc, 0x8b, 0x07, 0xac, 0x80, 0x34, 0xb7, 0x07,
+	0xf8, 0x84, 0xd2, 0x01, 0xf1, 0xdc, 0x53, 0x7a, 0x4e, 0xfb, 0xdc, 0xb2, 0x07, 0x9f, 0xc4, 0x30,
+	0xb4, 0xc2, 0xc7, 0x46, 0xbb, 0x7f, 0x49, 0x81, 0xeb, 0x3a, 0x8a, 0xa3, 0xfc, 0x6a, 0xaa, 0xf6,
+	0x19, 0x3e, 0x01, 0x99, 0xa6, 0x72, 0xae, 0x00, 0x0c, 0x4e, 0xbd, 0x9d, 0x8e, 0x2c, 0xf4, 0x49,
+	0x9a, 0xbb, 0x7d, 0xa6, 0x9e, 0x0d, 0x02, 0x9f, 0xd1, 0xfc, 0xdc, 0xb6, 0xf1, 0xff, 0x06, 0xfc,
+	0x12, 0xa4, 0x2b, 0xd4, 0xe3, 0x64, 0xc4, 0x3b, 0xf5, 0xbe, 0x2b, 0x95, 0x33, 0xe4, 0x77, 0xcf,
+	0x07, 0x4d, 0x78, 0x60, 0x20, 0xbd, 0x47, 0xb9, 0xdd, 0xfb, 0xef, 0xcd, 0xfc, 0xce, 0xd7, 0x7f,
+	0xfb, 0xd7, 0xaf, 0x53, 0x1b, 0xf9, 0x6b, 0x13, 0xff, 0xcb, 0xfa, 0x40, 0xe7, 0x0a, 0xfb, 0xc0,
+	0xb8, 0x5f, 0xfa, 0xf8, 0xf7, 0x2f, 0x37, 0x8d, 0x6f, 0x5f, 0x6e, 0x1a, 0x7f, 0x7d, 0xb9, 0x69,
+	0xfc, 0xfd, 0xe5, 0xa6, 0xf1, 0xcf, 0x97, 0x9b, 0x06, 0xc8, 0xb9, 0x81, 0xe2, 0x1e, 0x84, 0xc1,
+	0xb3, 0xe1, 0x84, 0x9b, 0xd2, 0x62, 0xd9, 0x61, 0x32, 0x79, 0x8f, 0x8c, 0x5f, 0x1a, 0x46, 0xe7,
+	0xb2, 0xac, 0x21, 0x0f, 0xfe, 0x13, 0x00, 0x00, 0xff, 0xff, 0xc3, 0xd2, 0xa2, 0x9b, 0xe3, 0x1b,
+	0x00, 0x00,
+}
+
 func (this *Cluster) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1782,7 +2113,13 @@ func (this *Cluster) Equal(that interface{}) bool {
 	if this.AltStatName != that1.AltStatName {
 		return false
 	}
-	if this.Type != that1.Type {
+	if that1.ClusterDiscoveryType == nil {
+		if this.ClusterDiscoveryType != nil {
+			return false
+		}
+	} else if this.ClusterDiscoveryType == nil {
+		return false
+	} else if !this.ClusterDiscoveryType.Equal(that1.ClusterDiscoveryType) {
 		return false
 	}
 	if !this.EdsClusterConfig.Equal(that1.EdsClusterConfig) {
@@ -1859,6 +2196,9 @@ func (this *Cluster) Equal(that interface{}) bool {
 	} else if that1.DnsRefreshRate != nil {
 		return false
 	}
+	if this.RespectDnsTtl != that1.RespectDnsTtl {
+		return false
+	}
 	if this.DnsLookupFamily != that1.DnsLookupFamily {
 		return false
 	}
@@ -1919,6 +2259,54 @@ func (this *Cluster) Equal(that interface{}) bool {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Cluster_Type) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Cluster_Type)
+	if !ok {
+		that2, ok := that.(Cluster_Type)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	return true
+}
+func (this *Cluster_ClusterType) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Cluster_ClusterType)
+	if !ok {
+		that2, ok := that.(Cluster_ClusterType)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ClusterType.Equal(that1.ClusterType) {
 		return false
 	}
 	return true
@@ -1995,6 +2383,36 @@ func (this *Cluster_LeastRequestLbConfig_) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Cluster_CustomClusterType) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Cluster_CustomClusterType)
+	if !ok {
+		that2, ok := that.(Cluster_CustomClusterType)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if !this.TypedConfig.Equal(that1.TypedConfig) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
 func (this *Cluster_EdsClusterConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -2064,6 +2482,12 @@ func (this *Cluster_LbSubsetConfig) Equal(that interface{}) bool {
 	if this.ScaleLocalityWeight != that1.ScaleLocalityWeight {
 		return false
 	}
+	if this.PanicModeAny != that1.PanicModeAny {
+		return false
+	}
+	if this.ListAsAny != that1.ListAsAny {
+		return false
+	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
 	}
@@ -2095,6 +2519,9 @@ func (this *Cluster_LbSubsetConfig_LbSubsetSelector) Equal(that interface{}) boo
 		if this.Keys[i] != that1.Keys[i] {
 			return false
 		}
+	}
+	if this.FallbackPolicy != that1.FallbackPolicy {
+		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
@@ -2150,37 +2577,10 @@ func (this *Cluster_RingHashLbConfig) Equal(that interface{}) bool {
 	if !this.MinimumRingSize.Equal(that1.MinimumRingSize) {
 		return false
 	}
-	if !this.DeprecatedV1.Equal(that1.DeprecatedV1) {
-		return false
-	}
 	if this.HashFunction != that1.HashFunction {
 		return false
 	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (this *Cluster_RingHashLbConfig_DeprecatedV1) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Cluster_RingHashLbConfig_DeprecatedV1)
-	if !ok {
-		that2, ok := that.(Cluster_RingHashLbConfig_DeprecatedV1)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.UseStdHash.Equal(that1.UseStdHash) {
+	if !this.MaximumRingSize.Equal(that1.MaximumRingSize) {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -2247,6 +2647,9 @@ func (this *Cluster_CommonLbConfig) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.UpdateMergeWindow.Equal(that1.UpdateMergeWindow) {
+		return false
+	}
+	if this.IgnoreNewHostsUntilFirstHc != that1.IgnoreNewHostsUntilFirstHc {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -2424,7 +2827,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ClusterDiscoveryServiceClient interface {
 	StreamClusters(ctx context.Context, opts ...grpc.CallOption) (ClusterDiscoveryService_StreamClustersClient, error)
-	IncrementalClusters(ctx context.Context, opts ...grpc.CallOption) (ClusterDiscoveryService_IncrementalClustersClient, error)
+	DeltaClusters(ctx context.Context, opts ...grpc.CallOption) (ClusterDiscoveryService_DeltaClustersClient, error)
 	FetchClusters(ctx context.Context, in *DiscoveryRequest, opts ...grpc.CallOption) (*DiscoveryResponse, error)
 }
 
@@ -2467,31 +2870,31 @@ func (x *clusterDiscoveryServiceStreamClustersClient) Recv() (*DiscoveryResponse
 	return m, nil
 }
 
-func (c *clusterDiscoveryServiceClient) IncrementalClusters(ctx context.Context, opts ...grpc.CallOption) (ClusterDiscoveryService_IncrementalClustersClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_ClusterDiscoveryService_serviceDesc.Streams[1], "/envoy.api.v2.ClusterDiscoveryService/IncrementalClusters", opts...)
+func (c *clusterDiscoveryServiceClient) DeltaClusters(ctx context.Context, opts ...grpc.CallOption) (ClusterDiscoveryService_DeltaClustersClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ClusterDiscoveryService_serviceDesc.Streams[1], "/envoy.api.v2.ClusterDiscoveryService/DeltaClusters", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &clusterDiscoveryServiceIncrementalClustersClient{stream}
+	x := &clusterDiscoveryServiceDeltaClustersClient{stream}
 	return x, nil
 }
 
-type ClusterDiscoveryService_IncrementalClustersClient interface {
-	Send(*IncrementalDiscoveryRequest) error
-	Recv() (*IncrementalDiscoveryResponse, error)
+type ClusterDiscoveryService_DeltaClustersClient interface {
+	Send(*DeltaDiscoveryRequest) error
+	Recv() (*DeltaDiscoveryResponse, error)
 	grpc.ClientStream
 }
 
-type clusterDiscoveryServiceIncrementalClustersClient struct {
+type clusterDiscoveryServiceDeltaClustersClient struct {
 	grpc.ClientStream
 }
 
-func (x *clusterDiscoveryServiceIncrementalClustersClient) Send(m *IncrementalDiscoveryRequest) error {
+func (x *clusterDiscoveryServiceDeltaClustersClient) Send(m *DeltaDiscoveryRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *clusterDiscoveryServiceIncrementalClustersClient) Recv() (*IncrementalDiscoveryResponse, error) {
-	m := new(IncrementalDiscoveryResponse)
+func (x *clusterDiscoveryServiceDeltaClustersClient) Recv() (*DeltaDiscoveryResponse, error) {
+	m := new(DeltaDiscoveryResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -2510,7 +2913,7 @@ func (c *clusterDiscoveryServiceClient) FetchClusters(ctx context.Context, in *D
 // ClusterDiscoveryServiceServer is the server API for ClusterDiscoveryService service.
 type ClusterDiscoveryServiceServer interface {
 	StreamClusters(ClusterDiscoveryService_StreamClustersServer) error
-	IncrementalClusters(ClusterDiscoveryService_IncrementalClustersServer) error
+	DeltaClusters(ClusterDiscoveryService_DeltaClustersServer) error
 	FetchClusters(context.Context, *DiscoveryRequest) (*DiscoveryResponse, error)
 }
 
@@ -2544,26 +2947,26 @@ func (x *clusterDiscoveryServiceStreamClustersServer) Recv() (*DiscoveryRequest,
 	return m, nil
 }
 
-func _ClusterDiscoveryService_IncrementalClusters_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ClusterDiscoveryServiceServer).IncrementalClusters(&clusterDiscoveryServiceIncrementalClustersServer{stream})
+func _ClusterDiscoveryService_DeltaClusters_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ClusterDiscoveryServiceServer).DeltaClusters(&clusterDiscoveryServiceDeltaClustersServer{stream})
 }
 
-type ClusterDiscoveryService_IncrementalClustersServer interface {
-	Send(*IncrementalDiscoveryResponse) error
-	Recv() (*IncrementalDiscoveryRequest, error)
+type ClusterDiscoveryService_DeltaClustersServer interface {
+	Send(*DeltaDiscoveryResponse) error
+	Recv() (*DeltaDiscoveryRequest, error)
 	grpc.ServerStream
 }
 
-type clusterDiscoveryServiceIncrementalClustersServer struct {
+type clusterDiscoveryServiceDeltaClustersServer struct {
 	grpc.ServerStream
 }
 
-func (x *clusterDiscoveryServiceIncrementalClustersServer) Send(m *IncrementalDiscoveryResponse) error {
+func (x *clusterDiscoveryServiceDeltaClustersServer) Send(m *DeltaDiscoveryResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *clusterDiscoveryServiceIncrementalClustersServer) Recv() (*IncrementalDiscoveryRequest, error) {
-	m := new(IncrementalDiscoveryRequest)
+func (x *clusterDiscoveryServiceDeltaClustersServer) Recv() (*DeltaDiscoveryRequest, error) {
+	m := new(DeltaDiscoveryRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -2605,8 +3008,8 @@ var _ClusterDiscoveryService_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "IncrementalClusters",
-			Handler:       _ClusterDiscoveryService_IncrementalClusters_Handler,
+			StreamName:    "DeltaClusters",
+			Handler:       _ClusterDiscoveryService_DeltaClusters_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
@@ -2635,38 +3038,40 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintCds(dAtA, i, uint64(len(m.Name)))
 		i += copy(dAtA[i:], m.Name)
 	}
-	if m.Type != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.Type))
+	if m.ClusterDiscoveryType != nil {
+		nn1, err := m.ClusterDiscoveryType.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn1
 	}
 	if m.EdsClusterConfig != nil {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.EdsClusterConfig.Size()))
-		n1, err := m.EdsClusterConfig.MarshalTo(dAtA[i:])
+		n2, err := m.EdsClusterConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n2
 	}
 	dAtA[i] = 0x22
 	i++
 	i = encodeVarintCds(dAtA, i, uint64(github_com_gogo_protobuf_types.SizeOfStdDuration(m.ConnectTimeout)))
-	n2, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.ConnectTimeout, dAtA[i:])
+	n3, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.ConnectTimeout, dAtA[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n2
+	i += n3
 	if m.PerConnectionBufferLimitBytes != nil {
 		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.PerConnectionBufferLimitBytes.Size()))
-		n3, err := m.PerConnectionBufferLimitBytes.MarshalTo(dAtA[i:])
+		n4, err := m.PerConnectionBufferLimitBytes.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n4
 	}
 	if m.LbPolicy != 0 {
 		dAtA[i] = 0x30
@@ -2701,51 +3106,51 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x4a
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.MaxRequestsPerConnection.Size()))
-		n4, err := m.MaxRequestsPerConnection.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
-	if m.CircuitBreakers != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.CircuitBreakers.Size()))
-		n5, err := m.CircuitBreakers.MarshalTo(dAtA[i:])
+		n5, err := m.MaxRequestsPerConnection.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n5
 	}
-	if m.TlsContext != nil {
-		dAtA[i] = 0x5a
+	if m.CircuitBreakers != nil {
+		dAtA[i] = 0x52
 		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.TlsContext.Size()))
-		n6, err := m.TlsContext.MarshalTo(dAtA[i:])
+		i = encodeVarintCds(dAtA, i, uint64(m.CircuitBreakers.Size()))
+		n6, err := m.CircuitBreakers.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n6
 	}
-	if m.HttpProtocolOptions != nil {
-		dAtA[i] = 0x6a
+	if m.TlsContext != nil {
+		dAtA[i] = 0x5a
 		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.HttpProtocolOptions.Size()))
-		n7, err := m.HttpProtocolOptions.MarshalTo(dAtA[i:])
+		i = encodeVarintCds(dAtA, i, uint64(m.TlsContext.Size()))
+		n7, err := m.TlsContext.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n7
 	}
-	if m.Http2ProtocolOptions != nil {
-		dAtA[i] = 0x72
+	if m.HttpProtocolOptions != nil {
+		dAtA[i] = 0x6a
 		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.Http2ProtocolOptions.Size()))
-		n8, err := m.Http2ProtocolOptions.MarshalTo(dAtA[i:])
+		i = encodeVarintCds(dAtA, i, uint64(m.HttpProtocolOptions.Size()))
+		n8, err := m.HttpProtocolOptions.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n8
+	}
+	if m.Http2ProtocolOptions != nil {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintCds(dAtA, i, uint64(m.Http2ProtocolOptions.Size()))
+		n9, err := m.Http2ProtocolOptions.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
 	}
 	if m.DnsRefreshRate != nil {
 		dAtA[i] = 0x82
@@ -2753,11 +3158,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(github_com_gogo_protobuf_types.SizeOfStdDuration(*m.DnsRefreshRate)))
-		n9, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.DnsRefreshRate, dAtA[i:])
+		n10, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.DnsRefreshRate, dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n10
 	}
 	if m.DnsLookupFamily != 0 {
 		dAtA[i] = 0x88
@@ -2786,11 +3191,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.OutlierDetection.Size()))
-		n10, err := m.OutlierDetection.MarshalTo(dAtA[i:])
+		n11, err := m.OutlierDetection.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n11
 	}
 	if m.CleanupInterval != nil {
 		dAtA[i] = 0xa2
@@ -2798,11 +3203,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(github_com_gogo_protobuf_types.SizeOfStdDuration(*m.CleanupInterval)))
-		n11, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.CleanupInterval, dAtA[i:])
+		n12, err := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.CleanupInterval, dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	if m.UpstreamBindConfig != nil {
 		dAtA[i] = 0xaa
@@ -2810,11 +3215,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.UpstreamBindConfig.Size()))
-		n12, err := m.UpstreamBindConfig.MarshalTo(dAtA[i:])
+		n13, err := m.UpstreamBindConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
 	}
 	if m.LbSubsetConfig != nil {
 		dAtA[i] = 0xb2
@@ -2822,18 +3227,18 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.LbSubsetConfig.Size()))
-		n13, err := m.LbSubsetConfig.MarshalTo(dAtA[i:])
+		n14, err := m.LbSubsetConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n14
 	}
 	if m.LbConfig != nil {
-		nn14, err := m.LbConfig.MarshalTo(dAtA[i:])
+		nn15, err := m.LbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn14
+		i += nn15
 	}
 	if m.TransportSocket != nil {
 		dAtA[i] = 0xc2
@@ -2841,11 +3246,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.TransportSocket.Size()))
-		n15, err := m.TransportSocket.MarshalTo(dAtA[i:])
+		n16, err := m.TransportSocket.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n16
 	}
 	if m.Metadata != nil {
 		dAtA[i] = 0xca
@@ -2853,11 +3258,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.Metadata.Size()))
-		n16, err := m.Metadata.MarshalTo(dAtA[i:])
+		n17, err := m.Metadata.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	if m.ProtocolSelection != 0 {
 		dAtA[i] = 0xd0
@@ -2872,11 +3277,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.CommonLbConfig.Size()))
-		n17, err := m.CommonLbConfig.MarshalTo(dAtA[i:])
+		n18, err := m.CommonLbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n18
 	}
 	if len(m.AltStatName) > 0 {
 		dAtA[i] = 0xe2
@@ -2892,11 +3297,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.CommonHttpProtocolOptions.Size()))
-		n18, err := m.CommonHttpProtocolOptions.MarshalTo(dAtA[i:])
+		n19, err := m.CommonHttpProtocolOptions.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n18
+		i += n19
 	}
 	if m.UpstreamConnectionOptions != nil {
 		dAtA[i] = 0xf2
@@ -2904,11 +3309,11 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.UpstreamConnectionOptions.Size()))
-		n19, err := m.UpstreamConnectionOptions.MarshalTo(dAtA[i:])
+		n20, err := m.UpstreamConnectionOptions.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n20
 	}
 	if m.CloseConnectionsOnHostHealthFailure {
 		dAtA[i] = 0xf8
@@ -2940,49 +3345,24 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x2
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.LoadAssignment.Size()))
-		n20, err := m.LoadAssignment.MarshalTo(dAtA[i:])
+		n21, err := m.LoadAssignment.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n20
+		i += n21
 	}
 	if len(m.ExtensionProtocolOptions) > 0 {
+		keysForExtensionProtocolOptions := make([]string, 0, len(m.ExtensionProtocolOptions))
 		for k, _ := range m.ExtensionProtocolOptions {
+			keysForExtensionProtocolOptions = append(keysForExtensionProtocolOptions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForExtensionProtocolOptions)
+		for _, k := range keysForExtensionProtocolOptions {
 			dAtA[i] = 0x9a
 			i++
 			dAtA[i] = 0x2
 			i++
-			v := m.ExtensionProtocolOptions[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovCds(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovCds(uint64(len(k))) + msgSize
-			i = encodeVarintCds(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintCds(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintCds(dAtA, i, uint64(v.Size()))
-				n21, err := v.MarshalTo(dAtA[i:])
-				if err != nil {
-					return 0, err
-				}
-				i += n21
-			}
-		}
-	}
-	if len(m.TypedExtensionProtocolOptions) > 0 {
-		for k, _ := range m.TypedExtensionProtocolOptions {
-			dAtA[i] = 0xa2
-			i++
-			dAtA[i] = 0x2
-			i++
-			v := m.TypedExtensionProtocolOptions[k]
+			v := m.ExtensionProtocolOptions[string(k)]
 			msgSize := 0
 			if v != nil {
 				msgSize = v.Size()
@@ -3006,12 +3386,66 @@ func (m *Cluster) MarshalTo(dAtA []byte) (int, error) {
 			}
 		}
 	}
+	if len(m.TypedExtensionProtocolOptions) > 0 {
+		keysForTypedExtensionProtocolOptions := make([]string, 0, len(m.TypedExtensionProtocolOptions))
+		for k, _ := range m.TypedExtensionProtocolOptions {
+			keysForTypedExtensionProtocolOptions = append(keysForTypedExtensionProtocolOptions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForTypedExtensionProtocolOptions)
+		for _, k := range keysForTypedExtensionProtocolOptions {
+			dAtA[i] = 0xa2
+			i++
+			dAtA[i] = 0x2
+			i++
+			v := m.TypedExtensionProtocolOptions[string(k)]
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovCds(uint64(msgSize))
+			}
+			mapSize := 1 + len(k) + sovCds(uint64(len(k))) + msgSize
+			i = encodeVarintCds(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintCds(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintCds(dAtA, i, uint64(v.Size()))
+				n23, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n23
+			}
+		}
+	}
+	if m.RespectDnsTtl {
+		dAtA[i] = 0xb8
+		i++
+		dAtA[i] = 0x2
+		i++
+		if m.RespectDnsTtl {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
 
+func (m *Cluster_Type) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintCds(dAtA, i, uint64(m.Type))
+	return i, nil
+}
 func (m *Cluster_RingHashLbConfig_) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.RingHashLbConfig != nil {
@@ -3020,11 +3454,11 @@ func (m *Cluster_RingHashLbConfig_) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.RingHashLbConfig.Size()))
-		n23, err := m.RingHashLbConfig.MarshalTo(dAtA[i:])
+		n24, err := m.RingHashLbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n23
+		i += n24
 	}
 	return i, nil
 }
@@ -3036,11 +3470,11 @@ func (m *Cluster_OriginalDstLbConfig_) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x2
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.OriginalDstLbConfig.Size()))
-		n24, err := m.OriginalDstLbConfig.MarshalTo(dAtA[i:])
+		n25, err := m.OriginalDstLbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n24
+		i += n25
 	}
 	return i, nil
 }
@@ -3052,14 +3486,67 @@ func (m *Cluster_LeastRequestLbConfig_) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x2
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.LeastRequestLbConfig.Size()))
-		n25, err := m.LeastRequestLbConfig.MarshalTo(dAtA[i:])
+		n26, err := m.LeastRequestLbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n25
+		i += n26
 	}
 	return i, nil
 }
+func (m *Cluster_ClusterType) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.ClusterType != nil {
+		dAtA[i] = 0xb2
+		i++
+		dAtA[i] = 0x2
+		i++
+		i = encodeVarintCds(dAtA, i, uint64(m.ClusterType.Size()))
+		n27, err := m.ClusterType.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n27
+	}
+	return i, nil
+}
+func (m *Cluster_CustomClusterType) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Cluster_CustomClusterType) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintCds(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if m.TypedConfig != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintCds(dAtA, i, uint64(m.TypedConfig.Size()))
+		n28, err := m.TypedConfig.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n28
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Cluster_EdsClusterConfig) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -3079,11 +3566,11 @@ func (m *Cluster_EdsClusterConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.EdsConfig.Size()))
-		n26, err := m.EdsConfig.MarshalTo(dAtA[i:])
+		n29, err := m.EdsConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n26
+		i += n29
 	}
 	if len(m.ServiceName) > 0 {
 		dAtA[i] = 0x12
@@ -3121,11 +3608,11 @@ func (m *Cluster_LbSubsetConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.DefaultSubset.Size()))
-		n27, err := m.DefaultSubset.MarshalTo(dAtA[i:])
+		n30, err := m.DefaultSubset.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n27
+		i += n30
 	}
 	if len(m.SubsetSelectors) > 0 {
 		for _, msg := range m.SubsetSelectors {
@@ -3153,6 +3640,26 @@ func (m *Cluster_LbSubsetConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x28
 		i++
 		if m.ScaleLocalityWeight {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.PanicModeAny {
+		dAtA[i] = 0x30
+		i++
+		if m.PanicModeAny {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.ListAsAny {
+		dAtA[i] = 0x38
+		i++
+		if m.ListAsAny {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
@@ -3195,6 +3702,11 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) MarshalTo(dAtA []byte) (int, e
 			i += copy(dAtA[i:], s)
 		}
 	}
+	if m.FallbackPolicy != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintCds(dAtA, i, uint64(m.FallbackPolicy))
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -3220,11 +3732,11 @@ func (m *Cluster_LeastRequestLbConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.ChoiceCount.Size()))
-		n28, err := m.ChoiceCount.MarshalTo(dAtA[i:])
+		n31, err := m.ChoiceCount.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n28
+		i += n31
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -3251,57 +3763,26 @@ func (m *Cluster_RingHashLbConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.MinimumRingSize.Size()))
-		n29, err := m.MinimumRingSize.MarshalTo(dAtA[i:])
+		n32, err := m.MinimumRingSize.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n29
-	}
-	if m.DeprecatedV1 != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.DeprecatedV1.Size()))
-		n30, err := m.DeprecatedV1.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n30
+		i += n32
 	}
 	if m.HashFunction != 0 {
 		dAtA[i] = 0x18
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.HashFunction))
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.UseStdHash != nil {
-		dAtA[i] = 0xa
+	if m.MaximumRingSize != nil {
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintCds(dAtA, i, uint64(m.UseStdHash.Size()))
-		n31, err := m.UseStdHash.MarshalTo(dAtA[i:])
+		i = encodeVarintCds(dAtA, i, uint64(m.MaximumRingSize.Size()))
+		n33, err := m.MaximumRingSize.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n31
+		i += n33
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -3359,28 +3840,38 @@ func (m *Cluster_CommonLbConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.HealthyPanicThreshold.Size()))
-		n32, err := m.HealthyPanicThreshold.MarshalTo(dAtA[i:])
+		n34, err := m.HealthyPanicThreshold.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n32
+		i += n34
 	}
 	if m.LocalityConfigSpecifier != nil {
-		nn33, err := m.LocalityConfigSpecifier.MarshalTo(dAtA[i:])
+		nn35, err := m.LocalityConfigSpecifier.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn33
+		i += nn35
 	}
 	if m.UpdateMergeWindow != nil {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.UpdateMergeWindow.Size()))
-		n34, err := m.UpdateMergeWindow.MarshalTo(dAtA[i:])
+		n36, err := m.UpdateMergeWindow.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n34
+		i += n36
+	}
+	if m.IgnoreNewHostsUntilFirstHc {
+		dAtA[i] = 0x28
+		i++
+		if m.IgnoreNewHostsUntilFirstHc {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -3394,11 +3885,11 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig_) MarshalTo(dAtA []byte) (int,
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.ZoneAwareLbConfig.Size()))
-		n35, err := m.ZoneAwareLbConfig.MarshalTo(dAtA[i:])
+		n37, err := m.ZoneAwareLbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n35
+		i += n37
 	}
 	return i, nil
 }
@@ -3408,11 +3899,11 @@ func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig_) MarshalTo(dAtA []byte
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.LocalityWeightedLbConfig.Size()))
-		n36, err := m.LocalityWeightedLbConfig.MarshalTo(dAtA[i:])
+		n38, err := m.LocalityWeightedLbConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n36
+		i += n38
 	}
 	return i, nil
 }
@@ -3435,21 +3926,21 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) MarshalTo(dAtA []byte) (int, 
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.RoutingEnabled.Size()))
-		n37, err := m.RoutingEnabled.MarshalTo(dAtA[i:])
+		n39, err := m.RoutingEnabled.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n37
+		i += n39
 	}
 	if m.MinClusterSize != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.MinClusterSize.Size()))
-		n38, err := m.MinClusterSize.MarshalTo(dAtA[i:])
+		n40, err := m.MinClusterSize.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n38
+		i += n40
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -3497,11 +3988,11 @@ func (m *UpstreamBindConfig) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.SourceAddress.Size()))
-		n39, err := m.SourceAddress.MarshalTo(dAtA[i:])
+		n41, err := m.SourceAddress.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n39
+		i += n41
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -3528,11 +4019,11 @@ func (m *UpstreamConnectionOptions) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintCds(dAtA, i, uint64(m.TcpKeepalive.Size()))
-		n40, err := m.TcpKeepalive.MarshalTo(dAtA[i:])
+		n42, err := m.TcpKeepalive.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n40
+		i += n42
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -3559,8 +4050,8 @@ func (m *Cluster) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovCds(uint64(l))
 	}
-	if m.Type != 0 {
-		n += 1 + sovCds(uint64(m.Type))
+	if m.ClusterDiscoveryType != nil {
+		n += m.ClusterDiscoveryType.Size()
 	}
 	if m.EdsClusterConfig != nil {
 		l = m.EdsClusterConfig.Size()
@@ -3702,12 +4193,24 @@ func (m *Cluster) Size() (n int) {
 			n += mapEntrySize + 2 + sovCds(uint64(mapEntrySize))
 		}
 	}
+	if m.RespectDnsTtl {
+		n += 3
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
 
+func (m *Cluster_Type) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovCds(uint64(m.Type))
+	return n
+}
 func (m *Cluster_RingHashLbConfig_) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3744,6 +4247,38 @@ func (m *Cluster_LeastRequestLbConfig_) Size() (n int) {
 	}
 	return n
 }
+func (m *Cluster_ClusterType) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ClusterType != nil {
+		l = m.ClusterType.Size()
+		n += 2 + l + sovCds(uint64(l))
+	}
+	return n
+}
+func (m *Cluster_CustomClusterType) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCds(uint64(l))
+	}
+	if m.TypedConfig != nil {
+		l = m.TypedConfig.Size()
+		n += 1 + l + sovCds(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Cluster_EdsClusterConfig) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3789,6 +4324,12 @@ func (m *Cluster_LbSubsetConfig) Size() (n int) {
 	if m.ScaleLocalityWeight {
 		n += 2
 	}
+	if m.PanicModeAny {
+		n += 2
+	}
+	if m.ListAsAny {
+		n += 2
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -3806,6 +4347,9 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Size() (n int) {
 			l = len(s)
 			n += 1 + l + sovCds(uint64(l))
 		}
+	}
+	if m.FallbackPolicy != 0 {
+		n += 1 + sovCds(uint64(m.FallbackPolicy))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -3839,27 +4383,11 @@ func (m *Cluster_RingHashLbConfig) Size() (n int) {
 		l = m.MinimumRingSize.Size()
 		n += 1 + l + sovCds(uint64(l))
 	}
-	if m.DeprecatedV1 != nil {
-		l = m.DeprecatedV1.Size()
-		n += 1 + l + sovCds(uint64(l))
-	}
 	if m.HashFunction != 0 {
 		n += 1 + sovCds(uint64(m.HashFunction))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.UseStdHash != nil {
-		l = m.UseStdHash.Size()
+	if m.MaximumRingSize != nil {
+		l = m.MaximumRingSize.Size()
 		n += 1 + l + sovCds(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -3899,6 +4427,9 @@ func (m *Cluster_CommonLbConfig) Size() (n int) {
 	if m.UpdateMergeWindow != nil {
 		l = m.UpdateMergeWindow.Size()
 		n += 1 + l + sovCds(uint64(l))
+	}
+	if m.IgnoreNewHostsUntilFirstHc {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -4022,7 +4553,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -4050,7 +4581,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4060,6 +4591,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4069,7 +4603,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
-			m.Type = 0
+			var v Cluster_DiscoveryType
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCds
@@ -4079,11 +4613,12 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= (Cluster_DiscoveryType(b) & 0x7F) << shift
+				v |= Cluster_DiscoveryType(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			m.ClusterDiscoveryType = &Cluster_Type{v}
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EdsClusterConfig", wireType)
@@ -4098,7 +4633,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4107,6 +4642,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4131,7 +4669,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4140,6 +4678,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4161,7 +4702,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4170,6 +4711,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4194,7 +4738,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LbPolicy |= (Cluster_LbPolicy(b) & 0x7F) << shift
+				m.LbPolicy |= Cluster_LbPolicy(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4213,7 +4757,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4222,6 +4766,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4244,7 +4791,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4253,6 +4800,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4275,7 +4825,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4284,6 +4834,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4308,7 +4861,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4317,6 +4870,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4341,7 +4897,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4350,6 +4906,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4374,7 +4933,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4383,6 +4942,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4407,7 +4969,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4416,6 +4978,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4440,7 +5005,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4449,6 +5014,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4473,7 +5041,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DnsLookupFamily |= (Cluster_DnsLookupFamily(b) & 0x7F) << shift
+				m.DnsLookupFamily |= Cluster_DnsLookupFamily(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4492,7 +5060,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4501,6 +5069,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4523,7 +5094,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4532,6 +5103,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4556,7 +5130,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4565,6 +5139,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4589,7 +5166,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4598,6 +5175,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4622,7 +5202,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4631,6 +5211,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4655,7 +5238,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4664,6 +5247,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4687,7 +5273,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4696,6 +5282,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4720,7 +5309,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4729,6 +5318,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4753,7 +5345,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ProtocolSelection |= (Cluster_ClusterProtocolSelection(b) & 0x7F) << shift
+				m.ProtocolSelection |= Cluster_ClusterProtocolSelection(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4772,7 +5364,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4781,6 +5373,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4805,7 +5400,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4815,6 +5410,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4834,7 +5432,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4843,6 +5441,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4867,7 +5468,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4876,6 +5477,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4900,7 +5504,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4920,7 +5524,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4940,7 +5544,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4949,6 +5553,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -4973,7 +5580,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4982,6 +5589,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5005,7 +5615,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5014,6 +5624,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5034,7 +5647,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					wire |= (uint64(b) & 0x7F) << shift
+					wire |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -5051,7 +5664,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						stringLenmapkey |= (uint64(b) & 0x7F) << shift
+						stringLenmapkey |= uint64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -5061,6 +5674,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthCds
 					}
 					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCds
+					}
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
@@ -5077,7 +5693,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						mapmsglen |= (int(b) & 0x7F) << shift
+						mapmsglen |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -5086,7 +5702,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthCds
 					}
 					postmsgIndex := iNdEx + mapmsglen
-					if mapmsglen < 0 {
+					if postmsgIndex < 0 {
 						return ErrInvalidLengthCds
 					}
 					if postmsgIndex > l {
@@ -5128,7 +5744,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5137,6 +5753,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5157,7 +5776,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					wire |= (uint64(b) & 0x7F) << shift
+					wire |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -5174,7 +5793,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						stringLenmapkey |= (uint64(b) & 0x7F) << shift
+						stringLenmapkey |= uint64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -5184,6 +5803,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthCds
 					}
 					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCds
+					}
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
@@ -5200,7 +5822,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						mapmsglen |= (int(b) & 0x7F) << shift
+						mapmsglen |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -5209,7 +5831,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthCds
 					}
 					postmsgIndex := iNdEx + mapmsglen
-					if mapmsglen < 0 {
+					if postmsgIndex < 0 {
 						return ErrInvalidLengthCds
 					}
 					if postmsgIndex > l {
@@ -5251,7 +5873,7 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5260,6 +5882,9 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5269,6 +5894,61 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 			}
 			m.LbConfig = &Cluster_LeastRequestLbConfig_{v}
 			iNdEx = postIndex
+		case 38:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClusterType", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCds
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &Cluster_CustomClusterType{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ClusterDiscoveryType = &Cluster_ClusterType{v}
+			iNdEx = postIndex
+		case 39:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RespectDnsTtl", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RespectDnsTtl = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCds(dAtA[iNdEx:])
@@ -5276,6 +5956,131 @@ func (m *Cluster) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Cluster_CustomClusterType) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCds
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CustomClusterType: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CustomClusterType: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCds
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TypedConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCds
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.TypedConfig == nil {
+				m.TypedConfig = &types.Any{}
+			}
+			if err := m.TypedConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCds(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -5306,7 +6111,7 @@ func (m *Cluster_EdsClusterConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -5334,7 +6139,7 @@ func (m *Cluster_EdsClusterConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5343,6 +6148,9 @@ func (m *Cluster_EdsClusterConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5367,7 +6175,7 @@ func (m *Cluster_EdsClusterConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5377,6 +6185,9 @@ func (m *Cluster_EdsClusterConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5389,6 +6200,9 @@ func (m *Cluster_EdsClusterConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -5419,7 +6233,7 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -5447,7 +6261,7 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FallbackPolicy |= (Cluster_LbSubsetConfig_LbSubsetFallbackPolicy(b) & 0x7F) << shift
+				m.FallbackPolicy |= Cluster_LbSubsetConfig_LbSubsetFallbackPolicy(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5466,7 +6280,7 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5475,6 +6289,9 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5499,7 +6316,7 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5508,6 +6325,9 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5530,7 +6350,7 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5550,12 +6370,52 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 			m.ScaleLocalityWeight = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PanicModeAny", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.PanicModeAny = bool(v != 0)
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListAsAny", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ListAsAny = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCds(dAtA[iNdEx:])
@@ -5563,6 +6423,9 @@ func (m *Cluster_LbSubsetConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -5593,7 +6456,7 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -5621,7 +6484,7 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5631,11 +6494,33 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
 			m.Keys = append(m.Keys, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FallbackPolicy", wireType)
+			}
+			m.FallbackPolicy = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.FallbackPolicy |= Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCds(dAtA[iNdEx:])
@@ -5643,6 +6528,9 @@ func (m *Cluster_LbSubsetConfig_LbSubsetSelector) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -5673,7 +6561,7 @@ func (m *Cluster_LeastRequestLbConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -5701,7 +6589,7 @@ func (m *Cluster_LeastRequestLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5710,6 +6598,9 @@ func (m *Cluster_LeastRequestLbConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5727,6 +6618,9 @@ func (m *Cluster_LeastRequestLbConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -5757,7 +6651,7 @@ func (m *Cluster_RingHashLbConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -5785,7 +6679,7 @@ func (m *Cluster_RingHashLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5794,6 +6688,9 @@ func (m *Cluster_RingHashLbConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -5801,39 +6698,6 @@ func (m *Cluster_RingHashLbConfig) Unmarshal(dAtA []byte) error {
 				m.MinimumRingSize = &types.UInt64Value{}
 			}
 			if err := m.MinimumRingSize.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DeprecatedV1", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCds
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCds
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DeprecatedV1 == nil {
-				m.DeprecatedV1 = &Cluster_RingHashLbConfig_DeprecatedV1{}
-			}
-			if err := m.DeprecatedV1.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5851,65 +6715,14 @@ func (m *Cluster_RingHashLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HashFunction |= (Cluster_RingHashLbConfig_HashFunction(b) & 0x7F) << shift
+				m.HashFunction |= Cluster_RingHashLbConfig_HashFunction(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCds(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthCds
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Cluster_RingHashLbConfig_DeprecatedV1) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCds
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DeprecatedV1: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeprecatedV1: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
+		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UseStdHash", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MaximumRingSize", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -5921,7 +6734,7 @@ func (m *Cluster_RingHashLbConfig_DeprecatedV1) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5930,13 +6743,16 @@ func (m *Cluster_RingHashLbConfig_DeprecatedV1) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.UseStdHash == nil {
-				m.UseStdHash = &types.BoolValue{}
+			if m.MaximumRingSize == nil {
+				m.MaximumRingSize = &types.UInt64Value{}
 			}
-			if err := m.UseStdHash.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.MaximumRingSize.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5947,6 +6763,9 @@ func (m *Cluster_RingHashLbConfig_DeprecatedV1) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -5977,7 +6796,7 @@ func (m *Cluster_OriginalDstLbConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -6005,7 +6824,7 @@ func (m *Cluster_OriginalDstLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6018,6 +6837,9 @@ func (m *Cluster_OriginalDstLbConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -6048,7 +6870,7 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -6076,7 +6898,7 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6085,6 +6907,9 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6109,7 +6934,7 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6118,6 +6943,9 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6141,7 +6969,7 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6150,6 +6978,9 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6173,7 +7004,7 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6182,6 +7013,9 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6192,6 +7026,26 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IgnoreNewHostsUntilFirstHc", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCds
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IgnoreNewHostsUntilFirstHc = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCds(dAtA[iNdEx:])
@@ -6199,6 +7053,9 @@ func (m *Cluster_CommonLbConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -6229,7 +7086,7 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Unmarshal(dAtA []byte) error 
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -6257,7 +7114,7 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Unmarshal(dAtA []byte) error 
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6266,6 +7123,9 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Unmarshal(dAtA []byte) error 
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6290,7 +7150,7 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Unmarshal(dAtA []byte) error 
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6299,6 +7159,9 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Unmarshal(dAtA []byte) error 
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6316,6 +7179,9 @@ func (m *Cluster_CommonLbConfig_ZoneAwareLbConfig) Unmarshal(dAtA []byte) error 
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -6346,7 +7212,7 @@ func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) Unmarshal(dAtA []byte)
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -6367,6 +7233,9 @@ func (m *Cluster_CommonLbConfig_LocalityWeightedLbConfig) Unmarshal(dAtA []byte)
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -6397,7 +7266,7 @@ func (m *UpstreamBindConfig) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -6425,7 +7294,7 @@ func (m *UpstreamBindConfig) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6434,6 +7303,9 @@ func (m *UpstreamBindConfig) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6451,6 +7323,9 @@ func (m *UpstreamBindConfig) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -6481,7 +7356,7 @@ func (m *UpstreamConnectionOptions) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -6509,7 +7384,7 @@ func (m *UpstreamConnectionOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6518,6 +7393,9 @@ func (m *UpstreamConnectionOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCds
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCds
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -6535,6 +7413,9 @@ func (m *UpstreamConnectionOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCds
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCds
 			}
 			if (iNdEx + skippy) > l {
@@ -6604,8 +7485,11 @@ func skipCds(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthCds
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthCds
 			}
 			return iNdEx, nil
@@ -6636,6 +7520,9 @@ func skipCds(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthCds
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -6654,168 +7541,3 @@ var (
 	ErrInvalidLengthCds = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCds   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() { proto.RegisterFile("envoy/api/v2/cds.proto", fileDescriptor_cds_512894ce0b5b5d8d) }
-
-var fileDescriptor_cds_512894ce0b5b5d8d = []byte{
-	// 2544 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x59, 0x4f, 0x6f, 0x1b, 0xc7,
-	0x15, 0xd7, 0x52, 0x72, 0x2c, 0x8d, 0xf8, 0x67, 0x35, 0x92, 0xad, 0x35, 0x65, 0xc9, 0x32, 0x13,
-	0xa7, 0x8a, 0xd0, 0x52, 0x35, 0x9d, 0xa4, 0x41, 0x9a, 0xa4, 0xe0, 0x3f, 0x59, 0x4c, 0x28, 0x52,
-	0x5d, 0x92, 0x56, 0xd2, 0x34, 0x98, 0x0c, 0x77, 0x87, 0xe4, 0x56, 0xcb, 0xdd, 0xed, 0xce, 0xac,
-	0x6c, 0xfa, 0x50, 0xa4, 0x01, 0x0a, 0xf4, 0xde, 0x4b, 0xfb, 0x0d, 0x8a, 0xa2, 0x9f, 0xa0, 0xa7,
-	0x1e, 0x73, 0x2c, 0xd0, 0x63, 0x81, 0xb6, 0x30, 0x0a, 0xb4, 0xfd, 0x16, 0xc5, 0xcc, 0xce, 0xd2,
-	0xfc, 0xb3, 0x94, 0x15, 0xa0, 0x27, 0x71, 0xde, 0xfb, 0xbd, 0xdf, 0x9b, 0x7d, 0x33, 0xef, 0xcd,
-	0x9b, 0x11, 0xb8, 0x4d, 0x9c, 0x4b, 0x77, 0x74, 0x84, 0x3d, 0xeb, 0xe8, 0xb2, 0x70, 0x64, 0x98,
-	0x34, 0xef, 0xf9, 0x2e, 0x73, 0x61, 0x52, 0xc8, 0xf3, 0xd8, 0xb3, 0xf2, 0x97, 0x85, 0xec, 0xbd,
-	0x69, 0x94, 0xeb, 0x93, 0x23, 0x6c, 0x9a, 0x3e, 0xa1, 0x12, 0x9e, 0xbd, 0x3b, 0x05, 0xc0, 0x01,
-	0x1b, 0x1c, 0x19, 0xc4, 0x67, 0xb1, 0x5a, 0x61, 0xde, 0xc5, 0x94, 0x48, 0xed, 0x83, 0x79, 0xad,
-	0xe1, 0x3a, 0x3d, 0xab, 0x8f, 0xa8, 0x1b, 0xf8, 0x06, 0x89, 0x25, 0x31, 0x2d, 0x6a, 0xb8, 0x97,
-	0xc4, 0x1f, 0x49, 0xed, 0x1b, 0xf3, 0x24, 0x03, 0x82, 0x6d, 0x36, 0x40, 0xc6, 0x80, 0x18, 0x17,
-	0x12, 0xb5, 0x3f, 0x8f, 0x12, 0x0a, 0xc3, 0xb5, 0x25, 0xe2, 0x70, 0x1a, 0x61, 0x07, 0x94, 0x11,
-	0xff, 0xc8, 0xb0, 0x7c, 0x23, 0xb0, 0x18, 0xea, 0xfa, 0x04, 0x5f, 0x10, 0x5f, 0x62, 0xbf, 0x1b,
-	0x8b, 0x75, 0x03, 0x66, 0x5b, 0xc4, 0x47, 0x26, 0x61, 0xc4, 0x60, 0x96, 0xeb, 0x48, 0xf4, 0x74,
-	0xa4, 0x49, 0x14, 0xe9, 0xac, 0x16, 0xca, 0xd9, 0xc8, 0x23, 0x47, 0x1e, 0xf1, 0x0d, 0xe2, 0x8c,
-	0xc3, 0xd6, 0x77, 0xdd, 0xbe, 0x4d, 0x84, 0x09, 0x76, 0x1c, 0x97, 0x61, 0x4e, 0x17, 0xd9, 0xdd,
-	0x91, 0x5a, 0x31, 0xea, 0x06, 0xbd, 0x23, 0xec, 0x44, 0xc1, 0xd8, 0x9b, 0x55, 0x99, 0x81, 0x8f,
-	0x27, 0xa6, 0x72, 0x77, 0x56, 0x4f, 0x99, 0x1f, 0x18, 0x6c, 0x91, 0xf5, 0x53, 0x1f, 0x7b, 0x1e,
-	0xf1, 0x23, 0xc7, 0xdb, 0x97, 0xd8, 0xb6, 0x4c, 0xcc, 0xc8, 0x51, 0xf4, 0x43, 0x2a, 0xb6, 0xfa,
-	0x6e, 0xdf, 0x15, 0x3f, 0x8f, 0xf8, 0xaf, 0x50, 0x9a, 0xfb, 0xf7, 0x5b, 0xe0, 0x66, 0x39, 0x8c,
-	0x0d, 0xdc, 0x05, 0x2b, 0x0e, 0x1e, 0x12, 0x4d, 0xd9, 0x57, 0x0e, 0xd6, 0x4a, 0x6b, 0x7f, 0xfa,
-	0xef, 0x9f, 0x97, 0x57, 0xfc, 0xc4, 0xbe, 0xa2, 0x0b, 0x31, 0x2c, 0x83, 0x15, 0x1e, 0x06, 0x2d,
-	0xb1, 0xaf, 0x1c, 0xa4, 0x0b, 0xaf, 0xe7, 0x27, 0xf7, 0x60, 0x5e, 0x72, 0xe4, 0x2b, 0xd1, 0xca,
-	0xb7, 0x47, 0x1e, 0x29, 0x01, 0xce, 0x71, 0xe3, 0x6b, 0x25, 0xa1, 0x2a, 0xba, 0x30, 0x86, 0x6d,
-	0x00, 0x89, 0x49, 0x91, 0x5c, 0x0e, 0x14, 0x6e, 0x25, 0x6d, 0x79, 0x5f, 0x39, 0x58, 0x2f, 0xbc,
-	0x19, 0x4f, 0x59, 0x35, 0xa9, 0xfc, 0x59, 0x16, 0x68, 0x5d, 0x25, 0x33, 0x12, 0xf8, 0x04, 0x64,
-	0x0c, 0xd7, 0x71, 0x88, 0xc1, 0x10, 0xb3, 0x86, 0xc4, 0x0d, 0x98, 0xb6, 0x22, 0x28, 0xef, 0xe4,
-	0xc3, 0x70, 0xe5, 0xa3, 0x70, 0xe5, 0x2b, 0x32, 0xd8, 0x25, 0xf8, 0xcd, 0xdf, 0xef, 0x2d, 0xfd,
-	0xf6, 0x1f, 0xf7, 0x14, 0x31, 0xc7, 0x3f, 0x28, 0x89, 0xc3, 0x25, 0x3d, 0x2d, 0x59, 0xda, 0x21,
-	0x09, 0xec, 0x81, 0xfb, 0x5e, 0x38, 0x4b, 0x27, 0xdc, 0x2d, 0xa8, 0x1b, 0xf4, 0x7a, 0xc4, 0x47,
-	0xb6, 0x35, 0xe4, 0x1b, 0x6e, 0xc4, 0x08, 0xd5, 0x6e, 0x08, 0x4f, 0x77, 0xe7, 0x3c, 0x75, 0x6a,
-	0x0e, 0x7b, 0x54, 0x78, 0x82, 0xed, 0x80, 0xe8, 0xbb, 0x9e, 0x98, 0xab, 0x64, 0x29, 0x09, 0x92,
-	0x3a, 0xe7, 0x28, 0x71, 0x0a, 0xf8, 0x18, 0xac, 0xd9, 0x5d, 0xe4, 0xb9, 0xb6, 0x65, 0x8c, 0xb4,
-	0xd7, 0x44, 0x7c, 0xf7, 0xe2, 0x83, 0x51, 0xef, 0x9e, 0x09, 0xd4, 0x54, 0x68, 0x57, 0x6d, 0x29,
-	0x85, 0x6f, 0x83, 0x1b, 0x03, 0x97, 0x32, 0xaa, 0xdd, 0xdc, 0x5f, 0x3e, 0x58, 0x2f, 0x64, 0xa7,
-	0x49, 0x78, 0x4a, 0xe5, 0x8b, 0x61, 0x69, 0x28, 0x25, 0x34, 0x45, 0x0f, 0xc1, 0xb0, 0x0c, 0x52,
-	0x93, 0xe9, 0x48, 0xb5, 0x55, 0x61, 0xbd, 0x17, 0x63, 0x7d, 0x22, 0x70, 0x65, 0x0e, 0xd3, 0x93,
-	0x83, 0x97, 0x03, 0x0a, 0x3f, 0x07, 0x3b, 0x43, 0xfc, 0x0c, 0xf9, 0xe4, 0xe7, 0x01, 0xa1, 0x8c,
-	0xa2, 0xe9, 0xc0, 0x69, 0x6b, 0xd7, 0x88, 0x92, 0x36, 0xc4, 0xcf, 0x74, 0x69, 0x7f, 0x36, 0x19,
-	0x30, 0x78, 0x06, 0xd4, 0x99, 0x2c, 0xa7, 0x1a, 0x10, 0x8c, 0x0f, 0x66, 0x26, 0x29, 0xe3, 0x54,
-	0x0e, 0xd1, 0x25, 0x09, 0xd6, 0x33, 0xc6, 0xb4, 0x00, 0x1e, 0x83, 0x75, 0x66, 0x53, 0x3e, 0x43,
-	0x46, 0x9e, 0x31, 0x6d, 0x3d, 0x8e, 0x8c, 0x57, 0xca, 0x7c, 0xc7, 0xa3, 0xcc, 0x27, 0x78, 0xd8,
-	0xb6, 0x69, 0x39, 0x04, 0xeb, 0x80, 0x8d, 0x7f, 0xc3, 0xcf, 0xc1, 0xad, 0x01, 0x63, 0x1e, 0x8a,
-	0x2a, 0x15, 0x72, 0x3d, 0x51, 0x07, 0xb4, 0x94, 0x60, 0xfc, 0x4e, 0x5c, 0x0c, 0x19, 0xf3, 0x1e,
-	0x9e, 0x49, 0x7c, 0x33, 0x84, 0xeb, 0x9b, 0x9c, 0x65, 0x46, 0x08, 0xbf, 0x00, 0xb7, 0xb9, 0xb8,
-	0x30, 0xcf, 0x9e, 0xbe, 0x92, 0xbd, 0x30, 0xcb, 0xbe, 0x35, 0x88, 0x91, 0xc2, 0x16, 0x50, 0x4d,
-	0x87, 0x22, 0x9f, 0xf4, 0x7c, 0x42, 0x07, 0xc8, 0xc7, 0x8c, 0x68, 0xea, 0xab, 0xf2, 0x26, 0x3d,
-	0x9b, 0x33, 0xa6, 0x43, 0xf5, 0x90, 0x41, 0xc7, 0x8c, 0xc0, 0x2f, 0xc0, 0x06, 0x27, 0xb5, 0x5d,
-	0xf7, 0x22, 0xf0, 0x50, 0x0f, 0x0f, 0x2d, 0x7b, 0xa4, 0x6d, 0x88, 0x3d, 0xfd, 0x60, 0x41, 0xcd,
-	0x70, 0x68, 0x5d, 0xa0, 0x8f, 0x05, 0x78, 0x6a, 0x6b, 0x67, 0xcc, 0x69, 0x25, 0xfc, 0x11, 0x48,
-	0x85, 0x73, 0xa6, 0xae, 0x7d, 0xc9, 0xb7, 0x01, 0x7c, 0xd5, 0x4e, 0xd7, 0x93, 0x62, 0x86, 0x12,
-	0x0f, 0x5b, 0x60, 0x63, 0xee, 0x10, 0xd0, 0x36, 0xe3, 0x0a, 0x50, 0xb4, 0x97, 0x9a, 0x21, 0xbc,
-	0x12, 0xa1, 0x75, 0xd5, 0x9d, 0x91, 0xc0, 0x36, 0x50, 0x0d, 0x9b, 0x60, 0x27, 0xf0, 0x90, 0xe5,
-	0x30, 0xe2, 0x5f, 0x62, 0x5b, 0xdb, 0xfa, 0xb6, 0x91, 0xcc, 0x48, 0x8a, 0x9a, 0x64, 0x80, 0x4d,
-	0xb0, 0x15, 0xc8, 0xdd, 0x87, 0xba, 0x96, 0x63, 0x46, 0xe5, 0xf2, 0x96, 0x60, 0xde, 0x8d, 0xf9,
-	0xe4, 0x92, 0xe5, 0x98, 0xb2, 0x4a, 0xc2, 0xc8, 0xf4, 0xa5, 0x0c, 0x36, 0x80, 0x6a, 0x77, 0x11,
-	0x0d, 0xba, 0x94, 0xb0, 0x88, 0xec, 0xb6, 0x20, 0x7b, 0x63, 0x51, 0xb9, 0x69, 0x09, 0xb0, 0xe4,
-	0x4c, 0xdb, 0x53, 0x63, 0x78, 0x0e, 0x36, 0x7d, 0xcb, 0xe9, 0xa3, 0x01, 0xa6, 0x03, 0x64, 0x77,
-	0x23, 0xca, 0xed, 0xab, 0xca, 0xb9, 0x6e, 0x39, 0xfd, 0x13, 0x4c, 0x07, 0xf5, 0x6e, 0x48, 0x72,
-	0xb2, 0xa4, 0xab, 0xfe, 0x8c, 0x0c, 0x9e, 0x02, 0x95, 0xf9, 0xd8, 0xa1, 0x9e, 0xeb, 0x33, 0x44,
-	0x5d, 0xe3, 0x82, 0x30, 0x4d, 0x13, 0xac, 0xb9, 0x98, 0xaf, 0x6e, 0x47, 0xd0, 0x96, 0x40, 0xea,
-	0x19, 0x36, 0x2d, 0x80, 0x3f, 0x00, 0xab, 0x43, 0xc2, 0xb0, 0x89, 0x19, 0xd6, 0xee, 0x08, 0x9a,
-	0x9d, 0x18, 0x9a, 0x53, 0x09, 0xd1, 0xc7, 0x60, 0xf8, 0x05, 0x80, 0xe3, 0xd4, 0xa3, 0xc4, 0x96,
-	0xbb, 0x25, 0x2b, 0x76, 0x73, 0x3e, 0xfe, 0xfb, 0xe4, 0xdf, 0x28, 0xd7, 0x5a, 0x91, 0x95, 0xbe,
-	0xe1, 0xcd, 0x8a, 0xf8, 0x7a, 0x18, 0xee, 0x70, 0xe8, 0x3a, 0x13, 0xc1, 0xdb, 0xb9, 0x6a, 0x3d,
-	0xca, 0x02, 0x1d, 0x85, 0x89, 0x9f, 0x57, 0x93, 0x63, 0x98, 0x03, 0x29, 0x6c, 0x33, 0x44, 0x19,
-	0x66, 0x48, 0x1c, 0xe5, 0x77, 0xf9, 0x51, 0xae, 0xaf, 0x63, 0x9b, 0xb5, 0x18, 0x66, 0x0d, 0x7e,
-	0x8c, 0xf7, 0xc1, 0x5d, 0xe9, 0x33, 0xbe, 0x6e, 0xed, 0xc6, 0xa6, 0x42, 0x54, 0x59, 0x66, 0x0b,
-	0xcb, 0x9d, 0x90, 0x2b, 0x46, 0x05, 0xfb, 0x60, 0x67, 0xbc, 0x7b, 0x27, 0x4e, 0xd0, 0xc8, 0xcf,
-	0x5e, 0x5c, 0x05, 0x8b, 0x8a, 0xed, 0xcb, 0xd2, 0x3f, 0x76, 0x14, 0x2c, 0x52, 0xc1, 0x0e, 0x38,
-	0x30, 0x6c, 0x97, 0x92, 0x09, 0x2f, 0x14, 0xf1, 0xef, 0x73, 0x29, 0x43, 0xf2, 0x60, 0xeb, 0x61,
-	0xcb, 0x0e, 0x7c, 0xa2, 0xdd, 0xdb, 0x57, 0x0e, 0x56, 0xf5, 0xd7, 0x05, 0xfe, 0x25, 0x13, 0x6d,
-	0x3a, 0x27, 0x2e, 0x65, 0xe1, 0xe1, 0x76, 0x1c, 0x42, 0xe1, 0x09, 0xb8, 0x6f, 0xfa, 0xd8, 0x72,
-	0x62, 0x69, 0x7d, 0x32, 0x74, 0x79, 0x92, 0xef, 0x0b, 0xbe, 0x5d, 0x01, 0x9c, 0xe3, 0xd3, 0x43,
-	0x10, 0xac, 0x83, 0x8c, 0xed, 0x62, 0x13, 0x61, 0x4a, 0xad, 0xbe, 0x33, 0x24, 0x0e, 0xd3, 0xee,
-	0x8b, 0xaf, 0x8f, 0x6f, 0xa2, 0xea, 0x2e, 0x36, 0x8b, 0x63, 0xa8, 0x9e, 0xb6, 0xa7, 0xc6, 0xf0,
-	0x4b, 0x70, 0xdb, 0xf5, 0xad, 0xbe, 0xe5, 0x60, 0x1b, 0x99, 0x94, 0x4d, 0x6c, 0x9d, 0x9c, 0x20,
-	0x7d, 0x2b, 0x7e, 0xeb, 0x34, 0xa5, 0x4d, 0x85, 0xb2, 0x89, 0xd4, 0xdb, 0x74, 0xe7, 0xc5, 0x30,
-	0x00, 0x59, 0xf2, 0x8c, 0x11, 0x87, 0xf2, 0xf5, 0x9a, 0xdb, 0x20, 0xaf, 0x8b, 0x82, 0xfb, 0x68,
-	0x41, 0xb3, 0x16, 0xd9, 0xcd, 0xec, 0x86, 0xaa, 0xc3, 0xfc, 0x91, 0xe8, 0x39, 0x34, 0xb2, 0x00,
-	0x02, 0x7f, 0xa9, 0x80, 0x7d, 0xde, 0x24, 0x9a, 0xe8, 0x0a, 0xef, 0x6f, 0x08, 0xef, 0xef, 0xc5,
-	0x7b, 0xe7, 0x4d, 0xa7, 0x79, 0xe5, 0x14, 0xf4, 0x5d, 0x76, 0x15, 0x06, 0x1a, 0x60, 0xdb, 0x26,
-	0x58, 0x2c, 0xb0, 0xe8, 0x43, 0x26, 0xa2, 0xfb, 0x40, 0x44, 0xf7, 0x70, 0x41, 0xa1, 0xe4, 0x46,
-	0xb2, 0x77, 0x99, 0x08, 0xef, 0x96, 0x1d, 0x23, 0xcf, 0x06, 0x40, 0x9d, 0x6d, 0x6a, 0xe1, 0x47,
-	0x00, 0x88, 0xc6, 0x38, 0xf4, 0xa5, 0x08, 0x5f, 0xf7, 0x62, 0x92, 0x30, 0x84, 0xb7, 0xc4, 0xdd,
-	0x4b, 0x5f, 0xe3, 0x9d, 0x70, 0x68, 0x7f, 0x1f, 0x24, 0x29, 0xf1, 0x2f, 0x2d, 0x83, 0x84, 0x99,
-	0x9f, 0x08, 0x33, 0x5f, 0xca, 0x78, 0xe6, 0x67, 0x4d, 0xb0, 0x7b, 0x65, 0x6c, 0xa0, 0x0a, 0x96,
-	0x2f, 0xc8, 0x28, 0xec, 0xff, 0x75, 0xfe, 0x13, 0x7e, 0x0f, 0xdc, 0xb8, 0xe4, 0xad, 0x99, 0xa0,
-	0x5b, 0x2f, 0x6c, 0xcf, 0x1d, 0x66, 0x2d, 0x71, 0x37, 0xd1, 0x43, 0xd4, 0xfb, 0x89, 0xf7, 0x94,
-	0x6c, 0x0f, 0xe4, 0x5e, 0xbd, 0x0c, 0x31, 0xae, 0x0e, 0xa7, 0x5d, 0x6d, 0xcd, 0xb9, 0x2a, 0x3a,
-	0xa3, 0x49, 0x3f, 0xbf, 0x5a, 0x01, 0xe9, 0xe9, 0xe3, 0x09, 0x7a, 0x20, 0xd3, 0xc3, 0xb6, 0xdd,
-	0xc5, 0xc6, 0x45, 0xd4, 0x4c, 0x2b, 0xa2, 0x54, 0xff, 0xf0, 0x3a, 0xa7, 0xdb, 0x78, 0x78, 0x2c,
-	0x39, 0x62, 0x3a, 0xed, 0x74, 0x6f, 0x4a, 0x07, 0x3f, 0x02, 0x69, 0x93, 0xf4, 0x70, 0xc0, 0x8b,
-	0xae, 0xb0, 0x7d, 0x55, 0xa0, 0x52, 0x12, 0x1e, 0x7a, 0x82, 0x5f, 0x02, 0x55, 0x9e, 0xc6, 0xe1,
-	0xe9, 0xe2, 0xfa, 0x54, 0x5b, 0x16, 0x3b, 0xfc, 0x9d, 0x6f, 0x35, 0xe5, 0x96, 0xb4, 0xd6, 0x33,
-	0x74, 0x6a, 0x4c, 0x61, 0x01, 0xdc, 0xb2, 0x5d, 0x03, 0xdb, 0x16, 0x1b, 0xa1, 0xa7, 0xc4, 0xea,
-	0x0f, 0x18, 0xc2, 0x4f, 0xb1, 0x4f, 0xc4, 0x05, 0x69, 0x55, 0xdf, 0x8c, 0x94, 0xe7, 0x42, 0x57,
-	0xe4, 0x2a, 0x6e, 0x43, 0x0d, 0x6c, 0x13, 0x34, 0x63, 0x29, 0xae, 0x3a, 0xab, 0xfa, 0xa6, 0x50,
-	0xd6, 0xa7, 0x0c, 0xb3, 0x6f, 0x02, 0x75, 0x76, 0x32, 0x10, 0x82, 0x95, 0x0b, 0x32, 0xa2, 0x9a,
-	0xb2, 0xbf, 0x7c, 0xb0, 0xa6, 0x8b, 0xdf, 0xb9, 0x26, 0xb8, 0x1d, 0x1f, 0x67, 0x98, 0x01, 0xeb,
-	0x8d, 0x26, 0x3a, 0x2e, 0xd6, 0xeb, 0xa5, 0x62, 0xf9, 0x13, 0x75, 0x09, 0xaa, 0x20, 0x59, 0x6c,
-	0x7c, 0x86, 0xaa, 0x8d, 0xca, 0x59, 0xb3, 0xd6, 0x68, 0xab, 0x0a, 0x84, 0x20, 0x5d, 0xa9, 0x1e,
-	0x17, 0x3b, 0xf5, 0x36, 0x6a, 0x75, 0x4a, 0xad, 0x6a, 0x5b, 0x4d, 0x64, 0xbb, 0x60, 0x2b, 0x2e,
-	0xf9, 0xe0, 0xc7, 0x20, 0x69, 0x0c, 0x5c, 0x9e, 0x0f, 0x86, 0x1b, 0x38, 0x4c, 0xa6, 0xd4, 0x95,
-	0x17, 0x10, 0x79, 0xe7, 0x3d, 0x4c, 0x1c, 0x24, 0xf4, 0xf5, 0xd0, 0xb8, 0xcc, 0x6d, 0xb3, 0x7f,
-	0x5c, 0x06, 0xea, 0x6c, 0xdf, 0x02, 0x9f, 0x80, 0x8d, 0xa1, 0xe5, 0x58, 0xc3, 0x60, 0x88, 0x44,
-	0x13, 0x44, 0xad, 0xe7, 0xe4, 0x4a, 0x2f, 0xef, 0xbe, 0x1d, 0x7a, 0x49, 0x72, 0x2f, 0x37, 0x0b,
-	0x37, 0xb4, 0xaf, 0xbe, 0xfa, 0x6a, 0x45, 0xcf, 0x48, 0x12, 0xce, 0xdf, 0xb2, 0x9e, 0x13, 0xf8,
-	0x53, 0x90, 0x32, 0x89, 0xe7, 0x13, 0x03, 0x33, 0x62, 0xa2, 0xcb, 0x87, 0x72, 0x4b, 0x3d, 0xba,
-	0x5e, 0x3b, 0x95, 0xaf, 0x8c, 0x6d, 0x9f, 0x3c, 0x14, 0x05, 0x37, 0x69, 0x4e, 0x48, 0xa0, 0x09,
-	0x52, 0xa2, 0x5b, 0xeb, 0x05, 0x4e, 0xd8, 0xcc, 0x2c, 0x8b, 0x0c, 0xb9, 0x2e, 0x3b, 0x1f, 0x1c,
-	0x4b, 0xd3, 0xa9, 0xcc, 0x48, 0x0e, 0x26, 0x34, 0xd9, 0x3a, 0x48, 0x4e, 0xce, 0x03, 0x7e, 0x00,
-	0x92, 0x01, 0x25, 0x88, 0x32, 0x53, 0xf4, 0x8a, 0x32, 0x4c, 0xd9, 0xb9, 0x30, 0x95, 0x5c, 0xd7,
-	0x0e, 0xef, 0x82, 0x20, 0xa0, 0xa4, 0xc5, 0x4c, 0xee, 0x2f, 0x97, 0x07, 0xc9, 0x49, 0xbf, 0x70,
-	0x1d, 0xdc, 0xfc, 0xf4, 0x53, 0x74, 0x52, 0x6c, 0x9d, 0xa8, 0x4b, 0x70, 0x03, 0xa4, 0x4e, 0x3b,
-	0xfa, 0x69, 0x47, 0x17, 0x02, 0x54, 0x50, 0x95, 0xec, 0x87, 0x60, 0x33, 0xe6, 0xb4, 0x83, 0x6f,
-	0x82, 0x0c, 0x9f, 0x84, 0x68, 0x7b, 0x06, 0x04, 0x9b, 0xc4, 0x17, 0xf3, 0x58, 0xd5, 0x53, 0x01,
-	0x25, 0xbc, 0x83, 0x39, 0x11, 0xc2, 0xec, 0x7f, 0x56, 0x40, 0x7a, 0xba, 0xd1, 0x82, 0x9f, 0x80,
-	0xed, 0xb0, 0x91, 0x18, 0x21, 0x0f, 0x3b, 0x96, 0x81, 0xd8, 0x80, 0x5f, 0x78, 0x5c, 0xdb, 0x94,
-	0x9f, 0xb2, 0x29, 0xe3, 0xc7, 0x4f, 0x97, 0xfc, 0x59, 0xf8, 0x50, 0xa4, 0xdf, 0x92, 0x36, 0x67,
-	0xdc, 0xa4, 0x1d, 0x59, 0x40, 0x0b, 0x6c, 0x3d, 0x77, 0x1d, 0x12, 0xe6, 0xe1, 0xc4, 0x01, 0x13,
-	0xae, 0xf3, 0xbb, 0xd7, 0xe9, 0xfc, 0xf2, 0x3f, 0x71, 0x1d, 0x22, 0x92, 0x75, 0xe2, 0xb0, 0xd9,
-	0x78, 0x3e, 0x2b, 0x84, 0xbf, 0x00, 0x3b, 0x33, 0x39, 0x4c, 0xcc, 0x09, 0x8f, 0xe1, 0xbb, 0xcb,
-	0x87, 0xd7, 0xf2, 0x38, 0x9d, 0xef, 0xc4, 0x9c, 0x70, 0xac, 0xd9, 0x0b, 0x74, 0xb0, 0x06, 0x36,
-	0x03, 0xcf, 0xc4, 0x8c, 0xa0, 0x21, 0xf1, 0xfb, 0x04, 0x3d, 0xb5, 0x1c, 0xd3, 0x7d, 0xfa, 0xca,
-	0xc7, 0x19, 0x7d, 0x23, 0xb4, 0x3a, 0xe5, 0x46, 0xe7, 0xc2, 0x26, 0xfb, 0x3b, 0x05, 0x6c, 0xcc,
-	0x7d, 0x35, 0xfc, 0x00, 0x64, 0x7c, 0x37, 0x60, 0x3c, 0xff, 0x88, 0x83, 0xbb, 0x36, 0xb9, 0x72,
-	0x41, 0xd2, 0x12, 0x5b, 0x0d, 0xa1, 0xf0, 0x18, 0xa8, 0x43, 0xde, 0xe0, 0xc9, 0xd7, 0x28, 0x91,
-	0xc1, 0x89, 0x57, 0x67, 0xb0, 0x9e, 0x1e, 0x5a, 0x8e, 0x0c, 0x13, 0x4f, 0xd9, 0x6c, 0x16, 0x68,
-	0x8b, 0xc2, 0x53, 0xda, 0x01, 0x77, 0xc6, 0x4b, 0x10, 0xbd, 0x9c, 0x7a, 0xc4, 0xb0, 0x7a, 0x16,
-	0xf1, 0x73, 0xe7, 0x20, 0x35, 0xf5, 0x62, 0x06, 0x01, 0x78, 0xad, 0xd5, 0x2e, 0xb6, 0x6b, 0x65,
-	0x75, 0x09, 0xa6, 0x01, 0x68, 0xb5, 0xf5, 0x5a, 0xb9, 0x8d, 0x2a, 0x8d, 0x96, 0xaa, 0xf0, 0x02,
-	0x59, 0x6f, 0x3e, 0xae, 0x95, 0x8b, 0x75, 0x21, 0x48, 0xc0, 0x9b, 0x60, 0xb9, 0x5a, 0x69, 0xa9,
-	0xcb, 0xbc, 0x52, 0x36, 0xf5, 0xda, 0xe3, 0x5a, 0x83, 0xab, 0x5a, 0x6d, 0x75, 0x25, 0xf7, 0x33,
-	0xb0, 0x1a, 0x3d, 0x15, 0x71, 0x3b, 0xbd, 0xd9, 0x69, 0x54, 0x90, 0xde, 0x2c, 0xd5, 0x1a, 0x61,
-	0xca, 0xd4, 0xab, 0xc5, 0x56, 0x1b, 0xe9, 0xd5, 0x1f, 0x77, 0xaa, 0x2d, 0x5e, 0x59, 0x53, 0x60,
-	0x4d, 0xaf, 0x35, 0x1e, 0x87, 0x49, 0x95, 0xe0, 0xd3, 0xd0, 0x8b, 0x8d, 0x4a, 0xf3, 0x54, 0x5d,
-	0x86, 0x9b, 0x20, 0x33, 0x49, 0x8e, 0xea, 0x25, 0x75, 0x85, 0x03, 0x4e, 0x8b, 0x8f, 0xeb, 0xd5,
-	0x27, 0xea, 0x8d, 0xdc, 0x3b, 0x20, 0x33, 0x73, 0x85, 0x87, 0xab, 0x60, 0xa5, 0xd8, 0x69, 0x37,
-	0xd5, 0x25, 0x9e, 0xab, 0x4f, 0xde, 0x46, 0xcd, 0x46, 0xfd, 0x33, 0x55, 0x11, 0x83, 0x77, 0xc3,
-	0x41, 0x22, 0xd7, 0x06, 0xda, 0xa2, 0xbb, 0x12, 0xdc, 0x01, 0xdb, 0x9d, 0x56, 0x15, 0x95, 0x9b,
-	0x8d, 0xe3, 0xda, 0xe3, 0x8e, 0x5e, 0xad, 0xa0, 0x33, 0xbd, 0xd9, 0x6e, 0x96, 0x9b, 0x75, 0x75,
-	0x29, 0x52, 0x56, 0x9a, 0xe7, 0x8d, 0x56, 0x5b, 0xaf, 0x16, 0x4f, 0x5f, 0x2a, 0x95, 0xd2, 0xba,
-	0x78, 0x4a, 0x0b, 0x03, 0xfd, 0xf1, 0xca, 0x6a, 0x52, 0x4d, 0x7d, 0xbc, 0xb2, 0x9a, 0x51, 0xd5,
-	0xdc, 0x39, 0x80, 0x9d, 0xf9, 0x1b, 0x71, 0x11, 0xa4, 0xc3, 0x77, 0x6c, 0x24, 0x9f, 0xcc, 0xc7,
-	0xa5, 0x69, 0xf1, 0x7b, 0x42, 0x2a, 0xb4, 0x90, 0xc3, 0x1c, 0x06, 0x77, 0x16, 0x5e, 0x5b, 0x60,
-	0x05, 0xa4, 0x98, 0xe1, 0xa1, 0x0b, 0x42, 0x3c, 0x6c, 0x5b, 0x97, 0xe4, 0x8a, 0xce, 0xae, 0x6d,
-	0x78, 0x9f, 0x44, 0x30, 0x3d, 0xc9, 0x26, 0x46, 0x85, 0xbf, 0x25, 0xc0, 0xb6, 0x8c, 0xd5, 0x78,
-	0xbb, 0xb4, 0xc2, 0xce, 0x0e, 0x9e, 0x83, 0x74, 0x2b, 0x74, 0x1e, 0x02, 0x28, 0x9c, 0x79, 0xb7,
-	0x1b, 0x5b, 0xc8, 0x13, 0x32, 0x7b, 0x6f, 0xa1, 0x9e, 0x7a, 0xae, 0x43, 0x49, 0x6e, 0xe9, 0x40,
-	0xf9, 0xbe, 0x02, 0x7d, 0xb0, 0x59, 0x73, 0x0c, 0x9f, 0xf0, 0x4b, 0x07, 0xb6, 0xc7, 0xec, 0x33,
-	0xd7, 0x8b, 0x09, 0xc8, 0x9c, 0xa3, 0xc3, 0xeb, 0x40, 0xa7, 0x7c, 0x52, 0x90, 0x3a, 0x26, 0xcc,
-	0x18, 0xfc, 0xff, 0xbe, 0xe5, 0xfe, 0xd7, 0x7f, 0xfd, 0xd7, 0x6f, 0x12, 0x3b, 0xb9, 0xdb, 0x53,
-	0xff, 0x97, 0x78, 0x5f, 0xa6, 0x3c, 0x7d, 0x5f, 0x39, 0x2c, 0x3d, 0xfc, 0xfd, 0x8b, 0x3d, 0xe5,
-	0x9b, 0x17, 0x7b, 0xca, 0x5f, 0x5e, 0xec, 0x29, 0xff, 0x7c, 0xb1, 0xa7, 0x80, 0xac, 0xe5, 0x86,
-	0xbc, 0x9e, 0xef, 0x3e, 0x1b, 0x4d, 0xb9, 0x38, 0x53, 0x7e, 0xad, 0x28, 0xdd, 0xd7, 0x44, 0x59,
-	0x78, 0xf4, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x94, 0x13, 0xfd, 0x44, 0xa1, 0x19, 0x00, 0x00,
-}

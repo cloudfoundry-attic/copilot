@@ -20,6 +20,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/gogo/protobuf/types"
 
+	"istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/networking/util"
 )
@@ -39,6 +40,21 @@ func EndpointsByNetworkFilter(endpoints []endpoint.LocalityLbEndpoints, conn *Xd
 		network = ""
 	}
 
+	// calculate the multiples of weight.
+	// It is needed to normalize the LB Weight across different networks.
+	multiples := 1
+	for _, network := range env.MeshNetworks.Networks {
+		num := 0
+		registryName := getNetworkRegistry(network)
+		for _, gw := range network.Gateways {
+			addrs := getGatewayAddresses(gw, registryName, env)
+			num += len(addrs)
+		}
+		if num > 1 {
+			multiples *= num
+		}
+	}
+
 	// A new array of endpoints to be returned that will have both local and
 	// remote gateways (if any)
 	filtered := []endpoint.LocalityLbEndpoints{}
@@ -56,7 +72,7 @@ func EndpointsByNetworkFilter(endpoints []endpoint.LocalityLbEndpoints, conn *Xd
 			if epNetwork == network {
 				// This is a local endpoint
 				lbEp.LoadBalancingWeight = &types.UInt32Value{
-					Value: uint32(1),
+					Value: uint32(multiples),
 				}
 				lbEndpoints = append(lbEndpoints, lbEp)
 			} else {
@@ -65,54 +81,54 @@ func EndpointsByNetworkFilter(endpoints []endpoint.LocalityLbEndpoints, conn *Xd
 			}
 		}
 
-		// If there is no MeshNetworks configuration, we don't have gateways information
-		// so just keep the endpoint with the local ones
-		if env.MeshNetworks == nil {
-			newEp := createLocalityLbEndpoints(&ep, lbEndpoints)
-			filtered = append(filtered, *newEp)
-			continue
-		}
-
 		// Add endpoints to remote networks' gateways
 
 		// Iterate over all networks that have the cluster endpoint (weight>0) and
 		// for each one of those add a new endpoint that points to the network's
 		// gateway with the relevant weight
-		for n, w := range remoteEps {
-			networkConf, found := env.MeshNetworks.Networks[n]
+		for network, w := range remoteEps {
+			networkConf, found := env.MeshNetworks.Networks[network]
 			if !found {
+				adsLog.Debugf("the endpoints within network %s will be ignored for no network configured", network)
 				continue
 			}
 			gws := networkConf.Gateways
 			if len(gws) == 0 {
+				adsLog.Debugf("the endpoints within network %s will be ignored for no gateways configured", network)
 				continue
 			}
 
-			// There may be multiple gateways for the network. Add an LbEndpoint for
+			registryName := getNetworkRegistry(networkConf)
+			gwEps := []endpoint.LbEndpoint{}
+			// There may be multiples gateways for the network. Add an LbEndpoint for
 			// each one of them
 			for _, gw := range gws {
-				var gwEp *endpoint.LbEndpoint
-				//TODO add support for getting the gateway address from the service registry
-
-				// If the gateway address in the config was a hostname it got already resolved
-				// and replaced with an IP address when loading the config
-				if gwIP := net.ParseIP(gw.GetAddress()); gwIP != nil {
-					addr := util.BuildAddress(gw.GetAddress(), gw.Port)
-					gwEp = &endpoint.LbEndpoint{
-						HostIdentifier: &endpoint.LbEndpoint_Endpoint{
-							Endpoint: &endpoint.Endpoint{
-								Address: &addr,
+				gwAddresses := getGatewayAddresses(gw, registryName, env)
+				// If gateway addresses are found, create an endpoint for each one of them
+				if len(gwAddresses) > 0 {
+					for _, gwAddr := range gwAddresses {
+						epAddr := util.BuildAddress(gwAddr, gw.Port)
+						gwEp := &endpoint.LbEndpoint{
+							HostIdentifier: &endpoint.LbEndpoint_Endpoint{
+								Endpoint: &endpoint.Endpoint{
+									Address: &epAddr,
+								},
 							},
-						},
-						LoadBalancingWeight: &types.UInt32Value{
-							Value: w,
-						},
+							LoadBalancingWeight: &types.UInt32Value{
+								Value: w,
+							},
+						}
+						gwEps = append(gwEps, *gwEp)
 					}
 				}
-
-				if gwEp != nil {
-					lbEndpoints = append(lbEndpoints, *gwEp)
-				}
+			}
+			if len(gwEps) == 0 {
+				continue
+			}
+			weight := w * uint32(multiples/len(gwEps))
+			for _, gwEp := range gwEps {
+				gwEp.LoadBalancingWeight.Value = weight
+				lbEndpoints = append(lbEndpoints, gwEp)
 			}
 		}
 
@@ -147,8 +163,9 @@ func createLocalityLbEndpoints(base *endpoint.LocalityLbEndpoints, lbEndpoints [
 	if len(lbEndpoints) == 0 {
 		weight = nil
 	} else {
-		weight = &types.UInt32Value{
-			Value: uint32(len(lbEndpoints)),
+		weight = &types.UInt32Value{}
+		for _, lbEp := range lbEndpoints {
+			weight.Value += lbEp.GetLoadBalancingWeight().Value
 		}
 	}
 	ep := &endpoint.LocalityLbEndpoints{
@@ -163,4 +180,35 @@ func createLocalityLbEndpoints(base *endpoint.LocalityLbEndpoints, lbEndpoints [
 // LoadBalancingWeightNormalize set LoadBalancingWeight with a valid value.
 func LoadBalancingWeightNormalize(endpoints []endpoint.LocalityLbEndpoints) []endpoint.LocalityLbEndpoints {
 	return util.LocalityLbWeightNormalize(endpoints)
+}
+
+func getNetworkRegistry(network *v1alpha1.Network) string {
+	var registryName string
+	for _, eps := range network.Endpoints {
+		if eps != nil && len(eps.GetFromRegistry()) > 0 {
+			registryName = eps.GetFromRegistry()
+			break
+		}
+	}
+
+	return registryName
+}
+
+func getGatewayAddresses(gw *v1alpha1.Network_IstioNetworkGateway, registryName string, env *model.Environment) []string {
+	// First, if a gateway address is provided in the configuration use it. If the gateway address
+	// in the config was a hostname it got already resolved and replaced with an IP address
+	// when loading the config
+	if gwIP := net.ParseIP(gw.GetAddress()); gwIP != nil {
+		return []string{gw.GetAddress()}
+	}
+
+	// Second, try to find the gateway addresses by the provided service name
+	if gwSvcName := gw.GetRegistryServiceName(); len(gwSvcName) > 0 && len(registryName) > 0 {
+		svc, _ := env.GetService(model.Hostname(gwSvcName))
+		if svc != nil {
+			return svc.Attributes.ClusterExternalAddresses[registryName]
+		}
+	}
+
+	return nil
 }

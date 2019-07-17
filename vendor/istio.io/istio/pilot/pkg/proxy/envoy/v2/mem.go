@@ -73,6 +73,9 @@ type MemServiceDiscovery struct {
 	controller                    model.Controller
 	ClusterID                     string
 
+	// Used by GetProxyWorkloadLabels
+	ip2workloadLabels map[string]*model.Labels
+
 	// XDSUpdater will push EDS changes to the ADS model.
 	EDSUpdater model.XDSUpdater
 
@@ -89,6 +92,7 @@ func NewMemServiceDiscovery(services map[model.Hostname]*model.Service, versions
 		instancesByPortNum:  map[string][]*model.ServiceInstance{},
 		instancesByPortName: map[string][]*model.ServiceInstance{},
 		ip2instance:         map[string][]*model.ServiceInstance{},
+		ip2workloadLabels:   map[string]*model.Labels{},
 	}
 }
 
@@ -98,6 +102,10 @@ func (sd *MemServiceDiscovery) ClearErrors() {
 	sd.GetServiceError = nil
 	sd.InstancesError = nil
 	sd.GetProxyServiceInstancesError = nil
+}
+
+func (sd *MemServiceDiscovery) AddWorkload(ip string, labels model.Labels) {
+	sd.ip2workloadLabels[ip] = &labels
 }
 
 // AddHTTPService is a helper to add a service of type http, named 'http-main', with the
@@ -222,7 +230,7 @@ func (sd *MemServiceDiscovery) SetEndpoints(service string, endpoints []*model.I
 
 	}
 
-	sd.EDSUpdater.EDSUpdate(sd.ClusterID, service, endpoints)
+	_ = sd.EDSUpdater.EDSUpdate(sd.ClusterID, service, endpoints)
 }
 
 // Services implements discovery interface
@@ -235,10 +243,7 @@ func (sd *MemServiceDiscovery) Services() ([]*model.Service, error) {
 	}
 	out := make([]*model.Service, 0, len(sd.services))
 	for _, service := range sd.services {
-		// Make a new service out of the existing one
-		// nolint: govet
-		newSvc := *service
-		out = append(out, &newSvc)
+		out = append(out, service)
 	}
 	return out, sd.ServicesError
 }
@@ -255,10 +260,7 @@ func (sd *MemServiceDiscovery) GetService(hostname model.Hostname) (*model.Servi
 	if val == nil {
 		return nil, errors.New("missing service")
 	}
-	// Make a new service out of the existing one
-	// nolint: govet
-	newSvc := *val
-	return &newSvc, sd.GetServiceError
+	return val, sd.GetServiceError
 }
 
 // Instances filters the service instances by labels. This assumes single port, as is
@@ -320,19 +322,24 @@ func (sd *MemServiceDiscovery) GetProxyServiceInstances(node *model.Proxy) ([]*m
 	return out, sd.GetProxyServiceInstancesError
 }
 
+func (sd *MemServiceDiscovery) GetProxyWorkloadLabels(proxy *model.Proxy) (model.LabelsCollection, error) {
+	sd.mutex.Lock()
+	defer sd.mutex.Unlock()
+	out := make(model.LabelsCollection, 0)
+
+	for _, ip := range proxy.IPAddresses {
+		if labels, found := sd.ip2workloadLabels[ip]; found {
+			out = append(out, *labels)
+		}
+	}
+	return out, nil
+}
+
 // ManagementPorts implements discovery interface
 func (sd *MemServiceDiscovery) ManagementPorts(addr string) model.PortList {
 	sd.mutex.Lock()
 	defer sd.mutex.Unlock()
-	return model.PortList{{
-		Name:     "http",
-		Port:     3333,
-		Protocol: model.ProtocolHTTP,
-	}, {
-		Name:     "custom",
-		Port:     9999,
-		Protocol: model.ProtocolTCP,
-	}}
+	return nil
 }
 
 // WorkloadHealthCheckInfo implements discovery interface

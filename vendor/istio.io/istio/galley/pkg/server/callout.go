@@ -17,20 +17,26 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/galley/pkg/authplugins"
 	"istio.io/istio/pkg/mcp/source"
+	"istio.io/pkg/version"
 )
 
+const versionMetadataKey = "config.source.version"
+
 type callout struct {
-	address string
-	so      *source.Options
-	do      []grpc.DialOption
-	cancel  context.CancelFunc
-	pt      calloutPatchTable
+	address  string
+	so       *source.Options
+	do       []grpc.DialOption
+	cancel   context.CancelFunc
+	pt       calloutPatchTable
+	metadata []string
 }
 
 // Test override types
@@ -56,11 +62,18 @@ func defaultCalloutPT() calloutPatchTable {
 	}
 }
 
-func newCallout(address, auth string, so *source.Options) (*callout, error) {
-	return newCalloutPT(address, auth, so, defaultCalloutPT())
+// newCallout initializes a callout struct. Address should be the
+// "host:port" of the server to dial. Auth should be the name of an
+// existing auth plugin under
+// istio.io/istio/galley/pkg/authplugins. Metadata elements should be
+// in the format of "key=value".
+func newCallout(address, auth string, metadata []string,
+	so *source.Options) (*callout, error) {
+	return newCalloutPT(address, auth, metadata, so, defaultCalloutPT())
 }
 
-func newCalloutPT(address, auth string, so *source.Options, pt calloutPatchTable) (*callout, error) {
+func newCalloutPT(address, auth string, metadata []string, so *source.Options,
+	pt calloutPatchTable) (*callout, error) {
 	auths := authplugins.AuthMap()
 
 	f, ok := auths[auth]
@@ -73,11 +86,24 @@ func newCalloutPT(address, auth string, so *source.Options, pt calloutPatchTable
 		return nil, err
 	}
 
+	m := make([]string, 0)
+
+	for _, v := range metadata {
+		kv := strings.Split(v, "=")
+		if len(kv) != 2 || kv[0] == "" || kv[1] == "" {
+			return nil, fmt.Errorf(
+				"sinkMeta not in key=value format: %v", v)
+		}
+		m = append(m, kv[0], kv[1])
+	}
+	m = append(m, versionMetadataKey, version.Info.Version)
+
 	return &callout{
-		address: address,
-		so:      so,
-		do:      opts,
-		pt:      pt,
+		address:  address,
+		so:       so,
+		do:       opts,
+		pt:       pt,
+		metadata: m,
 	}, nil
 }
 
@@ -96,6 +122,7 @@ func (c *callout) Run() {
 
 	mcpClient := c.pt.sourceNewClient(client, c.so)
 	scope.Infof("Starting MCP Source Client connection to: %v", c.address)
+	ctx = metadata.AppendToOutgoingContext(ctx, c.metadata...)
 	mcpClient.Run(ctx)
 }
 

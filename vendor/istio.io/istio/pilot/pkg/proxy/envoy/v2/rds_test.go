@@ -14,6 +14,7 @@
 package v2_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -27,57 +28,55 @@ func TestRDS(t *testing.T) {
 	_, tearDown := initLocalPilotTestEnv(t)
 	defer tearDown()
 
-	t.Run("sidecar", func(t *testing.T) {
-		rdsr, cancel, err := connectADS(util.MockPilotGrpcAddr)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer cancel()
+	tests := []struct {
+		name   string
+		node   string
+		routes []string
+	}{
+		{
+			"sidecar_new",
+			sidecarID(app3Ip, "app3"),
+			[]string{"80", "8080"},
+		},
+		{
+			"gateway_new",
+			gatewayID(gatewayIP),
+			[]string{"http.80", "https.443.https.my-gateway.testns"},
+		},
+		{
+			// Even if we get a bad route, we should still send Envoy an empty response, rather than
+			// ignore it. If we ignore the route, the listeners can get stuck waiting forever.
+			"sidecar_badroute",
+			sidecarID(app3Ip, "app3"),
+			[]string{"ht&p"},
+		},
+	}
 
-		err = sendRDSReq(sidecarID(app3Ip, "app3"), []string{"80", "8080"}, "", rdsr)
-		if err != nil {
-			t.Fatal(err)
-		}
+	for idx, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rdsr, cancel, err := connectADS(util.MockPilotGrpcAddr)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer cancel()
 
-		res, err := rdsr.Recv()
-		if err != nil {
-			t.Fatal("Failed to receive RDS", err)
-		}
+			err = sendRDSReq(tt.node, tt.routes, "", rdsr)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		strResponse, _ := model.ToJSONWithIndent(res, " ")
-		_ = ioutil.WriteFile(env.IstioOut+"/rdsv2_sidecar.json", []byte(strResponse), 0644)
+			res, err := rdsr.Recv()
+			if err != nil {
+				t.Fatal("Failed to receive RDS", err)
+			}
 
-		if len(res.Resources) == 0 {
-			t.Fatal("No response")
-		}
-	})
-
-	t.Run("gateway", func(t *testing.T) {
-		rdsr, cancel, err := connectADS(util.MockPilotGrpcAddr)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer cancel()
-
-		err = sendRDSReq(gatewayID(gatewayIP), []string{"http.80", "https.443.https"}, "", rdsr)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		res, err := rdsr.Recv()
-		if err != nil {
-			t.Fatal("Failed to receive RDS", err)
-			return
-		}
-
-		strResponse, _ := model.ToJSONWithIndent(res, " ")
-
-		_ = ioutil.WriteFile(env.IstioOut+"/rdsv2_gateway.json", []byte(strResponse), 0644)
-
-		if len(res.Resources) == 0 {
-			t.Fatal("No response")
-		}
-	})
+			strResponse, _ := model.ToJSONWithIndent(res, " ")
+			_ = ioutil.WriteFile(env.IstioOut+fmt.Sprintf("/rdsv2/%s_%d.json", tt.name, idx), []byte(strResponse), 0644)
+			if len(res.Resources) == 0 {
+				t.Fatal("No response")
+			}
+		})
+	}
 
 	// TODO: compare with some golden once it's stable
 	// check that each mocked service and destination rule has a corresponding resource

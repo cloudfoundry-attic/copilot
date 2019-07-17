@@ -25,7 +25,7 @@ import (
 	"istio.io/istio/galley/pkg/source/kube/schema"
 	"istio.io/istio/galley/pkg/source/kube/stats"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -151,6 +151,32 @@ var (
 			},
 			parseJSON: func(input []byte) (interface{}, error) {
 				out := &v1.Endpoints{}
+				if _, _, err := deserializer.Decode(input, nil, out); err != nil {
+					return nil, err
+				}
+				return out, nil
+			},
+		},
+		"Namespace": {
+			spec:    getSpec("Namespace"),
+			isEqual: resourceVersionsMatch,
+			extractObject: func(o interface{}) metav1.Object {
+				if obj, ok := o.(metav1.Object); ok {
+					return obj
+				}
+				return nil
+			},
+			extractResource: func(o interface{}) proto.Message {
+				if obj, ok := o.(*v1.Namespace); ok {
+					return &obj.Spec
+				}
+				return nil
+			},
+			newInformer: func(sharedInformers informers.SharedInformerFactory) cache.SharedIndexInformer {
+				return sharedInformers.Core().V1().Namespaces().Informer()
+			},
+			parseJSON: func(input []byte) (interface{}, error) {
+				out := &v1.Namespace{}
 				if _, _, err := deserializer.Decode(input, nil, out); err != nil {
 					return nil, err
 				}

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -38,6 +39,7 @@ func TestStatusWriter_PrintAll(t *testing.T) {
 			input: map[string][]v2.SyncStatus{
 				"pilot1": statusInput1(),
 				"pilot2": statusInput2(),
+				"pilot3": statusInput3(),
 			},
 			want: "testdata/multiStatusMultiPilot.txt",
 		},
@@ -110,6 +112,14 @@ func TestStatusWriter_PrintSingle(t *testing.T) {
 			want:      "testdata/singleStatus.txt",
 		},
 		{
+			name: "fallback to proxy version",
+			input: map[string][]v2.SyncStatus{
+				"pilot2": statusInputProxyVersion(),
+			},
+			filterPod: "proxy2",
+			want:      "testdata/singleStatusFallback.txt",
+		},
+		{
 			name: "error if given non-syncstatus info",
 			input: map[string][]v2.SyncStatus{
 				"pilot1": {},
@@ -149,7 +159,7 @@ func statusInput1() []v2.SyncStatus {
 	return []v2.SyncStatus{
 		{
 			ProxyID:         "proxy1",
-			ProxyVersion:    "1.0",
+			IstioVersion:    "1.1",
 			ClusterSent:     "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
 			ClusterAcked:    "2009-11-10 22:00:00 +0000 UTC m=+0.000000001",
 			ListenerSent:    "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
@@ -165,7 +175,40 @@ func statusInput2() []v2.SyncStatus {
 	return []v2.SyncStatus{
 		{
 			ProxyID:       "proxy2",
-			ProxyVersion:  "1.0",
+			IstioVersion:  "1.1",
+			ClusterSent:   "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			ClusterAcked:  "2009-11-10 22:00:00 +0000 UTC m=+0.000000001",
+			ListenerSent:  "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			ListenerAcked: "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			EndpointSent:  "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			EndpointAcked: "2009-11-10 22:00:00 +0000 UTC m=+0.000000001",
+			RouteSent:     "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			RouteAcked:    "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+		},
+	}
+}
+
+func statusInput3() []v2.SyncStatus {
+	return []v2.SyncStatus{
+		{
+			ProxyID:       "proxy3",
+			IstioVersion:  "1.1",
+			ClusterSent:   "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			ClusterAcked:  time.Time{}.String(),
+			ListenerAcked: "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			EndpointSent:  "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			EndpointAcked: time.Time{}.String(),
+			RouteSent:     "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+			RouteAcked:    "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
+		},
+	}
+}
+
+func statusInputProxyVersion() []v2.SyncStatus {
+	return []v2.SyncStatus{
+		{
+			ProxyID:       "proxy2",
+			ProxyVersion:  "1.1",
 			ClusterSent:   "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",
 			ClusterAcked:  "2009-11-10 22:00:00 +0000 UTC m=+0.000000001",
 			ListenerSent:  "2009-11-10 23:00:00 +0000 UTC m=+0.000000001",

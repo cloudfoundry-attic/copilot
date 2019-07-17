@@ -99,6 +99,7 @@ func (b *InMemoryBuilder) SetEntry(collection, name, version string, createTime 
 
 // DeleteEntry deletes the named entry within the given collection.
 func (b *InMemoryBuilder) DeleteEntry(collection string, name string) {
+
 	entries, found := b.snapshot.resources[collection]
 	if !found {
 		return
@@ -179,7 +180,7 @@ func (s *InMemory) Builder() *InMemoryBuilder {
 func (s *InMemory) String() string {
 	var b bytes.Buffer
 
-	var messages []string
+	messages := make([]string, 0, len(s.resources))
 	for message := range s.resources {
 		messages = append(messages, message)
 	}

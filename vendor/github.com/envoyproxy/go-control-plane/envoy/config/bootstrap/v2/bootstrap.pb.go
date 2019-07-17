@@ -3,25 +3,25 @@
 
 package v2
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v23 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-import auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-import core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-import v2 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v2"
-import v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/overload/v2alpha"
-import v22 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
-import v21 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v2"
-import _ "github.com/gogo/protobuf/gogoproto"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	fmt "fmt"
+	io "io"
+	math "math"
+	time "time"
 
-import time "time"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	types "github.com/gogo/protobuf/types"
 
-import github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-
-import io "io"
+	v22 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v2"
+	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/overload/v2alpha"
+	v21 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v2"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -66,27 +66,35 @@ type Bootstrap struct {
 	// Configuration for an external tracing provider. If not specified, no
 	// tracing will be performed.
 	Tracing *v21.Tracing `protobuf:"bytes,9,opt,name=tracing,proto3" json:"tracing,omitempty"`
-	// Configuration for an external rate limit service provider. If not
-	// specified, any calls to the rate limit service will immediately return
-	// success.
-	RateLimitService *v22.RateLimitServiceConfig `protobuf:"bytes,10,opt,name=rate_limit_service,json=rateLimitService,proto3" json:"rate_limit_service,omitempty"` // Deprecated: Do not use.
-	// Configuration for the runtime configuration provider. If not specified, a
-	// “null” provider will be used which will result in all defaults being used.
-	Runtime *Runtime `protobuf:"bytes,11,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	// Configuration for the runtime configuration provider (deprecated). If not
+	// specified, a “null” provider will be used which will result in all defaults
+	// being used.
+	Runtime *Runtime `protobuf:"bytes,11,opt,name=runtime,proto3" json:"runtime,omitempty"` // Deprecated: Do not use.
+	// Configuration for the runtime configuration provider. If not
+	// specified, a “null” provider will be used which will result in all defaults
+	// being used.
+	LayeredRuntime *LayeredRuntime `protobuf:"bytes,17,opt,name=layered_runtime,json=layeredRuntime,proto3" json:"layered_runtime,omitempty"`
 	// Configuration for the local administration HTTP server.
 	Admin *Admin `protobuf:"bytes,12,opt,name=admin,proto3" json:"admin,omitempty"`
 	// Optional overload manager configuration.
-	OverloadManager      *v2alpha.OverloadManager `protobuf:"bytes,15,opt,name=overload_manager,json=overloadManager,proto3" json:"overload_manager,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
-	XXX_unrecognized     []byte                   `json:"-"`
-	XXX_sizecache        int32                    `json:"-"`
+	OverloadManager *v2alpha.OverloadManager `protobuf:"bytes,15,opt,name=overload_manager,json=overloadManager,proto3" json:"overload_manager,omitempty"`
+	// Enable :ref:`stats for event dispatcher <operations_performance>`, defaults to false.
+	// Note that this records a value for each iteration of the event loop on every thread. This
+	// should normally be minimal overhead, but when using
+	// :ref:`statsd <envoy_api_msg_config.metrics.v2.StatsdSink>`, it will send each observed value
+	// over the wire individually because the statsd protocol doesn't have any way to represent a
+	// histogram summary. Be aware that this can be a very large volume of data.
+	EnableDispatcherStats bool     `protobuf:"varint,16,opt,name=enable_dispatcher_stats,json=enableDispatcherStats,proto3" json:"enable_dispatcher_stats,omitempty"`
+	XXX_NoUnkeyedLiteral  struct{} `json:"-"`
+	XXX_unrecognized      []byte   `json:"-"`
+	XXX_sizecache         int32    `json:"-"`
 }
 
 func (m *Bootstrap) Reset()         { *m = Bootstrap{} }
 func (m *Bootstrap) String() string { return proto.CompactTextString(m) }
 func (*Bootstrap) ProtoMessage()    {}
 func (*Bootstrap) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{0}
+	return fileDescriptor_f1197defdf9c5e6a, []int{0}
 }
 func (m *Bootstrap) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -103,8 +111,8 @@ func (m *Bootstrap) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Bootstrap) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Bootstrap.Merge(dst, src)
+func (m *Bootstrap) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Bootstrap.Merge(m, src)
 }
 func (m *Bootstrap) XXX_Size() int {
 	return m.Size()
@@ -193,16 +201,16 @@ func (m *Bootstrap) GetTracing() *v21.Tracing {
 }
 
 // Deprecated: Do not use.
-func (m *Bootstrap) GetRateLimitService() *v22.RateLimitServiceConfig {
+func (m *Bootstrap) GetRuntime() *Runtime {
 	if m != nil {
-		return m.RateLimitService
+		return m.Runtime
 	}
 	return nil
 }
 
-func (m *Bootstrap) GetRuntime() *Runtime {
+func (m *Bootstrap) GetLayeredRuntime() *LayeredRuntime {
 	if m != nil {
-		return m.Runtime
+		return m.LayeredRuntime
 	}
 	return nil
 }
@@ -221,17 +229,24 @@ func (m *Bootstrap) GetOverloadManager() *v2alpha.OverloadManager {
 	return nil
 }
 
+func (m *Bootstrap) GetEnableDispatcherStats() bool {
+	if m != nil {
+		return m.EnableDispatcherStats
+	}
+	return false
+}
+
 type Bootstrap_StaticResources struct {
 	// Static :ref:`Listeners <envoy_api_msg_Listener>`. These listeners are
 	// available regardless of LDS configuration.
-	Listeners []v23.Listener `protobuf:"bytes,1,rep,name=listeners,proto3" json:"listeners"`
+	Listeners []v22.Listener `protobuf:"bytes,1,rep,name=listeners,proto3" json:"listeners"`
 	// If a network based configuration source is specified for :ref:`cds_config
 	// <envoy_api_field_config.bootstrap.v2.Bootstrap.DynamicResources.cds_config>`, it's necessary
 	// to have some initial cluster definitions available to allow Envoy to know
 	// how to speak to the management server. These cluster definitions may not
 	// use :ref:`EDS <arch_overview_dynamic_config_eds>` (i.e. they should be static
 	// IP or DNS-based).
-	Clusters []v23.Cluster `protobuf:"bytes,2,rep,name=clusters,proto3" json:"clusters"`
+	Clusters []v22.Cluster `protobuf:"bytes,2,rep,name=clusters,proto3" json:"clusters"`
 	// These static secrets can be used by :ref:`SdsSecretConfig
 	// <envoy_api_msg_auth.SdsSecretConfig>`
 	Secrets              []auth.Secret `protobuf:"bytes,3,rep,name=secrets,proto3" json:"secrets"`
@@ -244,7 +259,7 @@ func (m *Bootstrap_StaticResources) Reset()         { *m = Bootstrap_StaticResou
 func (m *Bootstrap_StaticResources) String() string { return proto.CompactTextString(m) }
 func (*Bootstrap_StaticResources) ProtoMessage()    {}
 func (*Bootstrap_StaticResources) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{0, 0}
+	return fileDescriptor_f1197defdf9c5e6a, []int{0, 0}
 }
 func (m *Bootstrap_StaticResources) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -261,8 +276,8 @@ func (m *Bootstrap_StaticResources) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (dst *Bootstrap_StaticResources) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Bootstrap_StaticResources.Merge(dst, src)
+func (m *Bootstrap_StaticResources) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Bootstrap_StaticResources.Merge(m, src)
 }
 func (m *Bootstrap_StaticResources) XXX_Size() int {
 	return m.Size()
@@ -273,14 +288,14 @@ func (m *Bootstrap_StaticResources) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Bootstrap_StaticResources proto.InternalMessageInfo
 
-func (m *Bootstrap_StaticResources) GetListeners() []v23.Listener {
+func (m *Bootstrap_StaticResources) GetListeners() []v22.Listener {
 	if m != nil {
 		return m.Listeners
 	}
 	return nil
 }
 
-func (m *Bootstrap_StaticResources) GetClusters() []v23.Cluster {
+func (m *Bootstrap_StaticResources) GetClusters() []v22.Cluster {
 	if m != nil {
 		return m.Clusters
 	}
@@ -319,7 +334,7 @@ func (m *Bootstrap_DynamicResources) Reset()         { *m = Bootstrap_DynamicRes
 func (m *Bootstrap_DynamicResources) String() string { return proto.CompactTextString(m) }
 func (*Bootstrap_DynamicResources) ProtoMessage()    {}
 func (*Bootstrap_DynamicResources) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{0, 1}
+	return fileDescriptor_f1197defdf9c5e6a, []int{0, 1}
 }
 func (m *Bootstrap_DynamicResources) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -336,8 +351,8 @@ func (m *Bootstrap_DynamicResources) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (dst *Bootstrap_DynamicResources) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Bootstrap_DynamicResources.Merge(dst, src)
+func (m *Bootstrap_DynamicResources) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Bootstrap_DynamicResources.Merge(m, src)
 }
 func (m *Bootstrap_DynamicResources) XXX_Size() int {
 	return m.Size()
@@ -391,7 +406,7 @@ func (m *Admin) Reset()         { *m = Admin{} }
 func (m *Admin) String() string { return proto.CompactTextString(m) }
 func (*Admin) ProtoMessage()    {}
 func (*Admin) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{1}
+	return fileDescriptor_f1197defdf9c5e6a, []int{1}
 }
 func (m *Admin) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -408,8 +423,8 @@ func (m *Admin) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Admin) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Admin.Merge(dst, src)
+func (m *Admin) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Admin.Merge(m, src)
 }
 func (m *Admin) XXX_Size() int {
 	return m.Size()
@@ -472,7 +487,7 @@ func (m *ClusterManager) Reset()         { *m = ClusterManager{} }
 func (m *ClusterManager) String() string { return proto.CompactTextString(m) }
 func (*ClusterManager) ProtoMessage()    {}
 func (*ClusterManager) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{2}
+	return fileDescriptor_f1197defdf9c5e6a, []int{2}
 }
 func (m *ClusterManager) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -489,8 +504,8 @@ func (m *ClusterManager) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (dst *ClusterManager) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClusterManager.Merge(dst, src)
+func (m *ClusterManager) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClusterManager.Merge(m, src)
 }
 func (m *ClusterManager) XXX_Size() int {
 	return m.Size()
@@ -541,7 +556,7 @@ func (m *ClusterManager_OutlierDetection) Reset()         { *m = ClusterManager_
 func (m *ClusterManager_OutlierDetection) String() string { return proto.CompactTextString(m) }
 func (*ClusterManager_OutlierDetection) ProtoMessage()    {}
 func (*ClusterManager_OutlierDetection) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{2, 0}
+	return fileDescriptor_f1197defdf9c5e6a, []int{2, 0}
 }
 func (m *ClusterManager_OutlierDetection) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -558,8 +573,8 @@ func (m *ClusterManager_OutlierDetection) XXX_Marshal(b []byte, deterministic bo
 		return b[:n], nil
 	}
 }
-func (dst *ClusterManager_OutlierDetection) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClusterManager_OutlierDetection.Merge(dst, src)
+func (m *ClusterManager_OutlierDetection) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClusterManager_OutlierDetection.Merge(m, src)
 }
 func (m *ClusterManager_OutlierDetection) XXX_Size() int {
 	return m.Size()
@@ -604,7 +619,7 @@ func (m *Watchdog) Reset()         { *m = Watchdog{} }
 func (m *Watchdog) String() string { return proto.CompactTextString(m) }
 func (*Watchdog) ProtoMessage()    {}
 func (*Watchdog) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{3}
+	return fileDescriptor_f1197defdf9c5e6a, []int{3}
 }
 func (m *Watchdog) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -621,8 +636,8 @@ func (m *Watchdog) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Watchdog) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Watchdog.Merge(dst, src)
+func (m *Watchdog) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Watchdog.Merge(m, src)
 }
 func (m *Watchdog) XXX_Size() int {
 	return m.Size()
@@ -661,13 +676,14 @@ func (m *Watchdog) GetMultikillTimeout() *types.Duration {
 	return nil
 }
 
-// Runtime :ref:`configuration overview <config_runtime>`.
+// Runtime :ref:`configuration overview <config_runtime>` (deprecated).
 type Runtime struct {
 	// The implementation assumes that the file system tree is accessed via a
 	// symbolic link. An atomic link swap is used when a new tree should be
 	// switched to. This parameter specifies the path to the symbolic link. Envoy
 	// will watch the location for changes and reload the file system tree when
-	// they happen.
+	// they happen. If this parameter is not set, there will be no disk based
+	// runtime.
 	SymlinkRoot string `protobuf:"bytes,1,opt,name=symlink_root,json=symlinkRoot,proto3" json:"symlink_root,omitempty"`
 	// Specifies the subdirectory to load within the root directory. This is
 	// useful if multiple systems share the same delivery mechanism. Envoy
@@ -679,17 +695,22 @@ type Runtime struct {
 	// useful when Envoy is deployed across many different types of servers.
 	// Sometimes it is useful to have a per service cluster directory for runtime
 	// configuration. See below for exactly how the override directory is used.
-	OverrideSubdirectory string   `protobuf:"bytes,3,opt,name=override_subdirectory,json=overrideSubdirectory,proto3" json:"override_subdirectory,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	OverrideSubdirectory string `protobuf:"bytes,3,opt,name=override_subdirectory,json=overrideSubdirectory,proto3" json:"override_subdirectory,omitempty"`
+	// Static base runtime. This will be :ref:`overridden
+	// <config_runtime_layering>` by other runtime layers, e.g.
+	// disk or admin. This follows the :ref:`runtime protobuf JSON representation
+	// encoding <config_runtime_proto_json>`.
+	Base                 *types.Struct `protobuf:"bytes,4,opt,name=base,proto3" json:"base,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *Runtime) Reset()         { *m = Runtime{} }
 func (m *Runtime) String() string { return proto.CompactTextString(m) }
 func (*Runtime) ProtoMessage()    {}
 func (*Runtime) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bootstrap_8fe415d0148933ad, []int{4}
+	return fileDescriptor_f1197defdf9c5e6a, []int{4}
 }
 func (m *Runtime) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -706,8 +727,8 @@ func (m *Runtime) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Runtime) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Runtime.Merge(dst, src)
+func (m *Runtime) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Runtime.Merge(m, src)
 }
 func (m *Runtime) XXX_Size() int {
 	return m.Size()
@@ -739,6 +760,463 @@ func (m *Runtime) GetOverrideSubdirectory() string {
 	return ""
 }
 
+func (m *Runtime) GetBase() *types.Struct {
+	if m != nil {
+		return m.Base
+	}
+	return nil
+}
+
+type RuntimeLayer struct {
+	// Descriptive name for the runtime layer. This is only used for the runtime
+	// :http:get:`/runtime` output.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Types that are valid to be assigned to LayerSpecifier:
+	//	*RuntimeLayer_StaticLayer
+	//	*RuntimeLayer_DiskLayer_
+	//	*RuntimeLayer_AdminLayer_
+	//	*RuntimeLayer_RtdsLayer_
+	LayerSpecifier       isRuntimeLayer_LayerSpecifier `protobuf_oneof:"layer_specifier"`
+	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
+	XXX_unrecognized     []byte                        `json:"-"`
+	XXX_sizecache        int32                         `json:"-"`
+}
+
+func (m *RuntimeLayer) Reset()         { *m = RuntimeLayer{} }
+func (m *RuntimeLayer) String() string { return proto.CompactTextString(m) }
+func (*RuntimeLayer) ProtoMessage()    {}
+func (*RuntimeLayer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f1197defdf9c5e6a, []int{5}
+}
+func (m *RuntimeLayer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RuntimeLayer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RuntimeLayer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RuntimeLayer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RuntimeLayer.Merge(m, src)
+}
+func (m *RuntimeLayer) XXX_Size() int {
+	return m.Size()
+}
+func (m *RuntimeLayer) XXX_DiscardUnknown() {
+	xxx_messageInfo_RuntimeLayer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RuntimeLayer proto.InternalMessageInfo
+
+type isRuntimeLayer_LayerSpecifier interface {
+	isRuntimeLayer_LayerSpecifier()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type RuntimeLayer_StaticLayer struct {
+	StaticLayer *types.Struct `protobuf:"bytes,2,opt,name=static_layer,json=staticLayer,proto3,oneof"`
+}
+type RuntimeLayer_DiskLayer_ struct {
+	DiskLayer *RuntimeLayer_DiskLayer `protobuf:"bytes,3,opt,name=disk_layer,json=diskLayer,proto3,oneof"`
+}
+type RuntimeLayer_AdminLayer_ struct {
+	AdminLayer *RuntimeLayer_AdminLayer `protobuf:"bytes,4,opt,name=admin_layer,json=adminLayer,proto3,oneof"`
+}
+type RuntimeLayer_RtdsLayer_ struct {
+	RtdsLayer *RuntimeLayer_RtdsLayer `protobuf:"bytes,5,opt,name=rtds_layer,json=rtdsLayer,proto3,oneof"`
+}
+
+func (*RuntimeLayer_StaticLayer) isRuntimeLayer_LayerSpecifier() {}
+func (*RuntimeLayer_DiskLayer_) isRuntimeLayer_LayerSpecifier()  {}
+func (*RuntimeLayer_AdminLayer_) isRuntimeLayer_LayerSpecifier() {}
+func (*RuntimeLayer_RtdsLayer_) isRuntimeLayer_LayerSpecifier()  {}
+
+func (m *RuntimeLayer) GetLayerSpecifier() isRuntimeLayer_LayerSpecifier {
+	if m != nil {
+		return m.LayerSpecifier
+	}
+	return nil
+}
+
+func (m *RuntimeLayer) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *RuntimeLayer) GetStaticLayer() *types.Struct {
+	if x, ok := m.GetLayerSpecifier().(*RuntimeLayer_StaticLayer); ok {
+		return x.StaticLayer
+	}
+	return nil
+}
+
+func (m *RuntimeLayer) GetDiskLayer() *RuntimeLayer_DiskLayer {
+	if x, ok := m.GetLayerSpecifier().(*RuntimeLayer_DiskLayer_); ok {
+		return x.DiskLayer
+	}
+	return nil
+}
+
+func (m *RuntimeLayer) GetAdminLayer() *RuntimeLayer_AdminLayer {
+	if x, ok := m.GetLayerSpecifier().(*RuntimeLayer_AdminLayer_); ok {
+		return x.AdminLayer
+	}
+	return nil
+}
+
+func (m *RuntimeLayer) GetRtdsLayer() *RuntimeLayer_RtdsLayer {
+	if x, ok := m.GetLayerSpecifier().(*RuntimeLayer_RtdsLayer_); ok {
+		return x.RtdsLayer
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*RuntimeLayer) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _RuntimeLayer_OneofMarshaler, _RuntimeLayer_OneofUnmarshaler, _RuntimeLayer_OneofSizer, []interface{}{
+		(*RuntimeLayer_StaticLayer)(nil),
+		(*RuntimeLayer_DiskLayer_)(nil),
+		(*RuntimeLayer_AdminLayer_)(nil),
+		(*RuntimeLayer_RtdsLayer_)(nil),
+	}
+}
+
+func _RuntimeLayer_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*RuntimeLayer)
+	// layer_specifier
+	switch x := m.LayerSpecifier.(type) {
+	case *RuntimeLayer_StaticLayer:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.StaticLayer); err != nil {
+			return err
+		}
+	case *RuntimeLayer_DiskLayer_:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DiskLayer); err != nil {
+			return err
+		}
+	case *RuntimeLayer_AdminLayer_:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.AdminLayer); err != nil {
+			return err
+		}
+	case *RuntimeLayer_RtdsLayer_:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RtdsLayer); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("RuntimeLayer.LayerSpecifier has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _RuntimeLayer_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*RuntimeLayer)
+	switch tag {
+	case 2: // layer_specifier.static_layer
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(types.Struct)
+		err := b.DecodeMessage(msg)
+		m.LayerSpecifier = &RuntimeLayer_StaticLayer{msg}
+		return true, err
+	case 3: // layer_specifier.disk_layer
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RuntimeLayer_DiskLayer)
+		err := b.DecodeMessage(msg)
+		m.LayerSpecifier = &RuntimeLayer_DiskLayer_{msg}
+		return true, err
+	case 4: // layer_specifier.admin_layer
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RuntimeLayer_AdminLayer)
+		err := b.DecodeMessage(msg)
+		m.LayerSpecifier = &RuntimeLayer_AdminLayer_{msg}
+		return true, err
+	case 5: // layer_specifier.rtds_layer
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RuntimeLayer_RtdsLayer)
+		err := b.DecodeMessage(msg)
+		m.LayerSpecifier = &RuntimeLayer_RtdsLayer_{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _RuntimeLayer_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*RuntimeLayer)
+	// layer_specifier
+	switch x := m.LayerSpecifier.(type) {
+	case *RuntimeLayer_StaticLayer:
+		s := proto.Size(x.StaticLayer)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *RuntimeLayer_DiskLayer_:
+		s := proto.Size(x.DiskLayer)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *RuntimeLayer_AdminLayer_:
+		s := proto.Size(x.AdminLayer)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *RuntimeLayer_RtdsLayer_:
+		s := proto.Size(x.RtdsLayer)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// :ref:`Disk runtime <config_runtime_local_disk>` layer.
+type RuntimeLayer_DiskLayer struct {
+	// The implementation assumes that the file system tree is accessed via a
+	// symbolic link. An atomic link swap is used when a new tree should be
+	// switched to. This parameter specifies the path to the symbolic link.
+	// Envoy will watch the location for changes and reload the file system tree
+	// when they happen. See documentation on runtime :ref:`atomicity
+	// <config_runtime_atomicity>` for further details on how reloads are
+	// treated.
+	SymlinkRoot string `protobuf:"bytes,1,opt,name=symlink_root,json=symlinkRoot,proto3" json:"symlink_root,omitempty"`
+	// Specifies the subdirectory to load within the root directory. This is
+	// useful if multiple systems share the same delivery mechanism. Envoy
+	// configuration elements can be contained in a dedicated subdirectory.
+	Subdirectory string `protobuf:"bytes,3,opt,name=subdirectory,proto3" json:"subdirectory,omitempty"`
+	// :ref:`Append <config_runtime_local_disk_service_cluster_subdirs>` the
+	// service cluster to the path under symlink root.
+	AppendServiceCluster bool     `protobuf:"varint,2,opt,name=append_service_cluster,json=appendServiceCluster,proto3" json:"append_service_cluster,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RuntimeLayer_DiskLayer) Reset()         { *m = RuntimeLayer_DiskLayer{} }
+func (m *RuntimeLayer_DiskLayer) String() string { return proto.CompactTextString(m) }
+func (*RuntimeLayer_DiskLayer) ProtoMessage()    {}
+func (*RuntimeLayer_DiskLayer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f1197defdf9c5e6a, []int{5, 0}
+}
+func (m *RuntimeLayer_DiskLayer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RuntimeLayer_DiskLayer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RuntimeLayer_DiskLayer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RuntimeLayer_DiskLayer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RuntimeLayer_DiskLayer.Merge(m, src)
+}
+func (m *RuntimeLayer_DiskLayer) XXX_Size() int {
+	return m.Size()
+}
+func (m *RuntimeLayer_DiskLayer) XXX_DiscardUnknown() {
+	xxx_messageInfo_RuntimeLayer_DiskLayer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RuntimeLayer_DiskLayer proto.InternalMessageInfo
+
+func (m *RuntimeLayer_DiskLayer) GetSymlinkRoot() string {
+	if m != nil {
+		return m.SymlinkRoot
+	}
+	return ""
+}
+
+func (m *RuntimeLayer_DiskLayer) GetSubdirectory() string {
+	if m != nil {
+		return m.Subdirectory
+	}
+	return ""
+}
+
+func (m *RuntimeLayer_DiskLayer) GetAppendServiceCluster() bool {
+	if m != nil {
+		return m.AppendServiceCluster
+	}
+	return false
+}
+
+// :ref:`Admin console runtime <config_runtime_admin>` layer.
+type RuntimeLayer_AdminLayer struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RuntimeLayer_AdminLayer) Reset()         { *m = RuntimeLayer_AdminLayer{} }
+func (m *RuntimeLayer_AdminLayer) String() string { return proto.CompactTextString(m) }
+func (*RuntimeLayer_AdminLayer) ProtoMessage()    {}
+func (*RuntimeLayer_AdminLayer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f1197defdf9c5e6a, []int{5, 1}
+}
+func (m *RuntimeLayer_AdminLayer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RuntimeLayer_AdminLayer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RuntimeLayer_AdminLayer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RuntimeLayer_AdminLayer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RuntimeLayer_AdminLayer.Merge(m, src)
+}
+func (m *RuntimeLayer_AdminLayer) XXX_Size() int {
+	return m.Size()
+}
+func (m *RuntimeLayer_AdminLayer) XXX_DiscardUnknown() {
+	xxx_messageInfo_RuntimeLayer_AdminLayer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RuntimeLayer_AdminLayer proto.InternalMessageInfo
+
+// :ref:`Runtime Discovery Service (RTDS) <config_runtime_rtds>` layer.
+type RuntimeLayer_RtdsLayer struct {
+	// Resource to subscribe to at *rtds_config* for the RTDS layer.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// RTDS configuration source.
+	RtdsConfig           *core.ConfigSource `protobuf:"bytes,2,opt,name=rtds_config,json=rtdsConfig,proto3" json:"rtds_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
+}
+
+func (m *RuntimeLayer_RtdsLayer) Reset()         { *m = RuntimeLayer_RtdsLayer{} }
+func (m *RuntimeLayer_RtdsLayer) String() string { return proto.CompactTextString(m) }
+func (*RuntimeLayer_RtdsLayer) ProtoMessage()    {}
+func (*RuntimeLayer_RtdsLayer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f1197defdf9c5e6a, []int{5, 2}
+}
+func (m *RuntimeLayer_RtdsLayer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RuntimeLayer_RtdsLayer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RuntimeLayer_RtdsLayer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RuntimeLayer_RtdsLayer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RuntimeLayer_RtdsLayer.Merge(m, src)
+}
+func (m *RuntimeLayer_RtdsLayer) XXX_Size() int {
+	return m.Size()
+}
+func (m *RuntimeLayer_RtdsLayer) XXX_DiscardUnknown() {
+	xxx_messageInfo_RuntimeLayer_RtdsLayer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RuntimeLayer_RtdsLayer proto.InternalMessageInfo
+
+func (m *RuntimeLayer_RtdsLayer) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *RuntimeLayer_RtdsLayer) GetRtdsConfig() *core.ConfigSource {
+	if m != nil {
+		return m.RtdsConfig
+	}
+	return nil
+}
+
+// Runtime :ref:`configuration overview <config_runtime>`.
+type LayeredRuntime struct {
+	// The :ref:`layers <config_runtime_layering>` of the runtime. This is ordered
+	// such that later layers in the list overlay earlier entries.
+	Layers               []*RuntimeLayer `protobuf:"bytes,1,rep,name=layers,proto3" json:"layers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *LayeredRuntime) Reset()         { *m = LayeredRuntime{} }
+func (m *LayeredRuntime) String() string { return proto.CompactTextString(m) }
+func (*LayeredRuntime) ProtoMessage()    {}
+func (*LayeredRuntime) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f1197defdf9c5e6a, []int{6}
+}
+func (m *LayeredRuntime) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LayeredRuntime) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LayeredRuntime.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LayeredRuntime) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LayeredRuntime.Merge(m, src)
+}
+func (m *LayeredRuntime) XXX_Size() int {
+	return m.Size()
+}
+func (m *LayeredRuntime) XXX_DiscardUnknown() {
+	xxx_messageInfo_LayeredRuntime.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LayeredRuntime proto.InternalMessageInfo
+
+func (m *LayeredRuntime) GetLayers() []*RuntimeLayer {
+	if m != nil {
+		return m.Layers
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Bootstrap)(nil), "envoy.config.bootstrap.v2.Bootstrap")
 	proto.RegisterType((*Bootstrap_StaticResources)(nil), "envoy.config.bootstrap.v2.Bootstrap.StaticResources")
@@ -748,7 +1226,111 @@ func init() {
 	proto.RegisterType((*ClusterManager_OutlierDetection)(nil), "envoy.config.bootstrap.v2.ClusterManager.OutlierDetection")
 	proto.RegisterType((*Watchdog)(nil), "envoy.config.bootstrap.v2.Watchdog")
 	proto.RegisterType((*Runtime)(nil), "envoy.config.bootstrap.v2.Runtime")
+	proto.RegisterType((*RuntimeLayer)(nil), "envoy.config.bootstrap.v2.RuntimeLayer")
+	proto.RegisterType((*RuntimeLayer_DiskLayer)(nil), "envoy.config.bootstrap.v2.RuntimeLayer.DiskLayer")
+	proto.RegisterType((*RuntimeLayer_AdminLayer)(nil), "envoy.config.bootstrap.v2.RuntimeLayer.AdminLayer")
+	proto.RegisterType((*RuntimeLayer_RtdsLayer)(nil), "envoy.config.bootstrap.v2.RuntimeLayer.RtdsLayer")
+	proto.RegisterType((*LayeredRuntime)(nil), "envoy.config.bootstrap.v2.LayeredRuntime")
 }
+
+func init() {
+	proto.RegisterFile("envoy/config/bootstrap/v2/bootstrap.proto", fileDescriptor_f1197defdf9c5e6a)
+}
+
+var fileDescriptor_f1197defdf9c5e6a = []byte{
+	// 1439 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x57, 0x4d, 0x73, 0x13, 0xc7,
+	0x16, 0x65, 0x24, 0x19, 0x4b, 0x57, 0xc2, 0x92, 0xbb, 0x0c, 0x16, 0xaa, 0x87, 0x6d, 0x04, 0xef,
+	0x01, 0x05, 0x35, 0xaa, 0x27, 0x78, 0x3c, 0x1e, 0x45, 0x01, 0x16, 0x2e, 0x1e, 0x21, 0x84, 0x8f,
+	0x36, 0xa9, 0x54, 0xb2, 0x99, 0x6a, 0xcd, 0xb4, 0xa5, 0x2e, 0x8f, 0xa6, 0x55, 0xdd, 0x2d, 0x25,
+	0xde, 0x66, 0xc5, 0x0f, 0xc8, 0x82, 0xdf, 0x91, 0x65, 0x56, 0xc9, 0x8e, 0x65, 0xf6, 0xa9, 0x4a,
+	0x52, 0xec, 0xf2, 0x13, 0xb2, 0x4b, 0x4d, 0x7f, 0x8c, 0x3c, 0x46, 0xfe, 0x20, 0x3b, 0xf5, 0xed,
+	0x73, 0x4e, 0xdf, 0xee, 0xbe, 0xf7, 0xf4, 0x08, 0xae, 0xd1, 0x64, 0xca, 0xf7, 0x3a, 0x21, 0x4f,
+	0x76, 0xd8, 0xa0, 0xd3, 0xe7, 0x5c, 0x49, 0x25, 0xc8, 0xb8, 0x33, 0xed, 0xce, 0x06, 0xfe, 0x58,
+	0x70, 0xc5, 0xd1, 0x79, 0x0d, 0xf5, 0x0d, 0xd4, 0x9f, 0xcd, 0x4e, 0xbb, 0xad, 0x75, 0xa3, 0x42,
+	0xc6, 0x2c, 0x25, 0x86, 0x5c, 0xd0, 0x0e, 0x89, 0x22, 0x41, 0xa5, 0x34, 0xdc, 0xd6, 0x3f, 0x3e,
+	0x04, 0xf4, 0x89, 0xa4, 0x73, 0x67, 0xc9, 0x44, 0x0d, 0x3b, 0x21, 0x15, 0xca, 0xce, 0xfe, 0xf3,
+	0x43, 0xae, 0xc9, 0x21, 0x90, 0x7c, 0x22, 0x42, 0x27, 0x72, 0x2e, 0x0f, 0x8b, 0xe4, 0xdc, 0x78,
+	0x9c, 0xc5, 0x2f, 0xe6, 0x76, 0xae, 0x04, 0x09, 0x69, 0x0a, 0xd0, 0x3f, 0x2c, 0xe4, 0x52, 0x0e,
+	0x32, 0xa2, 0x4a, 0xb0, 0x50, 0xa6, 0x20, 0xa9, 0x88, 0x72, 0x3a, 0x37, 0x72, 0x20, 0x3e, 0xa5,
+	0x22, 0xe6, 0x24, 0xea, 0x4c, 0xbb, 0x24, 0x1e, 0x0f, 0x49, 0x16, 0xb0, 0xe8, 0xb5, 0x01, 0xe7,
+	0x83, 0x98, 0x76, 0xf4, 0xa8, 0x3f, 0xd9, 0xe9, 0x44, 0x13, 0x41, 0x14, 0xe3, 0x89, 0x3b, 0x8a,
+	0x83, 0xf3, 0x52, 0x89, 0x49, 0xe8, 0x8e, 0x62, 0x75, 0x4a, 0x62, 0x16, 0x11, 0x45, 0x3b, 0xee,
+	0x87, 0x9d, 0x58, 0x19, 0xf0, 0x01, 0xd7, 0x3f, 0x3b, 0xe9, 0x2f, 0x13, 0x6d, 0xbf, 0xad, 0x41,
+	0xa5, 0xe7, 0xee, 0x09, 0x5d, 0x87, 0x52, 0xc2, 0x23, 0xda, 0xf4, 0x36, 0xbc, 0xab, 0xd5, 0xee,
+	0xaa, 0x6f, 0xae, 0x93, 0x8c, 0x99, 0x3f, 0xed, 0xfa, 0xe9, 0xb1, 0xfa, 0xcf, 0x79, 0x44, 0xb1,
+	0x06, 0xa1, 0x00, 0x1a, 0xe9, 0x26, 0x59, 0x18, 0x08, 0x6a, 0x8e, 0x59, 0x36, 0x0b, 0x9a, 0x78,
+	0xcb, 0x3f, 0xb4, 0x0e, 0xfc, 0x6c, 0x31, 0x7f, 0x5b, 0x93, 0xb1, 0xe3, 0xe2, 0xba, 0xcc, 0x07,
+	0x50, 0x1f, 0x96, 0xa3, 0xbd, 0x84, 0x8c, 0x72, 0x2b, 0x14, 0xf5, 0x0a, 0xff, 0x39, 0xd1, 0x0a,
+	0x5b, 0x86, 0x3d, 0x5b, 0xa2, 0x11, 0x1d, 0x88, 0x20, 0x0c, 0xf5, 0x30, 0x9e, 0x48, 0x45, 0x45,
+	0x30, 0x22, 0x09, 0x19, 0x50, 0xd1, 0x2c, 0xe9, 0x15, 0xae, 0x1d, 0xb1, 0xc2, 0x23, 0xc3, 0xf8,
+	0xcc, 0x10, 0xf0, 0x52, 0x98, 0x1b, 0xa3, 0x4d, 0x80, 0x61, 0x24, 0x03, 0xc3, 0x6c, 0x2e, 0x69,
+	0xb9, 0xf6, 0x9c, 0xb3, 0xdc, 0x1c, 0xb3, 0x47, 0x1a, 0xb3, 0xad, 0x93, 0xc1, 0x95, 0x61, 0x24,
+	0x4d, 0x00, 0x5d, 0x00, 0xd8, 0x89, 0xc9, 0x40, 0x06, 0x63, 0xa2, 0x86, 0xcd, 0x85, 0x0d, 0xef,
+	0x6a, 0x05, 0x57, 0x74, 0xe4, 0x25, 0x51, 0x43, 0xf4, 0x08, 0xaa, 0xba, 0xbe, 0x02, 0xc9, 0x92,
+	0x5d, 0xd9, 0x3c, 0xbd, 0x51, 0xdc, 0xb7, 0x84, 0xcd, 0xd8, 0xd6, 0x62, 0xba, 0x5a, 0x7a, 0xd2,
+	0x72, 0x9b, 0x25, 0xbb, 0x18, 0xa4, 0xfb, 0x29, 0xd1, 0xff, 0xa1, 0x66, 0x44, 0x6c, 0xa2, 0x67,
+	0x74, 0xa2, 0x97, 0x8f, 0x56, 0x31, 0xf9, 0x61, 0xb3, 0xbc, 0x4d, 0xf6, 0x15, 0xac, 0x18, 0xa1,
+	0x9d, 0x78, 0x22, 0x87, 0x01, 0x4b, 0x14, 0x15, 0x53, 0x12, 0x37, 0x17, 0xb5, 0xe0, 0x79, 0xdf,
+	0xd4, 0xab, 0xef, 0xea, 0xd5, 0xdf, 0xb2, 0xf5, 0xdc, 0x2b, 0xbd, 0xfd, 0x6d, 0xdd, 0xc3, 0x48,
+	0x93, 0x1f, 0xa7, 0xdc, 0x4f, 0x2c, 0x15, 0x3d, 0x80, 0xf2, 0xd7, 0x44, 0x85, 0xc3, 0x88, 0x0f,
+	0x9a, 0x65, 0x2d, 0x73, 0xe9, 0x88, 0xfb, 0xf8, 0xc2, 0x42, 0x71, 0x46, 0x42, 0x77, 0x60, 0x31,
+	0x6d, 0x53, 0x96, 0x0c, 0x9a, 0x15, 0xcd, 0x5f, 0xcb, 0xf3, 0x4d, 0x0f, 0x4f, 0xbb, 0xfe, 0x6b,
+	0x83, 0xc2, 0x0e, 0x8e, 0x1e, 0xc2, 0xa2, 0x98, 0x24, 0x8a, 0x8d, 0x68, 0xb3, 0x9a, 0xbb, 0xba,
+	0x79, 0x2b, 0x63, 0x83, 0xec, 0x15, 0x9a, 0x1e, 0x76, 0xb4, 0xb4, 0xa6, 0x62, 0xb2, 0x47, 0x05,
+	0x8d, 0x02, 0xa7, 0xb4, 0x7c, 0x6c, 0x4d, 0x3d, 0x33, 0x0c, 0x2b, 0x88, 0x97, 0xe2, 0xdc, 0x18,
+	0xdd, 0x86, 0x05, 0x12, 0x8d, 0x58, 0xd2, 0xac, 0x69, 0xa5, 0x8d, 0x23, 0x94, 0x36, 0x53, 0x1c,
+	0x36, 0x70, 0xf4, 0x25, 0x34, 0x9c, 0xbd, 0x64, 0x05, 0x5e, 0xd7, 0x12, 0x7e, 0x5e, 0x22, 0x33,
+	0x21, 0xeb, 0x4a, 0xfe, 0x0b, 0x1b, 0x70, 0x55, 0x5e, 0xe7, 0xf9, 0x00, 0xba, 0x0d, 0xab, 0x34,
+	0x21, 0xfd, 0x98, 0x06, 0x11, 0x93, 0xe3, 0xf4, 0xe0, 0xa9, 0x08, 0xf4, 0x5d, 0x36, 0x1b, 0x1b,
+	0xde, 0xd5, 0x32, 0x3e, 0x6b, 0xa6, 0xb7, 0xb2, 0x59, 0x5d, 0x41, 0xad, 0x9f, 0x3c, 0xa8, 0x1f,
+	0xe8, 0x7d, 0x74, 0x17, 0x2a, 0x31, 0x93, 0x8a, 0x26, 0x54, 0xc8, 0xa6, 0xa7, 0xcb, 0xf9, 0x5c,
+	0xbe, 0x63, 0x9e, 0xd9, 0xe9, 0x5e, 0xe9, 0xdd, 0xaf, 0xeb, 0xa7, 0xf0, 0x0c, 0x8e, 0xfe, 0x0b,
+	0x65, 0xdb, 0x80, 0xa9, 0xff, 0xa4, 0xd4, 0xb3, 0x79, 0xaa, 0x6d, 0x57, 0xcb, 0xcc, 0xc0, 0xe8,
+	0x7f, 0xb0, 0x28, 0x69, 0x28, 0xa8, 0x4a, 0x5d, 0xa5, 0xa8, 0x4b, 0x35, 0xc7, 0x4b, 0x5f, 0x19,
+	0x7f, 0x5b, 0x23, 0x2c, 0xd7, 0xe1, 0x5b, 0xbf, 0x78, 0xd0, 0x38, 0xe8, 0x2e, 0xe8, 0x3e, 0x40,
+	0x3c, 0xeb, 0x7b, 0xe3, 0xa1, 0xeb, 0x73, 0xfa, 0x3e, 0xdf, 0xf4, 0x71, 0xd6, 0xf4, 0xf7, 0x01,
+	0xc2, 0x19, 0xbf, 0x70, 0x42, 0x7e, 0x98, 0xf1, 0x37, 0x01, 0xc8, 0x8c, 0x5f, 0x3c, 0xb9, 0xef,
+	0x10, 0x27, 0xf1, 0xb4, 0x54, 0x2e, 0x35, 0x16, 0x9e, 0x96, 0xca, 0xd0, 0xa8, 0xb6, 0xdf, 0x78,
+	0xb0, 0xa0, 0x6b, 0x09, 0xfd, 0x0b, 0xea, 0x24, 0x0c, 0xa9, 0x94, 0x41, 0xcc, 0x07, 0xc6, 0x92,
+	0x3c, 0x6d, 0x49, 0x67, 0x4c, 0xf8, 0x19, 0x1f, 0x68, 0x5b, 0xba, 0x08, 0xb5, 0xb1, 0xe0, 0x3b,
+	0x2c, 0xa6, 0x06, 0x54, 0xd0, 0xa0, 0xaa, 0x8d, 0x69, 0xc8, 0x2d, 0x58, 0xb4, 0xcf, 0xbe, 0x4d,
+	0xb0, 0x35, 0x2f, 0x41, 0x83, 0xc0, 0x0e, 0xda, 0xfe, 0xb6, 0x08, 0x4b, 0x79, 0xd3, 0x45, 0x37,
+	0x00, 0xc5, 0x3c, 0x24, 0x71, 0xe0, 0xec, 0x3b, 0x21, 0x23, 0x6a, 0xd3, 0x6a, 0xe8, 0x19, 0x4b,
+	0x78, 0x4e, 0x46, 0x14, 0x0d, 0x60, 0x99, 0x4f, 0x54, 0xcc, 0xa8, 0x08, 0x22, 0xaa, 0x68, 0x98,
+	0xda, 0x8f, 0x3d, 0xe1, 0xbb, 0x27, 0x36, 0x7a, 0xff, 0x85, 0x91, 0xd8, 0x72, 0x0a, 0xb8, 0xc1,
+	0x0f, 0x44, 0xd0, 0x0b, 0x58, 0x99, 0x8c, 0xa5, 0x12, 0x94, 0x8c, 0x82, 0x3e, 0x4b, 0xa2, 0xfc,
+	0x6d, 0x5c, 0x98, 0xb3, 0xd9, 0x1e, 0x4b, 0x22, 0xeb, 0xaa, 0xc8, 0x51, 0x67, 0x31, 0xf4, 0x1c,
+	0x96, 0x75, 0xf3, 0xe6, 0xac, 0xba, 0x74, 0xe2, 0xbb, 0xad, 0xa7, 0xe4, 0x7d, 0xce, 0xdd, 0xba,
+	0x03, 0x8d, 0x83, 0xdb, 0x40, 0x97, 0x61, 0x89, 0x4e, 0x69, 0xa2, 0x0e, 0x5e, 0x6f, 0x4d, 0x47,
+	0xed, 0xed, 0xb6, 0xbf, 0x2b, 0x40, 0xd9, 0x39, 0x2d, 0xba, 0x07, 0xb5, 0x11, 0x93, 0x32, 0x48,
+	0xcd, 0x89, 0x4f, 0x94, 0xad, 0xf6, 0xc3, 0xbd, 0x1e, 0x57, 0x53, 0xf8, 0x6b, 0x83, 0x46, 0x5b,
+	0xd0, 0x18, 0xd1, 0x01, 0xc9, 0x29, 0x14, 0x8e, 0x53, 0xa8, 0x3b, 0x8a, 0x53, 0xb9, 0x07, 0xb5,
+	0x5d, 0x16, 0xc7, 0x99, 0x42, 0xf1, 0xd8, 0x1c, 0x52, 0xb8, 0x63, 0x3f, 0x86, 0xe5, 0xd1, 0x24,
+	0x56, 0x2c, 0x27, 0x51, 0x3a, 0x4e, 0xa2, 0x91, 0x71, 0xac, 0x4e, 0xfb, 0x7b, 0x0f, 0x16, 0x9d,
+	0x4b, 0x5f, 0x84, 0x9a, 0xdc, 0x1b, 0xc5, 0x2c, 0xd9, 0x0d, 0x04, 0xe7, 0xca, 0x1e, 0x63, 0xd5,
+	0xc6, 0x30, 0xe7, 0x0a, 0xb5, 0xa1, 0x26, 0x27, 0xfd, 0x88, 0x09, 0x1a, 0x2a, 0x2e, 0xf6, 0x6c,
+	0x8f, 0xe4, 0x62, 0xe8, 0x26, 0x9c, 0x4d, 0xcd, 0x56, 0xb0, 0x88, 0x06, 0x39, 0x70, 0x51, 0x83,
+	0x57, 0xdc, 0xe4, 0xf6, 0x7e, 0xd2, 0x75, 0x28, 0xa5, 0xdf, 0xcb, 0x76, 0x0b, 0xab, 0x1f, 0x6c,
+	0x61, 0x5b, 0x7f, 0x25, 0x62, 0x0d, 0x6a, 0xff, 0x59, 0x82, 0x9a, 0x4d, 0x5a, 0x3f, 0x3c, 0xe8,
+	0x02, 0x94, 0x66, 0x0d, 0xd4, 0xab, 0xfc, 0xf0, 0xc7, 0x8f, 0xc5, 0x92, 0x28, 0x6c, 0x78, 0x58,
+	0x87, 0xd3, 0xa3, 0xb6, 0xdf, 0x7a, 0xfa, 0x5d, 0xb2, 0x97, 0x75, 0xd8, 0x22, 0x4f, 0x4e, 0x99,
+	0x0f, 0x04, 0x16, 0x1a, 0x71, 0x0c, 0x10, 0x31, 0xb9, 0x6b, 0xb9, 0xe6, 0x9a, 0xfe, 0x7d, 0xfc,
+	0xab, 0xaa, 0xc9, 0xfe, 0x16, 0x93, 0xbb, 0xfa, 0xd7, 0x93, 0x53, 0xb8, 0x12, 0xb9, 0x01, 0xfa,
+	0x1c, 0xaa, 0xfa, 0x85, 0xb3, 0xa2, 0x66, 0xd7, 0xdd, 0x93, 0x8a, 0x6a, 0x5f, 0x73, 0xaa, 0x40,
+	0xb2, 0x51, 0x9a, 0xaa, 0x50, 0x91, 0xb4, 0xaa, 0x0b, 0x1f, 0x97, 0x2a, 0x56, 0x91, 0xcc, 0x52,
+	0x15, 0x6e, 0xd0, 0x7a, 0xe3, 0x41, 0x25, 0xdb, 0xc5, 0xdf, 0xa9, 0x91, 0xe2, 0x9c, 0x1a, 0xb9,
+	0x05, 0xe7, 0xc8, 0x78, 0x4c, 0x93, 0x28, 0x90, 0x54, 0x4c, 0x59, 0x48, 0x9d, 0x11, 0xea, 0xbb,
+	0x29, 0xe3, 0x15, 0x33, 0xbb, 0x6d, 0x26, 0xad, 0x91, 0xb5, 0x6a, 0x00, 0xb3, 0xad, 0xb7, 0x08,
+	0x54, 0xb2, 0x94, 0x11, 0xda, 0x5f, 0x01, 0xf6, 0xda, 0x1f, 0x42, 0x55, 0x9f, 0xc6, 0xc7, 0x3d,
+	0x49, 0xfa, 0x04, 0x4d, 0xa4, 0xb7, 0x6c, 0xbf, 0x85, 0x02, 0x39, 0xa6, 0x21, 0xdb, 0x61, 0x54,
+	0xb4, 0x5f, 0xc1, 0x52, 0xfe, 0x63, 0x07, 0x3d, 0x80, 0xd3, 0x1a, 0xe4, 0x9e, 0xfe, 0x2b, 0x27,
+	0x3c, 0x70, 0x6c, 0x69, 0xbd, 0x4f, 0xdf, 0xbd, 0x5f, 0xf3, 0x7e, 0x7e, 0xbf, 0xe6, 0xfd, 0xfe,
+	0x7e, 0xcd, 0x83, 0x2b, 0x8c, 0x1b, 0x81, 0xb1, 0xe0, 0xdf, 0xec, 0x1d, 0xae, 0xd5, 0x5b, 0xca,
+	0xfe, 0x2a, 0xbc, 0x4c, 0x0b, 0xf8, 0xa5, 0xf7, 0x55, 0x61, 0xda, 0xed, 0x9f, 0xd6, 0xd5, 0x7c,
+	0xf3, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xed, 0x46, 0x37, 0xbf, 0xf8, 0x0e, 0x00, 0x00,
+}
+
 func (m *Bootstrap) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -852,61 +1434,75 @@ func (m *Bootstrap) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n7
 	}
-	if m.RateLimitService != nil {
-		dAtA[i] = 0x52
+	if m.Runtime != nil {
+		dAtA[i] = 0x5a
 		i++
-		i = encodeVarintBootstrap(dAtA, i, uint64(m.RateLimitService.Size()))
-		n8, err := m.RateLimitService.MarshalTo(dAtA[i:])
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.Runtime.Size()))
+		n8, err := m.Runtime.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n8
 	}
-	if m.Runtime != nil {
-		dAtA[i] = 0x5a
+	if m.Admin != nil {
+		dAtA[i] = 0x62
 		i++
-		i = encodeVarintBootstrap(dAtA, i, uint64(m.Runtime.Size()))
-		n9, err := m.Runtime.MarshalTo(dAtA[i:])
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.Admin.Size()))
+		n9, err := m.Admin.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n9
 	}
-	if m.Admin != nil {
-		dAtA[i] = 0x62
+	if m.StatsConfig != nil {
+		dAtA[i] = 0x6a
 		i++
-		i = encodeVarintBootstrap(dAtA, i, uint64(m.Admin.Size()))
-		n10, err := m.Admin.MarshalTo(dAtA[i:])
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.StatsConfig.Size()))
+		n10, err := m.StatsConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n10
 	}
-	if m.StatsConfig != nil {
-		dAtA[i] = 0x6a
+	if m.HdsConfig != nil {
+		dAtA[i] = 0x72
 		i++
-		i = encodeVarintBootstrap(dAtA, i, uint64(m.StatsConfig.Size()))
-		n11, err := m.StatsConfig.MarshalTo(dAtA[i:])
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.HdsConfig.Size()))
+		n11, err := m.HdsConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n11
 	}
-	if m.HdsConfig != nil {
-		dAtA[i] = 0x72
+	if m.OverloadManager != nil {
+		dAtA[i] = 0x7a
 		i++
-		i = encodeVarintBootstrap(dAtA, i, uint64(m.HdsConfig.Size()))
-		n12, err := m.HdsConfig.MarshalTo(dAtA[i:])
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.OverloadManager.Size()))
+		n12, err := m.OverloadManager.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n12
 	}
-	if m.OverloadManager != nil {
-		dAtA[i] = 0x7a
+	if m.EnableDispatcherStats {
+		dAtA[i] = 0x80
 		i++
-		i = encodeVarintBootstrap(dAtA, i, uint64(m.OverloadManager.Size()))
-		n13, err := m.OverloadManager.MarshalTo(dAtA[i:])
+		dAtA[i] = 0x1
+		i++
+		if m.EnableDispatcherStats {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.LayeredRuntime != nil {
+		dAtA[i] = 0x8a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.LayeredRuntime.Size()))
+		n13, err := m.LayeredRuntime.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1247,6 +1843,240 @@ func (m *Runtime) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintBootstrap(dAtA, i, uint64(len(m.OverrideSubdirectory)))
 		i += copy(dAtA[i:], m.OverrideSubdirectory)
 	}
+	if m.Base != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.Base.Size()))
+		n25, err := m.Base.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n25
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RuntimeLayer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RuntimeLayer) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if m.LayerSpecifier != nil {
+		nn26, err := m.LayerSpecifier.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn26
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RuntimeLayer_StaticLayer) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.StaticLayer != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.StaticLayer.Size()))
+		n27, err := m.StaticLayer.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n27
+	}
+	return i, nil
+}
+func (m *RuntimeLayer_DiskLayer_) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.DiskLayer != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.DiskLayer.Size()))
+		n28, err := m.DiskLayer.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n28
+	}
+	return i, nil
+}
+func (m *RuntimeLayer_AdminLayer_) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.AdminLayer != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.AdminLayer.Size()))
+		n29, err := m.AdminLayer.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n29
+	}
+	return i, nil
+}
+func (m *RuntimeLayer_RtdsLayer_) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.RtdsLayer != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.RtdsLayer.Size()))
+		n30, err := m.RtdsLayer.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n30
+	}
+	return i, nil
+}
+func (m *RuntimeLayer_DiskLayer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RuntimeLayer_DiskLayer) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SymlinkRoot) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(len(m.SymlinkRoot)))
+		i += copy(dAtA[i:], m.SymlinkRoot)
+	}
+	if m.AppendServiceCluster {
+		dAtA[i] = 0x10
+		i++
+		if m.AppendServiceCluster {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if len(m.Subdirectory) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(len(m.Subdirectory)))
+		i += copy(dAtA[i:], m.Subdirectory)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RuntimeLayer_AdminLayer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RuntimeLayer_AdminLayer) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RuntimeLayer_RtdsLayer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RuntimeLayer_RtdsLayer) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if m.RtdsConfig != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintBootstrap(dAtA, i, uint64(m.RtdsConfig.Size()))
+		n31, err := m.RtdsConfig.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n31
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *LayeredRuntime) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LayeredRuntime) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Layers) > 0 {
+		for _, msg := range m.Layers {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintBootstrap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -1306,10 +2136,6 @@ func (m *Bootstrap) Size() (n int) {
 		l = m.Tracing.Size()
 		n += 1 + l + sovBootstrap(uint64(l))
 	}
-	if m.RateLimitService != nil {
-		l = m.RateLimitService.Size()
-		n += 1 + l + sovBootstrap(uint64(l))
-	}
 	if m.Runtime != nil {
 		l = m.Runtime.Size()
 		n += 1 + l + sovBootstrap(uint64(l))
@@ -1329,6 +2155,13 @@ func (m *Bootstrap) Size() (n int) {
 	if m.OverloadManager != nil {
 		l = m.OverloadManager.Size()
 		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.EnableDispatcherStats {
+		n += 3
+	}
+	if m.LayeredRuntime != nil {
+		l = m.LayeredRuntime.Size()
+		n += 2 + l + sovBootstrap(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1504,6 +2337,150 @@ func (m *Runtime) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovBootstrap(uint64(l))
 	}
+	if m.Base != nil {
+		l = m.Base.Size()
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RuntimeLayer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.LayerSpecifier != nil {
+		n += m.LayerSpecifier.Size()
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RuntimeLayer_StaticLayer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.StaticLayer != nil {
+		l = m.StaticLayer.Size()
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	return n
+}
+func (m *RuntimeLayer_DiskLayer_) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.DiskLayer != nil {
+		l = m.DiskLayer.Size()
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	return n
+}
+func (m *RuntimeLayer_AdminLayer_) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AdminLayer != nil {
+		l = m.AdminLayer.Size()
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	return n
+}
+func (m *RuntimeLayer_RtdsLayer_) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RtdsLayer != nil {
+		l = m.RtdsLayer.Size()
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	return n
+}
+func (m *RuntimeLayer_DiskLayer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.SymlinkRoot)
+	if l > 0 {
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.AppendServiceCluster {
+		n += 2
+	}
+	l = len(m.Subdirectory)
+	if l > 0 {
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RuntimeLayer_AdminLayer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RuntimeLayer_RtdsLayer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.RtdsConfig != nil {
+		l = m.RtdsConfig.Size()
+		n += 1 + l + sovBootstrap(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *LayeredRuntime) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Layers) > 0 {
+		for _, e := range m.Layers {
+			l = e.Size()
+			n += 1 + l + sovBootstrap(uint64(l))
+		}
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -1538,7 +2515,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1566,7 +2543,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1575,6 +2552,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1599,7 +2579,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1608,6 +2588,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1632,7 +2615,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1641,6 +2624,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1665,7 +2651,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1674,6 +2660,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1698,7 +2687,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1708,6 +2697,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1727,7 +2719,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1736,6 +2728,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1758,7 +2753,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1767,6 +2762,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1791,7 +2789,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1800,6 +2798,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1824,7 +2825,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1833,6 +2834,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1840,39 +2844,6 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				m.Tracing = &v21.Tracing{}
 			}
 			if err := m.Tracing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 10:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RateLimitService", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowBootstrap
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthBootstrap
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.RateLimitService == nil {
-				m.RateLimitService = &v22.RateLimitServiceConfig{}
-			}
-			if err := m.RateLimitService.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1890,7 +2861,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1899,6 +2870,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1923,7 +2897,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1932,6 +2906,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1956,7 +2933,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1965,6 +2942,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1989,7 +2969,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1998,6 +2978,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2022,7 +3005,7 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2031,6 +3014,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2041,6 +3027,62 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 16:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnableDispatcherStats", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EnableDispatcherStats = bool(v != 0)
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LayeredRuntime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LayeredRuntime == nil {
+				m.LayeredRuntime = &LayeredRuntime{}
+			}
+			if err := m.LayeredRuntime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipBootstrap(dAtA[iNdEx:])
@@ -2048,6 +3090,9 @@ func (m *Bootstrap) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2078,7 +3123,7 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2106,7 +3151,7 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2115,10 +3160,13 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Listeners = append(m.Listeners, v23.Listener{})
+			m.Listeners = append(m.Listeners, v22.Listener{})
 			if err := m.Listeners[len(m.Listeners)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -2137,7 +3185,7 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2146,10 +3194,13 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Clusters = append(m.Clusters, v23.Cluster{})
+			m.Clusters = append(m.Clusters, v22.Cluster{})
 			if err := m.Clusters[len(m.Clusters)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -2168,7 +3219,7 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2177,6 +3228,9 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2192,6 +3246,9 @@ func (m *Bootstrap_StaticResources) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2222,7 +3279,7 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2250,7 +3307,7 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2259,6 +3316,9 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2283,7 +3343,7 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2292,6 +3352,9 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2316,7 +3379,7 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2325,6 +3388,9 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2342,6 +3408,9 @@ func (m *Bootstrap_DynamicResources) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2372,7 +3441,7 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2400,7 +3469,7 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2410,6 +3479,9 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2429,7 +3501,7 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2439,6 +3511,9 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2458,7 +3533,7 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2467,6 +3542,9 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2484,6 +3562,9 @@ func (m *Admin) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2514,7 +3595,7 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2542,7 +3623,7 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2552,6 +3633,9 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2571,7 +3655,7 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2580,6 +3664,9 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2604,7 +3691,7 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2613,6 +3700,9 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2637,7 +3727,7 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2646,6 +3736,9 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2663,6 +3756,9 @@ func (m *ClusterManager) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2693,7 +3789,7 @@ func (m *ClusterManager_OutlierDetection) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2721,7 +3817,7 @@ func (m *ClusterManager_OutlierDetection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2731,6 +3827,9 @@ func (m *ClusterManager_OutlierDetection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2743,6 +3842,9 @@ func (m *ClusterManager_OutlierDetection) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2773,7 +3875,7 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2801,7 +3903,7 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2810,6 +3912,9 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2834,7 +3939,7 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2843,6 +3948,9 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2867,7 +3975,7 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2876,6 +3984,9 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2900,7 +4011,7 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2909,6 +4020,9 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2926,6 +4040,9 @@ func (m *Watchdog) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -2956,7 +4073,7 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2984,7 +4101,7 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2994,6 +4111,9 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3013,7 +4133,7 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3023,6 +4143,9 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3042,7 +4165,7 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3052,10 +4175,49 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthBootstrap
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
 			m.OverrideSubdirectory = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Base", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Base == nil {
+				m.Base = &types.Struct{}
+			}
+			if err := m.Base.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3064,6 +4226,637 @@ func (m *Runtime) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RuntimeLayer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBootstrap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RuntimeLayer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RuntimeLayer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StaticLayer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &types.Struct{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.LayerSpecifier = &RuntimeLayer_StaticLayer{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DiskLayer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RuntimeLayer_DiskLayer{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.LayerSpecifier = &RuntimeLayer_DiskLayer_{v}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AdminLayer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RuntimeLayer_AdminLayer{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.LayerSpecifier = &RuntimeLayer_AdminLayer_{v}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RtdsLayer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RuntimeLayer_RtdsLayer{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.LayerSpecifier = &RuntimeLayer_RtdsLayer_{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBootstrap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RuntimeLayer_DiskLayer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBootstrap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DiskLayer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DiskLayer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SymlinkRoot", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SymlinkRoot = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppendServiceCluster", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AppendServiceCluster = bool(v != 0)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Subdirectory", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Subdirectory = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBootstrap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RuntimeLayer_AdminLayer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBootstrap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AdminLayer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AdminLayer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBootstrap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RuntimeLayer_RtdsLayer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBootstrap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RtdsLayer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RtdsLayer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RtdsConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RtdsConfig == nil {
+				m.RtdsConfig = &core.ConfigSource{}
+			}
+			if err := m.RtdsConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBootstrap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LayeredRuntime) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBootstrap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LayeredRuntime: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LayeredRuntime: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Layers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBootstrap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Layers = append(m.Layers, &RuntimeLayer{})
+			if err := m.Layers[len(m.Layers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBootstrap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthBootstrap
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthBootstrap
 			}
 			if (iNdEx + skippy) > l {
@@ -3133,8 +4926,11 @@ func skipBootstrap(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthBootstrap
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthBootstrap
 			}
 			return iNdEx, nil
@@ -3165,6 +4961,9 @@ func skipBootstrap(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthBootstrap
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -3183,86 +4982,3 @@ var (
 	ErrInvalidLengthBootstrap = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowBootstrap   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/config/bootstrap/v2/bootstrap.proto", fileDescriptor_bootstrap_8fe415d0148933ad)
-}
-
-var fileDescriptor_bootstrap_8fe415d0148933ad = []byte{
-	// 1195 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0xcf, 0x6f, 0x1b, 0xc5,
-	0x17, 0xff, 0xae, 0xed, 0x34, 0xf1, 0xb3, 0x1b, 0x3b, 0xa3, 0xb4, 0xdd, 0x46, 0xdf, 0x26, 0xa9,
-	0x5b, 0xa0, 0x15, 0xd5, 0x5a, 0xb8, 0x05, 0x4a, 0xa9, 0x8a, 0xea, 0x46, 0x45, 0xa0, 0xd2, 0x96,
-	0x4d, 0x25, 0x04, 0x97, 0xd5, 0x78, 0x77, 0xb2, 0x1e, 0x65, 0x77, 0xc7, 0x9a, 0x19, 0x1b, 0x72,
-	0xe5, 0xc4, 0x91, 0x03, 0x07, 0xfe, 0x16, 0x4e, 0x70, 0xeb, 0x91, 0x3b, 0x12, 0xa0, 0x5e, 0x10,
-	0xff, 0x05, 0x9a, 0x1f, 0xbb, 0xce, 0xb8, 0x6e, 0x92, 0xdb, 0xce, 0x7b, 0x9f, 0xcf, 0x67, 0x7e,
-	0xbc, 0xf7, 0x3e, 0x0b, 0x37, 0x49, 0x31, 0x63, 0x47, 0xfd, 0x98, 0x15, 0x07, 0x34, 0xed, 0x8f,
-	0x18, 0x93, 0x42, 0x72, 0x3c, 0xe9, 0xcf, 0x06, 0xf3, 0x45, 0x30, 0xe1, 0x4c, 0x32, 0x74, 0x59,
-	0x43, 0x03, 0x03, 0x0d, 0xe6, 0xd9, 0xd9, 0x60, 0x6b, 0xc7, 0xa8, 0xe0, 0x09, 0x55, 0xc4, 0x98,
-	0x71, 0xd2, 0xc7, 0x49, 0xc2, 0x89, 0x10, 0x86, 0xbb, 0xf5, 0xff, 0xd7, 0x01, 0x23, 0x2c, 0xc8,
-	0xd2, 0x2c, 0x9e, 0xca, 0x71, 0x3f, 0x26, 0x5c, 0xda, 0xec, 0x5b, 0xaf, 0x73, 0xcd, 0x19, 0x22,
-	0xc1, 0xa6, 0x3c, 0x2e, 0x45, 0x2e, 0xba, 0xb0, 0x44, 0x2c, 0x8d, 0x67, 0x55, 0xfc, 0xaa, 0x73,
-	0x73, 0xc9, 0x71, 0x4c, 0x14, 0x40, 0x7f, 0x58, 0xc8, 0x35, 0x07, 0x92, 0x13, 0xc9, 0x69, 0x2c,
-	0x14, 0x48, 0x48, 0x2c, 0x4b, 0x9d, 0x5b, 0x0e, 0x88, 0xcd, 0x08, 0xcf, 0x18, 0x4e, 0xfa, 0xb3,
-	0x01, 0xce, 0x26, 0x63, 0x5c, 0x05, 0x96, 0x4a, 0x72, 0x2c, 0x49, 0x46, 0x73, 0x2a, 0x95, 0x28,
-	0xcf, 0x4a, 0xc9, 0xed, 0x94, 0xb1, 0x34, 0x23, 0x7d, 0xbd, 0x1a, 0x4d, 0x0f, 0xfa, 0xc9, 0x94,
-	0x63, 0x49, 0x59, 0x61, 0xf3, 0x97, 0x66, 0x38, 0xa3, 0x09, 0x96, 0xa4, 0x5f, 0x7e, 0xd8, 0xc4,
-	0x66, 0xca, 0x52, 0xa6, 0x3f, 0xfb, 0xea, 0xcb, 0x44, 0x7b, 0xff, 0xb4, 0xa0, 0x39, 0x2c, 0xcb,
-	0x85, 0xde, 0x85, 0x46, 0xc1, 0x12, 0xe2, 0x7b, 0xbb, 0xde, 0x8d, 0xd6, 0xe0, 0x52, 0x60, 0xaa,
-	0x8a, 0x27, 0x34, 0x98, 0x0d, 0x02, 0xf5, 0xba, 0xc1, 0x53, 0x96, 0x90, 0x50, 0x83, 0x50, 0x04,
-	0x5d, 0x75, 0x57, 0x1a, 0x47, 0x9c, 0x98, 0xd7, 0x16, 0x7e, 0x4d, 0x13, 0xef, 0x04, 0x6f, 0x6c,
-	0x87, 0xa0, 0xda, 0x2c, 0xd8, 0xd7, 0xe4, 0xb0, 0xe4, 0x86, 0x1d, 0xe1, 0x06, 0xd0, 0x08, 0x36,
-	0x92, 0xa3, 0x02, 0xe7, 0xce, 0x0e, 0x75, 0xbd, 0xc3, 0xfb, 0x67, 0xda, 0x61, 0xcf, 0xb0, 0xe7,
-	0x5b, 0x74, 0x93, 0x85, 0x08, 0x0a, 0xa1, 0x13, 0x67, 0x53, 0x21, 0x09, 0x8f, 0x72, 0x5c, 0xe0,
-	0x94, 0x70, 0xbf, 0xa1, 0x77, 0xb8, 0x79, 0xc2, 0x0e, 0x8f, 0x0c, 0xe3, 0x0b, 0x43, 0x08, 0xd7,
-	0x63, 0x67, 0x8d, 0xae, 0x00, 0x1c, 0x64, 0x38, 0x15, 0xd1, 0x04, 0xcb, 0xb1, 0xbf, 0xb2, 0xeb,
-	0xdd, 0x68, 0x86, 0x4d, 0x1d, 0x79, 0x8e, 0xe5, 0x18, 0x3d, 0x82, 0x96, 0xee, 0x91, 0x48, 0xd0,
-	0xe2, 0x50, 0xf8, 0xe7, 0x76, 0xeb, 0x37, 0x5a, 0x83, 0x9e, 0xbb, 0x9d, 0xed, 0x27, 0xb5, 0x99,
-	0x7a, 0x26, 0xb1, 0x4f, 0x8b, 0xc3, 0x10, 0x44, 0xf9, 0x29, 0xd0, 0x97, 0xb0, 0x69, 0x44, 0x0e,
-	0xb2, 0xa9, 0x18, 0x47, 0xb4, 0x90, 0x84, 0xcf, 0x70, 0xe6, 0xaf, 0xea, 0xc3, 0x5f, 0x0e, 0x4c,
-	0x97, 0x04, 0x65, 0x97, 0x04, 0x7b, 0xb6, 0x4b, 0x86, 0x8d, 0x9f, 0xff, 0xda, 0xf1, 0x42, 0xa4,
-	0xc9, 0x8f, 0x15, 0xf7, 0x33, 0x4b, 0x45, 0x9f, 0xc0, 0xda, 0xb7, 0x58, 0xc6, 0xe3, 0x84, 0xa5,
-	0xfe, 0x9a, 0x96, 0xb9, 0x76, 0xc2, 0x1b, 0x7c, 0x65, 0xa1, 0x61, 0x45, 0x42, 0x77, 0x61, 0x55,
-	0x4d, 0x08, 0x2d, 0x52, 0xbf, 0xa9, 0xf9, 0xdb, 0x2e, 0xdf, 0x8c, 0xcf, 0x6c, 0x10, 0xbc, 0x30,
-	0xa8, 0xb0, 0x84, 0xa3, 0x18, 0x90, 0x6a, 0xf7, 0x48, 0xf7, 0x7b, 0x24, 0x08, 0x9f, 0xd1, 0x98,
-	0xf8, 0xa0, 0x45, 0xde, 0x73, 0x45, 0xaa, 0xb1, 0x50, 0x42, 0x21, 0x96, 0xe4, 0x89, 0x5a, 0xec,
-	0x1b, 0xca, 0x23, 0x8d, 0x19, 0xd6, 0x7c, 0x2f, 0xec, 0xf2, 0x85, 0x1c, 0xba, 0x0f, 0xab, 0x7c,
-	0x5a, 0x48, 0x9a, 0x13, 0xbf, 0xa5, 0x95, 0x7b, 0x27, 0x5c, 0x2f, 0x34, 0xc8, 0xb0, 0xa4, 0xa0,
-	0x0f, 0x60, 0x05, 0x27, 0x39, 0x2d, 0xfc, 0xb6, 0xe6, 0xee, 0x9e, 0xc0, 0x7d, 0xa8, 0x70, 0xa1,
-	0x81, 0xa3, 0x4f, 0xa1, 0x6d, 0x0a, 0x65, 0x90, 0xfe, 0x79, 0x4d, 0xbf, 0x7e, 0x72, 0xb9, 0xcd,
-	0x3d, 0x42, 0xd3, 0x27, 0x66, 0x81, 0x1e, 0x02, 0x8c, 0x93, 0x4a, 0x66, 0xdd, 0xb9, 0xc1, 0xf1,
-	0x09, 0x7d, 0x38, 0xa1, 0x86, 0xb1, 0xaf, 0x5b, 0x3c, 0x6c, 0x8e, 0x93, 0x52, 0xe2, 0x6b, 0xe8,
-	0x96, 0x96, 0x53, 0x75, 0x7b, 0x47, 0x0b, 0x05, 0xee, 0x79, 0x2a, 0x63, 0xb2, 0x4e, 0x15, 0x3c,
-	0xb3, 0x81, 0xb2, 0xe5, 0x3b, 0xcc, 0x0d, 0x6c, 0xfd, 0xe6, 0x41, 0x67, 0x61, 0xa0, 0xd1, 0x3d,
-	0x68, 0x66, 0x54, 0x48, 0x52, 0x10, 0x2e, 0x7c, 0x4f, 0xb7, 0xf9, 0x45, 0xf7, 0xc0, 0x4f, 0x6c,
-	0x7a, 0xd8, 0x78, 0xf9, 0xe7, 0xce, 0xff, 0xc2, 0x39, 0x1c, 0x7d, 0x08, 0x6b, 0x76, 0xaa, 0x94,
-	0xa9, 0x28, 0xea, 0x05, 0x97, 0x6a, 0x67, 0xd0, 0x32, 0x2b, 0x30, 0xfa, 0x08, 0x56, 0x05, 0x89,
-	0x39, 0x91, 0xca, 0x2a, 0xea, 0x7a, 0x16, 0x1c, 0x9e, 0xfa, 0x83, 0x04, 0xfb, 0x1a, 0x61, 0xb9,
-	0x25, 0x7e, 0xeb, 0x0f, 0x0f, 0xba, 0x8b, 0x96, 0x81, 0x1e, 0x00, 0x64, 0xf3, 0x67, 0x37, 0xc6,
-	0xb8, 0xb3, 0xe4, 0xd9, 0xdd, 0x37, 0xcf, 0xaa, 0x37, 0x7f, 0x00, 0x10, 0xcf, 0xf9, 0xb5, 0x33,
-	0xf2, 0xe3, 0xe4, 0x58, 0xd9, 0xf1, 0x9c, 0x5f, 0x3f, 0x7b, 0xd9, 0x71, 0x29, 0xf1, 0x79, 0x63,
-	0xad, 0xd1, 0x5d, 0xe9, 0xfd, 0xe0, 0xc1, 0x8a, 0xee, 0x4c, 0xf4, 0x36, 0x74, 0x70, 0x1c, 0x13,
-	0x21, 0xa2, 0x8c, 0xa5, 0xc6, 0xa4, 0x3c, 0x6d, 0x52, 0xe7, 0x4d, 0xf8, 0x09, 0x4b, 0xb5, 0x51,
-	0x5d, 0x85, 0xf6, 0x84, 0xb3, 0x03, 0x9a, 0x11, 0x03, 0xaa, 0x69, 0x50, 0xcb, 0xc6, 0x34, 0xe4,
-	0x0e, 0xac, 0xda, 0x9f, 0xb9, 0x3d, 0xda, 0xd6, 0xb2, 0xa3, 0x19, 0x44, 0x58, 0x42, 0x7b, 0xdf,
-	0xd7, 0x61, 0xdd, 0xf5, 0x50, 0x74, 0x0b, 0x50, 0xc6, 0x62, 0x9c, 0x45, 0xa5, 0x1b, 0x17, 0x38,
-	0x27, 0xf6, 0x58, 0x5d, 0x9d, 0xb1, 0x84, 0xa7, 0x38, 0x27, 0x28, 0x85, 0x0d, 0x36, 0x95, 0x19,
-	0x25, 0x3c, 0x4a, 0x88, 0x24, 0xb1, 0x72, 0x36, 0xfb, 0xb6, 0xf7, 0xce, 0xec, 0xdb, 0xc1, 0x33,
-	0x23, 0xb1, 0x57, 0x2a, 0x84, 0x5d, 0xb6, 0x10, 0x41, 0xcf, 0x60, 0x73, 0x3a, 0x11, 0x92, 0x13,
-	0x9c, 0x47, 0x23, 0x5a, 0x24, 0x6e, 0x1d, 0xae, 0x2c, 0xb9, 0xec, 0x90, 0x16, 0x89, 0x1d, 0x5f,
-	0x54, 0x52, 0xe7, 0x31, 0xf4, 0x14, 0x36, 0xf4, 0xf8, 0x39, 0x9e, 0xd0, 0x38, 0x73, 0x55, 0x3b,
-	0x8a, 0x7c, 0xcc, 0x22, 0xb6, 0xee, 0x42, 0x77, 0xf1, 0x1a, 0xe8, 0x3a, 0xac, 0x93, 0x19, 0x29,
-	0xe4, 0x62, 0x79, 0xdb, 0x3a, 0x6a, 0xab, 0xdb, 0xfb, 0xa9, 0x06, 0x6b, 0xa5, 0x89, 0xa3, 0xfb,
-	0xd0, 0xce, 0xa9, 0x10, 0x91, 0xb2, 0x3a, 0x36, 0x95, 0xb6, 0xcf, 0xdf, 0xfc, 0x1b, 0x09, 0x5b,
-	0x0a, 0xfe, 0xc2, 0xa0, 0xd1, 0x1e, 0x74, 0x73, 0x92, 0x62, 0x47, 0xa1, 0x76, 0x9a, 0x42, 0xa7,
-	0xa4, 0x94, 0x2a, 0xf7, 0xa1, 0x7d, 0x48, 0xb3, 0xac, 0x52, 0xa8, 0x9f, 0x7a, 0x06, 0x05, 0x2f,
-	0xd9, 0x8f, 0x61, 0x23, 0x9f, 0x66, 0x92, 0x3a, 0x12, 0x8d, 0xd3, 0x24, 0xba, 0x15, 0xc7, 0xea,
-	0xf4, 0x7e, 0xf4, 0x60, 0xd5, 0x9a, 0x3f, 0xba, 0x05, 0x6d, 0x71, 0x94, 0x67, 0xb4, 0x38, 0x8c,
-	0x38, 0x63, 0xe6, 0x55, 0x9a, 0xc3, 0xe6, 0x2f, 0xff, 0xfe, 0x5a, 0x6f, 0xf0, 0xda, 0xae, 0x17,
-	0xb6, 0x6c, 0x3a, 0x64, 0x4c, 0xa2, 0x1e, 0xb4, 0xc5, 0x74, 0x94, 0x50, 0x4e, 0x62, 0xc9, 0xf8,
-	0x91, 0x1d, 0x17, 0x27, 0x86, 0x6e, 0xc3, 0x05, 0xe5, 0x9c, 0x9c, 0x26, 0x24, 0x72, 0xc0, 0x75,
-	0x0d, 0xde, 0x2c, 0x93, 0xfb, 0xc7, 0x72, 0xc3, 0x8f, 0x5f, 0xbe, 0xda, 0xf6, 0x7e, 0x7f, 0xb5,
-	0xed, 0xfd, 0xfd, 0x6a, 0xdb, 0x83, 0x77, 0x28, 0x33, 0x8d, 0x32, 0xe1, 0xec, 0xbb, 0xa3, 0x37,
-	0x77, 0xfb, 0x73, 0xef, 0x9b, 0xda, 0x6c, 0x30, 0x3a, 0xa7, 0x2f, 0x7d, 0xfb, 0xbf, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xac, 0x70, 0xb3, 0x4f, 0xcd, 0x0b, 0x00, 0x00,
-}

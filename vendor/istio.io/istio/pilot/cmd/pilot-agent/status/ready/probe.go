@@ -15,47 +15,57 @@
 package ready
 
 import (
-	"errors"
 	"fmt"
 
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
+
+	"istio.io/istio/pilot/pkg/model"
 
 	"istio.io/istio/pilot/cmd/pilot-agent/status/util"
 )
 
 // Probe for readiness.
 type Probe struct {
-	AdminPort        uint16
-	ApplicationPorts []uint16
+	LocalHostAddr       string
+	AdminPort           uint16
+	receivedFirstUpdate bool
+	ApplicationPorts    []uint16
+	NodeType            model.NodeType
 }
 
-// Check executes the probe and returns an error is the probe fails.
+// Check executes the probe and returns an error if the probe fails.
 func (p *Probe) Check() error {
-	if err := p.checkInboundConfigured(); err != nil {
+	// First, check that Envoy has received a configuration update from Pilot.
+	if err := p.checkUpdated(); err != nil {
 		return err
 	}
 
-	return p.checkUpdated()
+	// Envoy has received some configuration, make sure that configuration has been received for
+	// all inbound ports.
+	return p.checkInboundConfigured()
 }
 
 // checkApplicationPorts verifies that Envoy has received configuration for all ports exposed by the application container.
 func (p *Probe) checkInboundConfigured() error {
 	if len(p.ApplicationPorts) > 0 {
-		listeningPorts, listeners, err := util.GetInboundListeningPorts(p.AdminPort)
+		listeningPorts, listeners, err := util.GetInboundListeningPorts(p.LocalHostAddr, p.AdminPort, p.NodeType)
 		if err != nil {
 			return err
 		}
 
 		// Only those container ports exposed through the service receive a configuration from Pilot. Since we don't know
 		// which ports are defined by the service, just ensure that at least one container port has a cluster/listener
-		// confuration in Envoy. The CDS/LDS updates will contain everything, so just ensuring at least one port has
+		// configuration in Envoy. The CDS/LDS updates will contain everything, so just ensuring at least one port has
 		// been configured should be sufficient.
 		for _, appPort := range p.ApplicationPorts {
-			if listeningPorts[appPort] {
+			if listeningPorts[appPort] && p.NodeType != model.Router {
 				// Success - Envoy is configured.
+				// For gateways we should check for all ports though, so don't return success yet.
 				return nil
 			}
-			err = multierror.Append(err, fmt.Errorf("envoy missing listener for inbound application port: %d", appPort))
+			if !listeningPorts[appPort] {
+				err = multierror.Append(err, fmt.Errorf("envoy missing listener for inbound application port: %d", appPort))
+			}
 		}
 		if err != nil {
 			return multierror.Append(fmt.Errorf("failed checking application ports. listeners=%s", listeners), err)
@@ -66,7 +76,11 @@ func (p *Probe) checkInboundConfigured() error {
 
 // checkUpdated checks to make sure updates have been received from Pilot
 func (p *Probe) checkUpdated() error {
-	s, err := util.GetStats(p.AdminPort)
+	if p.receivedFirstUpdate {
+		return nil
+	}
+
+	s, err := util.GetStats(p.LocalHostAddr, p.AdminPort)
 	if err != nil {
 		return err
 	}
@@ -74,8 +88,9 @@ func (p *Probe) checkUpdated() error {
 	CDSUpdated := s.CDSUpdatesSuccess > 0 || s.CDSUpdatesRejection > 0
 	LDSUpdated := s.LDSUpdatesSuccess > 0 || s.LDSUpdatesRejection > 0
 	if CDSUpdated && LDSUpdated {
+		p.receivedFirstUpdate = true
 		return nil
 	}
 
-	return errors.New(s.String())
+	return fmt.Errorf("config not received from Pilot (is Pilot running?): %s", s.String())
 }
