@@ -146,6 +146,9 @@ $$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
 	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
 	// when mcp client is capable of only sending supported ones
 	typeURLs := []string{
+		copilotsnapshot.AuthenticationPolicyTypeURL,
+		copilotsnapshot.AuthenticationMeshPolicyTypeURL,
+		copilotsnapshot.AuthorizationPolicyTypeURL,
 		copilotsnapshot.GatewayTypeURL,
 		copilotsnapshot.VirtualServiceTypeURL,
 		copilotsnapshot.DestinationRuleTypeURL,

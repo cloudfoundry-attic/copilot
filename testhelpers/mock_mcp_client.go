@@ -154,6 +154,9 @@ func NewMockPilotMCPClient(tlsConfig *tls.Config, serverAddr string) (*MockPilot
 	mockReporter := &MockMetricReporter{}
 
 	typeURLs := []string{
+		copilotsnapshot.AuthenticationPolicyTypeURL,
+		copilotsnapshot.AuthenticationMeshPolicyTypeURL,
+		copilotsnapshot.AuthorizationPolicyTypeURL,
 		copilotsnapshot.GatewayTypeURL,
 		copilotsnapshot.VirtualServiceTypeURL,
 		copilotsnapshot.DestinationRuleTypeURL,

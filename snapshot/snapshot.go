@@ -17,22 +17,25 @@ import (
 var (
 	// TODO: Remove unsupported typeURLs (everything except Gateway, VirtualService, DestinationRule)
 	// when mcp client is capable of only sending a subset of the types
-	DestinationRuleTypeURL    string
-	VirtualServiceTypeURL     string
-	GatewayTypeURL            string
-	ServiceEntryTypeURL       string
-	EnvoyFilterTypeURL        string
-	SidecarTypeURL            string
-	HTTPAPISpecTypeURL        string
-	HTTPAPISpecBindingTypeURL string
-	QuotaSpecTypeURL          string
-	QuotaSpecBindingTypeURL   string
-	PolicyTypeURL             string
-	MeshPolicyTypeURL         string
-	ServiceRoleTypeURL        string
-	ServiceRoleBindingTypeURL string
-	RbacConfigTypeURL         string
-	ClusterRbacConfigTypeURL  string
+	AuthenticationPolicyTypeURL     string
+	AuthenticationMeshPolicyTypeURL string
+	AuthorizationPolicyTypeURL      string
+	DestinationRuleTypeURL      string
+	VirtualServiceTypeURL       string
+	GatewayTypeURL              string
+	ServiceEntryTypeURL         string
+	EnvoyFilterTypeURL          string
+	SidecarTypeURL              string
+	HTTPAPISpecTypeURL          string
+	HTTPAPISpecBindingTypeURL   string
+	QuotaSpecTypeURL            string
+	QuotaSpecBindingTypeURL     string
+	PolicyTypeURL               string
+	MeshPolicyTypeURL           string
+	ServiceRoleTypeURL          string
+	ServiceRoleBindingTypeURL   string
+	RbacConfigTypeURL           string
+	ClusterRbacConfigTypeURL    string
 )
 
 const (
@@ -106,6 +109,20 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)
 
+			//Empty responses
+			s.builder.Set(AuthenticationPolicyTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(AuthorizationPolicyTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(ClusterRbacConfigTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(EnvoyFilterTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(HTTPAPISpecBindingTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(HTTPAPISpecTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(MeshPolicyTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(QuotaSpecBindingTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(QuotaSpecTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(ServiceRoleBindingTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(ServiceRoleTypeURL, "1", s.config.EmptyResponse())
+			s.builder.Set(RbacConfigTypeURL, "1", s.config.EmptyResponse())
+
 			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)
 			s.builder = shot.Builder()
@@ -133,6 +150,9 @@ func getTypeURLByType(name string) string {
 }
 
 func init() {
+	AuthenticationPolicyTypeURL = getTypeURLByType("policy")
+	AuthenticationMeshPolicyTypeURL = getTypeURLByType("mesh-policy")
+	AuthorizationPolicyTypeURL = getTypeURLByType("authorization-policy")
 	DestinationRuleTypeURL = getTypeURLByType("destination-rule")
 	VirtualServiceTypeURL = getTypeURLByType("virtual-service")
 	GatewayTypeURL = getTypeURLByType("gateway")

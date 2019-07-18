@@ -65,6 +65,16 @@ type Config struct {
 	createVirtualServiceResourcesReturnsOnCall map[int]struct {
 		result1 []*v1alpha1.Resource
 	}
+	EmptyResponseStub        func() []*v1alpha1.Resource
+	emptyResponseMutex       sync.RWMutex
+	emptyResponseArgsForCall []struct {
+	}
+	emptyResponseReturns struct {
+		result1 []*v1alpha1.Resource
+	}
+	emptyResponseReturnsOnCall map[int]struct {
+		result1 []*v1alpha1.Resource
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -371,6 +381,58 @@ func (fake *Config) CreateVirtualServiceResourcesReturnsOnCall(i int, result1 []
 	}{result1}
 }
 
+func (fake *Config) EmptyResponse() []*v1alpha1.Resource {
+	fake.emptyResponseMutex.Lock()
+	ret, specificReturn := fake.emptyResponseReturnsOnCall[len(fake.emptyResponseArgsForCall)]
+	fake.emptyResponseArgsForCall = append(fake.emptyResponseArgsForCall, struct {
+	}{})
+	fake.recordInvocation("EmptyResponse", []interface{}{})
+	fake.emptyResponseMutex.Unlock()
+	if fake.EmptyResponseStub != nil {
+		return fake.EmptyResponseStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.emptyResponseReturns
+	return fakeReturns.result1
+}
+
+func (fake *Config) EmptyResponseCallCount() int {
+	fake.emptyResponseMutex.RLock()
+	defer fake.emptyResponseMutex.RUnlock()
+	return len(fake.emptyResponseArgsForCall)
+}
+
+func (fake *Config) EmptyResponseCalls(stub func() []*v1alpha1.Resource) {
+	fake.emptyResponseMutex.Lock()
+	defer fake.emptyResponseMutex.Unlock()
+	fake.EmptyResponseStub = stub
+}
+
+func (fake *Config) EmptyResponseReturns(result1 []*v1alpha1.Resource) {
+	fake.emptyResponseMutex.Lock()
+	defer fake.emptyResponseMutex.Unlock()
+	fake.EmptyResponseStub = nil
+	fake.emptyResponseReturns = struct {
+		result1 []*v1alpha1.Resource
+	}{result1}
+}
+
+func (fake *Config) EmptyResponseReturnsOnCall(i int, result1 []*v1alpha1.Resource) {
+	fake.emptyResponseMutex.Lock()
+	defer fake.emptyResponseMutex.Unlock()
+	fake.EmptyResponseStub = nil
+	if fake.emptyResponseReturnsOnCall == nil {
+		fake.emptyResponseReturnsOnCall = make(map[int]struct {
+			result1 []*v1alpha1.Resource
+		})
+	}
+	fake.emptyResponseReturnsOnCall[i] = struct {
+		result1 []*v1alpha1.Resource
+	}{result1}
+}
+
 func (fake *Config) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -384,6 +446,8 @@ func (fake *Config) Invocations() map[string][][]interface{} {
 	defer fake.createSidecarResourcesMutex.RUnlock()
 	fake.createVirtualServiceResourcesMutex.RLock()
 	defer fake.createVirtualServiceResourcesMutex.RUnlock()
+	fake.emptyResponseMutex.RLock()
+	defer fake.emptyResponseMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

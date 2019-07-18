@@ -318,6 +318,17 @@ var _ = Describe("Copilot", func() {
 			"istio/networking/v1alpha3/serviceentries",
 			"istio/networking/v1alpha3/gateways",
 			"istio/networking/v1alpha3/sidecars",
+			"istio/networking/v1alpha3/envoyfilters",
+			"istio/rbac/v1alpha1/rbacconfigs",
+			"istio/rbac/v1alpha1/authorizationpolicies",
+			"istio/authentication/v1alpha1/policies",
+			"istio/authentication/v1alpha1/meshpolicies",
+			"istio/mixer/v1/config/client/quotaspecbindings",
+			"istio/mixer/v1/config/client/quotaspecs",
+			"istio/config/v1alpha2/httpapispecs",
+			"istio/config/v1alpha2/httpapispecbindings",
+			"istio/rbac/v1alpha1/servicerolebindings",
+			"istio/rbac/v1alpha1/serviceroles",
 		))
 
 		Eventually(mcpClient.GetAllObjectNames, "1s").Should(Equal(map[string][]string{

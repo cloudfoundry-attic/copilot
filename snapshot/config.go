@@ -15,6 +15,7 @@ import (
 
 //go:generate counterfeiter -o fakes/config.go --fake-name Config . config
 type config interface {
+	EmptyResponse() []*mcp.Resource
 	CreateGatewayResources() []*mcp.Resource
 	CreateSidecarResources() []*mcp.Resource
 	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
@@ -32,6 +33,10 @@ func NewConfig(librarian certs.Librarian, logger lager.Logger) *Config {
 		librarian: librarian,
 		logger:    logger,
 	}
+}
+
+func (c *Config) EmptyResponse() []*mcp.Resource {
+	return []*mcp.Resource{}
 }
 
 func (c *Config) CreateSidecarResources() []*mcp.Resource {
