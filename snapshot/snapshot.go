@@ -20,22 +20,22 @@ var (
 	AuthenticationPolicyTypeURL     string
 	AuthenticationMeshPolicyTypeURL string
 	AuthorizationPolicyTypeURL      string
-	DestinationRuleTypeURL      string
-	VirtualServiceTypeURL       string
-	GatewayTypeURL              string
-	ServiceEntryTypeURL         string
-	EnvoyFilterTypeURL          string
-	SidecarTypeURL              string
-	HTTPAPISpecTypeURL          string
-	HTTPAPISpecBindingTypeURL   string
-	QuotaSpecTypeURL            string
-	QuotaSpecBindingTypeURL     string
-	PolicyTypeURL               string
-	MeshPolicyTypeURL           string
-	ServiceRoleTypeURL          string
-	ServiceRoleBindingTypeURL   string
-	RbacConfigTypeURL           string
-	ClusterRbacConfigTypeURL    string
+	DestinationRuleTypeURL          string
+	VirtualServiceTypeURL           string
+	GatewayTypeURL                  string
+	ServiceEntryTypeURL             string
+	EnvoyFilterTypeURL              string
+	SidecarTypeURL                  string
+	HTTPAPISpecTypeURL              string
+	HTTPAPISpecBindingTypeURL       string
+	QuotaSpecTypeURL                string
+	QuotaSpecBindingTypeURL         string
+	PolicyTypeURL                   string
+	MeshPolicyTypeURL               string
+	ServiceRoleTypeURL              string
+	ServiceRoleBindingTypeURL       string
+	RbacConfigTypeURL               string
+	ClusterRbacConfigTypeURL        string
 )
 
 const (
