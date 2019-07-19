@@ -67,6 +67,7 @@ type Snapshot struct {
 	cachedRoutes []*models.RouteWithBackends
 	config       config
 	ver          int
+	initialized  bool
 }
 
 func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder *snap.InMemoryBuilder, config config) *Snapshot {
@@ -90,7 +91,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case <-s.ticker:
 			routes := s.collector.Collect()
 
-			if reflect.DeepEqual(routes, s.cachedRoutes) {
+			if s.initialized && reflect.DeepEqual(routes, s.cachedRoutes) {
 				continue
 			}
 
@@ -126,6 +127,7 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			shot := s.builder.Build()
 			s.setter.SetSnapshot(node, shot)
 			s.builder = shot.Builder()
+			s.initialized = true
 		}
 	}
 }

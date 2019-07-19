@@ -70,6 +70,20 @@ var _ = Describe("Snapshot", func() {
 			sig <- os.Kill
 		})
 
+		It("initializes the builder a single time even when empty", func() {
+			sig := make(chan os.Signal)
+			ready := make(chan struct{})
+
+			collector.CollectReturnsOnCall(0, nil)
+
+			go s.Run(sig, ready)
+			ticker <- time.Time{}
+
+			Eventually(setter.SetSnapshotCallCount).Should(Equal(1))
+
+			sig <- os.Kill
+		})
+
 		It("creates resources and sets the snapshot with the correct versions", func() {
 			sig := make(chan os.Signal)
 			ready := make(chan struct{})
