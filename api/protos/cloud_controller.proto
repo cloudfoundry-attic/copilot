@@ -58,7 +58,6 @@ message RouteMapping {
   string capi_process_guid = 1;
   string route_guid = 2;
   uint32 route_weight = 3;
-  int32 app_port = 4;
 }
 
 message MapRouteRequest {

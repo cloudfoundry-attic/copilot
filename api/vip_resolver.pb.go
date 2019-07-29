@@ -34,7 +34,7 @@ func (m *GetVIPByNameRequest) Reset()         { *m = GetVIPByNameRequest{} }
 func (m *GetVIPByNameRequest) String() string { return proto.CompactTextString(m) }
 func (*GetVIPByNameRequest) ProtoMessage()    {}
 func (*GetVIPByNameRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_vip_resolver_8c48ba218f39683a, []int{0}
+	return fileDescriptor_vip_resolver_f020ae9a5740474d, []int{0}
 }
 func (m *GetVIPByNameRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetVIPByNameRequest.Unmarshal(m, b)
@@ -72,7 +72,7 @@ func (m *GetVIPByNameResponse) Reset()         { *m = GetVIPByNameResponse{} }
 func (m *GetVIPByNameResponse) String() string { return proto.CompactTextString(m) }
 func (*GetVIPByNameResponse) ProtoMessage()    {}
 func (*GetVIPByNameResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_vip_resolver_8c48ba218f39683a, []int{1}
+	return fileDescriptor_vip_resolver_f020ae9a5740474d, []int{1}
 }
 func (m *GetVIPByNameResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetVIPByNameResponse.Unmarshal(m, b)
@@ -209,9 +209,9 @@ var _VIPResolverCopilot_serviceDesc = grpc.ServiceDesc{
 	Metadata: "vip_resolver.proto",
 }
 
-func init() { proto.RegisterFile("vip_resolver.proto", fileDescriptor_vip_resolver_8c48ba218f39683a) }
+func init() { proto.RegisterFile("vip_resolver.proto", fileDescriptor_vip_resolver_f020ae9a5740474d) }
 
-var fileDescriptor_vip_resolver_8c48ba218f39683a = []byte{
+var fileDescriptor_vip_resolver_f020ae9a5740474d = []byte{
 	// 192 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2a, 0xcb, 0x2c, 0x88,
 	0x2f, 0x4a, 0x2d, 0xce, 0xcf, 0x29, 0x4b, 0x2d, 0xd2, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62,
