@@ -12,7 +12,6 @@ pushd sdk/ruby
 popd
 ```
 
-
 ### How to build and install the `cf-copilot` ruby gem
 ```
 pushd sdk/ruby
