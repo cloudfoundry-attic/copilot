@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/copilot/models"
+	"code.cloudfoundry.org/policy_client"
 	"istio.io/api/mcp/v1alpha1"
 )
 
@@ -43,9 +44,12 @@ type Config struct {
 	createServiceEntryResourcesReturnsOnCall map[int]struct {
 		result1 []*v1alpha1.Resource
 	}
-	CreateSidecarResourcesStub        func() []*v1alpha1.Resource
+	CreateSidecarResourcesStub        func([]*models.RouteWithBackends, []*policy_client.Policy, string) []*v1alpha1.Resource
 	createSidecarResourcesMutex       sync.RWMutex
 	createSidecarResourcesArgsForCall []struct {
+		arg1 []*models.RouteWithBackends
+		arg2 []*policy_client.Policy
+		arg3 string
 	}
 	createSidecarResourcesReturns struct {
 		result1 []*v1alpha1.Resource
@@ -263,15 +267,28 @@ func (fake *Config) CreateServiceEntryResourcesReturnsOnCall(i int, result1 []*v
 	}{result1}
 }
 
-func (fake *Config) CreateSidecarResources() []*v1alpha1.Resource {
+func (fake *Config) CreateSidecarResources(arg1 []*models.RouteWithBackends, arg2 []*policy_client.Policy, arg3 string) []*v1alpha1.Resource {
+	var arg1Copy []*models.RouteWithBackends
+	if arg1 != nil {
+		arg1Copy = make([]*models.RouteWithBackends, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	var arg2Copy []*policy_client.Policy
+	if arg2 != nil {
+		arg2Copy = make([]*policy_client.Policy, len(arg2))
+		copy(arg2Copy, arg2)
+	}
 	fake.createSidecarResourcesMutex.Lock()
 	ret, specificReturn := fake.createSidecarResourcesReturnsOnCall[len(fake.createSidecarResourcesArgsForCall)]
 	fake.createSidecarResourcesArgsForCall = append(fake.createSidecarResourcesArgsForCall, struct {
-	}{})
-	fake.recordInvocation("CreateSidecarResources", []interface{}{})
+		arg1 []*models.RouteWithBackends
+		arg2 []*policy_client.Policy
+		arg3 string
+	}{arg1Copy, arg2Copy, arg3})
+	fake.recordInvocation("CreateSidecarResources", []interface{}{arg1Copy, arg2Copy, arg3})
 	fake.createSidecarResourcesMutex.Unlock()
 	if fake.CreateSidecarResourcesStub != nil {
-		return fake.CreateSidecarResourcesStub()
+		return fake.CreateSidecarResourcesStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -286,10 +303,17 @@ func (fake *Config) CreateSidecarResourcesCallCount() int {
 	return len(fake.createSidecarResourcesArgsForCall)
 }
 
-func (fake *Config) CreateSidecarResourcesCalls(stub func() []*v1alpha1.Resource) {
+func (fake *Config) CreateSidecarResourcesCalls(stub func([]*models.RouteWithBackends, []*policy_client.Policy, string) []*v1alpha1.Resource) {
 	fake.createSidecarResourcesMutex.Lock()
 	defer fake.createSidecarResourcesMutex.Unlock()
 	fake.CreateSidecarResourcesStub = stub
+}
+
+func (fake *Config) CreateSidecarResourcesArgsForCall(i int) ([]*models.RouteWithBackends, []*policy_client.Policy, string) {
+	fake.createSidecarResourcesMutex.RLock()
+	defer fake.createSidecarResourcesMutex.RUnlock()
+	argsForCall := fake.createSidecarResourcesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *Config) CreateSidecarResourcesReturns(result1 []*v1alpha1.Resource) {

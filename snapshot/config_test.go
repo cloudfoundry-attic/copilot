@@ -1,6 +1,7 @@
 package snapshot_test
 
 import (
+	"code.cloudfoundry.org/policy_client"
 	"time"
 
 	"code.cloudfoundry.org/copilot/certs"
@@ -26,11 +27,13 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("CreateSidecarResources", func() {
-		It("creates a sidecar resource", func() {
-			sidecars := config.CreateSidecarResources()
+		var policies []*policy_client.Policy
+		It("creates a default sidecar resource", func() {
+			var policies []*policy_client.Policy
+			sidecars := config.CreateSidecarResources(internalRoutesWithBackends(), policies, "1")
 
 			Expect(sidecars).To(HaveLen(1))
-			Expect(sidecars[0].Metadata.Name).To(Equal("cloudfoundry-sidecar"))
+			Expect(sidecars[0].Metadata.Name).To(Equal("cloudfoundry-default-sidecar"))
 
 			sc := networking.Sidecar{}
 			err := types.UnmarshalAny(sidecars[0].Body, &sc)
@@ -39,10 +42,74 @@ var _ = Describe("Config", func() {
 			Expect(sc).To(Equal(networking.Sidecar{
 				Egress: []*networking.IstioEgressListener{
 					&networking.IstioEgressListener{
-						Hosts: []string{"internal/*"},
+						Hosts: nil,
 					},
 				},
 			}))
+		})
+
+		Context("when policies are found", func() {
+			BeforeEach(func() {
+				policies = testPolicies()
+			})
+
+			It("creates sidecar resources for policies", func() {
+				sidecars := config.CreateSidecarResources(internalRoutesWithBackends(), policies, "1")
+
+				Expect(sidecars).To(HaveLen(3))
+				var names []string
+				var sidecarBodies []networking.Sidecar
+
+				for _, sidecar := range sidecars {
+					names = append(names, sidecar.Metadata.Name)
+
+					var sc networking.Sidecar
+					err := types.UnmarshalAny(sidecar.Body, &sc)
+					Expect(err).NotTo(HaveOccurred())
+					sidecarBodies = append(sidecarBodies, sc)
+				}
+
+				Expect(names).To(ConsistOf([]string{
+					"cloudfoundry-default-sidecar",
+					"x-capi-guid",
+					"y-capi-guid",
+				}))
+
+				Expect(sidecarBodies).To(ConsistOf([]networking.Sidecar{
+					{
+						WorkloadSelector: nil,
+						Egress: []*networking.IstioEgressListener{
+							&networking.IstioEgressListener{
+								Hosts: nil,
+							},
+						},
+					},
+					{
+						WorkloadSelector: &networking.WorkloadSelector{
+							Labels: map[string]string{
+								"cfapp": "x-capi-guid",
+							},
+						},
+						Egress: []*networking.IstioEgressListener{
+							&networking.IstioEgressListener{
+								Hosts: []string{"internal/y.bar.internal", "internal/a.bar.internal"},
+							},
+						},
+					},
+					{
+						WorkloadSelector: &networking.WorkloadSelector{
+							Labels: map[string]string{
+								"cfapp": "y-capi-guid",
+							},
+						},
+						Egress: []*networking.IstioEgressListener{
+							&networking.IstioEgressListener{
+								Hosts: []string{"internal/a.bar.internal"},
+							},
+						},
+					},
+				}))
+			})
 		})
 	})
 
@@ -258,39 +325,110 @@ var _ = Describe("Config", func() {
 		Context("internal routes", func() {
 			It("creates virtualService resources with retries", func() {
 				virtualServices := config.CreateVirtualServiceResources(internalRoutesWithBackends(), "1")
-				var vs networking.VirtualService
 
-				Expect(virtualServices).To(HaveLen(1))
-				Expect(virtualServices[0].Metadata.Name).To(Equal("internal/copilot-service-for-foo.bar.internal"))
+				var names []string
+				var virtualServiceBodies []networking.VirtualService
 
-				err := types.UnmarshalAny(virtualServices[0].Body, &vs)
-				Expect(err).NotTo(HaveOccurred())
+				for _, virtualService := range virtualServices {
+					names = append(names, virtualService.Metadata.Name)
 
-				Expect(vs.Hosts).To(Equal([]string{"foo.bar.internal"}))
-				Expect(vs.Gateways).To(HaveLen(0))
-				Expect(vs.Http).To(ConsistOf([]*networking.HTTPRoute{
-					{
-						Route: []*networking.HTTPRouteDestination{
-							{
-								Destination: &networking.Destination{
-									Host: "foo.bar.internal",
-									Port: &networking.PortSelector{
-										Port: &networking.PortSelector_Number{
-											Number: 8081,
+					var vs networking.VirtualService
+					err := types.UnmarshalAny(virtualService.Body, &vs)
+					Expect(err).NotTo(HaveOccurred())
+					virtualServiceBodies = append(virtualServiceBodies, vs)
+				}
+
+				Expect(names).To(ConsistOf([]string{
+					"internal/copilot-service-for-x.bar.internal",
+					"internal/copilot-service-for-y.bar.internal",
+					"internal/copilot-service-for-a.bar.internal",
+				}))
+
+				Expect(virtualServiceBodies).To(ConsistOf(
+					[]networking.VirtualService{
+						{
+							Hosts:    []string{"x.bar.internal"},
+							Gateways: nil,
+							Http: []*networking.HTTPRoute{
+								{
+									Route: []*networking.HTTPRouteDestination{
+										{
+											Destination: &networking.Destination{
+												Host: "x.bar.internal",
+												Port: &networking.PortSelector{
+													Port: &networking.PortSelector_Number{
+														Number: 8081,
+													},
+												},
+												Subset: "x-capi-guid",
+											},
+											Weight: 100,
 										},
 									},
-									Subset: "x-capi-guid",
+									Retries: &networking.HTTPRetry{
+										Attempts: 3,
+										RetryOn:  "5xx",
+									},
+									Timeout: types.DurationProto(15 * time.Second),
 								},
-								Weight: 100,
 							},
 						},
-						Retries: &networking.HTTPRetry{
-							Attempts: 3,
-							RetryOn:  "5xx",
+						{
+							Hosts:    []string{"y.bar.internal"},
+							Gateways: nil,
+							Http: []*networking.HTTPRoute{
+								{
+									Route: []*networking.HTTPRouteDestination{
+										{
+											Destination: &networking.Destination{
+												Host: "y.bar.internal",
+												Port: &networking.PortSelector{
+													Port: &networking.PortSelector_Number{
+														Number: 8081,
+													},
+												},
+												Subset: "y-capi-guid",
+											},
+											Weight: 100,
+										},
+									},
+									Retries: &networking.HTTPRetry{
+										Attempts: 3,
+										RetryOn:  "5xx",
+									},
+									Timeout: types.DurationProto(15 * time.Second),
+								},
+							},
 						},
-						Timeout: types.DurationProto(15 * time.Second),
+						{
+							Hosts:    []string{"a.bar.internal"},
+							Gateways: nil,
+							Http: []*networking.HTTPRoute{
+								{
+									Route: []*networking.HTTPRouteDestination{
+										{
+											Destination: &networking.Destination{
+												Host: "a.bar.internal",
+												Port: &networking.PortSelector{
+													Port: &networking.PortSelector_Number{
+														Number: 8081,
+													},
+												},
+												Subset: "a-capi-guid",
+											},
+											Weight: 100,
+										},
+									},
+									Retries: &networking.HTTPRetry{
+										Attempts: 3,
+										RetryOn:  "5xx",
+									},
+									Timeout: types.DurationProto(15 * time.Second),
+								},
+							},
+						},
 					},
-				}))
+				))
 			})
 		})
 	})
@@ -326,19 +464,52 @@ var _ = Describe("Config", func() {
 		Context("internal routes", func() {
 			It("creates destination rules", func() {
 				destinationRules := config.CreateDestinationRuleResources(internalRoutesWithBackends(), "1")
-				var dr networking.DestinationRule
 
-				Expect(destinationRules).To(HaveLen(1))
-				Expect(destinationRules[0].Metadata.Name).To(Equal("internal/copilot-rule-for-foo.bar.internal"))
+				var names []string
+				var destinationRuleBodies []networking.DestinationRule
 
-				err := types.UnmarshalAny(destinationRules[0].Body, &dr)
-				Expect(err).NotTo(HaveOccurred())
+				for _, destinationRule := range destinationRules {
+					names = append(names, destinationRule.Metadata.Name)
 
-				Expect(dr.Host).To(Equal("foo.bar.internal"))
-				Expect(dr.Subsets).To(ConsistOf([]*networking.Subset{
+					var dr networking.DestinationRule
+					err := types.UnmarshalAny(destinationRule.Body, &dr)
+					Expect(err).NotTo(HaveOccurred())
+					destinationRuleBodies = append(destinationRuleBodies, dr)
+				}
+
+				Expect(names).To(ConsistOf([]string{
+					"internal/copilot-rule-for-x.bar.internal",
+					"internal/copilot-rule-for-y.bar.internal",
+					"internal/copilot-rule-for-a.bar.internal",
+				}))
+
+				Expect(destinationRuleBodies).To(ConsistOf([]networking.DestinationRule{
 					{
-						Name:   "x-capi-guid",
-						Labels: map[string]string{"cfapp": "x-capi-guid"},
+						Host: "x.bar.internal",
+						Subsets: []*networking.Subset{
+							{
+								Name:   "x-capi-guid",
+								Labels: map[string]string{"cfapp": "x-capi-guid"},
+							},
+						},
+					},
+					{
+						Host: "y.bar.internal",
+						Subsets: []*networking.Subset{
+							{
+								Name:   "y-capi-guid",
+								Labels: map[string]string{"cfapp": "y-capi-guid"},
+							},
+						},
+					},
+					{
+						Host: "a.bar.internal",
+						Subsets: []*networking.Subset{
+							{
+								Name:   "a-capi-guid",
+								Labels: map[string]string{"cfapp": "a-capi-guid"},
+							},
+						},
 					},
 				}))
 			})
@@ -395,31 +566,91 @@ var _ = Describe("Config", func() {
 		Context("internal routes", func() {
 			It("creates service entries resources", func() {
 				serviceEntries := config.CreateServiceEntryResources(internalRoutesWithBackends(), "1")
-				var se networking.ServiceEntry
 
-				Expect(serviceEntries).To(HaveLen(1))
-				Expect(serviceEntries[0].Metadata.Name).To(Equal("internal/copilot-service-entry-for-foo.bar.internal"))
+				var names []string
+				var serviceEntryBodies []networking.ServiceEntry
 
-				err := types.UnmarshalAny(serviceEntries[0].Body, &se)
-				Expect(err).NotTo(HaveOccurred())
+				for _, serviceEntry := range serviceEntries {
+					names = append(names, serviceEntry.Metadata.Name)
 
-				Expect(se.Hosts).To(Equal([]string{"foo.bar.internal"}))
-				Expect(se.Addresses).To(Equal([]string{"127.127.0.1"}))
-				Expect(se.Ports).To(Equal([]*networking.Port{
+					var se networking.ServiceEntry
+					err := types.UnmarshalAny(serviceEntry.Body, &se)
+					Expect(err).NotTo(HaveOccurred())
+					serviceEntryBodies = append(serviceEntryBodies, se)
+				}
+
+				Expect(names).To(ConsistOf([]string{
+					"internal/copilot-service-entry-for-x.bar.internal",
+					"internal/copilot-service-entry-for-y.bar.internal",
+					"internal/copilot-service-entry-for-a.bar.internal",
+				}))
+
+				Expect(serviceEntryBodies).To(ConsistOf([]networking.ServiceEntry{
 					{
-						Name:     "http",
-						Number:   8081,
-						Protocol: "http",
-					}}))
-				Expect(se.Location).To(Equal(networking.ServiceEntry_MESH_INTERNAL))
-				Expect(se.Resolution).To(Equal(networking.ServiceEntry_STATIC))
-				Expect(se.Endpoints).To(ConsistOf([]*networking.ServiceEntry_Endpoint{
-					{
-						Address: "10.255.0.1",
-						Ports: map[string]uint32{
-							"http": 8080,
+						Hosts:     []string{"x.bar.internal"},
+						Addresses: []string{"127.127.0.1"},
+						Ports: []*networking.Port{
+							{
+								Name:     "http",
+								Number:   8081,
+								Protocol: "http",
+							},
 						},
-						Labels: map[string]string{"cfapp": "x-capi-guid"},
+						Location:   networking.ServiceEntry_MESH_INTERNAL,
+						Resolution: networking.ServiceEntry_STATIC,
+						Endpoints: []*networking.ServiceEntry_Endpoint{
+							{
+								Address: "10.255.0.1",
+								Ports: map[string]uint32{
+									"http": 8080,
+								},
+								Labels: map[string]string{"cfapp": "x-capi-guid"},
+							},
+						},
+					},
+					{
+						Hosts:     []string{"y.bar.internal"},
+						Addresses: []string{"127.127.0.2"},
+						Ports: []*networking.Port{
+							{
+								Name:     "http",
+								Number:   8081,
+								Protocol: "http",
+							},
+						},
+						Location:   networking.ServiceEntry_MESH_INTERNAL,
+						Resolution: networking.ServiceEntry_STATIC,
+						Endpoints: []*networking.ServiceEntry_Endpoint{
+							{
+								Address: "10.255.0.2",
+								Ports: map[string]uint32{
+									"http": 8080,
+								},
+								Labels: map[string]string{"cfapp": "y-capi-guid"},
+							},
+						},
+					},
+					{
+						Hosts:     []string{"a.bar.internal"},
+						Addresses: []string{"127.127.0.3"},
+						Ports: []*networking.Port{
+							{
+								Name:     "http",
+								Number:   8081,
+								Protocol: "http",
+							},
+						},
+						Location:   networking.ServiceEntry_MESH_INTERNAL,
+						Resolution: networking.ServiceEntry_STATIC,
+						Endpoints: []*networking.ServiceEntry_Endpoint{
+							{
+								Address: "10.255.0.3",
+								Ports: map[string]uint32{
+									"http": 8080,
+								},
+								Labels: map[string]string{"cfapp": "a-capi-guid"},
+							},
+						},
 					},
 				}))
 
@@ -478,10 +709,39 @@ func routesWithBackends() []*models.RouteWithBackends {
 	}
 }
 
+func testPolicies() []*policy_client.Policy {
+	return []*policy_client.Policy{
+		{
+			Source: policy_client.Source{
+				ID: "x-capi-guid",
+			},
+			Destination: policy_client.Destination{
+				ID: "y-capi-guid",
+			},
+		},
+		{
+			Source: policy_client.Source{
+				ID: "x-capi-guid",
+			},
+			Destination: policy_client.Destination{
+				ID: "a-capi-guid",
+			},
+		},
+		{
+			Source: policy_client.Source{
+				ID: "y-capi-guid",
+			},
+			Destination: policy_client.Destination{
+				ID: "a-capi-guid",
+			},
+		},
+	}
+}
+
 func internalRoutesWithBackends() []*models.RouteWithBackends {
 	return []*models.RouteWithBackends{
 		{
-			Hostname: "foo.bar.internal",
+			Hostname: "x.bar.internal",
 			VIP:      "127.127.0.1",
 			Internal: true,
 			Path:     "/something",
@@ -495,6 +755,40 @@ func internalRoutesWithBackends() []*models.RouteWithBackends {
 				},
 			},
 			CapiProcessGUID: "x-capi-guid",
+			RouteWeight:     int32(100),
+		},
+		{
+			Hostname: "y.bar.internal",
+			VIP:      "127.127.0.2",
+			Internal: true,
+			Path:     "/something",
+			Backends: models.BackendSet{
+				Backends: []*models.Backend{
+					{
+						Address:       "10.255.0.2",
+						Port:          uint32(8080),
+						ContainerPort: uint32(8081),
+					},
+				},
+			},
+			CapiProcessGUID: "y-capi-guid",
+			RouteWeight:     int32(100),
+		},
+		{
+			Hostname: "a.bar.internal",
+			VIP:      "127.127.0.3",
+			Internal: true,
+			Path:     "/something",
+			Backends: models.BackendSet{
+				Backends: []*models.Backend{
+					{
+						Address:       "10.255.0.3",
+						Port:          uint32(8080),
+						ContainerPort: uint32(8081),
+					},
+				},
+			},
+			CapiProcessGUID: "a-capi-guid",
 			RouteWeight:     int32(100),
 		},
 	}
