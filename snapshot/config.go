@@ -1,6 +1,7 @@
 package snapshot
 
 import (
+	"code.cloudfoundry.org/policy_client"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 type config interface {
 	EmptyResponse() []*mcp.Resource
 	CreateGatewayResources() []*mcp.Resource
-	CreateSidecarResources() []*mcp.Resource
+	CreateSidecarResources(routes []*models.RouteWithBackends, policies []*policy_client.Policy, version string) []*mcp.Resource
 	CreateVirtualServiceResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateDestinationRuleResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
 	CreateServiceEntryResources(routes []*models.RouteWithBackends, version string) []*mcp.Resource
@@ -39,32 +40,100 @@ func (c *Config) EmptyResponse() []*mcp.Resource {
 	return []*mcp.Resource{}
 }
 
-func (c *Config) CreateSidecarResources() []*mcp.Resource {
+func (c *Config) CreateSidecarResources(routes []*models.RouteWithBackends, policies []*policy_client.Policy, version string) (resources []*mcp.Resource) {
+	routeMap := map[string][]string{}
+	for _, route := range routes {
+		processGuid := route.CapiProcessGUID
+		if !route.Internal {
+			continue
+		}
+		if _, ok := routeMap[processGuid]; ok {
+			routeMap[processGuid] = append(routeMap[processGuid], route.Hostname)
+		} else {
+			routeMap[processGuid] = []string{route.Hostname}
+		}
+	}
+
+	policyMap := map[string][]string{}
+	for _, policy := range policies {
+		source := policy.Source.ID
+		destination := policy.Destination.ID
+
+		if routeMap[destination] == nil {
+			continue
+		}
+		if _, ok := policyMap[source]; ok {
+			policyMap[source] = append(policyMap[source], routeMap[destination]...)
+		} else {
+			policyMap[source] = routeMap[destination]
+		}
+		//TODO: uniquify down the road this policy map for duplicate hosts (?)
+	}
+
 	sidecar := &networking.Sidecar{
 		Egress: []*networking.IstioEgressListener{
 			&networking.IstioEgressListener{
-				Hosts: []string{
-					"internal/*",
-				},
+				Hosts: []string{},
 			},
 		},
 	}
 
 	scResource, err := types.MarshalAny(sidecar)
 	if err != nil {
-		// not tested
-		c.logger.Error("marshaling gateway", err)
+		c.logger.Error("marshaling sidecar", err)
 	}
 
-	return []*mcp.Resource{
-		&mcp.Resource{
+	resources = append(resources, &mcp.Resource{
+		Metadata: &mcp.Metadata{
+			Name:    DefaultSidecarName,
+			Version: version,
+		},
+		Body: scResource,
+	})
+
+	for source, destinations := range policyMap {
+		for index, _ := range destinations {
+			destinations[index] = "internal/" + destinations[index]
+		}
+		// The Istio Sidecar Object Created:
+		// apiVersion: networking.istio.io/v1alpha3
+		// kind: Sidecar
+		// metadata:
+		// 	name: source guid
+		// spec:
+		// 	egress:
+		// 	- hosts:
+		// 			- internal/<destination routes>
+		// 	workloadSelector:
+		// 		labels:
+		// 			cfapp: source guid
+		sidecar = &networking.Sidecar{
+			WorkloadSelector: &networking.WorkloadSelector{
+				Labels: map[string]string{
+					"cfapp": source,
+				},
+			},
+			Egress: []*networking.IstioEgressListener{
+				&networking.IstioEgressListener{
+					Hosts: destinations,
+				},
+			},
+		}
+
+		scResource, err = types.MarshalAny(sidecar)
+		if err != nil {
+			c.logger.Error("marshaling sidecar", err)
+		}
+		resources = append(resources, &mcp.Resource{
 			Metadata: &mcp.Metadata{
-				Name:    DefaultSidecarName,
-				Version: "1",
+				Name:    source,
+				Version: version,
 			},
 			Body: scResource,
-		},
+		})
 	}
+
+	return resources
 }
 
 func (c *Config) CreateGatewayResources() (resources []*mcp.Resource) {

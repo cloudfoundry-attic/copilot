@@ -477,8 +477,6 @@ func (m *AccessLogCommon) Validate() error {
 
 	// no validation rules for UpstreamTransportFailureReason
 
-	// no validation rules for RouteName
-
 	return nil
 }
 
@@ -590,8 +588,6 @@ func (m *ResponseFlags) Validate() error {
 	// no validation rules for UpstreamRetryLimitExceeded
 
 	// no validation rules for StreamIdleTimeout
-
-	// no validation rules for InvalidEnvoyRequestHeaders
 
 	return nil
 }
@@ -706,8 +702,6 @@ func (m *TLSProperties) Validate() error {
 			}
 		}
 	}
-
-	// no validation rules for TlsSessionId
 
 	return nil
 }

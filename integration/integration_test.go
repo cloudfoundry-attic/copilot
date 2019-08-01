@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"code.cloudfoundry.org/policy_client"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -38,6 +39,7 @@ var _ = Describe("Copilot", func() {
 		ccClient          copilot.CloudControllerClient
 		vipResolverClient copilot.VIPResolverCopilotClient
 		mockBBS           *testhelpers.MockBBSServer
+		mockPolicyServer  *testhelpers.MockPolicyServer
 
 		cleanupFuncs      []func()
 		routeHost         string
@@ -45,6 +47,24 @@ var _ = Describe("Copilot", func() {
 	)
 
 	BeforeEach(func() {
+		mockPolicyServer = testhelpers.NewMockPolicyServer()
+		policies := []*policy_client.Policy{
+			{
+				Source: policy_client.Source{
+					ID: "capi-process-guid-a",
+				},
+				Destination: policy_client.Destination{
+					ID:       "capi-process-guid-a",
+					Protocol: "http",
+					Ports: policy_client.Ports{
+						Start: 1,
+						End:   2,
+					},
+				},
+			},
+		}
+		mockPolicyServer.SetGetPoliciesResponse(policies)
+
 		mockBBS = testhelpers.NewMockBBSServer()
 		mockBBS.SetPostV1EventsResponse(&bbsmodels.ActualLRP{
 			ActualLRPKey: bbsmodels.ActualLRPKey{
@@ -140,6 +160,11 @@ var _ = Describe("Copilot", func() {
 		mockBBS.Server.HTTPTestServer.StartTLS()
 		cleanupFuncs = append(cleanupFuncs, mockBBS.Server.Close)
 
+		policyServerCreds := testhelpers.GenerateMTLS()
+		policyServerTLSFiles := policyServerCreds.CreateClientTLSFiles()
+		mockPolicyServer.Server.HTTPTestServer.TLS = policyServerCreds.ServerTLSConfig()
+		mockPolicyServer.Server.HTTPTestServer.StartTLS()
+
 		serverConfig = &config.Config{
 			ListenAddressForCloudController: listenAddrForCloudController,
 			ListenAddressForVIPResolver:     listenAddrForVIPResolver,
@@ -164,6 +189,10 @@ var _ = Describe("Copilot", func() {
 					PrivateKey: "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAoA0YINMRUux8OMjfxDE1WKffjMu0epmf7O6mFRHKylZy2GQA\nFLF7ACxtQVXk1n0Ej77IYtRD+EgLEaWfLDv6Nxsm1X5uXowVTgtLHgNc5tixzMD8\no3iF1HjP+0t1XQZL3vt+74+/LmXtePSY/iJCy985H0bSPnKBvZsOBaT9E6mkUONX\nCqp0Eg9okW0nwVv5zEXBUK+2ivs/i0IOiz3s+wsQrHV4HDH/JDVXXHkEmrRBZ7n5\nyvxssg7Pj9qL5ai6VQtOUrDv3U0KfkLVWDDXggP3i4sTc8H4gl4Q2ffdyRVFo905\nAq+3+gWOVP9p2lwBkvGWVc15cHl9kjtAWInDzQIDAQABAoIBABUV5InehLfCBBOP\nEzvLp9WIOEFaTOqh9pnGTwcTkv3ZKcQsWH5ha2z4bWRgJofDbKhrYAb1JAc/poWq\npi+zryE3aIRT5cJ6/guMHVdU5hZbkgEBo8b9h9QYHn5i0JFy1OgJhg2ViIBaWVDI\nGKfSZ65oOCRQtj4X49PQ66X+uICwcWhJ3tZnFVODPQU6uDaUZsJzESTaEYaTEkpH\nKCbYdKL4dqt76SIxzKwy1tQlV7R/5Vl5iGhIq143iqNVEAHnCDzJZyonoFpvzT3A\nKfxYjwbatzDdDDujlzyUEwdzy+ZSkMtb/b2Asd0QseY4LgsjnkyQKTtuemjxLw7F\nrMbD3ZkCgYEAx5hWLceS1li3h4UVQFPEdqLAyBW5xTGAVKP4dEirlDWWlkVNpPSw\nD/ZAMieL7WT40JExsGYovrtly9BgyOkTbhbs3dlTDsd2++2/gycjEiNIw08Q5F0v\nz0TgV5psUb1E2Mvubf+Ns04C/NwXHX+A8ClcHuVy/qw/y92s+r+H2wcCgYEAzUf2\nFu4d+CO2JqcvPY2YikDFNT6pIzO/Ux0W41FwJVDHRa+42vqW5qPrr6ThWoVEEs5h\nzeBgh0X6K+2AbELDm3kxW43ceHo6KmPCPyQcMxff+A8LyxZWxn/8wb4CKso2zc1L\ncm6w5E0NsCmt/4WP5EeIIUmUXIpcNP9uNCZ6sYsCgYAn1q802gXkBLc1NIoGWfH3\n4ApspXF7+6JqwoO/6hVdMskI23Jg/3n45aTwndYfHy1Oq/xoAiwVzd/Gq6P11hfL\nvIWwzkT2yTdll5HHQtOMNkC6wxhTDIqTa2L/+VGviwCn6SSBDiYhaOvNvrxaZe29\ngfPiMtgeHxFoxqlVL0+VlwKBgApa+PULKgPceVHV2TI3tFw1DD21XX7jG2Gr8/2f\nnBKl0oeXZ7HUNkyINFl17dBNLLPuKUzjZrssMoSIxJOxgoCTSoQd0eNZ9xkwUxow\nTiPdrnSq/aNPCy2UQ0Have0+qikTlBy/rLi3klsynw5mxG11lk5nkc5hRGmAASUs\nU8AlAoGAVMzVMvNOC5Q3uiji0HRnZRa9XrOFdLGZjIUqtLAEdCyGG2Q1WBy2aVgX\nHb/NjnkfmroOSCKUOyqFt0N3sHAv65E5rUdY46uyfczyaQ4wjEhxHPCID6aQc/4f\npBr58YgMa/6k4d3H6arh4cXXPZ16r2gxOcwrVeHecxGpfSAtzBg=\n-----END RSA PRIVATE KEY-----\n",
 				},
 			},
+			PolicyServerAddress:        mockPolicyServer.Server.URL(),
+			PolicyServerClientCertPath: policyServerTLSFiles.ClientCert,
+			PolicyServerClientKeyPath:  policyServerTLSFiles.ClientKey,
+			PolicyServerCAPath:         policyServerTLSFiles.ServerCA,
 		}
 		fmt.Printf("%+v\n", serverConfig)
 		configFilePath = testhelpers.TempFileName()
@@ -336,7 +365,7 @@ var _ = Describe("Copilot", func() {
 			"istio/networking/v1alpha3/virtualservices":  []string{fmt.Sprintf("copilot-service-for-%s", routeHost), fmt.Sprintf("internal/copilot-service-for-%s", internalRouteHost)},
 			"istio/networking/v1alpha3/serviceentries":   []string{fmt.Sprintf("copilot-service-entry-for-%s", routeHost), fmt.Sprintf("internal/copilot-service-entry-for-%s", internalRouteHost)},
 			"istio/networking/v1alpha3/gateways":         []string{copilotsnapshot.DefaultGatewayName},
-			"istio/networking/v1alpha3/sidecars":         []string{copilotsnapshot.DefaultSidecarName},
+			"istio/networking/v1alpha3/sidecars":         []string{copilotsnapshot.DefaultSidecarName, "capi-process-guid-a"},
 		}))
 
 		expectedRoutes := []Route{
@@ -374,8 +403,8 @@ var _ = Describe("Copilot", func() {
 		expectedGW := expectedGateway(80)
 		Eventually(mcpClient.GetAllGateways, "1s").Should(Equal([]*v1alpha3.Gateway{expectedGW}))
 
-		expectedSidecar := expectedSidecarResource()
-		Eventually(mcpClient.GetAllSidecars, "1s").Should(Equal([]*v1alpha3.Sidecar{expectedSidecar}))
+		expectedSidecar := expectedSidecarResource("capi-process-guid-a", []string{"internal/some-internal-url"})
+		Eventually(mcpClient.GetAllSidecars, "1s").Should(ContainElement(expectedSidecar))
 
 		expectedSE := expectedServiceEntry(
 			"some-url",
@@ -809,13 +838,16 @@ func expectedDestinationRule(host string, subsets []string) *v1alpha3.Destinatio
 	}
 }
 
-func expectedSidecarResource() *v1alpha3.Sidecar {
+func expectedSidecarResource(sourceAppGUID string, destinations []string) *v1alpha3.Sidecar {
 	return &v1alpha3.Sidecar{
+		WorkloadSelector: &v1alpha3.WorkloadSelector{
+			Labels: map[string]string{
+				"cfapp": sourceAppGUID,
+			},
+		},
 		Egress: []*v1alpha3.IstioEgressListener{
-			&v1alpha3.IstioEgressListener{
-				Hosts: []string{
-					"internal/*",
-				},
+			{
+				Hosts: destinations,
 			},
 		},
 	}

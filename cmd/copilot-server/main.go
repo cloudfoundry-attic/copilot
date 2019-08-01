@@ -1,6 +1,8 @@
 package main
 
 import (
+	"code.cloudfoundry.org/cfhttp/v2"
+	"code.cloudfoundry.org/policy_client"
 	"flag"
 	"fmt"
 	"istio.io/istio/pkg/mcp/rate"
@@ -29,11 +31,11 @@ import (
 
 	mcp "istio.io/api/mcp/v1alpha1"
 	"istio.io/istio/galley/pkg/runtime/groups"
-	"istio.io/pkg/log"
 	"istio.io/istio/pkg/mcp/monitoring"
 	"istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/mcp/snapshot"
 	"istio.io/istio/pkg/mcp/source"
+	"istio.io/pkg/log"
 )
 
 const istioCertRootPath = "/etc/istio"
@@ -177,15 +179,15 @@ $$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
 			limiter := rate.NewRateLimiter(1000000000, 1000000000)
 
 			options := &source.Options{
-				Watcher:           cache,
-				Reporter:          reporter,
+				Watcher:            cache,
+				Reporter:           reporter,
 				CollectionsOptions: collectionOptions,
-				ConnRateLimiter: limiter,
+				ConnRateLimiter:    limiter,
 			}
 			// TODO: Figure out sane NewConnectionsFreq and NewConnectionsBurstSize when we're doing scaling work.
 			// (https://www.pivotaltracker.com/story/show/162515083)
 			serverOptions := &source.ServerOptions{
-				AuthChecker:            authChecker,
+				AuthChecker: authChecker,
 				RateLimiter: limiter.Create(),
 			}
 
@@ -217,7 +219,15 @@ $$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
 	inMemoryBuilder := snapshot.NewInMemoryBuilder()
 	librarian := certs.NewLocator(istioCertRootPath, cfg.TLSPems)
 	snapshotConfig := copilotsnapshot.NewConfig(librarian, logger)
-	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder, snapshotConfig)
+
+	clientTLSConfig, err := cfg.ServerTLSConfigForPolicyServer()
+	if err != nil {
+		return err
+	}
+	httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(clientTLSConfig))
+	policyServerClient := policy_client.NewInternal(logger, httpClient, cfg.PolicyServerAddress)
+
+	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder, policyServerClient, snapshotConfig)
 
 	members := grouper.Members{
 		grouper.Member{Name: "grpc-server-for-cloud-controller", Runner: grpcServerForCloudController},

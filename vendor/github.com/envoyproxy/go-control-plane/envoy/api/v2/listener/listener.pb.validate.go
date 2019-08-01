@@ -228,10 +228,18 @@ func (m *FilterChainMatch) Validate() error {
 	for idx, item := range m.GetSourcePorts() {
 		_, _ = idx, item
 
-		if val := item; val < 1 || val > 65535 {
-			return FilterChainMatchValidationError{
-				field:  fmt.Sprintf("SourcePorts[%v]", idx),
-				reason: "value must be inside range [1, 65535]",
+		{
+			tmp := item
+
+			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+				if err := v.Validate(); err != nil {
+					return FilterChainMatchValidationError{
+						field:  fmt.Sprintf("SourcePorts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
 			}
 		}
 

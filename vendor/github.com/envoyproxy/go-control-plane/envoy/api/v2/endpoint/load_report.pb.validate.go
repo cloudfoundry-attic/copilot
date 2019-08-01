@@ -62,8 +62,6 @@ func (m *UpstreamLocalityStats) Validate() error {
 
 	// no validation rules for TotalErrorRequests
 
-	// no validation rules for TotalIssuedRequests
-
 	for idx, item := range m.GetLoadMetricStats() {
 		_, _ = idx, item
 
@@ -208,8 +206,6 @@ func (m *UpstreamEndpointStats) Validate() error {
 	// no validation rules for TotalRequestsInProgress
 
 	// no validation rules for TotalErrorRequests
-
-	// no validation rules for TotalIssuedRequests
 
 	for idx, item := range m.GetLoadMetricStats() {
 		_, _ = idx, item

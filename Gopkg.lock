@@ -17,6 +17,18 @@
   revision = "8d92f16a29ccb22f7a704717a0818a7608df261c"
 
 [[projects]]
+  branch = "master"
+  digest = "1:6f022c715db8abd38c42d019ce7a6709d030f48b3ec0033664c239f7fe8bbc15"
+  name = "code.cloudfoundry.org/cf-networking-helpers"
+  packages = [
+    "json_client",
+    "marshal",
+    "mutualtls",
+  ]
+  pruneopts = ""
+  revision = "2077383e4d59e034f7377f31250f46290fd8033b"
+
+[[projects]]
   digest = "1:2c620dd8ec51475b61f876e9ec1dac8a06e3a4f81b5ffb5cb28d1ce9725b4c52"
   name = "code.cloudfoundry.org/cfhttp"
   packages = ["v2"]
@@ -54,6 +66,17 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:87af51b239bc767eac5f0f0c6d6d11c6fad6bed4f3124c36e087180d214c1b84"
+  name = "code.cloudfoundry.org/policy_client"
+  packages = [
+    ".",
+    "fakes",
+  ]
+  pruneopts = ""
+  revision = "6324003c2bfdc0e96ec522eb3958dbb119102f70"
+
+[[projects]]
+  branch = "master"
   digest = "1:6e06cc4b5a80480741a73da1b7ef2566826edc82c017bca90789ca32c1a80a07"
   name = "code.cloudfoundry.org/tlsconfig"
   packages = ["."]
@@ -77,7 +100,7 @@
   revision = "6226ea591a40176dd3ff9cd8eff81ed6ca721a00"
 
 [[projects]]
-  digest = "1:0c5a1d66b07777ac559677e44792ffa2a7ead3cab7f0d0256dfa27dd87e7bba2"
+  digest = "1:4aedd18bb54a4f04281757ad92ecf4fcff92646e8529832903ed1e5a64e6aab6"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -91,8 +114,8 @@
     "envoy/type",
   ]
   pruneopts = ""
-  revision = "0f0598e8dab0c0306119ca6fff632b0a672cbfa1"
-  version = "v0.8.2"
+  revision = "094d054b10176dd84506e4f0f65e7f65d8499241"
+  version = "v0.8.0"
 
 [[projects]]
   digest = "1:6d8b4fb4c51db60a75537eeec6fb579b26e53832988d58224d4ebe6a2bb2bfe1"
@@ -715,10 +738,14 @@
     "code.cloudfoundry.org/bbs/events",
     "code.cloudfoundry.org/bbs/events/eventfakes",
     "code.cloudfoundry.org/bbs/models",
+    "code.cloudfoundry.org/cf-networking-helpers/mutualtls",
+    "code.cloudfoundry.org/cfhttp/v2",
     "code.cloudfoundry.org/debugserver",
     "code.cloudfoundry.org/durationjson",
     "code.cloudfoundry.org/lager",
     "code.cloudfoundry.org/lager/lagertest",
+    "code.cloudfoundry.org/policy_client",
+    "code.cloudfoundry.org/policy_client/fakes",
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/types",
     "github.com/golang/protobuf/proto",
@@ -748,6 +775,7 @@
     "istio.io/istio/galley/pkg/runtime/groups",
     "istio.io/istio/pilot/pkg/model",
     "istio.io/istio/pkg/mcp/monitoring",
+    "istio.io/istio/pkg/mcp/rate",
     "istio.io/istio/pkg/mcp/server",
     "istio.io/istio/pkg/mcp/sink",
     "istio.io/istio/pkg/mcp/snapshot",

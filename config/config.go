@@ -1,6 +1,7 @@
 package config
 
 import (
+	"code.cloudfoundry.org/cf-networking-helpers/mutualtls"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -38,6 +39,10 @@ type Config struct {
 	CloudControllerClientCAPath     string `validate:"nonzero"`
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
+	PolicyServerAddress             string `validate:"nonzero"`
+	PolicyServerClientCertPath      string `validate:"nonzero"`
+	PolicyServerClientKeyPath       string `validate:"nonzero"`
+	PolicyServerCAPath              string `validate:"nonzero"`
 	VIPCIDR                         string `validate:"cidr"`
 	MCPConvergeInterval             durationjson.Duration
 	LogLevel                        string
@@ -71,6 +76,10 @@ func (c *Config) ServerTLSConfigForPilot() (*tls.Config, error) {
 
 func (c *Config) ServerTLSConfigForCloudController() (*tls.Config, error) {
 	return c.serverTLSConfigForClient("cloud controller", c.CloudControllerClientCAPath)
+}
+
+func (c *Config) ServerTLSConfigForPolicyServer() (*tls.Config, error) {
+	return mutualtls.NewClientTLSConfig(c.PolicyServerClientCertPath, c.PolicyServerClientKeyPath, c.PolicyServerCAPath)
 }
 
 func (c *Config) GetVIPCIDR() (*net.IPNet, error) {

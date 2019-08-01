@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/copilot/models"
 	"code.cloudfoundry.org/lager"
 
+	"code.cloudfoundry.org/policy_client"
 	"istio.io/istio/pilot/pkg/model"
 	snap "istio.io/istio/pkg/mcp/snapshot"
 )
@@ -40,7 +41,7 @@ var (
 
 const (
 	DefaultGatewayName = "cloudfoundry-ingress"
-	DefaultSidecarName = "cloudfoundry-sidecar"
+	DefaultSidecarName = "cloudfoundry-default-sidecar"
 
 	// TODO: Do not specify the nodeID yet as it's used as a key for cache lookup
 	// in snapshot, we should add this once the nodeID is configurable in pilot
@@ -59,25 +60,28 @@ type setter interface {
 }
 
 type Snapshot struct {
-	logger       lager.Logger
-	ticker       <-chan time.Time
-	collector    collector
-	setter       setter
-	builder      *snap.InMemoryBuilder
-	cachedRoutes []*models.RouteWithBackends
-	config       config
-	ver          int
-	initialized  bool
+	logger             lager.Logger
+	ticker             <-chan time.Time
+	collector          collector
+	setter             setter
+	builder            *snap.InMemoryBuilder
+	cachedRoutes       []*models.RouteWithBackends
+	cachedPolicies     []*policy_client.Policy
+	config             config
+	policyServerClient policy_client.InternalPolicyClient
+	ver                int
+	initialized        bool
 }
 
-func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder *snap.InMemoryBuilder, config config) *Snapshot {
+func New(logger lager.Logger, ticker <-chan time.Time, collector collector, setter setter, builder *snap.InMemoryBuilder, policyServerClient policy_client.InternalPolicyClient, config config) *Snapshot {
 	return &Snapshot{
-		logger:    logger,
-		ticker:    ticker,
-		collector: collector,
-		setter:    setter,
-		builder:   builder,
-		config:    config,
+		logger:             logger,
+		ticker:             ticker,
+		collector:          collector,
+		setter:             setter,
+		builder:            builder,
+		policyServerClient: policyServerClient,
+		config:             config,
 	}
 }
 
@@ -90,22 +94,30 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
+			policies, _, policyError := s.policyServerClient.GetPolicies()
+			if policyError != nil {
+				s.logger.Error("Error fetching policies", policyError)
+				continue
+			}
 
-			if s.initialized && reflect.DeepEqual(routes, s.cachedRoutes) {
+			if s.initialized &&
+				reflect.DeepEqual(routes, s.cachedRoutes) &&
+				reflect.DeepEqual(policies, s.cachedPolicies) {
 				continue
 			}
 
 			newVersion := s.increment()
 			s.cachedRoutes = routes
+			s.cachedPolicies = policies
 
 			gateways := s.config.CreateGatewayResources()
-			sidecars := s.config.CreateSidecarResources()
+			sidecars := s.config.CreateSidecarResources(routes, policies, newVersion)
 			virtualServices := s.config.CreateVirtualServiceResources(routes, newVersion)
 			destinationRules := s.config.CreateDestinationRuleResources(routes, newVersion)
 			serviceEntries := s.config.CreateServiceEntryResources(routes, newVersion)
 
 			s.builder.Set(GatewayTypeURL, "1", gateways)
-			s.builder.Set(SidecarTypeURL, "1", sidecars)
+			s.builder.Set(SidecarTypeURL, newVersion, sidecars)
 			s.builder.Set(VirtualServiceTypeURL, newVersion, virtualServices)
 			s.builder.Set(DestinationRuleTypeURL, newVersion, destinationRules)
 			s.builder.Set(ServiceEntryTypeURL, newVersion, serviceEntries)

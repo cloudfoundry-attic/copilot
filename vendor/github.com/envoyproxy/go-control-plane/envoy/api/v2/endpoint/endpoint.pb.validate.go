@@ -157,10 +157,10 @@ func (m *LbEndpoint) Validate() error {
 
 	if wrapper := m.GetLoadBalancingWeight(); wrapper != nil {
 
-		if wrapper.GetValue() < 1 {
+		if val := wrapper.GetValue(); val < 1 || val > 128 {
 			return LbEndpointValidationError{
 				field:  "LoadBalancingWeight",
-				reason: "value must be greater than or equal to 1",
+				reason: "value must be inside range [1, 128]",
 			}
 		}
 
@@ -292,10 +292,10 @@ func (m *LocalityLbEndpoints) Validate() error {
 
 	if wrapper := m.GetLoadBalancingWeight(); wrapper != nil {
 
-		if wrapper.GetValue() < 1 {
+		if val := wrapper.GetValue(); val < 1 || val > 128 {
 			return LocalityLbEndpointsValidationError{
 				field:  "LoadBalancingWeight",
-				reason: "value must be greater than or equal to 1",
+				reason: "value must be inside range [1, 128]",
 			}
 		}
 
@@ -305,21 +305,6 @@ func (m *LocalityLbEndpoints) Validate() error {
 		return LocalityLbEndpointsValidationError{
 			field:  "Priority",
 			reason: "value must be less than or equal to 128",
-		}
-	}
-
-	{
-		tmp := m.GetProximity()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return LocalityLbEndpointsValidationError{
-					field:  "Proximity",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
 		}
 	}
 

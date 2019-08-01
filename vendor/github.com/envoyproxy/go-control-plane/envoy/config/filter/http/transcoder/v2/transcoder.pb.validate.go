@@ -65,8 +65,6 @@ func (m *GrpcJsonTranscoder) Validate() error {
 
 	// no validation rules for MatchIncomingRequestRoute
 
-	// no validation rules for AutoMapping
-
 	switch m.DescriptorSet.(type) {
 
 	case *GrpcJsonTranscoder_ProtoDescriptor:

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e -u
+export TARGET=ga
+
+fly -t $TARGET sync
+fly -t $TARGET status || fly -t $TARGET login -b
+
+fly -t $TARGET \
+  set-pipeline -p cf-networking-helpers \
+  -c $HOME/workspace/cf-networking-helpers/ci/pipeline.yml

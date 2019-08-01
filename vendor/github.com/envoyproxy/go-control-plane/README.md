@@ -3,6 +3,7 @@
 [![CircleCI](https://circleci.com/gh/envoyproxy/go-control-plane.svg?style=svg)](https://circleci.com/gh/envoyproxy/go-control-plane)
 [![Go Report Card](https://goreportcard.com/badge/github.com/envoyproxy/go-control-plane)](https://goreportcard.com/report/github.com/envoyproxy/go-control-plane)
 [![GoDoc](https://godoc.org/github.com/envoyproxy/go-control-plane?status.svg)](https://godoc.org/github.com/envoyproxy/go-control-plane)
+[![codecov](https://codecov.io/gh/envoyproxy/go-control-plane/branch/master/graph/badge.svg)](https://codecov.io/gh/envoyproxy/go-control-plane)
 
 
 This repository contains a Go-based implementation of an API server that
@@ -39,15 +40,15 @@ feedback, we might decided to revisit this aspect at a later point in time.
 
 ## Requirements
 
-1. Go 1.12+
+1. Go 1.9+
 
 ## Quick start
 
-1. Setup existing build:
+1. Setup tools and dependencies
 
 ```sh
-make build
-make test
+make tools
+make depend.install
 ```
 
 2. Generate proto files (if you update the [data-plane-api](https://github.com/envoyproxy/data-plane-api)
@@ -57,28 +58,27 @@ dependency)
 make generate
 ```
 
-You should use the included [build image](Dockerfile.ci) to produce a consistent set of generated files, e.g.
+3. Edit the code in your favorite IDE
 
-```sh
-docker run -v $(pwd):/go-control-plane gcr.io/istio-testing/go-control-plane-ci:05-09-2019 make generate
-```
-
-Format the code:
+4. Format, vet and lint the code
 
 ```sh
 make format
+make check
 ```
 
-__NOTE__: you may need to apply a small patch to correct imports in the generate files:
+5. Build and test
 
 ```sh
-make generate-patch
+make build
+make test
 ```
 
-3. Run [integration test](pkg/test/main/README.md) against the latest Envoy binary:
+6. Run [integration test](pkg/test/main/README.md) against the latest Envoy
+   docker image:
 
 ```sh
-make integration
+make integration.docker
 ```
 
 ## Usage

@@ -1,0 +1,20 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: { repository: c2cnetworking/dev-postgres }
+
+inputs:
+  - name: cf-networking-helpers
+    path: go/src/code.cloudfoundry.org/cf-networking-helpers
+
+run:
+  path: /bin/bash
+  args:
+    - -c
+    - |
+      export GOPATH=${PWD}/go
+      export PATH=$PATH:$GOPATH/bin
+      export DB=postgres
+      $GOPATH/src/code.cloudfoundry.org/cf-networking-helpers/scripts/test.sh

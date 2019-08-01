@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"code.cloudfoundry.org/cf-networking-helpers/mutualtls"
 	"crypto/tls"
 	"io/ioutil"
 	"net"
@@ -50,6 +51,10 @@ var _ = Describe("Config", func() {
 					PrivateKey: "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAoA0YINMRUux8OMjfxDE1WKffjMu0epmf7O6mFRHKylZy2GQA\nFLF7ACxtQVXk1n0Ej77IYtRD+EgLEaWfLDv6Nxsm1X5uXowVTgtLHgNc5tixzMD8\no3iF1HjP+0t1XQZL3vt+74+/LmXtePSY/iJCy985H0bSPnKBvZsOBaT9E6mkUONX\nCqp0Eg9okW0nwVv5zEXBUK+2ivs/i0IOiz3s+wsQrHV4HDH/JDVXXHkEmrRBZ7n5\nyvxssg7Pj9qL5ai6VQtOUrDv3U0KfkLVWDDXggP3i4sTc8H4gl4Q2ffdyRVFo905\nAq+3+gWOVP9p2lwBkvGWVc15cHl9kjtAWInDzQIDAQABAoIBABUV5InehLfCBBOP\nEzvLp9WIOEFaTOqh9pnGTwcTkv3ZKcQsWH5ha2z4bWRgJofDbKhrYAb1JAc/poWq\npi+zryE3aIRT5cJ6/guMHVdU5hZbkgEBo8b9h9QYHn5i0JFy1OgJhg2ViIBaWVDI\nGKfSZ65oOCRQtj4X49PQ66X+uICwcWhJ3tZnFVODPQU6uDaUZsJzESTaEYaTEkpH\nKCbYdKL4dqt76SIxzKwy1tQlV7R/5Vl5iGhIq143iqNVEAHnCDzJZyonoFpvzT3A\nKfxYjwbatzDdDDujlzyUEwdzy+ZSkMtb/b2Asd0QseY4LgsjnkyQKTtuemjxLw7F\nrMbD3ZkCgYEAx5hWLceS1li3h4UVQFPEdqLAyBW5xTGAVKP4dEirlDWWlkVNpPSw\nD/ZAMieL7WT40JExsGYovrtly9BgyOkTbhbs3dlTDsd2++2/gycjEiNIw08Q5F0v\nz0TgV5psUb1E2Mvubf+Ns04C/NwXHX+A8ClcHuVy/qw/y92s+r+H2wcCgYEAzUf2\nFu4d+CO2JqcvPY2YikDFNT6pIzO/Ux0W41FwJVDHRa+42vqW5qPrr6ThWoVEEs5h\nzeBgh0X6K+2AbELDm3kxW43ceHo6KmPCPyQcMxff+A8LyxZWxn/8wb4CKso2zc1L\ncm6w5E0NsCmt/4WP5EeIIUmUXIpcNP9uNCZ6sYsCgYAn1q802gXkBLc1NIoGWfH3\n4ApspXF7+6JqwoO/6hVdMskI23Jg/3n45aTwndYfHy1Oq/xoAiwVzd/Gq6P11hfL\nvIWwzkT2yTdll5HHQtOMNkC6wxhTDIqTa2L/+VGviwCn6SSBDiYhaOvNvrxaZe29\ngfPiMtgeHxFoxqlVL0+VlwKBgApa+PULKgPceVHV2TI3tFw1DD21XX7jG2Gr8/2f\nnBKl0oeXZ7HUNkyINFl17dBNLLPuKUzjZrssMoSIxJOxgoCTSoQd0eNZ9xkwUxow\nTiPdrnSq/aNPCy2UQ0Have0+qikTlBy/rLi3klsynw5mxG11lk5nkc5hRGmAASUs\nU8AlAoGAVMzVMvNOC5Q3uiji0HRnZRa9XrOFdLGZjIUqtLAEdCyGG2Q1WBy2aVgX\nHb/NjnkfmroOSCKUOyqFt0N3sHAv65E5rUdY46uyfczyaQ4wjEhxHPCID6aQc/4f\npBr58YgMa/6k4d3H6arh4cXXPZ16r2gxOcwrVeHecxGpfSAtzBg=\n-----END RSA PRIVATE KEY-----\n",
 				},
 			},
+			PolicyServerAddress:        "https://policy-server.service.cf.internal:4003",
+			PolicyServerClientCertPath: "/path/to/client/cert",
+			PolicyServerClientKeyPath:  "/path/to/client/key",
+			PolicyServerCAPath:         "/path/to/server/ca",
 		}
 	})
 
@@ -385,6 +390,25 @@ var _ = Describe("Config", func() {
 				_, err := config.Load(configFile)
 				Expect(err).To(MatchError(HavePrefix("invalid config: VIPCIDR: invalid CIDR address: 12.12.12.12.12/7")))
 			})
+		})
+	})
+
+	Describe("ServerTLSConfigForPolicyServer", func() {
+		It("returns a valid tls.Config with the policy server client certs", func() {
+			creds := testhelpers.GenerateMTLS()
+			mtlsCreds := creds.CreateClientTLSFiles()
+
+			rawConfig := config.Config{
+				PolicyServerClientCertPath: mtlsCreds.ClientCert,
+				PolicyServerClientKeyPath:  mtlsCreds.ClientKey,
+				PolicyServerCAPath:         mtlsCreds.ServerCA,
+			}
+			tlsConfig, err := rawConfig.ServerTLSConfigForPolicyServer()
+			Expect(err).NotTo(HaveOccurred())
+			expectedConfig, _ := mutualtls.NewClientTLSConfig(mtlsCreds.ClientCert, mtlsCreds.ClientKey, mtlsCreds.ServerCA)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tlsConfig.Certificates).To(Equal(expectedConfig.Certificates))
+			Expect(tlsConfig.RootCAs).To(Equal(expectedConfig.RootCAs))
 		})
 	})
 })

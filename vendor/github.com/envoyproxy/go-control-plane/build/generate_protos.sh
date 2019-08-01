@@ -5,18 +5,22 @@ set -o pipefail
 shopt -s nullglob
 
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
-xds="${root}/data-plane-api"
+xds=${root}/vendor/github.com/envoyproxy/data-plane-api
+
+echo "Expecting protoc version >= 3.5.0:"
+protoc=$(which protoc)
+$protoc --version
 
 imports=(
   ${xds}
   "${root}/vendor/github.com/envoyproxy/protoc-gen-validate"
   "${root}/vendor/github.com/gogo/protobuf"
-  "${root}/vendor/github.com/gogo/googleapis"
+  "${root}/vendor/github.com/gogo/protobuf/protobuf"
   "${root}/vendor/istio.io/gogo-genproto/prometheus"
-  "${root}/vendor/istio.io/gogo-genproto"
+  "${root}/vendor/istio.io/gogo-genproto/googleapis"
+  "${root}/vendor/istio.io/gogo-genproto/opencensus/proto/trace/v1"
 )
 
-protoc="protoc"
 protocarg=""
 for i in "${imports[@]}"
 do
@@ -36,10 +40,8 @@ mappings=(
   "google/protobuf/timestamp.proto=github.com/gogo/protobuf/types"
   "google/protobuf/wrappers.proto=github.com/gogo/protobuf/types"
   "gogoproto/gogo.proto=github.com/gogo/protobuf/gogoproto"
-  "opencensus/proto/trace/v1/trace.proto=istio.io/gogo-genproto/opencensus/proto/trace/v1"
-  "opencensus/proto/trace/v1/trace_config.proto=istio.io/gogo-genproto/opencensus/proto/trace/v1"
+  "trace.proto=istio.io/gogo-genproto/opencensus/proto/trace/v1"
   "metrics.proto=istio.io/gogo-genproto/prometheus"
-  "validate/validate.proto=github.com/envoyproxy/protoc-gen-validate/validate"
 )
 
 gogoarg="plugins=grpc"
@@ -71,7 +73,7 @@ do
   then
     echo "Generating protos ${path} ..."
     $protoc ${protocarg} ${path}/*.proto \
-      --gogofast_out=${gogoarg}:. \
-      --validate_out="lang=gogo:."
+      --plugin=protoc-gen-gogofast=${root}/bin/gogofast --gogofast_out=${gogoarg}:. \
+      --plugin=protoc-gen-validate=${root}/bin/validate --validate_out="lang=gogo:."
   fi
 done
