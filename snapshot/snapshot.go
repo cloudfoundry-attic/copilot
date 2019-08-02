@@ -94,10 +94,15 @@ func (s *Snapshot) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		case <-s.ticker:
 			routes := s.collector.Collect()
-			policies, _, policyError := s.policyServerClient.GetPolicies()
-			if policyError != nil {
-				s.logger.Error("Error fetching policies", policyError)
-				continue
+
+			var policies []*policy_client.Policy
+			if s.policyServerClient != nil {
+				var policyError error
+				policies, _, policyError = s.policyServerClient.GetPolicies()
+				if policyError != nil {
+					s.logger.Error("Error fetching policies", policyError)
+					continue
+				}
 			}
 
 			if s.initialized &&

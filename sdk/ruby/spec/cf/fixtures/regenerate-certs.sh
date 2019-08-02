@@ -12,13 +12,13 @@ make_certs ()
 { 
     ca_common_name="fakeCA"
     depot_path="."
-    certstrap --depot-path ${depot_path} init --passphrase '' --common-name "${ca_common_name}"
+    certstrap --depot-path ${depot_path} init --passphrase '' --common-name "${ca_common_name}" --expires "20 years"
 
-    certstrap --depot-path ${depot_path} request-cert --passphrase '' --ip '127.0.0.1' --common-name "copilot-server";
-    certstrap --depot-path ${depot_path} sign --passphrase '' --CA "${ca_common_name}" "copilot-server"
+    certstrap --depot-path ${depot_path} request-cert --passphrase '' --ip '127.0.0.1' --common-name "copilot-server"
+    certstrap --depot-path ${depot_path} sign --passphrase '' --CA "${ca_common_name}" --expires "20 years" "copilot-server"
 
     certstrap --depot-path ${depot_path} request-cert --passphrase '' --ip '127.0.0.1' --common-name "cloud-controller-client"
-    certstrap --depot-path ${depot_path} sign --passphrase '' --CA "${ca_common_name}" "cloud-controller-client"
+    certstrap --depot-path ${depot_path} sign --passphrase '' --CA "${ca_common_name}" --expires "20 years" "cloud-controller-client"
 
     rm -f fakeCA.key fakeCA.crl *.csr
     chmod 644 *.crt *.key

@@ -220,12 +220,15 @@ $$ |  $$\ $$ |  $$ |$$ |       $$ |  $$ |     $$ |  $$ |  $$ |
 	librarian := certs.NewLocator(istioCertRootPath, cfg.TLSPems)
 	snapshotConfig := copilotsnapshot.NewConfig(librarian, logger)
 
-	clientTLSConfig, err := cfg.ServerTLSConfigForPolicyServer()
-	if err != nil {
-		return err
+	var policyServerClient *policy_client.InternalClient
+	if !cfg.PolicyServerDisabled {
+		clientTLSConfig, err := cfg.ServerTLSConfigForPolicyServer()
+		if err != nil {
+			return err
+		}
+		httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(clientTLSConfig))
+		policyServerClient = policy_client.NewInternal(logger, httpClient, cfg.PolicyServerAddress)
 	}
-	httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(clientTLSConfig))
-	policyServerClient := policy_client.NewInternal(logger, httpClient, cfg.PolicyServerAddress)
 
 	mcpSnapshot := copilotsnapshot.New(logger, mcpTicker.C, collector, cache, inMemoryBuilder, policyServerClient, snapshotConfig)
 

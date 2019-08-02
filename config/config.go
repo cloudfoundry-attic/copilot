@@ -39,6 +39,7 @@ type Config struct {
 	CloudControllerClientCAPath     string `validate:"nonzero"`
 	ServerCertPath                  string `validate:"nonzero"`
 	ServerKeyPath                   string `validate:"nonzero"`
+	PolicyServerDisabled            bool
 	PolicyServerAddress             string `validate:"nonzero"`
 	PolicyServerClientCertPath      string `validate:"nonzero"`
 	PolicyServerClientKeyPath       string `validate:"nonzero"`

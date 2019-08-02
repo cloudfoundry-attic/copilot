@@ -25,6 +25,11 @@ class RealCopilotServer
       'VIPCIDR' => "127.128.0.0/9",
       'BBS' => { 'Disable' => true },
       'LogLevel' => 'fatal',
+      'PolicyServerDisabled' => true,
+      'PolicyServerAddress' => 'https://policy-server.service.cf.internal:4003',
+      'PolicyServerClientCertPath' => fixture('copilot-server.crt'),
+      'PolicyServerClientKeyPath' => fixture('copilot-server.key'),
+      'PolicyServerCAPath' => fixture('fakeCA.crt')
     }
 
     config_file = Tempfile.new('copilot-config')
