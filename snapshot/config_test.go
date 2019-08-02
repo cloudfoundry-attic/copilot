@@ -42,7 +42,7 @@ var _ = Describe("Config", func() {
 			Expect(sc).To(Equal(networking.Sidecar{
 				Egress: []*networking.IstioEgressListener{
 					&networking.IstioEgressListener{
-						Hosts: nil,
+						Hosts: []string{"~/*"},
 					},
 				},
 			}))
@@ -80,7 +80,7 @@ var _ = Describe("Config", func() {
 						WorkloadSelector: nil,
 						Egress: []*networking.IstioEgressListener{
 							&networking.IstioEgressListener{
-								Hosts: nil,
+								Hosts: []string{"~/*"},
 							},
 						},
 					},

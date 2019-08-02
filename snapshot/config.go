@@ -73,7 +73,7 @@ func (c *Config) CreateSidecarResources(routes []*models.RouteWithBackends, poli
 	sidecar := &networking.Sidecar{
 		Egress: []*networking.IstioEgressListener{
 			&networking.IstioEgressListener{
-				Hosts: []string{},
+				Hosts: []string{"~/*"},
 			},
 		},
 	}
