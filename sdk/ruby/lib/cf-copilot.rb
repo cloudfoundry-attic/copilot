@@ -132,7 +132,9 @@ module Cloudfoundry
       end
 
       def service
-        @service ||= Api::CloudControllerCopilot::Stub.new(@url, tls_credentials, channel_args: compression_options.to_hash, timeout: @timeout)
+        channel_args = compression_options.to_hash
+        channel_args[GRPC::Core::Channel::SSL_TARGET] = 'routing-bridge.system.internal'
+        @service ||= Api::CloudControllerCopilot::Stub.new(@url, tls_credentials, channel_args: channel_args, timeout: @timeout)
       end
     end
   end
